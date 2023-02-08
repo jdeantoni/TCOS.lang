@@ -11,21 +11,14 @@
             "name": "Launch Extension",
             "request": "launch",
             "type": "extensionHost",
+            "sourceMaps": true
         }
 
     ],
-    "resolveSourceMapLocations": [
-        "${workspaceFolder}/**",
-        "!**/node_modules/**"
-      ],
-    "tasks": [
-		{
-			"type": "npm",
-			"script": "build",
-			"group": "build",
-			"problemMatcher": [],
-			"label": "npm: build",
-			"detail": "tsc -b tsconfig.json"
-		}
-	]
+    // "webRoot": "${workspaceFolder}/../",
+    // "sourceMaps": true,
+    // "resolveSourceMapLocations": [
+    //     "${workspaceFolder}/**",
+    //     "!**/node_modules/**"
+    //   ]
 }

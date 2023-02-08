@@ -1,19 +1,22 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
-import { SoSSpec } from '../language-server/generated/ast';
 import { StructuralOperationalSemanticsLanguageMetaData } from '../language-server/generated/module';
 import { createStructuralOperationalSemanticsServices } from '../language-server/structural-operational-semantics-module';
-//import { createLangiumAndSoSLangServices } from '../language-server/sos-and-langium-module';
 
-import { extractAstNode } from './cli-util';
-import { generateJavaScript } from './generator';
+import { extractSosAndGrammarModels } from './cli-util';
+import { generateStuffFromSoS } from './generator';
 import { NodeFileSystem } from 'langium/node';
 
 export const generateAction = async (fileName: string, opts: GenerateOptions): Promise<void> => {
+    console.log("######## 1")
+    throw new Error("SoS ERROR");
+
     const services = createStructuralOperationalSemanticsServices(NodeFileSystem).StructuralOperationalSemantics;
-    const model = await extractAstNode<SoSSpec>(fileName, services);
-    const generatedFilePath = generateJavaScript(model, fileName, opts.destination);
-    console.log(chalk.green(`JavaScript code generated successfully: ${generatedFilePath}`));
+    console.log("######## 2")
+    const model = await extractSosAndGrammarModels(fileName, services);
+    console.log("######## 3")
+    const generatedFilePath = generateStuffFromSoS(model[0],model[1], fileName, opts.destination);
+    console.log(chalk.green(`Stuff code generated successfully: ${generatedFilePath}`));
 };
 
 export type GenerateOptions = {

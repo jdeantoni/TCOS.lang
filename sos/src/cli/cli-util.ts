@@ -1,10 +1,11 @@
 import chalk from 'chalk';
 import path from 'path';
 import fs from 'fs';
-import { AstNode, LangiumDocument, LangiumServices } from 'langium';
+import { Grammar, LangiumDocument, LangiumServices } from 'langium';
 import { URI } from 'vscode-uri';
+import { SoSSpec, isGrammar } from '../language-server/generated/ast';
 
-export async function extractDocument(fileName: string, services: LangiumServices): Promise<LangiumDocument> {
+export async function extractDocuments(fileName: string, services: LangiumServices): Promise<[LangiumDocument, LangiumDocument[]]> {
     const extensions = services.LanguageMetaData.fileExtensions;
     if (!extensions.includes(path.extname(fileName))) {
         console.error(chalk.yellow(`Please choose a file with one of these extensions: ${extensions}.`));
@@ -16,25 +17,65 @@ export async function extractDocument(fileName: string, services: LangiumService
         process.exit(1);
     }
 
-    const document = services.shared.workspace.LangiumDocuments.getOrCreateDocument(URI.file(path.resolve(fileName)));
-    await services.shared.workspace.DocumentBuilder.build([document], { validationChecks: 'all' });
+    console.log("#################### ZAZA")
 
-    const validationErrors = (document.diagnostics ?? []).filter(e => e.severity === 1);
-    if (validationErrors.length > 0) {
-        console.error(chalk.red('There are validation errors:'));
-        for (const validationError of validationErrors) {
-            console.error(chalk.red(
-                `line ${validationError.range.start.line + 1}: ${validationError.message} [${document.textDocument.getText(validationError.range)}]`
-            ));
+
+    const documents = services.shared.workspace.LangiumDocuments.all.toArray();
+    await services.shared.workspace.DocumentBuilder.build(documents, { validationChecks: 'all' });
+
+    documents.forEach(document=>{
+        const validationErrors = (document.diagnostics ?? []).filter(e => e.severity === 1);
+        if (validationErrors.length > 0) {
+            console.error(chalk.red('ouch ! There are validation errors:'));
+            for (const validationError of validationErrors) {
+                console.error(chalk.red(
+                    `line ${validationError.range.start.line + 1}: ${validationError.message} [${document.textDocument.getText(validationError.range)}]`
+                ));
+            }
+            process.exit(1);
         }
-        process.exit(1);
-    }
+    });
+    const mainDocument = services.shared.workspace.LangiumDocuments.getOrCreateDocument(URI.file(path.resolve(fileName)));
 
-    return document;
+
+
+    return [mainDocument, documents];
+
+
+
+    // const document = services.shared.workspace.LangiumDocuments.getOrCreateDocument(URI.file(path.resolve(fileName)));
+    // await services.shared.workspace.DocumentBuilder.build([document], { validationChecks: 'all' });
+
+    // const validationErrors = (document.diagnostics ?? []).filter(e => e.severity === 1);
+    // if (validationErrors.length > 0) {
+    //     console.error(chalk.red('There are validation errors:'));
+    //     for (const validationError of validationErrors) {
+    //         console.error(chalk.red(
+    //             `line ${validationError.range.start.line + 1}: ${validationError.message} [${document.textDocument.getText(validationError.range)}]`
+    //         ));
+    //     }
+    //     process.exit(1);
+    // }
+
+    // return document;
 }
 
-export async function extractAstNode<T extends AstNode>(fileName: string, services: LangiumServices): Promise<T> {
-    return (await extractDocument(fileName, services)).parseResult?.value as T;
+
+/**
+ * Read a sos model with the grammar models from workspace located in the same folder.
+ * @param fileName the main sos specification file
+ * @param services the language services
+ * @returns a tuple with the model indicated by the fileName and a list of
+ *          grammar models from the workspace.
+chr */
+export async function extractSosAndGrammarModels(fileName: string, services: LangiumServices): Promise<[SoSSpec, Grammar[]]> {
+    const [mainDocument, allDocuments] = await extractDocuments(fileName, services);
+    return [
+        mainDocument.parseResult?.value as SoSSpec,
+        allDocuments
+            .filter(d=>isGrammar(d.parseResult?.value))
+            .map(d=>d.parseResult?.value as Grammar)
+    ];
 }
 
 interface FilePathData {
