@@ -1,0 +1,57 @@
+{
+  "name": "structural-operational-semantics",
+  "scopeName": "source.structural-operational-semantics",
+  "fileTypes": [
+    ".sos"
+  ],
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "name": "keyword.control.structural-operational-semantics",
+      "match": "\\b(and|boolean|false|import|nil|number|or|sigma|string|super|this|true|var|void)\\b"
+    },
+    {
+      "name": "string.quoted.double.structural-operational-semantics",
+      "begin": "\"",
+      "end": "\""
+    },
+    {
+      "name": "string.quoted.single.structural-operational-semantics",
+      "begin": "'",
+      "end": "'"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.block.structural-operational-semantics",
+          "begin": "/\\*",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.structural-operational-semantics"
+            }
+          },
+          "end": "\\*/",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.structural-operational-semantics"
+            }
+          }
+        },
+        {
+          "begin": "//",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.whitespace.comment.leading.structural-operational-semantics"
+            }
+          },
+          "end": "(?=$)",
+          "name": "comment.line.structural-operational-semantics"
+        }
+      ]
+    }
+  }
+}

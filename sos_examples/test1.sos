@@ -1,0 +1,17 @@
+test1
+import "./simple-l.langium"
+
+sigma := {
+    Person {
+        var zaza
+    }
+    Greeting {
+        var roro:string
+    } 
+}
+
+//   (zaza > 2)
+//      => 
+// zaza,toto ~> zaza = zaza - 1 
+//              toto= toto+zaza  
+
