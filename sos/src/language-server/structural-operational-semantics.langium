@@ -5,15 +5,16 @@ import "../../node_modules/langium/src/grammar/langium-grammar";
 
 entry SoSSpec:
    name=ID
-
    imports=ImportStatement
-   'sigma' ':=' '{'sigma+=(RuleOpening)+'}'
-   rules+=(RWRule)*;
+   rtdAndRules+=(RuleOpening)+
+   ;
 
 RuleOpening:
-   onRule=[ParserRule:ID] '{'
-    runtimeState+=(VariableDeclaration)+
-    '}'
+    {infer RuleOpening}
+   name=ID 'open' onRule=[ParserRule:ID] '{' 
+    (runtimeState+=(VariableDeclaration) | 
+    rules+=(RWRule))*
+    '}' 
 ;
 
 ImportStatement:
@@ -26,23 +27,26 @@ ImportStatement:
 
 RWRule:
     {infer RWRule}
-    Premise '=>' Conclusion;
+        '('(premise=SemanticEquivalence)*')'   
+name=ID ":" ('-')+
+         conclusion=Conclusion;
+ 
 
-Premise:
-    {infer Premise}
-    '('Logical')';
+SemanticEquivalence:
+    ('<'('this''.'leftRTD=[NamedElement:QualifiedName] | 'struct''.'leftStruct=[AbstractElement:ID]) ',''σ''>' operator=('->') right=(VariableDeclaration|Primary))*;  
+// Premise:
+//     {infer Premise}  
+//     '('Logical')';
 
 Conclusion:
-   (inState+=[VariableDeclaration:ID] (','inState+=[VariableDeclaration:ID])* '~>' outState+=(SoSAssignment)+);
-
+   '<this,σ>' '~>' outState+=(SoSAssignment)+; 
 
 
 //reused from lox
 
-VariableDeclaration returns NamedElement:
+VariableDeclaration returns NamedElement: 
     {infer VariableDeclaration} 
-    'var' name=ID (':' type=TypeReference)? (assignment?='=' value=Expression)? ;
-
+    ('var') ? name=ID (':' type=TypeReference)? (assignment?='=' value=Expression)? ;
 
 Expression:
     Addition;
@@ -57,16 +61,16 @@ Logical infers Expression:
     Comparison ({infer BinaryExpression.left=current} operator=('and' | 'or') right=Comparison)*;
 
 Comparison infers Expression:
-    SoSAssignment ({infer BinaryExpression.left=current} operator=('<' | '<=' | '>' | '>=' | '==' | '!=') right=SoSAssignment)*;
+    SoSAssignment ({infer BinaryExpression.left=current} operator=('<' | '<=' | '>' | '>=' | '==' | '!=') right=SoSAssignment)*; 
 
 SoSAssignment infers Expression:
-    MemberCall ({infer BinaryExpression.left=current} operator=('=') right=MemberCall)*;
+    MemberCall ({infer BinaryExpression.left=current} operator=('=') ('this''.'rightRTD=[NamedElement:QualifiedName] | 'struct''.'rightStruct=[AbstractElement:ID]|rightVar=[NamedElement:QualifiedName]))*;
 
 MemberCall infers Expression:
     Primary
 	({infer MemberCall.previous=current} 
         // Member call with function call
-        ("." element=[NamedElement:ID] (
+        ("." element=[NamedElement:QualifiedName] (
 		explicitOperationCall?='('
 		(
 		    arguments+=Expression (',' arguments+=Expression)*
@@ -92,7 +96,7 @@ Primary infers Expression:
 
 FeatureCall infers Expression:
 	{infer MemberCall}
-	(element=[NamedElement:ID] | element=[NamedElement:'this'] | element=[NamedElement:'super'])
+	((element=[NamedElement:QualifiedName] | element=[NamedElement:'this'] | element=[NamedElement:'super']))
     // Optional function call after referencing an element
     (explicitOperationCall?='('
 	(
@@ -126,14 +130,14 @@ Struct: 'struct' name=ID ('<' superClass=[Struct:ID])? '{'
 FieldMember:
     name=ID ':' type=TypeReference;
 
-TypeReference: reference=[Struct:ID] 
+TypeReference: reference=/*[Struct:ID]|*/[RuleOpening:ID]  
     | primitive=("string" | "number" | "boolean" | "void") 
   //  | '(' ( parameters+=LambdaParameter (',' parameters+=LambdaParameter)*)? ')' '=>' returnType=TypeReference;
 ;
 
 LambdaParameter: (name=ID ':')? type=TypeReference;
 
-type NamedElement = /*Parameter | FunctionDeclaration |*/ VariableDeclaration /*| MethodMember*/ | FieldMember | Struct;
+type NamedElement = /*Parameter | FunctionDeclaration |*/ VariableDeclaration /*| MethodMember*/ | FieldMember | Struct | RuleOpening; 
 
 // hidden terminal WS: /\s+/;
 // terminal ID: /[_a-zA-Z][\w_]*/;
@@ -142,3 +146,6 @@ terminal NUMBER returns number: /[0-9]+(\.[0-9]+)?/;
 
 // hidden terminal ML_COMMENT: /\/\*[\s\S]*?\*\//;
 // hidden terminal SL_COMMENT: /\/\/[^\n\r]*/;
+
+QualifiedName returns string:
+    ID ('.' ID)*; 

@@ -1,13 +1,15 @@
 grammar SimpleL
 
 entry Model:
-    (persons+=Person | greetings+=Greeting)*;
+    statements+=(Expr)*;
+Expr:
+    Var|Plus;
 
-Person:
-    'person' name=ID;
+Var:
+    name=ID ('=' initialValue=INT)?;
+Plus:
+    left=[Var:ID] '+' right=[Var:ID] ;
 
-Greeting:
-    'Hello' person=[Person:ID] '!';
 
 hidden terminal WS: /\s+/;
 terminal ID: /[_a-zA-Z][\w_]*/;

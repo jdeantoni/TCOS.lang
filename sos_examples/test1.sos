@@ -1,17 +1,19 @@
 test1
-import "./simple-l.langium"
+import "testSoSLang/src/language-server/simple-l.langium"
 
-sigma := {
-    Person {
-        var zaza
-    }
-    Greeting {
-        var roro:string
-    } 
+VarAspect open Var {
+    var currentValue:number
+    var isInit: boolean
+
+           (<this.isInit,σ> -> false)
+initVar: ------------------------ 
+          <this,σ> ~> currentValue=  this.initialValue
+
 }
 
-//   (zaza > 2)
-//      => 
-// zaza,toto ~> zaza = zaza - 1 
-//              toto= toto+zaza  
-
+PlusAspect open Plus{
+   
+         (<struct.left,σ> -> n1  <struct.right,σ> -> n2)
+plusRWR: --------------------------------
+           <this,σ> ~> n1 + n2 
+} 

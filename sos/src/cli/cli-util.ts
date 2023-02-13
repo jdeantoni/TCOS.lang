@@ -1,9 +1,12 @@
 import chalk from 'chalk';
 import path from 'path';
 import fs from 'fs';
-import { Grammar, LangiumDocument, LangiumServices } from 'langium';
+import { AstNode, Grammar,  LangiumDocument, LangiumServices, Mutable, getDocument} from 'langium';
 import { URI } from 'vscode-uri';
 import { SoSSpec, isGrammar } from '../language-server/generated/ast';
+import { createStructuralOperationalSemanticsServices } from '../language-server/structural-operational-semantics-module';
+import { NodeFileSystem } from 'langium/node';
+
 
 export async function extractDocuments(fileName: string, services: LangiumServices): Promise<[LangiumDocument, LangiumDocument[]]> {
     const extensions = services.LanguageMetaData.fileExtensions;
@@ -16,11 +19,10 @@ export async function extractDocuments(fileName: string, services: LangiumServic
         console.error(chalk.red(`File ${fileName} does not exist.`));
         process.exit(1);
     }
-
-    console.log("#################### ZAZA")
-
-
+    
     const documents = services.shared.workspace.LangiumDocuments.all.toArray();
+
+    
     await services.shared.workspace.DocumentBuilder.build(documents, { validationChecks: 'all' });
 
     documents.forEach(document=>{
@@ -38,27 +40,46 @@ export async function extractDocuments(fileName: string, services: LangiumServic
     const mainDocument = services.shared.workspace.LangiumDocuments.getOrCreateDocument(URI.file(path.resolve(fileName)));
 
 
+    var uris2: Set<string> = new Set(); //To be used in later recursion to breal import loop and double visit 
+    var allDocuments = []
+    const uriString = mainDocument.uri.toString();
+    if (!uris2.has(uriString)) {
+        uris2.add(uriString);
+        const sosSpec = mainDocument.parseResult.value as SoSSpec;
+        const importedDocument = services.shared.workspace.LangiumDocuments.getOrCreateDocument(URI.file(path.resolve(sosSpec.imports.importURI)));
+        allDocuments.push(importedDocument) //TODO: load recusrsively imported grammar
+    }
+    var grammars = [mainDocument.parseResult.value as Grammar, allDocuments[0].parseResult.value as Grammar]
+    await relinkGrammars(grammars);
 
-    return [mainDocument, documents];
-
-
-
-    // const document = services.shared.workspace.LangiumDocuments.getOrCreateDocument(URI.file(path.resolve(fileName)));
-    // await services.shared.workspace.DocumentBuilder.build([document], { validationChecks: 'all' });
-
-    // const validationErrors = (document.diagnostics ?? []).filter(e => e.severity === 1);
-    // if (validationErrors.length > 0) {
-    //     console.error(chalk.red('There are validation errors:'));
-    //     for (const validationError of validationErrors) {
-    //         console.error(chalk.red(
-    //             `line ${validationError.range.start.line + 1}: ${validationError.message} [${document.textDocument.getText(validationError.range)}]`
-    //         ));
-    //     }
-    //     process.exit(1);
-    // }
-
-    // return document;
+    return [mainDocument, allDocuments];
 }
+
+const { shared: sharedServices/*, langiumServices: langiumServices*/, StructuralOperationalSemantics: sos } = createStructuralOperationalSemanticsServices(NodeFileSystem);
+
+
+async function relinkGrammars(grammars: Grammar[]): Promise<void> {
+    const linker = sos.references.Linker;
+    const documentBuilder = sharedServices.workspace.DocumentBuilder;
+    const documentFactory = sharedServices.workspace.LangiumDocumentFactory;
+    const langiumDocuments = sharedServices.workspace.LangiumDocuments;
+    const documents = langiumDocuments.all.toArray();
+    // Unlink and delete all document data
+    for (const document of documents) {
+        linker.unlink(document);
+    }
+    await documentBuilder.update([], documents.map(e => e.uri));
+    // Create and build new documents
+    const newDocuments = grammars.map(e => {
+        const uri = getDocument(e).uri;
+        const newDoc = documentFactory.fromModel(e, uri);
+        (e as Mutable<AstNode>).$document = newDoc;
+        return newDoc;
+    });
+    newDocuments.forEach(e => langiumDocuments.addDocument(e));
+    await documentBuilder.build(newDocuments, { validationChecks: 'none' });
+}
+
 
 
 /**

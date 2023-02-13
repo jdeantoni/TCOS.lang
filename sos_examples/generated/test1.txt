@@ -1,0 +1,6 @@
+Var is opened with:
+	* currentValue of type number
+Plus is opened with:
+	* left of type undefined
+	* right of type undefined
+	* [object Object] of type [object Object]

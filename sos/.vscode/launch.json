@@ -12,13 +12,27 @@
             "request": "launch",
             "type": "extensionHost",
             "sourceMaps": true
-        }
+        },
+        {
+			"name": "Attach to Language Server",
+			"type": "node",
+			"request": "attach",
+			"port": 6009,
+			"sourceMaps": true,
+			// "outFiles": ["${workspaceRoot}/packages/language-server-ruby/dist/**/*.js"]
+		}
 
     ],
+    "compounds": [
+		{
+			"name": "Launch Extension and attach to Language Server",
+			"configurations": ["Launch Extension", "Attach to Language Server"]
+		}
+	],
     // "webRoot": "${workspaceFolder}/../",
-    // "sourceMaps": true,
-    // "resolveSourceMapLocations": [
-    //     "${workspaceFolder}/**",
-    //     "!**/node_modules/**"
-    //   ]
+    "sourceMaps": true,
+    "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ]
 }

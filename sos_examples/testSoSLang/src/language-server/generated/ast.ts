@@ -6,22 +6,17 @@
 /* eslint-disable */
 import { AstNode, AbstractAstReflection, Reference, ReferenceInfo, TypeMetaData } from 'langium';
 
-export interface Greeting extends AstNode {
-    readonly $container: Model;
-    readonly $type: 'Greeting';
-    person: Reference<Person>
-}
+export type Expr = Plus | Var;
 
-export const Greeting = 'Greeting';
+export const Expr = 'Expr';
 
-export function isGreeting(item: unknown): item is Greeting {
-    return reflection.isInstance(item, Greeting);
+export function isExpr(item: unknown): item is Expr {
+    return reflection.isInstance(item, Expr);
 }
 
 export interface Model extends AstNode {
     readonly $type: 'Model';
-    greetings: Array<Greeting>
-    persons: Array<Person>
+    statements: Array<Expr>
 }
 
 export const Model = 'Model';
@@ -30,32 +25,51 @@ export function isModel(item: unknown): item is Model {
     return reflection.isInstance(item, Model);
 }
 
-export interface Person extends AstNode {
+export interface Plus extends AstNode {
     readonly $container: Model;
-    readonly $type: 'Person';
+    readonly $type: 'Plus';
+    left: Reference<Var>
+    right: Reference<Var>
+}
+
+export const Plus = 'Plus';
+
+export function isPlus(item: unknown): item is Plus {
+    return reflection.isInstance(item, Plus);
+}
+
+export interface Var extends AstNode {
+    readonly $container: Model;
+    readonly $type: 'Var';
+    initialValue?: number
     name: string
 }
 
-export const Person = 'Person';
+export const Var = 'Var';
 
-export function isPerson(item: unknown): item is Person {
-    return reflection.isInstance(item, Person);
+export function isVar(item: unknown): item is Var {
+    return reflection.isInstance(item, Var);
 }
 
 export interface SimpleLAstType {
-    Greeting: Greeting
+    Expr: Expr
     Model: Model
-    Person: Person
+    Plus: Plus
+    Var: Var
 }
 
 export class SimpleLAstReflection extends AbstractAstReflection {
 
     getAllTypes(): string[] {
-        return ['Greeting', 'Model', 'Person'];
+        return ['Expr', 'Model', 'Plus', 'Var'];
     }
 
     protected override computeIsSubtype(subtype: string, supertype: string): boolean {
         switch (subtype) {
+            case Plus:
+            case Var: {
+                return this.isSubtype(Expr, supertype);
+            }
             default: {
                 return false;
             }
@@ -65,8 +79,9 @@ export class SimpleLAstReflection extends AbstractAstReflection {
     getReferenceType(refInfo: ReferenceInfo): string {
         const referenceId = `${refInfo.container.$type}:${refInfo.property}`;
         switch (referenceId) {
-            case 'Greeting:person': {
-                return Person;
+            case 'Plus:left':
+            case 'Plus:right': {
+                return Var;
             }
             default: {
                 throw new Error(`${referenceId} is not a valid reference id.`);
@@ -80,8 +95,7 @@ export class SimpleLAstReflection extends AbstractAstReflection {
                 return {
                     name: 'Model',
                     mandatory: [
-                        { name: 'greetings', type: 'array' },
-                        { name: 'persons', type: 'array' }
+                        { name: 'statements', type: 'array' }
                     ]
                 };
             }

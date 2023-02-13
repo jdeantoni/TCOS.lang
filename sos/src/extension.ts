@@ -4,7 +4,7 @@ import {
     LanguageClient, LanguageClientOptions, ServerOptions, TransportKind
 } from 'vscode-languageclient/node';
 
-import {GenerateOptions} from './cli/index';
+// import {SoSScopeProvider} from './language-server/sos-scope';
 
 let client: LanguageClient;
 
@@ -58,9 +58,9 @@ function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
     // Start the client. This will also launch the server
     client.start();
    
-    //the 2 following lines force loading and then allow brealkpoints
-    var g:GenerateOptions = {destination: ""}
-    g=g
+    // //the 2 following lines force loading and then allow brealkpoints
+    // generateAction("test1.sos", {destination:"generated"})
+    // new SoSScopeProvider(undefined).fake();
 
     
     return client;

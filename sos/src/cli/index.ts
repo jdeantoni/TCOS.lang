@@ -8,13 +8,8 @@ import { generateStuffFromSoS } from './generator';
 import { NodeFileSystem } from 'langium/node';
 
 export const generateAction = async (fileName: string, opts: GenerateOptions): Promise<void> => {
-    console.log("######## 1")
-    throw new Error("SoS ERROR");
-
     const services = createStructuralOperationalSemanticsServices(NodeFileSystem).StructuralOperationalSemantics;
-    console.log("######## 2")
     const model = await extractSosAndGrammarModels(fileName, services);
-    console.log("######## 3")
     const generatedFilePath = generateStuffFromSoS(model[0],model[1], fileName, opts.destination);
     console.log(chalk.green(`Stuff code generated successfully: ${generatedFilePath}`));
 };

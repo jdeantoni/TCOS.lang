@@ -16,33 +16,16 @@ export const SimpleLGrammar = (): Grammar => loadedSimpleLGrammar ?? (loadedSimp
       "name": "Model",
       "entry": true,
       "definition": {
-        "$type": "Alternatives",
-        "elements": [
-          {
-            "$type": "Assignment",
-            "feature": "persons",
-            "operator": "+=",
-            "terminal": {
-              "$type": "RuleCall",
-              "rule": {
-                "$ref": "#/rules@1"
-              },
-              "arguments": []
-            }
+        "$type": "Assignment",
+        "feature": "statements",
+        "operator": "+=",
+        "terminal": {
+          "$type": "RuleCall",
+          "rule": {
+            "$ref": "#/rules@1"
           },
-          {
-            "$type": "Assignment",
-            "feature": "greetings",
-            "operator": "+=",
-            "terminal": {
-              "$type": "RuleCall",
-              "rule": {
-                "$ref": "#/rules@2"
-              },
-              "arguments": []
-            }
-          }
-        ],
+          "arguments": []
+        },
         "cardinality": "*"
       },
       "definesHiddenTokens": false,
@@ -53,25 +36,23 @@ export const SimpleLGrammar = (): Grammar => loadedSimpleLGrammar ?? (loadedSimp
     },
     {
       "$type": "ParserRule",
-      "name": "Person",
+      "name": "Expr",
       "definition": {
-        "$type": "Group",
+        "$type": "Alternatives",
         "elements": [
           {
-            "$type": "Keyword",
-            "value": "person"
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@2"
+            },
+            "arguments": []
           },
           {
-            "$type": "Assignment",
-            "feature": "name",
-            "operator": "=",
-            "terminal": {
-              "$type": "RuleCall",
-              "rule": {
-                "$ref": "#/rules@4"
-              },
-              "arguments": []
-            }
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@3"
+            },
+            "arguments": []
           }
         ]
       },
@@ -84,27 +65,72 @@ export const SimpleLGrammar = (): Grammar => loadedSimpleLGrammar ?? (loadedSimp
     },
     {
       "$type": "ParserRule",
-      "name": "Greeting",
+      "name": "Var",
       "definition": {
         "$type": "Group",
         "elements": [
           {
-            "$type": "Keyword",
-            "value": "Hello"
+            "$type": "Assignment",
+            "feature": "name",
+            "operator": "=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@5"
+              },
+              "arguments": []
+            }
           },
           {
+            "$type": "Group",
+            "elements": [
+              {
+                "$type": "Keyword",
+                "value": "="
+              },
+              {
+                "$type": "Assignment",
+                "feature": "initialValue",
+                "operator": "=",
+                "terminal": {
+                  "$type": "RuleCall",
+                  "rule": {
+                    "$ref": "#/rules@6"
+                  },
+                  "arguments": []
+                }
+              }
+            ],
+            "cardinality": "?"
+          }
+        ]
+      },
+      "definesHiddenTokens": false,
+      "entry": false,
+      "fragment": false,
+      "hiddenTokens": [],
+      "parameters": [],
+      "wildcard": false
+    },
+    {
+      "$type": "ParserRule",
+      "name": "Plus",
+      "definition": {
+        "$type": "Group",
+        "elements": [
+          {
             "$type": "Assignment",
-            "feature": "person",
+            "feature": "left",
             "operator": "=",
             "terminal": {
               "$type": "CrossReference",
               "type": {
-                "$ref": "#/rules@1"
+                "$ref": "#/rules@2"
               },
               "terminal": {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@4"
+                  "$ref": "#/rules@5"
                 },
                 "arguments": []
               },
@@ -113,7 +139,26 @@ export const SimpleLGrammar = (): Grammar => loadedSimpleLGrammar ?? (loadedSimp
           },
           {
             "$type": "Keyword",
-            "value": "!"
+            "value": "+"
+          },
+          {
+            "$type": "Assignment",
+            "feature": "right",
+            "operator": "=",
+            "terminal": {
+              "$type": "CrossReference",
+              "type": {
+                "$ref": "#/rules@2"
+              },
+              "terminal": {
+                "$type": "RuleCall",
+                "rule": {
+                  "$ref": "#/rules@5"
+                },
+                "arguments": []
+              },
+              "deprecatedSyntax": false
+            }
           }
         ]
       },

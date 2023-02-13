@@ -10,7 +10,7 @@
     },
     {
       "name": "keyword.control.simple-l",
-      "match": "\\b(Hello|person)\\b"
+      "match": ""
     },
     {
       "name": "string.quoted.double.simple-l",
