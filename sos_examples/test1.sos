@@ -5,15 +5,15 @@ VarAspect open Var {
     var currentValue:number
     var isInit: boolean
 
-           (<this.isInit,σ> -> false)
-initVar: ------------------------ 
-          <this,σ> ~> currentValue=  this.initialValue
+               <this.isInit,σ> -> false
+    ----------------------------------------------- initVar
+     <this,σ> ~> currentValue=  this.initialValue
 
 }
 
 PlusAspect open Plus{
    
-         (<struct.left,σ> -> n1  <struct.right,σ> -> n2)
-plusRWR: --------------------------------
-           <this,σ> ~> n1 + n2 
-} 
+    <struct.right,σ> -> n2 ; <struct.left,σ> -> n1
+    ---------------------------------------------- plusRWR
+                <this,σ> ~> n1 + n2 
+}

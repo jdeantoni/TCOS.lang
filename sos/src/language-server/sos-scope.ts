@@ -12,7 +12,7 @@ import {
 // import { CancellationToken } from 'vscode-jsonrpc';
 // import type { StructuralOperationalSemanticsServices } from './structural-operational-semantics-module';
 // import { QualifiedNameProvider } from './domain-model-naming';
-import { AbstractElement, Assignment, Group, isAssignment, isGroup, isRuleOpening, MemberCall, RuleOpening} from './generated/ast';
+import { AbstractElement, Assignment, Group, isAssignment, isGroup, isRuleOpening, isTemporaryVariable, MemberCall, RuleOpening, RWRule} from './generated/ast';
 import { getRuleOpeningChain, inferType } from './type-system/infer';
 import { isRuleOpeningType } from './type-system/descriptions';
 
@@ -21,119 +21,14 @@ import { isRuleOpeningType } from './type-system/descriptions';
 
 export class SoSScopeProvider extends DefaultScopeProvider {
 
-//     constructor(services: LangiumServices) {
-//         super(services);
-//     }
-
-
-// //TODO: here we should make the "properties" of the rules available for navigation (e.g. in test1.sos, in the Plus rule opening, 'left' should be made available)
-
-
-//     override getScope(context: ReferenceInfo): Scope {
-//         const referenceType = this.reflection.getReferenceType(context);
-//         if (referenceType === ParserRule) {
-//             return this.getTypeScope(referenceType, context);
-//         } else {
-//             return super.getScope(context);
-//         }
-//     }
-
-
-
-//     public getTypeScope(referenceType: string, context: ReferenceInfo): Scope {
-//         console.log("###### getTypeScope("+referenceType+","+context.reference.$refText+')')
-//         let localScope: Stream<AstNodeDescription> | undefined;
-//         const precomputed = getDocument(context.container).precomputedScopes;
-//         const rootNode = findRootNode(context.container);
-//         if (precomputed && rootNode) {
-//             const allDescriptions = precomputed.get(rootNode);
-//             if (allDescriptions.length > 0) {
-//                 localScope = stream(allDescriptions).filter(des => des.type === ParserRule || des.type === Interface || des.type === Type);
-//             }
-//         if(isParserRule(context.reference.ref)){
-           
-//             var pr = (context.reference.ref as ParserRule)
-//             console.log("###### a parserRule !!!"+pr.definition.$type)
-//             if(isAlternatives(pr.definition)){
-//                 console.log("###### if found an alternative "+(pr.definition as Alternatives).elements)
-//             } 
-//         }
-//         }
-
-//         const globalScope = this.getGlobalScope(referenceType, context);
-//         if (localScope) {
-//             return this.createScope(localScope, globalScope);
-//         } else {
-//             return globalScope;
-//         }
-//     }
-
-
-
-
-
-    
-    
-
-//     protected override getGlobalScope(referenceType: string, context: ReferenceInfo): Scope {
-//       console.log("############# in getGlobalScope("+referenceType+", "+context.reference+")")
-//     //    console.log("------------------------------")
-//     //    console.log("############# "+(context.container.$container as SoSSpec))
-
-//     var container: AstNode = context.container
-//     while (container.$type != "SoSSpec"){
-//         if (container.$container != undefined){
-//             container = container.$container
-//         }else{
-//             break
-//         }
-//     }
-//    var importedUri:string  = (container as SoSSpec).imports.importURI
-
-
-//         // const grammar = getContainerOfType(context.container, isGrammar);
-//         // console.log("--------------"+context.property)
-//         // if (!grammar) {
-//         //     return EMPTY_SCOPE;
-//         // }
-//       /*  const importedUris = stream(grammar.imports).map(resolveImportUri).nonNullable();*/
-
-
-//       this.indexManager.allElements(ParserRule).forEach(elem => console.log(elem.name))
-
-//         let importedElements = this.indexManager.allElements(referenceType)
-//             .filter(des => equalURI(des.documentUri, importedUri));
-       
-//         importedElements.forEach(element => {
-//             console.log("elem: "+element)
-//         });
-
-//         if (referenceType === AbstractType) {
-//             importedElements = importedElements.filter(des => des.type === Interface || des.type === Type);
-//         }
-//         return new StreamScope(importedElements);
-
-
-//     }
-//}
-
-
-
-
-
-
-
-
-
-// export class LoxScopeProvider extends DefaultScopeProvider {
-
     constructor(services: LangiumServices) {
         super(services);
     }
 
     override getScope(context: ReferenceInfo): Scope {
         // target element of member calls
-        console.log("###getScopeProvider: context.property = "+context.property+"\n\t context.reference.$refText = "+context.reference.$refText)
+        // console.log("###getScopeProvider: context.property = "+context.property+"\n\t context.reference.$refText = "+context.reference.$refText)
+      
         if (context.property === 'element' || context.property === 'leftStruct' || context.property === 'leftRTD' || context.property === 'rightStruct' || context.property === 'rightRTD' || context.property === 'right') {
             // for now, `this` and `super` simply target the container class type
             //if (context.reference.$refText === 'this' || context.reference.$refText === 'super') {
@@ -159,6 +54,14 @@ export class SoSScopeProvider extends DefaultScopeProvider {
     private scopeRuleOpeningMembers(ruleOpeningItem: RuleOpening): Scope {
         var allMembers:AstNode[] = getRuleOpeningChain(ruleOpeningItem).flatMap(e => e.runtimeState);
         var allAssignments: Assignment[] = this.getAllAssignments((ruleOpeningItem.onRule.ref?.definition as Group).elements);
+        for(var rule of ruleOpeningItem.rules){
+                for(var prem of (rule as RWRule).premise){
+                    if(isTemporaryVariable(prem.right)){
+                         allMembers.push(prem.right)
+                    }
+                }
+
+        }
         var allScopeElements = allMembers.concat(allAssignments)
         return this.createScopeForNodes(allScopeElements);
     }

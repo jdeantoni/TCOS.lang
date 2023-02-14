@@ -40,7 +40,7 @@ export function isExpression(item: unknown): item is Expression {
 
 export type FeatureName = string;
 
-export type NamedElement = FieldMember | RuleOpening | Struct | VariableDeclaration;
+export type NamedElement = FieldMember | RuleOpening | Struct | TemporaryVariable | VariableDeclaration;
 
 export const NamedElement = 'NamedElement';
 
@@ -396,7 +396,7 @@ export interface RWRule extends AstNode {
     readonly $type: 'RWRule';
     conclusion: Conclusion
     name: string
-    premise?: SemanticEquivalence
+    premise: Array<SemanticEquivalence>
 }
 
 export const RWRule = 'RWRule';
@@ -459,6 +459,19 @@ export function isStruct(item: unknown): item is Struct {
     return reflection.isInstance(item, Struct);
 }
 
+export interface TemporaryVariable extends AstNode {
+    readonly $container: RuleOpening | SemanticEquivalence | SoSSpec | Struct;
+    readonly $type: 'TemporaryVariable';
+    name: string
+    type?: TypeReference
+}
+
+export const TemporaryVariable = 'TemporaryVariable';
+
+export function isTemporaryVariable(item: unknown): item is TemporaryVariable {
+    return reflection.isInstance(item, TemporaryVariable);
+}
+
 export interface TerminalRule extends AstNode {
     readonly $container: Alternatives | Assignment | AtomType | CharacterRange | CrossReference | Grammar | Group | NegatedToken | ParserRule | TerminalAlternatives | TerminalGroup | TerminalRule | UnorderedGroup | UntilToken;
     readonly $type: 'TerminalRule';
@@ -503,7 +516,7 @@ export function isTypeAttribute(item: unknown): item is TypeAttribute {
 }
 
 export interface TypeReference extends AstNode {
-    readonly $container: FieldMember | LambdaParameter | VariableDeclaration;
+    readonly $container: FieldMember | LambdaParameter | TemporaryVariable | VariableDeclaration;
     readonly $type: 'TypeReference';
     primitive?: 'boolean' | 'number' | 'string' | 'void'
     reference?: Reference<RuleOpening>
@@ -790,6 +803,7 @@ export interface StructuralOperationalSemanticsAstType {
     SoSSpec: SoSSpec
     StringExpression: StringExpression
     Struct: Struct
+    TemporaryVariable: TemporaryVariable
     TerminalAlternatives: TerminalAlternatives
     TerminalGroup: TerminalGroup
     TerminalRule: TerminalRule
@@ -807,7 +821,7 @@ export interface StructuralOperationalSemanticsAstType {
 export class StructuralOperationalSemanticsAstReflection extends AbstractAstReflection {
 
     getAllTypes(): string[] {
-        return ['AbstractElement', 'AbstractRule', 'AbstractType', 'Action', 'Alternatives', 'Assignment', 'AtomType', 'BinaryExpression', 'BooleanExpression', 'CharacterRange', 'Conclusion', 'Condition', 'Conjunction', 'CrossReference', 'Disjunction', 'Expression', 'FieldMember', 'Grammar', 'GrammarImport', 'Group', 'ImportStatement', 'InferredType', 'Interface', 'Keyword', 'LambdaParameter', 'LiteralCondition', 'MemberCall', 'NamedArgument', 'NamedElement', 'NegatedToken', 'Negation', 'NilExpression', 'NumberExpression', 'Parameter', 'ParameterReference', 'ParserRule', 'RWRule', 'RegexToken', 'ReturnType', 'RuleCall', 'RuleOpening', 'SemanticEquivalence', 'SoSSpec', 'StringExpression', 'Struct', 'TerminalAlternatives', 'TerminalGroup', 'TerminalRule', 'TerminalRuleCall', 'Type', 'TypeAttribute', 'TypeReference', 'UnaryExpression', 'UnorderedGroup', 'UntilToken', 'VariableDeclaration', 'Wildcard'];
+        return ['AbstractElement', 'AbstractRule', 'AbstractType', 'Action', 'Alternatives', 'Assignment', 'AtomType', 'BinaryExpression', 'BooleanExpression', 'CharacterRange', 'Conclusion', 'Condition', 'Conjunction', 'CrossReference', 'Disjunction', 'Expression', 'FieldMember', 'Grammar', 'GrammarImport', 'Group', 'ImportStatement', 'InferredType', 'Interface', 'Keyword', 'LambdaParameter', 'LiteralCondition', 'MemberCall', 'NamedArgument', 'NamedElement', 'NegatedToken', 'Negation', 'NilExpression', 'NumberExpression', 'Parameter', 'ParameterReference', 'ParserRule', 'RWRule', 'RegexToken', 'ReturnType', 'RuleCall', 'RuleOpening', 'SemanticEquivalence', 'SoSSpec', 'StringExpression', 'Struct', 'TemporaryVariable', 'TerminalAlternatives', 'TerminalGroup', 'TerminalRule', 'TerminalRuleCall', 'Type', 'TypeAttribute', 'TypeReference', 'UnaryExpression', 'UnorderedGroup', 'UntilToken', 'VariableDeclaration', 'Wildcard'];
     }
 
     protected override computeIsSubtype(subtype: string, supertype: string): boolean {
@@ -831,6 +845,7 @@ export class StructuralOperationalSemanticsAstReflection extends AbstractAstRefl
             case FieldMember:
             case RuleOpening:
             case Struct:
+            case TemporaryVariable:
             case VariableDeclaration: {
                 return this.isSubtype(NamedElement, supertype);
             }
@@ -1015,6 +1030,14 @@ export class StructuralOperationalSemanticsAstReflection extends AbstractAstRefl
                     mandatory: [
                         { name: 'rules', type: 'array' },
                         { name: 'runtimeState', type: 'array' }
+                    ]
+                };
+            }
+            case 'RWRule': {
+                return {
+                    name: 'RWRule',
+                    mandatory: [
+                        { name: 'premise', type: 'array' }
                     ]
                 };
             }

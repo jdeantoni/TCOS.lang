@@ -27,19 +27,23 @@ ImportStatement:
 
 RWRule:
     {infer RWRule}
-        '('(premise=SemanticEquivalence)*')'   
-name=ID ":" ('-')+
-         conclusion=Conclusion;
+        (premise+=SemanticEquivalence (';' premise+=SemanticEquivalence)* )?  
+        ('-')+ name=ID
+        conclusion=Conclusion;
  
 
-SemanticEquivalence:
-    ('<'('this''.'leftRTD=[NamedElement:QualifiedName] | 'struct''.'leftStruct=[AbstractElement:ID]) ',''σ''>' operator=('->') right=(VariableDeclaration|Primary))*;  
+SemanticEquivalence: 
+    ('<'('this''.'leftRTD=[NamedElement:QualifiedName] | 'struct''.'leftStruct=[AbstractElement:ID]) ',σ>' operator=('->') right=(TemporaryVariable|PrimaryExpression))*;  
 // Premise:
 //     {infer Premise}  
 //     '('Logical')';
-
+ 
 Conclusion:
    '<this,σ>' '~>' outState+=(SoSAssignment)+; 
+
+TemporaryVariable returns NamedElement:
+    {infer TemporaryVariable}
+    name=ID (':' type=TypeReference)?;
 
 
 //reused from lox
@@ -88,11 +92,14 @@ MemberCall infers Expression:
 Primary infers Expression:
     '(' Expression ')' |
     UnaryExpression |
+    PrimaryExpression |
+    FeatureCall;
+
+PrimaryExpression infers Expression:
     StringExpression |
     BooleanExpression |
     NumberExpression |
-    NilExpression |
-    FeatureCall;
+    NilExpression;
 
 FeatureCall infers Expression:
 	{infer MemberCall}
@@ -137,7 +144,7 @@ TypeReference: reference=/*[Struct:ID]|*/[RuleOpening:ID]
 
 LambdaParameter: (name=ID ':')? type=TypeReference;
 
-type NamedElement = /*Parameter | FunctionDeclaration |*/ VariableDeclaration /*| MethodMember*/ | FieldMember | Struct | RuleOpening; 
+type NamedElement = /*Parameter | FunctionDeclaration |*/ VariableDeclaration /*| MethodMember*/ | FieldMember | Struct | RuleOpening | TemporaryVariable; 
 
 // hidden terminal WS: /\s+/;
 // terminal ID: /[_a-zA-Z][\w_]*/;
