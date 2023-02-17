@@ -4,7 +4,8 @@ import {
     BooleanExpression,
     RuleOpening,
     NumberExpression,
-    StringExpression
+    StringExpression,
+    ParserRule
 } from "../generated/ast"
 
 export type TypeDescription =
@@ -15,6 +16,7 @@ export type TypeDescription =
     | NumberTypeDescription
     | FunctionTypeDescription
     | RuleOpeningTypeDescription
+    | ParserRuleTypeDescription
     | ErrorType;
 
 export interface NilTypeDescription {
@@ -116,6 +118,29 @@ export function isFunctionType(item: TypeDescription): item is FunctionTypeDescr
     return item.$type === "function";
 }
 
+
+
+export interface ParserRuleTypeDescription {
+    readonly $type: "ParserRule"
+    readonly literal: ParserRule
+}
+
+export function createParserRuleType(literal: ParserRule): ParserRuleTypeDescription {
+    return {
+        $type: "ParserRule",
+        literal
+    };
+}
+
+export function isParserRuleType(item: TypeDescription): item is ParserRuleTypeDescription {
+    return item.$type === "ParserRule";
+}
+
+
+
+
+
+
 export interface RuleOpeningTypeDescription {
     readonly $type: "ruleOpening"
     readonly literal: RuleOpening
@@ -152,7 +177,7 @@ export function isErrorType(item: TypeDescription): item is ErrorType {
 
 export function typeToString(item: TypeDescription): string {
     if (isRuleOpeningType(item)) {
-        return item.literal.name;
+        return (item.literal.name === undefined)?"noName":item.literal.name;
     } else if (isFunctionType(item)) {
         const params = item.parameters.map(e => `${e.name}: ${typeToString(e.type)}`).join(', ');
         return `(${params}) => ${typeToString(item.returnType)}`;

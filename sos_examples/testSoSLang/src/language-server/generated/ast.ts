@@ -6,7 +6,7 @@
 /* eslint-disable */
 import { AstNode, AbstractAstReflection, Reference, ReferenceInfo, TypeMetaData } from 'langium';
 
-export type Expr = Plus | Var;
+export type Expr = Assignment | If | Plus | VarRef;
 
 export const Expr = 'Expr';
 
@@ -14,9 +14,56 @@ export function isExpr(item: unknown): item is Expr {
     return reflection.isInstance(item, Expr);
 }
 
+export type Statement = Expr | VarDecl;
+
+export const Statement = 'Statement';
+
+export function isStatement(item: unknown): item is Statement {
+    return reflection.isInstance(item, Statement);
+}
+
+export interface Assignment extends AstNode {
+    readonly $container: Assignment | Bloc | If | Model | Plus;
+    readonly $type: 'Assignment';
+    left: Reference<VarDecl>
+    right: Expr
+}
+
+export const Assignment = 'Assignment';
+
+export function isAssignment(item: unknown): item is Assignment {
+    return reflection.isInstance(item, Assignment);
+}
+
+export interface Bloc extends AstNode {
+    readonly $container: If;
+    readonly $type: 'Bloc';
+    statements: Array<Statement>
+}
+
+export const Bloc = 'Bloc';
+
+export function isBloc(item: unknown): item is Bloc {
+    return reflection.isInstance(item, Bloc);
+}
+
+export interface If extends AstNode {
+    readonly $container: Assignment | Bloc | If | Model | Plus;
+    readonly $type: 'If';
+    cond: VarRef
+    else?: Bloc
+    then: Bloc
+}
+
+export const If = 'If';
+
+export function isIf(item: unknown): item is If {
+    return reflection.isInstance(item, If);
+}
+
 export interface Model extends AstNode {
     readonly $type: 'Model';
-    statements: Array<Expr>
+    statements: Array<Statement>
 }
 
 export const Model = 'Model';
@@ -26,10 +73,10 @@ export function isModel(item: unknown): item is Model {
 }
 
 export interface Plus extends AstNode {
-    readonly $container: Model;
+    readonly $container: Assignment | Bloc | If | Model | Plus;
     readonly $type: 'Plus';
-    left: Reference<Var>
-    right: Reference<Var>
+    left: VarRef
+    right: Expr
 }
 
 export const Plus = 'Plus';
@@ -38,37 +85,60 @@ export function isPlus(item: unknown): item is Plus {
     return reflection.isInstance(item, Plus);
 }
 
-export interface Var extends AstNode {
-    readonly $container: Model;
-    readonly $type: 'Var';
+export interface VarDecl extends AstNode {
+    readonly $container: Assignment | Bloc | If | Model | Plus;
+    readonly $type: 'VarDecl';
     initialValue?: number
     name: string
 }
 
-export const Var = 'Var';
+export const VarDecl = 'VarDecl';
 
-export function isVar(item: unknown): item is Var {
-    return reflection.isInstance(item, Var);
+export function isVarDecl(item: unknown): item is VarDecl {
+    return reflection.isInstance(item, VarDecl);
+}
+
+export interface VarRef extends AstNode {
+    readonly $container: Assignment | Bloc | If | Model | Plus;
+    readonly $type: 'VarRef';
+    ref: Reference<VarDecl>
+}
+
+export const VarRef = 'VarRef';
+
+export function isVarRef(item: unknown): item is VarRef {
+    return reflection.isInstance(item, VarRef);
 }
 
 export interface SimpleLAstType {
+    Assignment: Assignment
+    Bloc: Bloc
     Expr: Expr
+    If: If
     Model: Model
     Plus: Plus
-    Var: Var
+    Statement: Statement
+    VarDecl: VarDecl
+    VarRef: VarRef
 }
 
 export class SimpleLAstReflection extends AbstractAstReflection {
 
     getAllTypes(): string[] {
-        return ['Expr', 'Model', 'Plus', 'Var'];
+        return ['Assignment', 'Bloc', 'Expr', 'If', 'Model', 'Plus', 'Statement', 'VarDecl', 'VarRef'];
     }
 
     protected override computeIsSubtype(subtype: string, supertype: string): boolean {
         switch (subtype) {
+            case Assignment:
+            case If:
             case Plus:
-            case Var: {
+            case VarRef: {
                 return this.isSubtype(Expr, supertype);
+            }
+            case VarDecl:
+            case Expr: {
+                return this.isSubtype(Statement, supertype);
             }
             default: {
                 return false;
@@ -79,9 +149,9 @@ export class SimpleLAstReflection extends AbstractAstReflection {
     getReferenceType(refInfo: ReferenceInfo): string {
         const referenceId = `${refInfo.container.$type}:${refInfo.property}`;
         switch (referenceId) {
-            case 'Plus:left':
-            case 'Plus:right': {
-                return Var;
+            case 'Assignment:left':
+            case 'VarRef:ref': {
+                return VarDecl;
             }
             default: {
                 throw new Error(`${referenceId} is not a valid reference id.`);
@@ -91,6 +161,14 @@ export class SimpleLAstReflection extends AbstractAstReflection {
 
     getTypeMetaData(type: string): TypeMetaData {
         switch (type) {
+            case 'Bloc': {
+                return {
+                    name: 'Bloc',
+                    mandatory: [
+                        { name: 'statements', type: 'array' }
+                    ]
+                };
+            }
             case 'Model': {
                 return {
                     name: 'Model',

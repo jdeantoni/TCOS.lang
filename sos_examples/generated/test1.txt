@@ -1,6 +1,21 @@
-Var is opened with:
-	* currentValue of type number
+Statement is opened with:
+Model is opened with:
+	* Query:[object Object]
+	* Query:[object Object]
+	* Query:[object Object]
+VarDecl is opened with:
+	* var currentValue of type number
+	* RWR:  leading to [object Object]
 Plus is opened with:
-	* left of type undefined
-	* right of type undefined
-	* [object Object] of type [object Object]
+		 - prem: this.right:Expr
+		 - prem: this.left:VarRef
+	* RWR: [object Object],[object Object] leading to [object Object]
+If is opened with:
+	* Query:[object Object]
+	* Query:[object Object]
+		 - prem: this.cond:VarRef
+	* RWR: [object Object] leading to [object Object]
+		 - prem: this.cond:VarRef
+	* RWR: [object Object] leading to [object Object]
+		 - prem: this.cond:VarRef
+	* RWR: [object Object] leading to [object Object]

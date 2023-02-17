@@ -12,9 +12,12 @@ import {
 // import { CancellationToken } from 'vscode-jsonrpc';
 // import type { StructuralOperationalSemanticsServices } from './structural-operational-semantics-module';
 // import { QualifiedNameProvider } from './domain-model-naming';
-import { AbstractElement, Assignment, Group, isAssignment, isGroup, isRuleOpening, isTemporaryVariable, MemberCall, RuleOpening, RWRule} from './generated/ast';
+import { Assignment, isAssignment, isMemberCall, isRuleOpening, isRWRule, isSchedulingRule, isSoSSpec, isTemporaryVariable, MemberCall, MethodMember, Parameter, ParserRule, RuleOpening, RWRule, SoSSpec, VariableDeclaration} from './generated/ast';
 import { getRuleOpeningChain, inferType } from './type-system/infer';
-import { isRuleOpeningType } from './type-system/descriptions';
+import { isParserRuleType, isRuleOpeningType } from './type-system/descriptions';
+import { AbstractElement } from './generated/ast';
+import { isGroup } from './generated/ast';
+import { Group } from './generated/ast';
 
 
 
@@ -27,59 +30,214 @@ export class SoSScopeProvider extends DefaultScopeProvider {
 
     override getScope(context: ReferenceInfo): Scope {
         // target element of member calls
-        // console.log("###getScopeProvider: context.property = "+context.property+"\n\t context.reference.$refText = "+context.reference.$refText)
-      
-        if (context.property === 'element' || context.property === 'leftStruct' || context.property === 'leftRTD' || context.property === 'rightStruct' || context.property === 'rightRTD' || context.property === 'right') {
+        // console.log("###getScopeProvider: context.property = "+context.property+"\n\t context.reference.$refText = "+context.reference.$refText)        
+        
+        if (context.property === 'element' || context.property === 'left' || context.property === 'right') {
             // for now, `this` and `super` simply target the container class type
-            //if (context.reference.$refText === 'this' || context.reference.$refText === 'super') {
+            if (context.reference.$refText === 'this' || context.reference.$refText === 'struct') {
+                // context.reference.ref = ruleOpeningItem ?
                 const ruleOpeningItem = getContainerOfType(context.container, isRuleOpening);
                 if (ruleOpeningItem) {
                     return this.scopeRuleOpeningMembers(ruleOpeningItem);
                 }
-           // }
+            }
+
             const memberCall = context.container as MemberCall;
             const previous = memberCall.previous;
             if (!previous) {
-                return super.getScope(context);
+               // return super.getScope(context);
+                const ruleOpeningItem = getContainerOfType(context.container, isRuleOpening);
+                const potentialSchedulingRuleItem = getContainerOfType(context.container, isSchedulingRule);
+                if (ruleOpeningItem) {
+                    if (potentialSchedulingRuleItem){
+                     return this.scopeRuleOpeningMembers(ruleOpeningItem, true);
+                    }
+                    else {
+                        return this.scopeRuleOpeningMembers(ruleOpeningItem);
+                    }
+                }
+            }
+            if (isMemberCall(previous) && previous.element !== undefined /*&& previous.element.$refText === 'this'*/){
+                const ruleOpeningItem = getContainerOfType(previous.$container, isRuleOpening);
+                if (ruleOpeningItem) {
+                    return this.scopeRuleOpeningMembers(ruleOpeningItem);
+                }
             }
             const previousType = inferType(previous, new Map());
             if (isRuleOpeningType(previousType)) {
                 return this.scopeRuleOpeningMembers(previousType.literal);
+            }else if (isParserRuleType(previousType)) {
+                //either the rule has been open and then we need the cope of this ruleOpening or not and then only "assigments" have to be considered
+                const sosSpecItem: SoSSpec | undefined = getContainerOfType(previous?.$container, isSoSSpec);
+                if (sosSpecItem){
+                    for(var ro of sosSpecItem.rtdAndRules){
+                        if (isRuleOpening(ro)){
+                            if (ro.onRule.$refText === previousType.literal.name){
+                                return this.scopeRuleOpeningMembers(ro);
+                            }
+                        }
+                    }
+                }
+                if(isMemberCall(previous)){
+                    const ruleOpeningItem: RuleOpening | undefined = getContainerOfType(previous?.$container, isRuleOpening);
+                    if (ruleOpeningItem){
+                        return this.scopeParsingRule(previousType.literal, ruleOpeningItem);
+                    }
+                }
+
+
             }
             return EMPTY_SCOPE;
         }
         return super.getScope(context);
     }
 
-    private scopeRuleOpeningMembers(ruleOpeningItem: RuleOpening): Scope {
-        var allMembers:AstNode[] = getRuleOpeningChain(ruleOpeningItem).flatMap(e => e.runtimeState);
-        var allAssignments: Assignment[] = this.getAllAssignments((ruleOpeningItem.onRule.ref?.definition as Group).elements);
-        for(var rule of ruleOpeningItem.rules){
-                for(var prem of (rule as RWRule).premise){
-                    if(isTemporaryVariable(prem.right)){
-                         allMembers.push(prem.right)
-                    }
-                }
+    private scopeParsingRule(parserRuleItem: ParserRule, ruleOpeningItem: RuleOpening): Scope {
+        var allScopeElements: AstNode[] = (parserRuleItem !== undefined)?this.getAllAssignments(parserRuleItem.definition) : [];
+        this.addListFunctions(ruleOpeningItem, allScopeElements);
+        allScopeElements = allScopeElements.concat(this.addClocks(ruleOpeningItem))
 
-        }
-        var allScopeElements = allMembers.concat(allAssignments)
         return this.createScopeForNodes(allScopeElements);
     }
 
-    private getAllAssignments(elems: AbstractElement[]): Assignment[] {
-        var allAssignments: Assignment[] = [];
-        var nestedElems: AbstractElement[] = []
-        for (var e of elems) {
-            if (isGroup(e)) {
-                nestedElems = nestedElems.concat((e as Group).elements);
-            } else if (isAssignment(e)) {
-                allAssignments.push(e);
+    private addListFunctions(ruleOpeningItem: RuleOpening, allScopeElements: AstNode[]) {
+        var atFunction: MethodMember = {
+            name: "at",
+            $containerProperty: "methods",
+            $container: ruleOpeningItem,
+            $document: ruleOpeningItem.$document,
+            $cstNode: ruleOpeningItem.$cstNode,
+            parameters: [],
+            $type: 'MethodMember',
+            returnType: {
+                $container: undefined as unknown as MethodMember, //not sure how to do better
+                $type: 'TypeReference'
             }
         }
-        
-        if(nestedElems.length > 0){
-            return allAssignments.concat(this.getAllAssignments(nestedElems));
+
+
+        var p: Parameter = {
+            $container: atFunction,
+            $type: 'Parameter',
+            name: 'i'
         }
+
+        atFunction.parameters.push(p)
+
+        allScopeElements.push(atFunction);
+
+        var lengthFunction: MethodMember = {
+            name: "length",
+            $containerProperty: "methods",
+            $container: ruleOpeningItem,
+            $document: ruleOpeningItem.$document,
+            $cstNode: ruleOpeningItem.$cstNode,
+            parameters: [],
+            $type: 'MethodMember',
+            returnType: {
+                $container: undefined as unknown as MethodMember, //not sure how to do better
+                $type: 'TypeReference'
+            }
+        }
+
+        allScopeElements.push(lengthFunction);
+        
+    }
+
+    private scopeRuleOpeningMembers(ruleOpeningItem: RuleOpening, isForSchedulingRule: boolean = false): Scope {
+        
+        var allScopeElements: AstNode[] = (ruleOpeningItem.onRule?.ref !== undefined)?this.getAllAssignments(ruleOpeningItem.onRule.ref.definition) : [];        
+        //if (! isForSchedulingRule){
+            var allMembers:AstNode[] = getRuleOpeningChain(ruleOpeningItem).flatMap(e => e.runtimeState);
+            for(var rule of ruleOpeningItem.rules){
+                if(isRWRule(rule)){
+                    for(var prem of (rule as RWRule).premise){
+                        if(isTemporaryVariable(prem.right)){
+                            allMembers.push(prem.right)
+                        }
+                    }
+                }
+            }
+            allScopeElements = allMembers.concat(allScopeElements)
+        //}else{
+            for(var rule of ruleOpeningItem.rules){
+                if(rule){
+                    if(isRWRule(rule)){
+                        allScopeElements.push(rule)
+                    }
+                    if(isSchedulingRule(rule)){
+                        if(rule.loop){
+                            allScopeElements.push(rule.loop.itVar)
+                        }
+                    }
+                }
+                
+            }
+       // }
+        allScopeElements = allScopeElements.concat(this.addClocks(ruleOpeningItem))
+
+        this.addListFunctions(ruleOpeningItem,allScopeElements)
+
+        return this.createScopeForNodes(allScopeElements);
+    }
+    
+
+    private addClocks(ruleOpeningItem: RuleOpening): AstNode[] {
+        var res : AstNode[] =[]
+        const start: VariableDeclaration = {
+            $container: ruleOpeningItem,
+            $type: 'VariableDeclaration',
+            name: "startEvaluation",
+            $cstNode: ruleOpeningItem.$cstNode,
+            $containerProperty: "clocks",
+            assignment: false
+        };
+        start.type = {
+            $container: start,
+            $type: 'TypeReference',
+            primitive: 'event'
+        };
+        res.push(start);
+
+        const finish: VariableDeclaration = {
+            $container: ruleOpeningItem,
+            $type: 'VariableDeclaration',
+            name: "finishEvaluation",
+            $cstNode: ruleOpeningItem.$cstNode,
+            $containerProperty: "clocks",
+            assignment: false
+        };
+        finish.type = {
+            $container: finish,
+            $type: 'TypeReference',
+            primitive: 'event'
+        };
+        res.push(finish);
+        
+        return res
+    }
+
+    private getAllAssignments(element: AbstractElement): Assignment[] {
+        var allAssignments: Assignment[] = [];
+        // var def = rule.definition;
+        // if (def === undefined){
+        //     return allAssignments;
+        // }
+        // var nestedElems: AbstractElement[] = []
+        //  for (var e of rule.element) {
+            if (isGroup(element)) {
+                for (var e of (element as Group).elements){
+                    allAssignments = allAssignments.concat(this.getAllAssignments(e));
+                }
+            }else
+             if (isAssignment(element)) {
+                allAssignments.push(element);
+            }
+        // }
+        
+        // if(nestedElems.length > 0){
+        //     return allAssignments.concat(this.getAllAssignments(nestedElems));
+        // }
 
         return allAssignments
     }
@@ -95,7 +253,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                 if(isAssignment(e)){
                     name=(e as Assignment).feature
                 }else{
-                                    name = this.nameProvider.getName(e);
+                    name = this.nameProvider.getName(e);
                 }
                 if (name) {
                     return this.descriptions.createDescription(e, name);

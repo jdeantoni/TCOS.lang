@@ -9,37 +9,53 @@ entry SoSSpec:
    rtdAndRules+=(RuleOpening)+
    ;
 
+
+//on purpose no if conditions. They should be queried and scheduled by CCSL like ordering
 RuleOpening:
-    {infer RuleOpening}
-   name=ID 'open' onRule=[ParserRule:ID] '{' 
-    (runtimeState+=(VariableDeclaration) | 
-    rules+=(RWRule))*
+    {infer RuleOpening} 
+    (name=ID)? 'open' (isNonAtomic?='non')? 'atomic' 'rule' onRule=[ParserRule:ID] '{'
+    (runtimeState+=(VariableDeclaration) |
+    rules+=(RWRule| QueryRule | SchedulingRule))* 
+
     '}' 
 ;
 
 ImportStatement:
 	'import' importURI=STRING; 
-
+ 
 // Sigma:
 //     '{'
-//         stateParts
+//         stateParts 
 //     '}';
 
-RWRule:
+SchedulingRule:
+    "sched" (condition=Logical "implies")? (loop=SequenceLoop)? SchedulingConstraint;  
+ 
+SequenceLoop:
+    'foreach' itVar=TemporaryVariable 'in' '[' lowerBound=NUMBER ';' upperBound=Expression '['; 
+
+SchedulingConstraint:
+    '{'right=Expression operator=("precedes" | "or" | "xor" | ("coincides_with")) left=Expression'}';
+
+RWRule: 
     {infer RWRule}
-        (premise+=SemanticEquivalence (';' premise+=SemanticEquivalence)* )?  
+       'rwr' (premise+=SemanticEquivalence (';' premise+=SemanticEquivalence)* )? 
         ('-')+ name=ID
         conclusion=Conclusion;
- 
+
+QueryRule: //a query should not modify the state (RTD)
+    {infer QueryRule}
+        '?' (premise+=SemanticEquivalence)  //TODO: check that no implied rules modifies the state
+        ;
 
 SemanticEquivalence: 
-    ('<'('this''.'leftRTD=[NamedElement:QualifiedName] | 'struct''.'leftStruct=[AbstractElement:ID]) ',σ>' operator=('->') right=(TemporaryVariable|PrimaryExpression))*;  
+    ('<'(left=Expression) ',σ>' operator=('->') right=(TemporaryVariable|PrimaryExpression))*;  
 // Premise:
 //     {infer Premise}  
 //     '('Logical')';
  
 Conclusion:
-   '<this,σ>' '~>' outState+=(SoSAssignment)+; 
+   '<this,σ>' '~>' ('<'(ruleStart=MemberCall) ',σ>' |outState+=(SoSAssignment)+);  
 
 TemporaryVariable returns NamedElement:
     {infer TemporaryVariable}
@@ -53,7 +69,10 @@ VariableDeclaration returns NamedElement:
     ('var') ? name=ID (':' type=TypeReference)? (assignment?='=' value=Expression)? ;
 
 Expression:
-    Addition;
+    SoSAssignment;
+
+SoSAssignment infers Expression:
+    Addition ({infer BinaryExpression.left=current} operator=('=') right=Addition)*;
 
 Addition infers Expression:
     Multiplication ({infer BinaryExpression.left=current} operator=('+' | '-') right=Multiplication)*;
@@ -62,19 +81,17 @@ Multiplication infers Expression:
     Logical ({infer BinaryExpression.left=current} operator=('*' | '/') right=Logical)*;
 
 Logical infers Expression:
-    Comparison ({infer BinaryExpression.left=current} operator=('and' | 'or') right=Comparison)*;
+    Comparison ({infer BinaryExpression.left=current} operator=('and' | 'or' | 'xor') right=Comparison)*;
 
 Comparison infers Expression:
-    SoSAssignment ({infer BinaryExpression.left=current} operator=('<' | '<=' | '>' | '>=' | '==' | '!=') right=SoSAssignment)*; 
+    MemberCall ({infer BinaryExpression.left=current} operator=('<' | '<=' | '>' | '>=' | '==' | '!=') right=MemberCall)*; 
 
-SoSAssignment infers Expression:
-    MemberCall ({infer BinaryExpression.left=current} operator=('=') ('this''.'rightRTD=[NamedElement:QualifiedName] | 'struct''.'rightStruct=[AbstractElement:ID]|rightVar=[NamedElement:QualifiedName]))*;
 
 MemberCall infers Expression:
     Primary
-	({infer MemberCall.previous=current} 
+	({infer MemberCall.previous=current}
         // Member call with function call
-        ("." element=[NamedElement:QualifiedName] (
+        ("." element=[NamedElement:ID] (
 		explicitOperationCall?='('
 		(
 		    arguments+=Expression (',' arguments+=Expression)*
@@ -93,9 +110,13 @@ Primary infers Expression:
     '(' Expression ')' |
     UnaryExpression |
     PrimaryExpression |
+   // RtdOrStructCall |
     FeatureCall;
 
-PrimaryExpression infers Expression:
+/*RtdOrStructCall infers Expression:
+    ('this''.'rightRTD=[NamedElement:QualifiedName] | 'struct''.'rightStruct=[AbstractElement:ID]);
+*/
+PrimaryExpression infers Expression: 
     StringExpression |
     BooleanExpression |
     NumberExpression |
@@ -103,7 +124,7 @@ PrimaryExpression infers Expression:
 
 FeatureCall infers Expression:
 	{infer MemberCall}
-	((element=[NamedElement:QualifiedName] | element=[NamedElement:'this'] | element=[NamedElement:'super']))
+	((element=[NamedElement:ID] | element=[NamedElement:'this'] | element=[NamedElement:'struct']))
     // Optional function call after referencing an element
     (explicitOperationCall?='('
 	(
@@ -129,16 +150,16 @@ Struct: 'struct' name=ID ('<' superClass=[Struct:ID])? '{'
     members+=FieldMember*
 '}';
 
-// ClassMember: MethodMember | FieldMember;
+// ClassMember: MethodMember | FieldMember; 
 
-// MethodMember:
-//     name=ID '(' (parameters+=Parameter (',' parameters+=Parameter)*)? ')' ':' returnType=TypeReference body=ExpressionBlock;
+MethodMember:
+     name=ID '(' (parameters+=Parameter (',' parameters+=Parameter)*)? ')' ':' returnType=TypeReference;  //body=ExpressionBlock;
 
 FieldMember:
     name=ID ':' type=TypeReference;
 
-TypeReference: reference=/*[Struct:ID]|*/[RuleOpening:ID]  
-    | primitive=("string" | "number" | "boolean" | "void") 
+TypeReference: reference=/*[Struct:ID]|*/[AbstractElement:ID]   
+    | primitive=("string" | "number" | "boolean" | "void" | "event")  
   //  | '(' ( parameters+=LambdaParameter (',' parameters+=LambdaParameter)*)? ')' '=>' returnType=TypeReference;
 ;
 

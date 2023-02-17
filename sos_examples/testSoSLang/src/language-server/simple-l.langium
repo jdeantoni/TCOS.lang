@@ -1,14 +1,37 @@
 grammar SimpleL
 
 entry Model:
-    statements+=(Expr)*;
+    statements+=(Statement)*;
+Bloc:
+    '{'
+    statements+=(Statement)*
+    '}';
+Statement:
+    VarDecl | Expr;
 Expr:
-    Var|Plus;
-
-Var:
-    name=ID ('=' initialValue=INT)?;
+    VarRef|Plus|If|Assignment;
+ 
+If:
+    'if' '('cond=VarRef ')'
+    then=Bloc
+    ('else' else=Bloc)?;
+VarDecl:
+    'var' name=ID ('=' initialValue=INT)?;
 Plus:
-    left=[Var:ID] '+' right=[Var:ID] ;
+    left=VarRef '+' right=Expr ;
+Assignment:
+    left=[VarDecl:ID] '=' right=Expr;
+VarRef:
+    ref=[VarDecl:ID];
+
+
+
+
+
+
+
+
+
 
 
 hidden terminal WS: /\s+/;

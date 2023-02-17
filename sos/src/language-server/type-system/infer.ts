@@ -1,6 +1,6 @@
 import { AstNode } from "langium";
-import { BinaryExpression, /*RuleOpening, */isBinaryExpression, isBooleanExpression, isFieldMember, isMemberCall,  isNilExpression, isNumberExpression, isStringExpression, isTypeReference, isUnaryExpression, isVariableDeclaration, MemberCall, TypeReference, isRuleOpening, RuleOpening } from "../generated/ast";
-import { createBooleanType, createRuleOpeningType as createRuleOpeningType, createErrorType, createNilType, createNumberType, createStringType, createVoidType, isFunctionType, isStringType, TypeDescription } from "./descriptions";
+import { BinaryExpression, /*RuleOpening, */isBinaryExpression, isBooleanExpression, isFieldMember, isMemberCall,  isNilExpression, isNumberExpression, isStringExpression, isTypeReference, isUnaryExpression, isVariableDeclaration, MemberCall, TypeReference, isRuleOpening, RuleOpening, isAssignment, ParserRule, isRuleCall } from "../generated/ast";
+import { createBooleanType, createRuleOpeningType as createRuleOpeningType, createErrorType, createNilType, createNumberType, createStringType, createVoidType, isFunctionType, isStringType, TypeDescription, createParserRuleType } from "./descriptions";
 
 export function inferType(node: AstNode | undefined, cache: Map<AstNode, TypeDescription>): TypeDescription {
     let type: TypeDescription | undefined;
@@ -67,7 +67,13 @@ export function inferType(node: AstNode | undefined, cache: Map<AstNode, TypeDes
     //     } else {
     //         type = inferType(node.value, cache);
     //     }
+    } else if(isAssignment(node)){
+        if(isRuleCall(node.terminal)){
+            type = createParserRuleType(node.terminal.rule.ref as ParserRule)
+        }
     }
+
+
     if (!type) {
         type = createErrorType('Could not infer type for ' + node.$type, node);
     }
@@ -88,7 +94,7 @@ function inferTypeRef(node: TypeReference, cache: Map<AstNode, TypeDescription>)
             return createVoidType();
         }
     } else if (node.reference) {
-        if (node.reference.ref) {
+        if (node.reference.ref && isRuleOpening(node.reference.ref)) {
             return createRuleOpeningType(node.reference.ref);
         }
     // } else if (node.returnType) {

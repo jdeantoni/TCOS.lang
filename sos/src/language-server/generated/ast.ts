@@ -81,14 +81,11 @@ export function isAtomType(item: unknown): item is AtomType {
 }
 
 export interface BinaryExpression extends AstNode {
-    readonly $container: BinaryExpression | Conclusion | MemberCall | SemanticEquivalence | UnaryExpression | VariableDeclaration;
+    readonly $container: BinaryExpression | Conclusion | MemberCall | SchedulingConstraint | SchedulingRule | SemanticEquivalence | SequenceLoop | UnaryExpression | VariableDeclaration;
     readonly $type: 'BinaryExpression';
     left: Expression
-    operator: '!=' | '*' | '+' | '-' | '/' | '<' | '<=' | '=' | '==' | '>' | '>=' | 'and' | 'or'
-    right?: Expression
-    rightRTD?: Reference<NamedElement>
-    rightStruct?: Reference<AbstractElement>
-    rightVar?: Reference<NamedElement>
+    operator: '!=' | '*' | '+' | '-' | '/' | '<' | '<=' | '=' | '==' | '>' | '>=' | 'and' | 'or' | 'xor'
+    right: Expression
 }
 
 export const BinaryExpression = 'BinaryExpression';
@@ -98,7 +95,7 @@ export function isBinaryExpression(item: unknown): item is BinaryExpression {
 }
 
 export interface BooleanExpression extends AstNode {
-    readonly $container: BinaryExpression | Conclusion | MemberCall | SemanticEquivalence | UnaryExpression | VariableDeclaration;
+    readonly $container: BinaryExpression | Conclusion | MemberCall | SchedulingConstraint | SchedulingRule | SemanticEquivalence | SequenceLoop | UnaryExpression | VariableDeclaration;
     readonly $type: 'BooleanExpression';
     value: boolean
 }
@@ -113,6 +110,7 @@ export interface Conclusion extends AstNode {
     readonly $container: RWRule;
     readonly $type: 'Conclusion';
     outState: Array<Expression>
+    ruleStart?: Expression
 }
 
 export const Conclusion = 'Conclusion';
@@ -148,7 +146,7 @@ export function isDisjunction(item: unknown): item is Disjunction {
 }
 
 export interface FieldMember extends AstNode {
-    readonly $container: RuleOpening | SemanticEquivalence | SoSSpec | Struct;
+    readonly $container: RuleOpening | SemanticEquivalence | SequenceLoop | SoSSpec | Struct;
     readonly $type: 'FieldMember';
     name: string
     type: TypeReference
@@ -254,7 +252,7 @@ export function isLiteralCondition(item: unknown): item is LiteralCondition {
 }
 
 export interface MemberCall extends AstNode {
-    readonly $container: BinaryExpression | Conclusion | MemberCall | SemanticEquivalence | UnaryExpression | VariableDeclaration;
+    readonly $container: BinaryExpression | Conclusion | MemberCall | SchedulingConstraint | SchedulingRule | SemanticEquivalence | SequenceLoop | UnaryExpression | VariableDeclaration;
     readonly $type: 'MemberCall';
     arguments: Array<Expression>
     element?: Reference<NamedElement>
@@ -266,6 +264,19 @@ export const MemberCall = 'MemberCall';
 
 export function isMemberCall(item: unknown): item is MemberCall {
     return reflection.isInstance(item, MemberCall);
+}
+
+export interface MethodMember extends AstNode {
+    readonly $type: 'MethodMember';
+    name: string
+    parameters: Array<Parameter>
+    returnType: TypeReference
+}
+
+export const MethodMember = 'MethodMember';
+
+export function isMethodMember(item: unknown): item is MethodMember {
+    return reflection.isInstance(item, MethodMember);
 }
 
 export interface NamedArgument extends AstNode {
@@ -295,7 +306,7 @@ export function isNegation(item: unknown): item is Negation {
 }
 
 export interface NilExpression extends AstNode {
-    readonly $container: BinaryExpression | Conclusion | MemberCall | SemanticEquivalence | UnaryExpression | VariableDeclaration;
+    readonly $container: BinaryExpression | Conclusion | MemberCall | SchedulingConstraint | SchedulingRule | SemanticEquivalence | SequenceLoop | UnaryExpression | VariableDeclaration;
     readonly $type: 'NilExpression';
     value: 'nil'
 }
@@ -307,7 +318,7 @@ export function isNilExpression(item: unknown): item is NilExpression {
 }
 
 export interface NumberExpression extends AstNode {
-    readonly $container: BinaryExpression | Conclusion | MemberCall | SemanticEquivalence | UnaryExpression | VariableDeclaration;
+    readonly $container: BinaryExpression | Conclusion | MemberCall | SchedulingConstraint | SchedulingRule | SemanticEquivalence | SequenceLoop | UnaryExpression | VariableDeclaration;
     readonly $type: 'NumberExpression';
     value: number
 }
@@ -319,7 +330,7 @@ export function isNumberExpression(item: unknown): item is NumberExpression {
 }
 
 export interface Parameter extends AstNode {
-    readonly $container: ParserRule;
+    readonly $container: MethodMember | ParserRule;
     readonly $type: 'Parameter';
     name: string
 }
@@ -364,6 +375,18 @@ export function isParserRule(item: unknown): item is ParserRule {
     return reflection.isInstance(item, ParserRule);
 }
 
+export interface QueryRule extends AstNode {
+    readonly $container: RuleOpening;
+    readonly $type: 'QueryRule';
+    premise: Array<SemanticEquivalence>
+}
+
+export const QueryRule = 'QueryRule';
+
+export function isQueryRule(item: unknown): item is QueryRule {
+    return reflection.isInstance(item, QueryRule);
+}
+
 export interface ReturnType extends AstNode {
     readonly $container: TerminalRule;
     readonly $type: 'ReturnType';
@@ -377,11 +400,12 @@ export function isReturnType(item: unknown): item is ReturnType {
 }
 
 export interface RuleOpening extends AstNode {
-    readonly $container: RuleOpening | SemanticEquivalence | SoSSpec | Struct;
+    readonly $container: RuleOpening | SemanticEquivalence | SequenceLoop | SoSSpec | Struct;
     readonly $type: 'RuleOpening';
-    name: string
+    isNonAtomic: boolean
+    name?: string
     onRule: Reference<ParserRule>
-    rules: Array<RWRule>
+    rules: Array<QueryRule | RWRule | SchedulingRule>
     runtimeState: Array<NamedElement>
 }
 
@@ -405,11 +429,23 @@ export function isRWRule(item: unknown): item is RWRule {
     return reflection.isInstance(item, RWRule);
 }
 
+export interface SchedulingRule extends AstNode {
+    readonly $container: RuleOpening;
+    readonly $type: 'SchedulingConstraint' | 'SchedulingRule';
+    condition: Expression
+    loop?: SequenceLoop
+}
+
+export const SchedulingRule = 'SchedulingRule';
+
+export function isSchedulingRule(item: unknown): item is SchedulingRule {
+    return reflection.isInstance(item, SchedulingRule);
+}
+
 export interface SemanticEquivalence extends AstNode {
-    readonly $container: RWRule;
+    readonly $container: QueryRule | RWRule;
     readonly $type: 'SemanticEquivalence';
-    leftRTD?: Reference<NamedElement>
-    leftStruct?: Reference<AbstractElement>
+    left?: Expression
     operator?: '->'
     right?: Expression | NamedElement
 }
@@ -418,6 +454,20 @@ export const SemanticEquivalence = 'SemanticEquivalence';
 
 export function isSemanticEquivalence(item: unknown): item is SemanticEquivalence {
     return reflection.isInstance(item, SemanticEquivalence);
+}
+
+export interface SequenceLoop extends AstNode {
+    readonly $container: SchedulingRule;
+    readonly $type: 'SequenceLoop';
+    itVar: NamedElement
+    lowerBound: number
+    upperBound: Expression
+}
+
+export const SequenceLoop = 'SequenceLoop';
+
+export function isSequenceLoop(item: unknown): item is SequenceLoop {
+    return reflection.isInstance(item, SequenceLoop);
 }
 
 export interface SoSSpec extends AstNode {
@@ -434,7 +484,7 @@ export function isSoSSpec(item: unknown): item is SoSSpec {
 }
 
 export interface StringExpression extends AstNode {
-    readonly $container: BinaryExpression | Conclusion | MemberCall | SemanticEquivalence | UnaryExpression | VariableDeclaration;
+    readonly $container: BinaryExpression | Conclusion | MemberCall | SchedulingConstraint | SchedulingRule | SemanticEquivalence | SequenceLoop | UnaryExpression | VariableDeclaration;
     readonly $type: 'StringExpression';
     value: string
 }
@@ -446,7 +496,7 @@ export function isStringExpression(item: unknown): item is StringExpression {
 }
 
 export interface Struct extends AstNode {
-    readonly $container: RuleOpening | SemanticEquivalence | SoSSpec | Struct;
+    readonly $container: RuleOpening | SemanticEquivalence | SequenceLoop | SoSSpec | Struct;
     readonly $type: 'Struct';
     members: Array<FieldMember>
     name: string
@@ -460,7 +510,7 @@ export function isStruct(item: unknown): item is Struct {
 }
 
 export interface TemporaryVariable extends AstNode {
-    readonly $container: RuleOpening | SemanticEquivalence | SoSSpec | Struct;
+    readonly $container: RuleOpening | SemanticEquivalence | SequenceLoop | SoSSpec | Struct;
     readonly $type: 'TemporaryVariable';
     name: string
     type?: TypeReference
@@ -516,10 +566,10 @@ export function isTypeAttribute(item: unknown): item is TypeAttribute {
 }
 
 export interface TypeReference extends AstNode {
-    readonly $container: FieldMember | LambdaParameter | TemporaryVariable | VariableDeclaration;
+    readonly $container: FieldMember | LambdaParameter | MethodMember | TemporaryVariable | VariableDeclaration;
     readonly $type: 'TypeReference';
-    primitive?: 'boolean' | 'number' | 'string' | 'void'
-    reference?: Reference<RuleOpening>
+    primitive?: 'boolean' | 'event' | 'number' | 'string' | 'void'
+    reference?: Reference<AbstractElement>
 }
 
 export const TypeReference = 'TypeReference';
@@ -529,7 +579,7 @@ export function isTypeReference(item: unknown): item is TypeReference {
 }
 
 export interface UnaryExpression extends AstNode {
-    readonly $container: BinaryExpression | Conclusion | MemberCall | SemanticEquivalence | UnaryExpression | VariableDeclaration;
+    readonly $container: BinaryExpression | Conclusion | MemberCall | SchedulingConstraint | SchedulingRule | SemanticEquivalence | SequenceLoop | UnaryExpression | VariableDeclaration;
     readonly $type: 'UnaryExpression';
     operator: '!' | '+' | '-'
     value: Expression
@@ -542,7 +592,7 @@ export function isUnaryExpression(item: unknown): item is UnaryExpression {
 }
 
 export interface VariableDeclaration extends AstNode {
-    readonly $container: RuleOpening | SemanticEquivalence | SoSSpec | Struct;
+    readonly $container: RuleOpening | SemanticEquivalence | SequenceLoop | SoSSpec | Struct;
     readonly $type: 'VariableDeclaration';
     assignment: boolean
     name: string
@@ -757,6 +807,20 @@ export function isWildcard(item: unknown): item is Wildcard {
     return reflection.isInstance(item, Wildcard);
 }
 
+export interface SchedulingConstraint extends SchedulingRule {
+    readonly $container: RuleOpening;
+    readonly $type: 'SchedulingConstraint';
+    left: Expression
+    operator: 'coincides_with' | 'or' | 'precedes' | 'xor'
+    right: Expression
+}
+
+export const SchedulingConstraint = 'SchedulingConstraint';
+
+export function isSchedulingConstraint(item: unknown): item is SchedulingConstraint {
+    return reflection.isInstance(item, SchedulingConstraint);
+}
+
 export interface StructuralOperationalSemanticsAstType {
     AbstractElement: AbstractElement
     AbstractRule: AbstractRule
@@ -785,6 +849,7 @@ export interface StructuralOperationalSemanticsAstType {
     LambdaParameter: LambdaParameter
     LiteralCondition: LiteralCondition
     MemberCall: MemberCall
+    MethodMember: MethodMember
     NamedArgument: NamedArgument
     NamedElement: NamedElement
     NegatedToken: NegatedToken
@@ -794,12 +859,16 @@ export interface StructuralOperationalSemanticsAstType {
     Parameter: Parameter
     ParameterReference: ParameterReference
     ParserRule: ParserRule
+    QueryRule: QueryRule
     RWRule: RWRule
     RegexToken: RegexToken
     ReturnType: ReturnType
     RuleCall: RuleCall
     RuleOpening: RuleOpening
+    SchedulingConstraint: SchedulingConstraint
+    SchedulingRule: SchedulingRule
     SemanticEquivalence: SemanticEquivalence
+    SequenceLoop: SequenceLoop
     SoSSpec: SoSSpec
     StringExpression: StringExpression
     Struct: Struct
@@ -821,7 +890,7 @@ export interface StructuralOperationalSemanticsAstType {
 export class StructuralOperationalSemanticsAstReflection extends AbstractAstReflection {
 
     getAllTypes(): string[] {
-        return ['AbstractElement', 'AbstractRule', 'AbstractType', 'Action', 'Alternatives', 'Assignment', 'AtomType', 'BinaryExpression', 'BooleanExpression', 'CharacterRange', 'Conclusion', 'Condition', 'Conjunction', 'CrossReference', 'Disjunction', 'Expression', 'FieldMember', 'Grammar', 'GrammarImport', 'Group', 'ImportStatement', 'InferredType', 'Interface', 'Keyword', 'LambdaParameter', 'LiteralCondition', 'MemberCall', 'NamedArgument', 'NamedElement', 'NegatedToken', 'Negation', 'NilExpression', 'NumberExpression', 'Parameter', 'ParameterReference', 'ParserRule', 'RWRule', 'RegexToken', 'ReturnType', 'RuleCall', 'RuleOpening', 'SemanticEquivalence', 'SoSSpec', 'StringExpression', 'Struct', 'TemporaryVariable', 'TerminalAlternatives', 'TerminalGroup', 'TerminalRule', 'TerminalRuleCall', 'Type', 'TypeAttribute', 'TypeReference', 'UnaryExpression', 'UnorderedGroup', 'UntilToken', 'VariableDeclaration', 'Wildcard'];
+        return ['AbstractElement', 'AbstractRule', 'AbstractType', 'Action', 'Alternatives', 'Assignment', 'AtomType', 'BinaryExpression', 'BooleanExpression', 'CharacterRange', 'Conclusion', 'Condition', 'Conjunction', 'CrossReference', 'Disjunction', 'Expression', 'FieldMember', 'Grammar', 'GrammarImport', 'Group', 'ImportStatement', 'InferredType', 'Interface', 'Keyword', 'LambdaParameter', 'LiteralCondition', 'MemberCall', 'MethodMember', 'NamedArgument', 'NamedElement', 'NegatedToken', 'Negation', 'NilExpression', 'NumberExpression', 'Parameter', 'ParameterReference', 'ParserRule', 'QueryRule', 'RWRule', 'RegexToken', 'ReturnType', 'RuleCall', 'RuleOpening', 'SchedulingConstraint', 'SchedulingRule', 'SemanticEquivalence', 'SequenceLoop', 'SoSSpec', 'StringExpression', 'Struct', 'TemporaryVariable', 'TerminalAlternatives', 'TerminalGroup', 'TerminalRule', 'TerminalRuleCall', 'Type', 'TypeAttribute', 'TypeReference', 'UnaryExpression', 'UnorderedGroup', 'UntilToken', 'VariableDeclaration', 'Wildcard'];
     }
 
     protected override computeIsSubtype(subtype: string, supertype: string): boolean {
@@ -879,6 +948,9 @@ export class StructuralOperationalSemanticsAstReflection extends AbstractAstRefl
             case Wildcard: {
                 return this.isSubtype(AbstractElement, supertype);
             }
+            case SchedulingConstraint: {
+                return this.isSubtype(SchedulingRule, supertype);
+            }
             default: {
                 return false;
             }
@@ -895,16 +967,6 @@ export class StructuralOperationalSemanticsAstReflection extends AbstractAstRefl
             case 'ParserRule:returnType': {
                 return AbstractType;
             }
-            case 'BinaryExpression:rightRTD':
-            case 'BinaryExpression:rightVar':
-            case 'MemberCall:element':
-            case 'SemanticEquivalence:leftRTD': {
-                return NamedElement;
-            }
-            case 'BinaryExpression:rightStruct':
-            case 'SemanticEquivalence:leftStruct': {
-                return AbstractElement;
-            }
             case 'Grammar:hiddenTokens':
             case 'ParserRule:hiddenTokens':
             case 'RuleCall:rule': {
@@ -912,6 +974,9 @@ export class StructuralOperationalSemanticsAstReflection extends AbstractAstRefl
             }
             case 'Grammar:usedGrammars': {
                 return Grammar;
+            }
+            case 'MemberCall:element': {
+                return NamedElement;
             }
             case 'NamedArgument:parameter':
             case 'ParameterReference:parameter': {
@@ -927,7 +992,7 @@ export class StructuralOperationalSemanticsAstReflection extends AbstractAstRefl
                 return TerminalRule;
             }
             case 'TypeReference:reference': {
-                return RuleOpening;
+                return AbstractElement;
             }
             default: {
                 throw new Error(`${referenceId} is not a valid reference id.`);
@@ -1003,6 +1068,14 @@ export class StructuralOperationalSemanticsAstReflection extends AbstractAstRefl
                     ]
                 };
             }
+            case 'MethodMember': {
+                return {
+                    name: 'MethodMember',
+                    mandatory: [
+                        { name: 'parameters', type: 'array' }
+                    ]
+                };
+            }
             case 'NamedArgument': {
                 return {
                     name: 'NamedArgument',
@@ -1024,10 +1097,19 @@ export class StructuralOperationalSemanticsAstReflection extends AbstractAstRefl
                     ]
                 };
             }
+            case 'QueryRule': {
+                return {
+                    name: 'QueryRule',
+                    mandatory: [
+                        { name: 'premise', type: 'array' }
+                    ]
+                };
+            }
             case 'RuleOpening': {
                 return {
                     name: 'RuleOpening',
                     mandatory: [
+                        { name: 'isNonAtomic', type: 'boolean' },
                         { name: 'rules', type: 'array' },
                         { name: 'runtimeState', type: 'array' }
                     ]
