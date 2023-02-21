@@ -6,9 +6,12 @@ open non atomic rule Statement {
 }
 
 open non atomic rule Model {
-    sched { startEvaluation coincides_with statements.startEvaluation}
-    sched { finishEvaluation coincides_with statements.finishEvaluation}
-    sched foreach i in [0; statements.length()[ {
+
+    var test: Statement //TODO add all AbstractElement in the scope
+
+    sched { startEvaluation coincides_with statements.first().startEvaluation}
+    sched { finishEvaluation coincides_with statements.last().finishEvaluation}
+    sched foreach i in [0; statements.length() -1[ {
         statements.at(i).finishEvaluation precedes statements.at(i+1).startEvaluation 
     }
 }
@@ -17,7 +20,7 @@ open atomic rule VarDecl {
 
     var currentValue:number = initialValue
 
-rwr 
+rwr  
     --------------------------- getCurrentValue
      <this,σ> ~> currentValue
 
@@ -25,7 +28,7 @@ rwr
 
 open atomic rule Plus {
    
-rwr    <right,σ> -> n2 ; <left,σ> -> n1
+rwr    <right,σ> -> n2:number ; <left,σ> -> n1:number
     ---------------------------------------------- plusRWR
                 <this,σ> ~> n1 + n2 
 }
@@ -33,10 +36,10 @@ rwr    <right,σ> -> n2 ; <left,σ> -> n1
 
 open non atomic rule If {
     sched {startEvaluation coincides_with evalCond}
-    sched {evalCond precedes (condTrue or condFalse)}
+    sched {evalCond precedes (condTrue xor condFalse)}
 
 
-rwr    <cond,σ> -> resCond
+rwr    <cond,σ> -> resCond:boolean
     ------------------------ evalCond
        <this,σ> ~> resCond
 
