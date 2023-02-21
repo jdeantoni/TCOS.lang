@@ -6,18 +6,19 @@
 
 import {
     AstNode,
-    DefaultScopeComputation, DefaultScopeProvider, EMPTY_SCOPE, getContainerOfType, /*interruptAndCheck, LangiumDocument, */LangiumServices,/* MultiMap,
-    PrecomputedScopes,*/ReferenceInfo,Scope, ScopeOptions, stream, StreamScope
+    DefaultScopeComputation, DefaultScopeProvider, EMPTY_SCOPE, getContainerOfType, Grammar, LangiumServices, ReferenceInfo,Scope, ScopeOptions, stream, StreamScope
 } from 'langium';
-// import { CancellationToken } from 'vscode-jsonrpc';
-// import type { StructuralOperationalSemanticsServices } from './structural-operational-semantics-module';
-// import { QualifiedNameProvider } from './domain-model-naming';
-import { Assignment, isAssignment, isMemberCall, isRuleOpening, isRWRule, isSchedulingRule, isSoSSpec, isTemporaryVariable, MemberCall, MethodMember, Parameter, ParserRule, RuleOpening, RWRule, SoSSpec, VariableDeclaration} from './generated/ast';
+
+import { AbstractRule, Assignment, isAssignment, isMemberCall, isRuleOpening, isRWRule, 
+         isSchedulingRule, isSoSSpec, isTemporaryVariable, MemberCall, MethodMember, Parameter,
+         ParserRule, RuleOpening, RWRule, SoSSpec, TypeReference, VariableDeclaration} from './generated/ast';
 import { getRuleOpeningChain, inferType } from './type-system/infer';
 import { isParserRuleType, isRuleOpeningType } from './type-system/descriptions';
 import { AbstractElement } from './generated/ast';
 import { isGroup } from './generated/ast';
 import { Group } from './generated/ast';
+import { isAbstractRule, isGrammar } from 'langium/lib/grammar/generated/ast';
+import { getType } from '../utils/sos-utils';
 
 
 
@@ -32,7 +33,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         // target element of member calls
         // console.log("###getScopeProvider: context.property = "+context.property+"\n\t context.reference.$refText = "+context.reference.$refText)        
         
-        if (context.property === 'element' || context.property === 'left' || context.property === 'right') {
+        if (context.property === 'element' || context.property === 'left' || context.property === 'right' || context.property === "reference") {
             // for now, `this` and `super` simply target the container class type
             if (context.reference.$refText === 'this' || context.reference.$refText === 'struct') {
                 // context.reference.ref = ruleOpeningItem ?
@@ -60,7 +61,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
             if (isMemberCall(previous) && previous.element !== undefined /*&& previous.element.$refText === 'this'*/){
                 const ruleOpeningItem = getContainerOfType(previous.$container, isRuleOpening);
                 if (ruleOpeningItem) {
-                    return this.scopeRuleOpeningMembers(ruleOpeningItem);
+                    return this.scopeRuleOpeningMembers(ruleOpeningItem, false,previous);
                 }
             }
             const previousType = inferType(previous, new Map());
@@ -100,7 +101,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         return this.createScopeForNodes(allScopeElements);
     }
 
-    private addListFunctions(ruleOpeningItem: RuleOpening, allScopeElements: AstNode[]) {
+    private addListFunctions(ruleOpeningItem: RuleOpening, allScopeElements: AstNode[], context:MemberCall | undefined = undefined) {
         var atFunction: MethodMember = {
             name: "at",
             $containerProperty: "methods",
@@ -122,6 +123,16 @@ export class SoSScopeProvider extends DefaultScopeProvider {
             name: 'i'
         }
 
+        if(context){
+            var type = getType(context)
+            var returnType : TypeReference = {
+                reference: {ref:(isAbstractRule(type)?type:undefined), $refText:((isAbstractRule(type)?type.name:'undefined'))},
+                $container: atFunction,
+                $type: "TypeReference"
+            }
+            atFunction.returnType = returnType
+        }
+
         atFunction.parameters.push(p)
 
         allScopeElements.push(atFunction);
@@ -139,14 +150,74 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                 $type: 'TypeReference'
             }
         }
+        if(context){
+            var type = getType(context)
+            var returnType : TypeReference = {
+                $container: lengthFunction,
+                $type: "TypeReference"
+            }
+            returnType.primitive={name:"number",$container:returnType,$type:"SoSPrimitiveType"}
+            lengthFunction.returnType = returnType
+        }
 
         allScopeElements.push(lengthFunction);
         
+        var firstFunction: MethodMember = {
+            name: "first",
+            $containerProperty: "methods",
+            $container: ruleOpeningItem,
+            $document: ruleOpeningItem.$document,
+            $cstNode: ruleOpeningItem.$cstNode,
+            parameters: [],
+            $type: 'MethodMember',
+            returnType: {
+                $container: undefined as unknown as MethodMember, //not sure how to do better
+                $type: 'TypeReference'
+            }
+        }
+        if(context){
+            var type = getType(context)
+            var returnType : TypeReference = {
+                reference: {ref:(isAbstractRule(type)?type:undefined), $refText:((isAbstractRule(type)?type.name:'undefined'))},
+                $container: firstFunction,
+                $type: "TypeReference"
+            }
+            firstFunction.returnType = returnType
+        }
+
+        allScopeElements.push(firstFunction);
+
+        var lastFunction: MethodMember = {
+            name: "last",
+            $containerProperty: "methods",
+            $container: ruleOpeningItem,
+            $document: ruleOpeningItem.$document,
+            $cstNode: ruleOpeningItem.$cstNode,
+            parameters: [],
+            $type: 'MethodMember',
+            returnType: {
+                $container: undefined as unknown as MethodMember, //not sure how to do better
+                $type: 'TypeReference'
+            }
+        }
+
+        if(context){
+            var type = getType(context)
+            var returnType : TypeReference = {
+                reference: {ref:(isAbstractRule(type)?type:undefined), $refText:((isAbstractRule(type)?type.name:'undefined'))},
+                $container: lastFunction,
+                $type: "TypeReference"
+            }
+            lastFunction.returnType = returnType
+        }
+        allScopeElements.push(lastFunction);
+
     }
 
-    private scopeRuleOpeningMembers(ruleOpeningItem: RuleOpening, isForSchedulingRule: boolean = false): Scope {
+    private scopeRuleOpeningMembers(ruleOpeningItem: RuleOpening, isForSchedulingRule: boolean = false, context: MemberCall | undefined = undefined): Scope {
         
-        var allScopeElements: AstNode[] = (ruleOpeningItem.onRule?.ref !== undefined)?this.getAllAssignments(ruleOpeningItem.onRule.ref.definition) : [];        
+        var allScopeElements: AstNode[] = (ruleOpeningItem.onRule?.ref !== undefined)?this.getAllAssignments(ruleOpeningItem.onRule.ref.definition) : [];
+        allScopeElements = allScopeElements.concat((ruleOpeningItem.onRule?.ref !== undefined)?this.getAllRules(ruleOpeningItem.onRule.ref.definition):[])        
         //if (! isForSchedulingRule){
             var allMembers:AstNode[] = getRuleOpeningChain(ruleOpeningItem).flatMap(e => e.runtimeState);
             for(var rule of ruleOpeningItem.rules){
@@ -176,7 +247,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
        // }
         allScopeElements = allScopeElements.concat(this.addClocks(ruleOpeningItem))
 
-        this.addListFunctions(ruleOpeningItem,allScopeElements)
+        this.addListFunctions(ruleOpeningItem,allScopeElements,context)
 
         return this.createScopeForNodes(allScopeElements);
     }
@@ -194,9 +265,10 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         };
         start.type = {
             $container: start,
-            $type: 'TypeReference',
-            primitive: 'event'
+            $type: 'TypeReference'
         };
+        start.type.primitive= {name:'event', $container:start.type, $type:'SoSPrimitiveType'}
+
         res.push(start);
 
         const finish: VariableDeclaration = {
@@ -210,8 +282,9 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         finish.type = {
             $container: finish,
             $type: 'TypeReference',
-            primitive: 'event'
         };
+        finish.type.primitive= {name:'event', $container:finish.type, $type:'SoSPrimitiveType'}
+
         res.push(finish);
         
         return res
@@ -219,27 +292,27 @@ export class SoSScopeProvider extends DefaultScopeProvider {
 
     private getAllAssignments(element: AbstractElement): Assignment[] {
         var allAssignments: Assignment[] = [];
-        // var def = rule.definition;
-        // if (def === undefined){
-        //     return allAssignments;
-        // }
-        // var nestedElems: AbstractElement[] = []
-        //  for (var e of rule.element) {
-            if (isGroup(element)) {
-                for (var e of (element as Group).elements){
-                    allAssignments = allAssignments.concat(this.getAllAssignments(e));
-                }
-            }else
-             if (isAssignment(element)) {
+
+        if (isGroup(element)) {
+            for (var e of (element as Group).elements) {
+                allAssignments = allAssignments.concat(this.getAllAssignments(e));
+            }
+        } else
+            if (isAssignment(element)) {
                 allAssignments.push(element);
             }
-        // }
-        
-        // if(nestedElems.length > 0){
-        //     return allAssignments.concat(this.getAllAssignments(nestedElems));
-        // }
-
         return allAssignments
+    }
+
+
+    private getAllRules(element: AbstractElement): AbstractRule[] {
+        var allAbstractRules: AbstractRule[] = [];
+        const grammar: Grammar | undefined = getContainerOfType(element.$container, isGrammar);
+
+        if (grammar) {
+            allAbstractRules = allAbstractRules.concat(grammar.rules)
+        }
+        return allAbstractRules
     }
 
 

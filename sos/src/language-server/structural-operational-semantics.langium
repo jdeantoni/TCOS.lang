@@ -158,14 +158,17 @@ MethodMember:
 FieldMember:
     name=ID ':' type=TypeReference;
 
-TypeReference: reference=/*[Struct:ID]|*/[AbstractElement:ID]   
-    | primitive=("string" | "number" | "boolean" | "void" | "event")  
+TypeReference: reference=/*[Struct:ID]|*/[AbstractRule:ID]   
+    | primitive=SoSPrimitiveType  
   //  | '(' ( parameters+=LambdaParameter (',' parameters+=LambdaParameter)*)? ')' '=>' returnType=TypeReference;
 ;
 
+SoSPrimitiveType:
+    name=("string" | "number" | "boolean" | "void" | "event"); 
+
 LambdaParameter: (name=ID ':')? type=TypeReference;
 
-type NamedElement = /*Parameter | FunctionDeclaration |*/ VariableDeclaration /*| MethodMember*/ | FieldMember | Struct | RuleOpening | TemporaryVariable; 
+type NamedElement = /*Parameter | FunctionDeclaration |*/ VariableDeclaration /*| MethodMember*/ | FieldMember | Struct | RuleOpening | TemporaryVariable | SoSPrimitiveType | RWRule |MethodMember ;  
 
 // hidden terminal WS: /\s+/;
 // terminal ID: /[_a-zA-Z][\w_]*/;

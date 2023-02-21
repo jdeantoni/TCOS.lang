@@ -84,13 +84,13 @@ export function inferType(node: AstNode | undefined, cache: Map<AstNode, TypeDes
 
 function inferTypeRef(node: TypeReference, cache: Map<AstNode, TypeDescription>): TypeDescription {
     if (node.primitive) {
-        if (node.primitive === 'number') {
+        if (node.primitive.name === 'number') {
             return createNumberType();
-        } else if (node.primitive === 'string') {
+        } else if (node.primitive.name === 'string') {
             return createStringType();
-        } else if (node.primitive === 'boolean') {
+        } else if (node.primitive.name === 'boolean') {
             return createBooleanType();
-        } else if (node.primitive === 'void') {
+        } else if (node.primitive.name === 'void') {
             return createVoidType();
         }
     } else if (node.reference) {

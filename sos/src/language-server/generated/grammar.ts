@@ -26,7 +26,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@91"
+                "$ref": "#/rules@92"
               },
               "arguments": []
             }
@@ -84,7 +84,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@91"
+                "$ref": "#/rules@92"
               },
               "arguments": []
             },
@@ -119,12 +119,12 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "CrossReference",
               "type": {
-                "$ref": "#/rules@44"
+                "$ref": "#/rules@45"
               },
               "terminal": {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@91"
+                  "$ref": "#/rules@92"
                 },
                 "arguments": []
               },
@@ -214,7 +214,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@92"
+                "$ref": "#/rules@93"
               },
               "arguments": []
             }
@@ -326,7 +326,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@32"
+                "$ref": "#/rules@33"
               },
               "arguments": []
             }
@@ -502,7 +502,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@91"
+                "$ref": "#/rules@92"
               },
               "arguments": []
             }
@@ -724,7 +724,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@91"
+                "$ref": "#/rules@92"
               },
               "arguments": []
             }
@@ -788,7 +788,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@91"
+                "$ref": "#/rules@92"
               },
               "arguments": []
             }
@@ -1285,7 +1285,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                           "terminal": {
                             "$type": "RuleCall",
                             "rule": {
-                              "$ref": "#/rules@91"
+                              "$ref": "#/rules@92"
                             },
                             "arguments": []
                           },
@@ -1564,7 +1564,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                   "terminal": {
                     "$type": "RuleCall",
                     "rule": {
-                      "$ref": "#/rules@91"
+                      "$ref": "#/rules@92"
                     },
                     "arguments": []
                   },
@@ -1732,7 +1732,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
         "terminal": {
           "$type": "RuleCall",
           "rule": {
-            "$ref": "#/rules@32"
+            "$ref": "#/rules@33"
           },
           "arguments": []
         }
@@ -1754,7 +1754,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
         "terminal": {
           "$type": "RuleCall",
           "rule": {
-            "$ref": "#/rules@92"
+            "$ref": "#/rules@93"
           },
           "arguments": []
         }
@@ -1830,7 +1830,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@91"
+                "$ref": "#/rules@92"
               },
               "arguments": []
             }
@@ -1854,7 +1854,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                   "terminal": {
                     "$type": "RuleCall",
                     "rule": {
-                      "$ref": "#/rules@91"
+                      "$ref": "#/rules@92"
                     },
                     "arguments": []
                   },
@@ -1907,7 +1907,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@91"
+                "$ref": "#/rules@92"
               },
               "arguments": []
             }
@@ -1926,7 +1926,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@47"
+                    "$ref": "#/rules@48"
                   },
                   "arguments": []
                 }
@@ -1945,7 +1945,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@47"
+                        "$ref": "#/rules@48"
                       },
                       "arguments": []
                     }
@@ -1998,7 +1998,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@91"
+                "$ref": "#/rules@92"
               },
               "arguments": []
             }
@@ -2041,12 +2041,12 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "CrossReference",
               "type": {
-                "$ref": "#/rules@48/inferredType"
+                "$ref": "#/rules@43"
               },
               "terminal": {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@91"
+                  "$ref": "#/rules@92"
                 },
                 "arguments": []
               },
@@ -2058,32 +2058,54 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "feature": "primitive",
             "operator": "=",
             "terminal": {
-              "$type": "Alternatives",
-              "elements": [
-                {
-                  "$type": "Keyword",
-                  "value": "string"
-                },
-                {
-                  "$type": "Keyword",
-                  "value": "number"
-                },
-                {
-                  "$type": "Keyword",
-                  "value": "boolean"
-                },
-                {
-                  "$type": "Keyword",
-                  "value": "void"
-                },
-                {
-                  "$type": "Keyword",
-                  "value": "event"
-                }
-              ]
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@31"
+              },
+              "arguments": []
             }
           }
         ]
+      },
+      "definesHiddenTokens": false,
+      "entry": false,
+      "fragment": false,
+      "hiddenTokens": [],
+      "parameters": [],
+      "wildcard": false
+    },
+    {
+      "$type": "ParserRule",
+      "name": "SoSPrimitiveType",
+      "definition": {
+        "$type": "Assignment",
+        "feature": "name",
+        "operator": "=",
+        "terminal": {
+          "$type": "Alternatives",
+          "elements": [
+            {
+              "$type": "Keyword",
+              "value": "string"
+            },
+            {
+              "$type": "Keyword",
+              "value": "number"
+            },
+            {
+              "$type": "Keyword",
+              "value": "boolean"
+            },
+            {
+              "$type": "Keyword",
+              "value": "void"
+            },
+            {
+              "$type": "Keyword",
+              "value": "event"
+            }
+          ]
+        }
       },
       "definesHiddenTokens": false,
       "entry": false,
@@ -2108,7 +2130,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@91"
+                    "$ref": "#/rules@92"
                   },
                   "arguments": []
                 }
@@ -2165,7 +2187,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@91"
+              "$ref": "#/rules@92"
             },
             "arguments": []
           },
@@ -2179,7 +2201,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@91"
+                  "$ref": "#/rules@92"
                 },
                 "arguments": []
               }
@@ -2221,7 +2243,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@91"
+                    "$ref": "#/rules@92"
                   },
                   "arguments": []
                 }
@@ -2240,12 +2262,12 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                     "terminal": {
                       "$type": "CrossReference",
                       "type": {
-                        "$ref": "#/rules@34"
+                        "$ref": "#/rules@35"
                       },
                       "terminal": {
                         "$type": "RuleCall",
                         "rule": {
-                          "$ref": "#/rules@91"
+                          "$ref": "#/rules@92"
                         },
                         "arguments": []
                       },
@@ -2266,12 +2288,12 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                         "terminal": {
                           "$type": "CrossReference",
                           "type": {
-                            "$ref": "#/rules@34"
+                            "$ref": "#/rules@35"
                           },
                           "terminal": {
                             "$type": "RuleCall",
                             "rule": {
-                              "$ref": "#/rules@91"
+                              "$ref": "#/rules@92"
                             },
                             "arguments": []
                           },
@@ -2310,12 +2332,12 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                         "terminal": {
                           "$type": "CrossReference",
                           "type": {
-                            "$ref": "#/rules@42"
+                            "$ref": "#/rules@43"
                           },
                           "terminal": {
                             "$type": "RuleCall",
                             "rule": {
-                              "$ref": "#/rules@91"
+                              "$ref": "#/rules@92"
                             },
                             "arguments": []
                           },
@@ -2336,12 +2358,12 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                             "terminal": {
                               "$type": "CrossReference",
                               "type": {
-                                "$ref": "#/rules@42"
+                                "$ref": "#/rules@43"
                               },
                               "terminal": {
                                 "$type": "RuleCall",
                                 "rule": {
-                                  "$ref": "#/rules@91"
+                                  "$ref": "#/rules@92"
                                 },
                                 "arguments": []
                               },
@@ -2371,7 +2393,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@43"
+                "$ref": "#/rules@44"
               },
               "arguments": []
             },
@@ -2387,7 +2409,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@42"
+                    "$ref": "#/rules@43"
                   },
                   "arguments": []
                 }
@@ -2399,7 +2421,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@35"
+                    "$ref": "#/rules@36"
                   },
                   "arguments": []
                 }
@@ -2411,7 +2433,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@41"
+                    "$ref": "#/rules@42"
                   },
                   "arguments": []
                 }
@@ -2444,7 +2466,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@91"
+                "$ref": "#/rules@92"
               },
               "arguments": []
             }
@@ -2496,7 +2518,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@36"
+              "$ref": "#/rules@37"
             },
             "arguments": []
           }
@@ -2527,7 +2549,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@37"
+                "$ref": "#/rules@38"
               },
               "arguments": []
             },
@@ -2563,7 +2585,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@90"
+                "$ref": "#/rules@91"
               },
               "arguments": []
             }
@@ -2585,7 +2607,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@38"
+              "$ref": "#/rules@39"
             },
             "arguments": []
           },
@@ -2617,7 +2639,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@39"
+                "$ref": "#/rules@40"
               },
               "arguments": []
             }
@@ -2636,7 +2658,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@39"
+                    "$ref": "#/rules@40"
                   },
                   "arguments": []
                 }
@@ -2671,7 +2693,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@40"
+                        "$ref": "#/rules@41"
                       },
                       "arguments": []
                     }
@@ -2724,7 +2746,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@56"
+                "$ref": "#/rules@57"
               },
               "arguments": []
             }
@@ -2791,7 +2813,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@91"
+                "$ref": "#/rules@92"
               },
               "arguments": []
             }
@@ -2803,7 +2825,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@38"
+              "$ref": "#/rules@39"
             },
             "arguments": []
           },
@@ -2830,14 +2852,14 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@44"
+              "$ref": "#/rules@45"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@77"
+              "$ref": "#/rules@78"
             },
             "arguments": []
           }
@@ -2867,7 +2889,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@92"
+                "$ref": "#/rules@93"
               },
               "arguments": []
             }
@@ -2919,7 +2941,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@46"
+              "$ref": "#/rules@47"
             },
             "arguments": []
           },
@@ -2957,7 +2979,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                           "terminal": {
                             "$type": "RuleCall",
                             "rule": {
-                              "$ref": "#/rules@91"
+                              "$ref": "#/rules@92"
                             },
                             "arguments": []
                           },
@@ -2971,7 +2993,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                         "terminal": {
                           "$type": "RuleCall",
                           "rule": {
-                            "$ref": "#/rules@40"
+                            "$ref": "#/rules@41"
                           },
                           "arguments": []
                         }
@@ -2987,7 +3009,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@45"
+                    "$ref": "#/rules@46"
                   },
                   "arguments": [
                     {
@@ -3030,12 +3052,12 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                     "terminal": {
                       "$type": "CrossReference",
                       "type": {
-                        "$ref": "#/rules@42"
+                        "$ref": "#/rules@43"
                       },
                       "terminal": {
                         "$type": "RuleCall",
                         "rule": {
-                          "$ref": "#/rules@91"
+                          "$ref": "#/rules@92"
                         },
                         "arguments": []
                       },
@@ -3056,12 +3078,12 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                         "terminal": {
                           "$type": "CrossReference",
                           "type": {
-                            "$ref": "#/rules@42"
+                            "$ref": "#/rules@43"
                           },
                           "terminal": {
                             "$type": "RuleCall",
                             "rule": {
-                              "$ref": "#/rules@91"
+                              "$ref": "#/rules@92"
                             },
                             "arguments": []
                           },
@@ -3092,7 +3114,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@48"
+                "$ref": "#/rules@49"
               },
               "arguments": []
             }
@@ -3130,7 +3152,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "guardCondition": {
                   "$type": "ParameterReference",
                   "parameter": {
-                    "$ref": "#/rules@45/parameters@0"
+                    "$ref": "#/rules@46/parameters@0"
                   }
                 },
                 "elements": [
@@ -3147,7 +3169,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                   "value": {
                     "$type": "ParameterReference",
                     "parameter": {
-                      "$ref": "#/rules@45/parameters@0"
+                      "$ref": "#/rules@46/parameters@0"
                     }
                   }
                 },
@@ -3167,7 +3189,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@91"
+                "$ref": "#/rules@92"
               },
               "arguments": []
             }
@@ -3194,7 +3216,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@91"
+                "$ref": "#/rules@92"
               },
               "arguments": []
             }
@@ -3216,7 +3238,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@47"
+                        "$ref": "#/rules@48"
                       },
                       "arguments": []
                     }
@@ -3235,7 +3257,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                         "terminal": {
                           "$type": "RuleCall",
                           "rule": {
-                            "$ref": "#/rules@47"
+                            "$ref": "#/rules@48"
                           },
                           "arguments": []
                         }
@@ -3271,7 +3293,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
         "terminal": {
           "$type": "RuleCall",
           "rule": {
-            "$ref": "#/rules@91"
+            "$ref": "#/rules@92"
           },
           "arguments": []
         }
@@ -3296,7 +3318,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@49"
+              "$ref": "#/rules@50"
             },
             "arguments": []
           },
@@ -3326,7 +3348,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@49"
+                        "$ref": "#/rules@50"
                       },
                       "arguments": []
                     }
@@ -3359,7 +3381,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@50"
+              "$ref": "#/rules@51"
             },
             "arguments": []
           },
@@ -3384,7 +3406,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@60"
+                    "$ref": "#/rules@61"
                   },
                   "arguments": []
                 }
@@ -3400,7 +3422,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@52"
+                    "$ref": "#/rules@53"
                   },
                   "arguments": []
                 },
@@ -3430,7 +3452,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@51"
+              "$ref": "#/rules@52"
             },
             "arguments": []
           },
@@ -3460,7 +3482,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@51"
+                        "$ref": "#/rules@52"
                       },
                       "arguments": []
                     }
@@ -3493,7 +3515,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@52"
+              "$ref": "#/rules@53"
             },
             "arguments": []
           },
@@ -3516,7 +3538,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@52"
+                    "$ref": "#/rules@53"
                   },
                   "arguments": []
                 },
@@ -3547,14 +3569,14 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@53"
+              "$ref": "#/rules@54"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@54"
+              "$ref": "#/rules@55"
             },
             "arguments": []
           }
@@ -3583,14 +3605,14 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@68"
+                  "$ref": "#/rules@69"
                 },
                 "arguments": []
               },
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@55"
+                  "$ref": "#/rules@56"
                 },
                 "arguments": []
               }
@@ -3664,7 +3686,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                   "terminal": {
                     "$type": "RuleCall",
                     "rule": {
-                      "$ref": "#/rules@91"
+                      "$ref": "#/rules@92"
                     },
                     "arguments": []
                   },
@@ -3678,7 +3700,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@45"
+                    "$ref": "#/rules@46"
                   },
                   "arguments": [
                     {
@@ -3708,7 +3730,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@90"
+                    "$ref": "#/rules@91"
                   },
                   "arguments": []
                 }
@@ -3764,13 +3786,6 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@56"
-            },
-            "arguments": []
-          },
-          {
-            "$type": "RuleCall",
-            "rule": {
               "$ref": "#/rules@57"
             },
             "arguments": []
@@ -3778,14 +3793,14 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@74"
+              "$ref": "#/rules@58"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@66"
+              "$ref": "#/rules@75"
             },
             "arguments": []
           },
@@ -3799,7 +3814,14 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@75"
+              "$ref": "#/rules@68"
+            },
+            "arguments": []
+          },
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@76"
             },
             "arguments": []
           }
@@ -3822,7 +3844,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
         "terminal": {
           "$type": "RuleCall",
           "rule": {
-            "$ref": "#/rules@92"
+            "$ref": "#/rules@93"
           },
           "arguments": []
         }
@@ -3847,12 +3869,12 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "CrossReference",
               "type": {
-                "$ref": "#/rules@42"
+                "$ref": "#/rules@43"
               },
               "terminal": {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@91"
+                  "$ref": "#/rules@92"
                 },
                 "arguments": []
               },
@@ -3873,7 +3895,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@58"
+                    "$ref": "#/rules@59"
                   },
                   "arguments": []
                 }
@@ -3892,7 +3914,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@58"
+                        "$ref": "#/rules@59"
                       },
                       "arguments": []
                     }
@@ -3932,12 +3954,12 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "CrossReference",
                   "type": {
-                    "$ref": "#/rules@47"
+                    "$ref": "#/rules@48"
                   },
                   "terminal": {
                     "$type": "RuleCall",
                     "rule": {
-                      "$ref": "#/rules@91"
+                      "$ref": "#/rules@92"
                     },
                     "arguments": []
                   },
@@ -3963,7 +3985,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@60"
+                "$ref": "#/rules@61"
               },
               "arguments": []
             }
@@ -4018,7 +4040,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@61"
+              "$ref": "#/rules@62"
             },
             "arguments": []
           },
@@ -4045,7 +4067,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@61"
+                    "$ref": "#/rules@62"
                   },
                   "arguments": []
                 }
@@ -4075,7 +4097,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@62"
+              "$ref": "#/rules@63"
             },
             "arguments": []
           },
@@ -4102,7 +4124,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@62"
+                    "$ref": "#/rules@63"
                   },
                   "arguments": []
                 }
@@ -4132,7 +4154,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@63"
+              "$ref": "#/rules@64"
             },
             "arguments": []
           },
@@ -4157,7 +4179,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@62"
+                    "$ref": "#/rules@63"
                   },
                   "arguments": []
                 }
@@ -4186,6 +4208,13 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
+              "$ref": "#/rules@66"
+            },
+            "arguments": []
+          },
+          {
+            "$type": "RuleCall",
+            "rule": {
               "$ref": "#/rules@65"
             },
             "arguments": []
@@ -4193,14 +4222,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@64"
-            },
-            "arguments": []
-          },
-          {
-            "$type": "RuleCall",
-            "rule": {
-              "$ref": "#/rules@59"
+              "$ref": "#/rules@60"
             },
             "arguments": []
           }
@@ -4230,7 +4252,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@60"
+              "$ref": "#/rules@61"
             },
             "arguments": []
           },
@@ -4257,12 +4279,12 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
         "terminal": {
           "$type": "CrossReference",
           "type": {
-            "$ref": "#/rules@47"
+            "$ref": "#/rules@48"
           },
           "terminal": {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@91"
+              "$ref": "#/rules@92"
             },
             "arguments": []
           },
@@ -4306,7 +4328,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@92"
+                "$ref": "#/rules@93"
               },
               "arguments": []
             }
@@ -4350,12 +4372,12 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "CrossReference",
               "type": {
-                "$ref": "#/rules@42"
+                "$ref": "#/rules@43"
               },
               "terminal": {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@91"
+                  "$ref": "#/rules@92"
                 },
                 "arguments": []
               },
@@ -4376,7 +4398,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@58"
+                    "$ref": "#/rules@59"
                   },
                   "arguments": []
                 }
@@ -4395,7 +4417,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@58"
+                        "$ref": "#/rules@59"
                       },
                       "arguments": []
                     }
@@ -4457,7 +4479,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@90"
+                "$ref": "#/rules@91"
               },
               "arguments": []
             }
@@ -4491,7 +4513,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@69"
+                "$ref": "#/rules@70"
               },
               "arguments": []
             }
@@ -4518,13 +4540,6 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@56"
-            },
-            "arguments": []
-          },
-          {
-            "$type": "RuleCall",
-            "rule": {
               "$ref": "#/rules@57"
             },
             "arguments": []
@@ -4532,14 +4547,21 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@70"
+              "$ref": "#/rules@58"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@72"
+              "$ref": "#/rules@71"
+            },
+            "arguments": []
+          },
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@73"
             },
             "arguments": []
           }
@@ -4569,7 +4591,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@71"
+              "$ref": "#/rules@72"
             },
             "arguments": []
           },
@@ -4599,7 +4621,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@69"
+              "$ref": "#/rules@70"
             },
             "arguments": []
           },
@@ -4629,7 +4651,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@69"
+                        "$ref": "#/rules@70"
                       },
                       "arguments": []
                     }
@@ -4710,7 +4732,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@73"
+                    "$ref": "#/rules@74"
                   },
                   "arguments": []
                 }
@@ -4744,14 +4766,14 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@56"
+              "$ref": "#/rules@57"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@57"
+              "$ref": "#/rules@58"
             },
             "arguments": []
           }
@@ -4781,7 +4803,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@48"
+              "$ref": "#/rules@49"
             },
             "arguments": []
           },
@@ -4832,7 +4854,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@48"
+                "$ref": "#/rules@49"
               },
               "arguments": []
             }
@@ -4863,14 +4885,14 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@40"
+                "$ref": "#/rules@41"
               },
               "arguments": []
             },
             {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@91"
+                "$ref": "#/rules@92"
               },
               "arguments": []
             }
@@ -4926,7 +4948,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@91"
+                        "$ref": "#/rules@92"
                       },
                       "arguments": []
                     }
@@ -4943,7 +4965,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                     "terminal": {
                       "$type": "RuleCall",
                       "rule": {
-                        "$ref": "#/rules@91"
+                        "$ref": "#/rules@92"
                       },
                       "arguments": []
                     }
@@ -4962,7 +4984,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                         "terminal": {
                           "$type": "RuleCall",
                           "rule": {
-                            "$ref": "#/rules@76"
+                            "$ref": "#/rules@77"
                           },
                           "arguments": []
                         }
@@ -4985,7 +5007,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@79"
+                "$ref": "#/rules@80"
               },
               "arguments": []
             }
@@ -5030,7 +5052,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@80"
+              "$ref": "#/rules@81"
             },
             "arguments": []
           },
@@ -5057,7 +5079,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@80"
+                    "$ref": "#/rules@81"
                   },
                   "arguments": []
                 }
@@ -5087,7 +5109,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@81"
+              "$ref": "#/rules@82"
             },
             "arguments": []
           },
@@ -5110,7 +5132,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@81"
+                    "$ref": "#/rules@82"
                   },
                   "arguments": []
                 },
@@ -5141,7 +5163,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@82"
+              "$ref": "#/rules@83"
             },
             "arguments": []
           },
@@ -5190,21 +5212,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@89"
-            },
-            "arguments": []
-          },
-          {
-            "$type": "RuleCall",
-            "rule": {
-              "$ref": "#/rules@84"
-            },
-            "arguments": []
-          },
-          {
-            "$type": "RuleCall",
-            "rule": {
-              "$ref": "#/rules@83"
+              "$ref": "#/rules@90"
             },
             "arguments": []
           },
@@ -5212,6 +5220,13 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "$type": "RuleCall",
             "rule": {
               "$ref": "#/rules@85"
+            },
+            "arguments": []
+          },
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@84"
             },
             "arguments": []
           },
@@ -5233,6 +5248,13 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "$type": "RuleCall",
             "rule": {
               "$ref": "#/rules@88"
+            },
+            "arguments": []
+          },
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@89"
             },
             "arguments": []
           }
@@ -5262,7 +5284,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@79"
+              "$ref": "#/rules@80"
             },
             "arguments": []
           },
@@ -5303,12 +5325,12 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "CrossReference",
               "type": {
-                "$ref": "#/rules@77"
+                "$ref": "#/rules@78"
               },
               "terminal": {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@91"
+                  "$ref": "#/rules@92"
                 },
                 "arguments": []
               },
@@ -5352,7 +5374,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@82"
+                "$ref": "#/rules@83"
               },
               "arguments": []
             }
@@ -5394,7 +5416,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@82"
+                "$ref": "#/rules@83"
               },
               "arguments": []
             }
@@ -5432,7 +5454,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@78"
+                "$ref": "#/rules@79"
               },
               "arguments": []
             }
@@ -5500,7 +5522,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@56"
+                "$ref": "#/rules@57"
               },
               "arguments": []
             }
@@ -5519,7 +5541,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@56"
+                    "$ref": "#/rules@57"
                   },
                   "arguments": []
                 }
@@ -5610,14 +5632,14 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@40"
+              "$ref": "#/rules@41"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@91"
+              "$ref": "#/rules@92"
             },
             "arguments": []
           }
@@ -5724,6 +5746,30 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           },
           "isArray": false,
           "isRef": false
+        },
+        {
+          "$type": "AtomType",
+          "refType": {
+            "$ref": "#/rules@31"
+          },
+          "isArray": false,
+          "isRef": false
+        },
+        {
+          "$type": "AtomType",
+          "refType": {
+            "$ref": "#/rules@6"
+          },
+          "isArray": false,
+          "isRef": false
+        },
+        {
+          "$type": "AtomType",
+          "refType": {
+            "$ref": "#/rules@28"
+          },
+          "isArray": false,
+          "isRef": false
         }
       ],
       "name": "NamedElement"
@@ -5734,7 +5780,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
         {
           "$type": "AtomType",
           "refType": {
-            "$ref": "#/rules@35"
+            "$ref": "#/rules@36"
           },
           "isArray": false,
           "isRef": false
@@ -5742,7 +5788,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
         {
           "$type": "AtomType",
           "refType": {
-            "$ref": "#/rules@41"
+            "$ref": "#/rules@42"
           },
           "isArray": false,
           "isRef": false
@@ -5750,7 +5796,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
         {
           "$type": "AtomType",
           "refType": {
-            "$ref": "#/rules@54/definition/elements@0"
+            "$ref": "#/rules@55/definition/elements@0"
           },
           "isArray": false,
           "isRef": false
@@ -5758,7 +5804,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
         {
           "$type": "AtomType",
           "refType": {
-            "$ref": "#/rules@44"
+            "$ref": "#/rules@45"
           },
           "isArray": false,
           "isRef": false

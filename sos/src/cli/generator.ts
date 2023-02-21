@@ -1,8 +1,9 @@
 import fs from 'fs';
 import { CompositeGeneratorNode, Grammar, NL, toString } from 'langium';
 import path from 'path';
-import { Expression, MemberCall, NamedElement, RuleCall, SoSSpec, VariableDeclaration, isAssignment, isExpression, isMemberCall, isNamedElement, isRWRule } from '../language-server/generated/ast'; //VariableDeclaration
+import { Expression, SoSSpec, isRWRule, isSchedulingConstraint, isTemporaryVariable } from '../language-server/generated/ast'; //VariableDeclaration
 import { extractDestinationAndName } from './cli-util';
+import { getType, print } from '../utils/sos-utils';
 
 
 
@@ -19,18 +20,39 @@ export function generateStuffFromSoS(model: SoSSpec, grammar: Grammar[], filePat
     for(var openedRule of model.rtdAndRules){
         fileNode.append(`${openedRule.onRule.ref?.name} is opened with:`, NL);
             for(var rtd of openedRule.runtimeState){
-                fileNode.append(`\t* var ${rtd.name} of type ${(rtd as VariableDeclaration).type?.primitive}`, NL);
+                fileNode.append(`\t* var ${rtd.name} of type ${getType(rtd).name}`, NL);
             }
             for(var rwr of openedRule.rules){
                 if (isRWRule(rwr)){
+                    fileNode.append(`\t* `)
                     for(var prem of rwr.premise){
                         if(prem.left !== undefined){
-                            fileNode.append(`\t\t - prem: ${print(prem.left)}`,NL)    
+                            var premRight:string = ""
+                            if(prem.right !==undefined){
+                                if(isTemporaryVariable(prem.right)){
+                                    premRight=print(prem.right)
+                                }else{
+                                    premRight=print(prem.right as Expression)
+                                }
+                                
+                            }
+                            fileNode.append(`${premRight}:= ${print(prem.left)} `)  
+                         
                         }
                     }
-                    fileNode.append(`\t* RWR: ${rwr.premise} leading to ${rwr.conclusion}`, NL);
-                }else{
-                    fileNode.append(`\t* Query:${rwr}`, NL);
+                    if(rwr.conclusion.ruleStart){
+                        fileNode.append(" => call rule "+print(rwr.conclusion.ruleStart))
+                    }
+                    if(rwr.conclusion.outState.length > 0){
+                        fileNode.append("  =>  ")
+                    }
+                    for(var os of rwr.conclusion.outState){
+                        fileNode.append(print(os))
+                    }
+                    fileNode.append(NL)
+                }
+                else if (isSchedulingConstraint(rwr)){
+                    fileNode.append(`\t* Sched:${print(rwr.left)} ${rwr.operator} ${print(rwr.right)}`, NL);
                 }
             }
     }
@@ -42,34 +64,7 @@ export function generateStuffFromSoS(model: SoSSpec, grammar: Grammar[], filePat
     return generatedFilePath;
 }
 
-function print(elem: Expression | undefined) : string;
-function print(elem: MemberCall): string;
-function print(elem: NamedElement | undefined): string;
 
 
-function print(elem:any): string {
-  
-    if(isMemberCall(elem)){
-        console.log(elem.element?.ref)
-        var s : string =""
-        if (elem.element !== undefined) {
-            s= elem.element.$refText+":"+print(elem.element.ref)
-        }
-        return print(elem.previous)+"."+s
-    }
-    if(isExpression(elem)){
-        return "this is a expression"
-    }
-    if(isNamedElement(elem)){
-        return (elem.name)?elem.name:"noName"
-    }
-    if(isAssignment(elem)){
-        var temp = (elem.terminal as RuleCall).rule.ref
-        if( temp !== undefined){
-            return temp.name
-        }
-    }
-    return 'this';
-}
 
 
