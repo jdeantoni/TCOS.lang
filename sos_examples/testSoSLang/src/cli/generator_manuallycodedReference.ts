@@ -1,6 +1,6 @@
-
 import fs from 'fs';
 import { AstNode, CompositeGeneratorNode, NL, Reference, isReference, streamAllContents, streamAst, toString } from 'langium';
+import path from 'path';
 import { Model, isAssignment, isBloc, isIf, isModel, isPlus, isVarDecl, isVarRef } from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
 import { Range, integer } from 'vscode-languageclient';
@@ -11,18 +11,18 @@ var globalVariableCounter:integer = 0
 
 export function generateJavaScript(model: Model, filePath: string, destination: string | undefined): string {
     const data = extractDestinationAndName(filePath, destination);
-    const generatedCCSLFilePath = `generated/test1.lc`;
+    const generatedCCSLFilePath = `${path.join(data.destination, data.name)}.lc`;
 
     const ccslFile = new CompositeGeneratorNode();
 
-    ccslFile.append(`Specification test1 {`, NL, NL);
+    ccslFile.append(`Specification ${data.name} {`, NL, NL);
     generateCCSL(ccslFile, model);
 
-    const generatedCodeFilePath = `generated/test1.c`;
+    const generatedCodeFilePath = `${path.join(data.destination, data.name)}.c`;
     const codeFile = new CompositeGeneratorNode();
-    const generatedHeaderFilePath = `generated/test1.h`;
+    const generatedHeaderFilePath = `${path.join(data.destination, data.name)}.h`;
     const headerFile = new CompositeGeneratorNode();
-    codeFile.append(`#include "test1.h"`, NL, NL);
+    codeFile.append(`#include "${data.name}.h"`, NL, NL);
 
     generateCode(codeFile, headerFile, model);
 
@@ -38,9 +38,7 @@ export function generateJavaScript(model: Model, filePath: string, destination: 
 
 
 function generateCode(codeFile: CompositeGeneratorNode, headerFile: CompositeGeneratorNode, model: Model) {
-    headerFile.append(`
-#include <stdio.h>
-#include<stdbool.h>  `, NL, NL);
+    headerFile.append('#include <stdio.h>', NL, NL);
     
     var allRtdPositions: Map<AstNode,number> = new Map<AstNode, number>();
     var allRtdValues: Map<AstNode,number> = new Map<AstNode, number>();
@@ -57,59 +55,44 @@ function generateCode(codeFile: CompositeGeneratorNode, headerFile: CompositeGen
     `,NL)
 
     for (var node of streamAllContents(model)) {
+        if(isVarDecl(node)){
+            headerFile.append(`int ${getName(node)}_evaluate();`,NL)
+            codeFile.append(`
+            inline int ${getName(node)}_evaluate(){
+                return varList[${allRtdPositions.get(node)}];
+            }`,NL)
+        }
+        if(isPlus(node)){
+            headerFile.append(`int ${getName(node)}_evaluate();`,NL)
+            codeFile.append(`
+            inline int ${getName(node)}_evaluate(){
+                int n1 = ${getName((node.left))}_evaluate();
+                int n2 = ${getName((node.right))}_evaluate();
+                return n1 + n2;
+            }`,NL)
+        }
+        if(isAssignment(node)){
+            headerFile.append(`void ${getName(node)}_evaluate();`,NL)
+            codeFile.append(`
+            inline void ${getName(node)}_evaluate(){
+                int resRight = ${getName(node.right)}_evaluate();
+                varList[${allRtdPositions.get((node.left as Reference).ref as AstNode)}] = resRight;
+            }`,NL)
+        }
 
-                    if (isVarDecl(node)){
-                        headerFile.append(`int ${getName(node)}_evaluate();`,NL)
-                        codeFile.append(`
-                        inline int ${getName(node)}_evaluate(){
-                            return varList[${allRtdPositions.get(node)}];    
-                        }`,NL)
-                    }
-                    if (isVarRef(node)){
-                        headerFile.append(`int ${getName(node)}_evaluate();`,NL)
-                        codeFile.append(`
-                        inline int ${getName(node)}_evaluate(){
-                            int value = ${getName(node.ref)}_evaluate();
-                            return value;    
-                        }`,NL)
-                    }
-                    if (isPlus(node)){
-                        headerFile.append(`int ${getName(node)}_evaluate();`,NL)
-                        codeFile.append(`
-                        inline int ${getName(node)}_evaluate(){
-                            int n2 = ${getName(node.right)}_evaluate();
-                            int n1 = ${getName(node.left)}_evaluate();
-                            return (n1 + n2);    
-                        }`,NL)
-                    }
-                    if (isIf(node)){
-                        headerFile.append(`bool ${getName(node)}_evalCond();`,NL)
-                        codeFile.append(`
-                        inline bool ${getName(node)}_evalCond(){
-                            bool resCond = ${getName(node.cond)}_evaluate();
-                            return resCond;    
-                        }`,NL)
-                        headerFile.append(`void ${getName(node)}_condTrue();`,NL)
-                        codeFile.append(`
-                        inline void ${getName(node)}_condTrue(){    
-                        }`,NL)
-                        headerFile.append(`void ${getName(node)}_condFalse();`,NL)
-                        codeFile.append(`
-                        inline void ${getName(node)}_condFalse(){    
-                        }`,NL)
-                    }
-                    if (isAssignment(node)){
-                        headerFile.append(`int ${getName(node)}_evaluate();`,NL)
-                        codeFile.append(`
-                        inline int ${getName(node)}_evaluate(){
-                            int resRight = ${getName(node.right)}_evaluate();
-                                return varList[${allRtdPositions.get((node.left as Reference).ref as AstNode)}] = resRight;
-                                
-                        }`,NL)
-                    }   }
+        if(isVarRef(node)){
+            headerFile.append(`int ${getName(node)}_evaluate();`,NL)
+            codeFile.append(`
+            inline int ${getName(node)}_evaluate(){
+                int value = ${getName(node.ref)}_evaluate();
+                return value;
+            }`,NL)
+        }
+
+    }
+
+
 }
-
-
 
 
 

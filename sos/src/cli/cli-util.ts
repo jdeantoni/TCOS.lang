@@ -99,7 +99,7 @@ export async function extractSosAndGrammarModels(fileName: string, services: Lan
     ];
 }
 
-interface FilePathData {
+export interface FilePathData {
     destination: string,
     name: string
 }

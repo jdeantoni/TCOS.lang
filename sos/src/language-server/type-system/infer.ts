@@ -1,5 +1,5 @@
 import { AstNode } from "langium";
-import { BinaryExpression, /*RuleOpening, */isBinaryExpression, isBooleanExpression, isFieldMember, isMemberCall,  isNilExpression, isNumberExpression, isStringExpression, isTypeReference, isUnaryExpression, isVariableDeclaration, MemberCall, TypeReference, isRuleOpening, RuleOpening, isAssignment, ParserRule, isRuleCall } from "../generated/ast";
+import { BinaryExpression, /*RuleOpening, */isBinaryExpression, isBooleanExpression, isFieldMember, isMemberCall,  isNilExpression, isNumberExpression, isStringExpression, isTypeReference, isUnaryExpression, isVariableDeclaration, MemberCall, TypeReference, isRuleOpening, RuleOpening, isAssignment, ParserRule, isRuleCall, isTemporaryVariable, isCrossReference } from "../generated/ast";
 import { createBooleanType, createRuleOpeningType as createRuleOpeningType, createErrorType, createNilType, createNumberType, createStringType, createVoidType, isFunctionType, isStringType, TypeDescription, createParserRuleType } from "./descriptions";
 
 export function inferType(node: AstNode | undefined, cache: Map<AstNode, TypeDescription>): TypeDescription {
@@ -47,6 +47,15 @@ export function inferType(node: AstNode | undefined, cache: Map<AstNode, TypeDes
         }
     // } else if (isParameter(node)) {
     //     type = inferType(node.type, cache);
+    }
+    else if (isTemporaryVariable(node)) {
+        if (node.type) {
+            type = inferType(node.type, cache);
+        } else {
+            type = createErrorType('No type hint for this element', node);
+        }
+    // } else if (isParameter(node)) {
+    //     type = inferType(node.type, cache);
     } else if (isFieldMember(node)) {
         type = inferType(node.type, cache);
     } else if (isRuleOpening(node)) {
@@ -71,7 +80,13 @@ export function inferType(node: AstNode | undefined, cache: Map<AstNode, TypeDes
         if(isRuleCall(node.terminal)){
             type = createParserRuleType(node.terminal.rule.ref as ParserRule)
         }
-    }
+        if(isCrossReference(node.terminal)){
+            type = inferType(node.terminal.terminal, cache)
+        }
+    }else if(isRuleCall(node)){
+            type = createParserRuleType(node.rule.ref as ParserRule)
+        }
+        
 
 
     if (!type) {

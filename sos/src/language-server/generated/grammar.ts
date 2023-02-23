@@ -274,11 +274,16 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "cardinality": "?"
           },
           {
-            "$type": "RuleCall",
-            "rule": {
-              "$ref": "#/rules@5"
-            },
-            "arguments": []
+            "$type": "Assignment",
+            "feature": "constraint",
+            "operator": "=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@5"
+              },
+              "arguments": []
+            }
           }
         ]
       },
@@ -372,7 +377,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           },
           {
             "$type": "Assignment",
-            "feature": "right",
+            "feature": "left",
             "operator": "=",
             "terminal": {
               "$type": "RuleCall",
@@ -395,14 +400,6 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 },
                 {
                   "$type": "Keyword",
-                  "value": "or"
-                },
-                {
-                  "$type": "Keyword",
-                  "value": "xor"
-                },
-                {
-                  "$type": "Keyword",
                   "value": "coincides_with"
                 }
               ]
@@ -410,7 +407,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           },
           {
             "$type": "Assignment",
-            "feature": "left",
+            "feature": "right",
             "operator": "=",
             "terminal": {
               "$type": "RuleCall",

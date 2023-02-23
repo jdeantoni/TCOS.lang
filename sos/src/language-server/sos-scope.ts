@@ -9,7 +9,7 @@ import {
     DefaultScopeComputation, DefaultScopeProvider, EMPTY_SCOPE, getContainerOfType, Grammar, LangiumServices, ReferenceInfo,Scope, ScopeOptions, stream, StreamScope
 } from 'langium';
 
-import { AbstractRule, Assignment, isAssignment, isMemberCall, isRuleOpening, isRWRule, 
+import { AbstractRule, Assignment, CrossReference, isAssignment, isMemberCall, isRuleOpening, isRWRule, 
          isSchedulingRule, isSoSSpec, isTemporaryVariable, MemberCall, MethodMember, Parameter,
          ParserRule, RuleOpening, RWRule, SoSSpec, TypeReference, VariableDeclaration} from './generated/ast';
 import { getRuleOpeningChain, inferType } from './type-system/infer';
@@ -17,7 +17,7 @@ import { isParserRuleType, isRuleOpeningType } from './type-system/descriptions'
 import { AbstractElement } from './generated/ast';
 import { isGroup } from './generated/ast';
 import { Group } from './generated/ast';
-import { isAbstractRule, isGrammar } from 'langium/lib/grammar/generated/ast';
+import { isAbstractRule, isCrossReference, isGrammar } from 'langium/lib/grammar/generated/ast';
 import { getType } from '../utils/sos-utils';
 
 
@@ -37,10 +37,11 @@ export class SoSScopeProvider extends DefaultScopeProvider {
             // for now, `this` and `super` simply target the container class type
             if (context.reference.$refText === 'this' || context.reference.$refText === 'struct') {
                 // context.reference.ref = ruleOpeningItem ?
-                const ruleOpeningItem = getContainerOfType(context.container, isRuleOpening);
-                if (ruleOpeningItem) {
-                    return this.scopeRuleOpeningMembers(ruleOpeningItem);
-                }
+                throw new String("in sos-scope.ts line 40")
+                // const ruleOpeningItem = getContainerOfType(context.container, isRuleOpening);
+                // if (ruleOpeningItem) {
+                //     return this.scopeRuleOpeningMembers(ruleOpeningItem);
+                // }
             }
 
             const memberCall = context.container as MemberCall;
@@ -218,9 +219,27 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         
         var allScopeElements: AstNode[] = (ruleOpeningItem.onRule?.ref !== undefined)?this.getAllAssignments(ruleOpeningItem.onRule.ref.definition) : [];
         allScopeElements = allScopeElements.concat((ruleOpeningItem.onRule?.ref !== undefined)?this.getAllRules(ruleOpeningItem.onRule.ref.definition):[])        
-        //if (! isForSchedulingRule){
-            var allMembers:AstNode[] = getRuleOpeningChain(ruleOpeningItem).flatMap(e => e.runtimeState);
-            for(var rule of ruleOpeningItem.rules){
+        //if (! isForSchedulingRule)
+        var allMembers:AstNode[] = []
+        if (context && context.element && context.element.ref && isAssignment(context.element.ref) 
+            && isCrossReference((context.element.ref as unknown as Assignment).terminal)){
+            var parserRule = ((context.element.ref as unknown as Assignment).terminal as CrossReference).type.ref
+            var sosSpec =  getContainerOfType(ruleOpeningItem?.$container, isSoSSpec);
+            var contextRuleOpeningItem = undefined
+            if (sosSpec){
+                for(let rule of sosSpec?.rtdAndRules){
+                    if (isRuleOpening(rule) && rule.onRule.ref === parserRule){
+                        contextRuleOpeningItem = rule
+                    }
+                }
+            }
+            if(contextRuleOpeningItem){
+                allMembers= getRuleOpeningChain(contextRuleOpeningItem).flatMap(e => e.runtimeState);
+            }
+        }else{
+            allMembers = getRuleOpeningChain(ruleOpeningItem).flatMap(e => e.runtimeState);
+        }
+            for(let rule of ruleOpeningItem.rules){
                 if(isRWRule(rule)){
                     for(var prem of (rule as RWRule).premise){
                         if(isTemporaryVariable(prem.right)){

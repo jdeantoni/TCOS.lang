@@ -1,0 +1,17 @@
+{
+    "files.associations": {
+        "*.tcc": "c",
+        "bitset": "c",
+        "string": "c",
+        "array": "c",
+        "string_view": "c",
+        "ostream": "c",
+        "sstream": "c",
+        "__config": "c",
+        "__locale": "c",
+        "locale": "c",
+        "tuple": "c",
+        "test1.h": "c",
+        "stdio.h": "c"
+    }
+}

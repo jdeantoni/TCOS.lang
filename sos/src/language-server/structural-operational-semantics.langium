@@ -29,13 +29,13 @@ ImportStatement:
 //     '}';
 
 SchedulingRule:
-    "sched" (condition=Logical "implies")? (loop=SequenceLoop)? SchedulingConstraint;  
+    "sched" (condition=Logical "implies")? (loop=SequenceLoop)? constraint=SchedulingConstraint; 
  
 SequenceLoop:
     'foreach' itVar=TemporaryVariable 'in' '[' lowerBound=NUMBER ';' upperBound=Expression '['; 
 
 SchedulingConstraint:
-    '{'right=Expression operator=("precedes" | "or" | "xor" | ("coincides_with")) left=Expression'}';
+    '{'left=Expression operator=("precedes" | ("coincides_with")) right=Expression'}';  
 
 RWRule: 
     {infer RWRule}
@@ -74,14 +74,14 @@ Expression:
 SoSAssignment infers Expression:
     Addition ({infer BinaryExpression.left=current} operator=('=') right=Addition)*;
 
-Addition infers Expression:
+Addition infers Expression: 
     Multiplication ({infer BinaryExpression.left=current} operator=('+' | '-') right=Multiplication)*;
 
 Multiplication infers Expression:
     Logical ({infer BinaryExpression.left=current} operator=('*' | '/') right=Logical)*;
 
 Logical infers Expression:
-    Comparison ({infer BinaryExpression.left=current} operator=('and' | 'or' | 'xor') right=Comparison)*;
+    Comparison ({infer BinaryExpression.left=current} operator=('and' | 'or' | 'xor') right=Comparison)*; 
 
 Comparison infers Expression:
     MemberCall ({infer BinaryExpression.left=current} operator=('<' | '<=' | '>' | '>=' | '==' | '!=') right=MemberCall)*; 

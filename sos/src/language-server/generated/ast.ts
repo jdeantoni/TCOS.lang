@@ -430,10 +430,25 @@ export function isRWRule(item: unknown): item is RWRule {
     return reflection.isInstance(item, RWRule);
 }
 
+export interface SchedulingConstraint extends AstNode {
+    readonly $container: SchedulingRule;
+    readonly $type: 'SchedulingConstraint';
+    left: Expression
+    operator: 'coincides_with' | 'precedes'
+    right: Expression
+}
+
+export const SchedulingConstraint = 'SchedulingConstraint';
+
+export function isSchedulingConstraint(item: unknown): item is SchedulingConstraint {
+    return reflection.isInstance(item, SchedulingConstraint);
+}
+
 export interface SchedulingRule extends AstNode {
     readonly $container: RuleOpening;
-    readonly $type: 'SchedulingConstraint' | 'SchedulingRule';
-    condition: Expression
+    readonly $type: 'SchedulingRule';
+    condition?: Expression
+    constraint: SchedulingConstraint
     loop?: SequenceLoop
 }
 
@@ -820,20 +835,6 @@ export function isWildcard(item: unknown): item is Wildcard {
     return reflection.isInstance(item, Wildcard);
 }
 
-export interface SchedulingConstraint extends SchedulingRule {
-    readonly $container: RuleOpening;
-    readonly $type: 'SchedulingConstraint';
-    left: Expression
-    operator: 'coincides_with' | 'or' | 'precedes' | 'xor'
-    right: Expression
-}
-
-export const SchedulingConstraint = 'SchedulingConstraint';
-
-export function isSchedulingConstraint(item: unknown): item is SchedulingConstraint {
-    return reflection.isInstance(item, SchedulingConstraint);
-}
-
 export interface StructuralOperationalSemanticsAstType {
     AbstractElement: AbstractElement
     AbstractRule: AbstractRule
@@ -964,9 +965,6 @@ export class StructuralOperationalSemanticsAstReflection extends AbstractAstRefl
             case UntilToken:
             case Wildcard: {
                 return this.isSubtype(AbstractElement, supertype);
-            }
-            case SchedulingConstraint: {
-                return this.isSubtype(SchedulingRule, supertype);
             }
             default: {
                 return false;

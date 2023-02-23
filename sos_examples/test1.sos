@@ -1,36 +1,55 @@
 test1
 import "testSoSLang/src/language-server/simple-l.langium"
 
-open non atomic rule Statement {
+// open non atomic rule Statement {
 
-}
+// }
 
 open non atomic rule Model {
 
-    var test: Statement //TODO add all AbstractElement in the scope
+    //var test: Statement
 
     sched { startEvaluation coincides_with statements.first().startEvaluation}
     sched { finishEvaluation coincides_with statements.last().finishEvaluation}
-    sched foreach i in [0; statements.length() -1[ {
+    sched foreach i in [0; statements.length()[ {
         statements.at(i).finishEvaluation precedes statements.at(i+1).startEvaluation 
     }
 }
 
-open atomic rule VarDecl {
+open non atomic rule Bloc {
+
+    //var test: Statement
+
+    sched { startEvaluation coincides_with statements.first().startEvaluation}
+    sched { finishEvaluation coincides_with statements.last().finishEvaluation}
+    sched foreach i in [0; statements.length()[ {
+        statements.at(i).finishEvaluation precedes statements.at(i+1).startEvaluation 
+    }
+}
+
+open non atomic rule VarDecl {
 
     var currentValue:number = initialValue
 
-rwr  
-    --------------------------- getCurrentValue
-     <this,σ> ~> currentValue
+    rwr  
+        --------------------------- evaluate
+        <this,σ> ~> currentValue
+
+}
+
+open atomic rule VarRef {
+
+    rwr  <ref,σ> -> value:number
+        --------------------------- evaluate
+        <this,σ> ~> value
 
 }
 
 open atomic rule Plus {
    
-rwr    <right,σ> -> n2:number ; <left,σ> -> n1:number
-    ---------------------------------------------- plusRWR
-                <this,σ> ~> n1 + n2 
+    rwr    <right,σ> -> n2:number ; <left,σ> -> n1:number
+           ---------------------------------------------- evaluate
+                       <this,σ> ~> n1 + n2 
 }
 
 
@@ -39,18 +58,24 @@ open non atomic rule If {
     sched {evalCond precedes (condTrue xor condFalse)}
 
 
-rwr    <cond,σ> -> resCond:boolean
-    ------------------------ evalCond
-       <this,σ> ~> resCond
+    rwr    <cond,σ> -> resCond:boolean
+        ------------------------ evalCond
+        <this,σ> ~> resCond
 
 
-rwr    <cond,σ> -> true
-    ------------------------ condTrue
-      <this,σ> ~> <then,σ>
+    rwr    <cond,σ> -> true 
+        ------------------------ condTrue
+        <this,σ> ~> <then,σ>
 
 
-rwr    <cond,σ> -> false
-    ------------------------ condFalse
-      <this,σ> ~> <else,σ>
+    rwr    <cond,σ> -> false
+        ------------------------ condFalse
+        <this,σ> ~> <else,σ>
 
+} 
+
+open non atomic rule Assignment {
+    rwr           <right,σ> -> resRight: number //here we cannot know the type. inference must be improved to avoid void type
+        ------------------------------------------- evaluate
+          <this,σ> ~> left.currentValue = resRight
 }
