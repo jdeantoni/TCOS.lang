@@ -1,4 +1,4 @@
-var a = 3
+var a = 0
 var b = 4
 a = a + a
 if (a){

@@ -8,6 +8,7 @@
 #include "propag.h"
 #include "param.h"
 #include "core.h"
+#include "test2.h"
 
 
 typedef struct caus2{
@@ -172,6 +173,7 @@ void closeSampl(Sampl* data);
 
 int main(int argc, char** argv){
 	char clockNameOfInt[][35] = {"Model0_0_8_9_startEvaluation", "Model0_0_8_9_finishEvaluation", "VarDecl0_0_0_9_startEvaluation", "VarDecl0_0_0_9_finishEvaluation", "VarDecl1_0_1_9_startEvaluation", "VarDecl1_0_1_9_finishEvaluation", "Assignment2_0_2_9_startEvaluation", "Assignment2_0_2_9_finishEvaluation", "If3_0_7_1_startEvaluation", "If3_0_7_1_finishEvaluation", "If3_0_7_1_evalCond", "If3_0_7_1_condTrue", "If3_0_7_1_condFalse", "Bloc3_6_5_1_startEvaluation", "Bloc3_6_5_1_finishEvaluation", "Assignment4_4_4_9_startEvaluation", "Assignment4_4_4_9_finishEvaluation", "Bloc5_5_7_1_startEvaluation", "Bloc5_5_7_1_finishEvaluation", "Assignment6_4_6_9_startEvaluation", "Assignment6_4_6_9_finishEvaluation", "Assignment8_0_8_9_startEvaluation", "Assignment8_0_8_9_finishEvaluation", "tmp_If3_0_7_1_xor", "tmp_If3_0_7_1_endThenOrElse"};
+	void (*rwrPointerOfInt[35])()  = {NULL, NULL, VarDecl0_0_0_9_evaluate, NULL, VarDecl1_0_1_9_evaluate, NULL, Assignment2_0_2_9_evaluate, NULL, NULL, NULL, If3_0_7_1_evalCond, NULL, NULL, NULL, NULL, Assignment4_4_4_9_evaluate, NULL, NULL, NULL, Assignment6_4_6_9_evaluate, NULL, Assignment8_0_8_9_evaluate, NULL, NULL, NULL};
 	int isBaseClock[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 	int counterTicks[N] = {0};
 	int timeLastTick[N] = {0};
@@ -287,6 +289,9 @@ int main(int argc, char** argv){
 	Uni0n defUni0ntmp_If3_0_7_1_endThenOrElseBloc3_6_5_1_finishEvaluationBloc5_5_7_1_finishEvaluation;
 	initUni0n(&defUni0ntmp_If3_0_7_1_endThenOrElseBloc3_6_5_1_finishEvaluationBloc5_5_7_1_finishEvaluation, 24, 14, 18);
 
+	bool retFromRwr = false;
+
+
 	for(int i = 0; i < NUMSTEP; i++){
 		ListeC* in = newListC();
 
@@ -400,7 +405,6 @@ int main(int argc, char** argv){
 		auxRel1 = computeUni0n(&defUni0ntmp_If3_0_7_1_xorIf3_0_7_1_condTrueIf3_0_7_1_condFalse);
 		addC(in, auxRel1);
 
-
 		auxRel1 = computeUni0n(&defUni0ntmp_If3_0_7_1_endThenOrElseBloc3_6_5_1_finishEvaluationBloc5_5_7_1_finishEvaluation);
 		addC(in, auxRel1);
 
@@ -408,20 +412,29 @@ int main(int argc, char** argv){
 		//data dependent control test
 		Not tmpNot;
 		unsigned int sizeofClockTab = sizeof(clockNameOfInt)/sizeof(clockNameOfInt[0]);
+		int evalCondi = 0;
+		for(; evalCondi < sizeofClockTab; evalCondi++){
+			if (strcmp(clockNameOfInt[evalCondi], "If3_0_7_1_evalCond")==0){
+				break;
+			}
+		}
+		
 		int jdi = 0;
 		for(; jdi < sizeofClockTab; jdi++){
 			if (strcmp(clockNameOfInt[jdi], "If3_0_7_1_condTrue")==0){
 				break;
 			}
 		}
-		initNot(&tmpNot, jdi);
-		auxRel1 = computeNot(&tmpNot);
-		addC(in, auxRel1);
+		if(retFromRwr){
+			initNot(&tmpNot, jdi);
+			auxRel1 = computeNot(&tmpNot);
+			addC(in, auxRel1);
+		}
 
 		int goodRes[N];
-
+		printf("\nstart core\n");
 		core(in, goodRes);
-
+		printf("\nend core\n");
 #ifdef DEBUG_BASE
 
 		printf("Final Decision Result at step %d.\n", i);
@@ -430,6 +443,16 @@ int main(int argc, char** argv){
 			if(goodRes[k] > 0){
 				counterTicks[k] += 1;
 				timeLastTick[k] = 0;
+				printf("\nstart calling rewriting rules %i\n",k);
+				if(rwrPointerOfInt[k] != NULL){
+					if(k == evalCondi){
+						//printf("\ncheck k\n");
+						retFromRwr = ((bool (*)()) rwrPointerOfInt[k])();
+					}else{
+						rwrPointerOfInt[k]();
+					}
+				}
+				printf("\nend calling rewriting rules %i\n", k);
 #ifdef PRINT_SCHEDULE
 				printf("%s ", clockNameOfInt[k]);
 #endif
@@ -437,6 +460,7 @@ int main(int argc, char** argv){
 			else{
 				timeLastTick[k] += 1;			}
 		}
+		printf("\nend for goodRes loop !\n");
 #ifdef PRINT_SCHEDULE
 		printf("\n\n");
 #endif

@@ -4,6 +4,7 @@ import { AstNode, CompositeGeneratorNode, NL, Reference, isReference, streamAllC
 import { Model, isAssignment, isBloc, isIf, isModel, isPlus, isVarDecl, isVarRef } from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
 import { Range, integer } from 'vscode-languageclient';
+import path from 'path';
 
 
 var globalUnNamedCounter:integer = 0
@@ -11,16 +12,16 @@ var globalVariableCounter:integer = 0
 
 export function generateJavaScript(model: Model, filePath: string, destination: string | undefined): string {
     const data = extractDestinationAndName(filePath, destination);
-    const generatedCCSLFilePath = `generated/test1.lc`;
+    const generatedCCSLFilePath = `${path.join(data.destination, data.name)}.lc`;
 
     const ccslFile = new CompositeGeneratorNode();
 
     ccslFile.append(`Specification test1 {`, NL, NL);
     generateCCSL(ccslFile, model);
 
-    const generatedCodeFilePath = `generated/test1.c`;
+    const generatedCodeFilePath = `${path.join(data.destination, data.name)}.c`;
     const codeFile = new CompositeGeneratorNode();
-    const generatedHeaderFilePath = `generated/test1.h`;
+    const generatedHeaderFilePath = `${path.join(data.destination, data.name)}.h`;
     const headerFile = new CompositeGeneratorNode();
     codeFile.append(`#include "test1.h"`, NL, NL);
 
