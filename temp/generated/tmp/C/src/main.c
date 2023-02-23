@@ -432,9 +432,9 @@ int main(int argc, char** argv){
 		}
 
 		int goodRes[N];
-		printf("\nstart core\n");
+		// printf("\nstart core\n");
 		core(in, goodRes);
-		printf("\nend core\n");
+		// printf("\nend core\n");
 #ifdef DEBUG_BASE
 
 		printf("Final Decision Result at step %d.\n", i);
@@ -443,7 +443,7 @@ int main(int argc, char** argv){
 			if(goodRes[k] > 0){
 				counterTicks[k] += 1;
 				timeLastTick[k] = 0;
-				printf("\nstart calling rewriting rules %i\n",k);
+				// printf("\nstart calling rewriting rules %i\n",k);
 				if(rwrPointerOfInt[k] != NULL){
 					if(k == evalCondi){
 						//printf("\ncheck k\n");
@@ -452,7 +452,7 @@ int main(int argc, char** argv){
 						rwrPointerOfInt[k]();
 					}
 				}
-				printf("\nend calling rewriting rules %i\n", k);
+				// printf("\nend calling rewriting rules %i\n", k);
 #ifdef PRINT_SCHEDULE
 				printf("%s ", clockNameOfInt[k]);
 #endif
@@ -460,7 +460,7 @@ int main(int argc, char** argv){
 			else{
 				timeLastTick[k] += 1;			}
 		}
-		printf("\nend for goodRes loop !\n");
+		// printf("\nend for goodRes loop !\n");
 #ifdef PRINT_SCHEDULE
 		printf("\n\n");
 #endif

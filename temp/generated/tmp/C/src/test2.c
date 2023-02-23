@@ -1,7 +1,7 @@
 #include "test2.h"
 
 
-    int varList[2] = {3,4};
+    int varList[2] = {0,4};
     
 
                         inline int VarDecl0_0_0_9_evaluate(){

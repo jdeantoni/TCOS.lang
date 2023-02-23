@@ -157,14 +157,14 @@ void core(ListeC* in, int* goodRes){
 			else if(c0 == c1){
 				new.c0 = c2;
 				new.c1 = c0;
-				add(new.c2, new.c0);
+				add(new.c0, new.c1);
 				new.type = IMPLI;
 				addC(normCons, new);
 			}
 			else if(c0 == c2){
 				new.c0 = c1;
 				new.c1 = c0;
-				add(new.c1, new.c0);;
+				add(new.c0, new.c1);
 				new.type = IMPLI;
 				addC(normCons, new);
 			}
@@ -200,7 +200,7 @@ void core(ListeC* in, int* goodRes){
 			else if(c0 == c1){
 				new.c0 = c0;
 				new.c1 = c2;
-				add(new.c0, new.c2);
+				add(new.c0, new.c1);
 				new.type = IMPLI;
 				addC(normCons, new);
 			}
