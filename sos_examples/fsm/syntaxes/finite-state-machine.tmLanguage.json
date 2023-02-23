@@ -10,7 +10,7 @@
     },
     {
       "name": "keyword.control.finite-state-machine",
-      "match": "\\b(Hello|person)\\b"
+      "match": "\\b(state)\\b"
     },
     {
       "name": "string.quoted.double.finite-state-machine",

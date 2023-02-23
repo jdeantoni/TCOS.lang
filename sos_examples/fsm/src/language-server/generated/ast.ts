@@ -6,52 +6,56 @@
 /* eslint-disable */
 import { AstNode, AbstractAstReflection, Reference, ReferenceInfo, TypeMetaData } from 'langium';
 
-export interface Greeting extends AstNode {
-    readonly $container: Model;
-    readonly $type: 'Greeting';
-    person: Reference<Person>
+export interface FSMModel extends AstNode {
+    readonly $type: 'FSMModel';
+    states: Array<State>
+    transitions: Array<Transition>
 }
 
-export const Greeting = 'Greeting';
+export const FSMModel = 'FSMModel';
 
-export function isGreeting(item: unknown): item is Greeting {
-    return reflection.isInstance(item, Greeting);
+export function isFSMModel(item: unknown): item is FSMModel {
+    return reflection.isInstance(item, FSMModel);
 }
 
-export interface Model extends AstNode {
-    readonly $type: 'Model';
-    greetings: Array<Greeting>
-    persons: Array<Person>
-}
-
-export const Model = 'Model';
-
-export function isModel(item: unknown): item is Model {
-    return reflection.isInstance(item, Model);
-}
-
-export interface Person extends AstNode {
-    readonly $container: Model;
-    readonly $type: 'Person';
+export interface State extends AstNode {
+    readonly $container: FSMModel;
+    readonly $type: 'State';
+    isInitial: boolean
     name: string
 }
 
-export const Person = 'Person';
+export const State = 'State';
 
-export function isPerson(item: unknown): item is Person {
-    return reflection.isInstance(item, Person);
+export function isState(item: unknown): item is State {
+    return reflection.isInstance(item, State);
+}
+
+export interface Transition extends AstNode {
+    readonly $container: FSMModel;
+    readonly $type: 'Transition';
+    event: string
+    name: string
+    source: Reference<State>
+    target: Reference<State>
+}
+
+export const Transition = 'Transition';
+
+export function isTransition(item: unknown): item is Transition {
+    return reflection.isInstance(item, Transition);
 }
 
 export interface FiniteStateMachineAstType {
-    Greeting: Greeting
-    Model: Model
-    Person: Person
+    FSMModel: FSMModel
+    State: State
+    Transition: Transition
 }
 
 export class FiniteStateMachineAstReflection extends AbstractAstReflection {
 
     getAllTypes(): string[] {
-        return ['Greeting', 'Model', 'Person'];
+        return ['FSMModel', 'State', 'Transition'];
     }
 
     protected override computeIsSubtype(subtype: string, supertype: string): boolean {
@@ -65,8 +69,9 @@ export class FiniteStateMachineAstReflection extends AbstractAstReflection {
     getReferenceType(refInfo: ReferenceInfo): string {
         const referenceId = `${refInfo.container.$type}:${refInfo.property}`;
         switch (referenceId) {
-            case 'Greeting:person': {
-                return Person;
+            case 'Transition:source':
+            case 'Transition:target': {
+                return State;
             }
             default: {
                 throw new Error(`${referenceId} is not a valid reference id.`);
@@ -76,12 +81,20 @@ export class FiniteStateMachineAstReflection extends AbstractAstReflection {
 
     getTypeMetaData(type: string): TypeMetaData {
         switch (type) {
-            case 'Model': {
+            case 'FSMModel': {
                 return {
-                    name: 'Model',
+                    name: 'FSMModel',
                     mandatory: [
-                        { name: 'greetings', type: 'array' },
-                        { name: 'persons', type: 'array' }
+                        { name: 'states', type: 'array' },
+                        { name: 'transitions', type: 'array' }
+                    ]
+                };
+            }
+            case 'State': {
+                return {
+                    name: 'State',
+                    mandatory: [
+                        { name: 'isInitial', type: 'boolean' }
                     ]
                 };
             }

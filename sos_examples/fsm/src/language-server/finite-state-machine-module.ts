@@ -3,15 +3,15 @@ import {
     LangiumServices, LangiumSharedServices, Module, PartialLangiumServices
 } from 'langium';
 import { FiniteStateMachineGeneratedModule, FiniteStateMachineGeneratedSharedModule } from './generated/module';
-import { FiniteStateMachineValidator, registerValidationChecks } from './finite-state-machine-validator';
+// import { FiniteStateMachineValidator, registerValidationChecks } from './finite-state-machine-validator';
 
 /**
  * Declaration of custom services - add your own service classes here.
  */
 export type FiniteStateMachineAddedServices = {
-    validation: {
-        FiniteStateMachineValidator: FiniteStateMachineValidator
-    }
+    // validation: {
+    //     FiniteStateMachineValidator: FiniteStateMachineValidator
+    // }
 }
 
 /**
@@ -26,9 +26,9 @@ export type FiniteStateMachineServices = LangiumServices & FiniteStateMachineAdd
  * selected services, while the custom services must be fully specified.
  */
 export const FiniteStateMachineModule: Module<FiniteStateMachineServices, PartialLangiumServices & FiniteStateMachineAddedServices> = {
-    validation: {
-        FiniteStateMachineValidator: () => new FiniteStateMachineValidator()
-    }
+    // validation: {
+    //     FiniteStateMachineValidator: () => new FiniteStateMachineValidator()
+    // }
 };
 
 /**
@@ -60,6 +60,6 @@ export function createFiniteStateMachineServices(context: DefaultSharedModuleCon
         FiniteStateMachineModule
     );
     shared.ServiceRegistry.register(FiniteStateMachine);
-    registerValidationChecks(FiniteStateMachine);
+    // registerValidationChecks(FiniteStateMachine);
     return { shared, FiniteStateMachine };
 }

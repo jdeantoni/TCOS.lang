@@ -1,13 +1,13 @@
 grammar FiniteStateMachine
 
-entry Model:
-    (persons+=Person | greetings+=Greeting)*;
+entry FSMModel:
+    (states+=State | transitions+=Transition)*;
 
-Person:
-    'person' name=ID;
+State:
+    (isInitial?='*')? 'state' name=ID;
 
-Greeting:
-    'Hello' person=[Person:ID] '!';
+Transition:
+    name=ID':' source=[State:ID] '--'event=ID'-->' target=[State:ID];
 
 hidden terminal WS: /\s+/;
 terminal ID: /[_a-zA-Z][\w_]*/;

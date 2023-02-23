@@ -1,0 +1,4 @@
+* state s1
+state s2
+t1: s1 --zaza--> s2
+t2: s2 --titi--> s1

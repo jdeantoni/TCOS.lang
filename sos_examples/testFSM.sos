@@ -1,0 +1,10 @@
+testFSM
+import "fsm/src/language-server/finite-state-machine.langium"
+
+open non atomic rule FSMModel {
+    var currentState:State
+
+    rwr                    
+       --------------------------- init
+            <this,σ> ~> currentState = states.at(0)
+}

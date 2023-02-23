@@ -9,7 +9,7 @@ import {
     DefaultScopeComputation, DefaultScopeProvider, EMPTY_SCOPE, getContainerOfType, Grammar, LangiumServices, ReferenceInfo,Scope, ScopeOptions, stream, StreamScope
 } from 'langium';
 
-import { AbstractRule, Assignment, CrossReference, isAssignment, isMemberCall, isRuleOpening, isRWRule, 
+import { AbstractRule, Assignment, CrossReference, isAlternatives, isAssignment, isMemberCall, isRuleOpening, isRWRule, 
          isSchedulingRule, isSoSSpec, isTemporaryVariable, MemberCall, MethodMember, Parameter,
          ParserRule, RuleOpening, RWRule, SoSSpec, TypeReference, VariableDeclaration} from './generated/ast';
 import { getRuleOpeningChain, inferType } from './type-system/infer';
@@ -17,7 +17,7 @@ import { isParserRuleType, isRuleOpeningType } from './type-system/descriptions'
 import { AbstractElement } from './generated/ast';
 import { isGroup } from './generated/ast';
 import { Group } from './generated/ast';
-import { isAbstractRule, isCrossReference, isGrammar } from 'langium/lib/grammar/generated/ast';
+import { Alternatives, isAbstractRule, isCrossReference, isGrammar } from 'langium/lib/grammar/generated/ast';
 import { getType } from '../utils/sos-utils';
 
 
@@ -313,10 +313,15 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         var allAssignments: Assignment[] = [];
 
         if (isGroup(element)) {
-            for (var e of (element as Group).elements) {
+            for (let e of (element as Group).elements) {
                 allAssignments = allAssignments.concat(this.getAllAssignments(e));
             }
-        } else
+        } else if (isAlternatives(element)) {
+            for (let e of (element as Alternatives).elements) {
+                allAssignments = allAssignments.concat(this.getAllAssignments(e));
+            }
+        }
+         else
             if (isAssignment(element)) {
                 allAssignments.push(element);
             }

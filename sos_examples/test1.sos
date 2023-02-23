@@ -1,4 +1,4 @@
-test1
+testSimple-l
 import "testSoSLang/src/language-server/simple-l.langium"
 
 // open non atomic rule Statement {
