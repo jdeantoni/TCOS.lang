@@ -1,0 +1,57 @@
+{
+  "name": "finite-state-machine",
+  "scopeName": "source.finite-state-machine",
+  "fileTypes": [
+    ".fsm"
+  ],
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "name": "keyword.control.finite-state-machine",
+      "match": "\\b(Hello|person)\\b"
+    },
+    {
+      "name": "string.quoted.double.finite-state-machine",
+      "begin": "\"",
+      "end": "\""
+    },
+    {
+      "name": "string.quoted.single.finite-state-machine",
+      "begin": "'",
+      "end": "'"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.block.finite-state-machine",
+          "begin": "/\\*",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.finite-state-machine"
+            }
+          },
+          "end": "\\*/",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.finite-state-machine"
+            }
+          }
+        },
+        {
+          "begin": "//",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.whitespace.comment.leading.finite-state-machine"
+            }
+          },
+          "end": "(?=$)",
+          "name": "comment.line.finite-state-machine"
+        }
+      ]
+    }
+  }
+}
