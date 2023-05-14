@@ -445,7 +445,8 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           },
           {
             "$type": "Keyword",
-            "value": "rwr"
+            "value": "rwr",
+            "cardinality": "?"
           },
           {
             "$type": "Group",
@@ -688,6 +689,10 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "cardinality": "+"
               }
             ]
+          },
+          {
+            "$type": "Keyword",
+            "value": ";"
           }
         ]
       },
@@ -838,6 +843,10 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
               }
             ],
             "cardinality": "?"
+          },
+          {
+            "$type": "Keyword",
+            "value": ";"
           }
         ]
       },

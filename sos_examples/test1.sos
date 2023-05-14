@@ -1,13 +1,9 @@
-testSimple-l
+testSimpleL
 import "testSoSLang/src/language-server/simple-l.langium"
 
-// open non atomic rule Statement {
 
-// }
 
-open non atomic rule Model {
-
-    //var test: Statement
+open non atomic rule Model { 
 
     sched { startEvaluation coincides_with statements.first().startEvaluation}
     sched { finishEvaluation coincides_with statements.last().finishEvaluation}
@@ -29,27 +25,27 @@ open non atomic rule Bloc {
 
 open non atomic rule VarDecl {
 
-    var currentValue:number = initialValue
+    var currentValue:number = initialValue;
 
-    rwr  
-        --------------------------- evaluate
-        <this,σ> ~> currentValue
+      
+    --------------------------- evaluate
+     <this,σ> ~> currentValue;
 
 }
 
 open atomic rule VarRef {
-
-    rwr  <ref,σ> -> value:number
-        --------------------------- evaluate
-        <this,σ> ~> value
+    
+      <ref,σ> -> value:number
+    --------------------------- evaluate
+         <this,σ> ~> value;
 
 }
 
 open atomic rule Plus {
    
-    rwr    <right,σ> -> n2:number ; <left,σ> -> n1:number
-           ---------------------------------------------- evaluate
-                       <this,σ> ~> n1 + n2 
+    <right,σ> -> n2:number ; <left,σ> -> n1:number
+    ---------------------------------------------- evaluate
+                 <this,σ> ~> n1 + n2 ;
 }
 
 
@@ -58,24 +54,24 @@ open non atomic rule If {
     sched {evalCond precedes (condTrue xor condFalse)}
 
 
-    rwr    <cond,σ> -> resCond:boolean
-        ------------------------ evalCond
-        <this,σ> ~> resCond
+       <cond,σ> -> resCond:boolean
+    -------------------------------- evalCond
+          <this,σ> ~> resCond;
 
 
-    rwr    <cond,σ> -> true 
-        ------------------------ condTrue
-        <this,σ> ~> <then,σ>
+       <cond,σ> -> true 
+    ---------------------- condTrue
+     <this,σ> ~> <then,σ>;
 
 
-    rwr    <cond,σ> -> false
-        ------------------------ condFalse
-        <this,σ> ~> <else,σ>
+       <cond,σ> -> false
+    ---------------------- condFalse
+     <this,σ> ~> <else,σ>;
 
 } 
 
 open non atomic rule Assignment {
-    rwr           <right,σ> -> resRight: number //here we cannot know the type. inference must be improved to avoid void type
-        ------------------------------------------- evaluate
-          <this,σ> ~> left.currentValue = resRight
+          <right,σ> -> resRight: number         //here we cannot know the type. inference must be improved to avoid void type
+    ------------------------------------------- evaluate
+      <this,σ> ~> left.currentValue = resRight;
 }

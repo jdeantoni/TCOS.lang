@@ -33,41 +33,26 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         // target element of member calls
         // console.log("###getScopeProvider: context.property = "+context.property+"\n\t context.reference.$refText = "+context.reference.$refText)        
         
-        if (context.property === 'element' || context.property === 'left' || context.property === 'right' || context.property === "reference") {
-            // for now, `this` and `super` simply target the container class type
-            if (context.reference.$refText === 'this' || context.reference.$refText === 'struct') {
-                // context.reference.ref = ruleOpeningItem ?
-                throw new String("in sos-scope.ts line 40")
-                // const ruleOpeningItem = getContainerOfType(context.container, isRuleOpening);
-                // if (ruleOpeningItem) {
-                //     return this.scopeRuleOpeningMembers(ruleOpeningItem);
-                // }
-            }
-
+        if (context.property === 'element' /*|| context.property === 'left' || context.property === 'right' || context.property === "reference"*/) {
             const memberCall = context.container as MemberCall;
             const previous = memberCall.previous;
             if (!previous) {
                // return super.getScope(context);
                 const ruleOpeningItem = getContainerOfType(context.container, isRuleOpening);
-                const potentialSchedulingRuleItem = getContainerOfType(context.container, isSchedulingRule);
                 if (ruleOpeningItem) {
-                    if (potentialSchedulingRuleItem){
-                     return this.scopeRuleOpeningMembers(ruleOpeningItem, true);
-                    }
-                    else {
-                        return this.scopeRuleOpeningMembers(ruleOpeningItem);
-                    }
+                    return this.scopeRuleOpeningMembers(ruleOpeningItem);
                 }
             }
-            if (isMemberCall(previous) && previous.element !== undefined /*&& previous.element.$refText === 'this'*/){
+            if (isMemberCall(previous) && previous.element !== undefined){
                 const ruleOpeningItem = getContainerOfType(previous.$container, isRuleOpening);
                 if (ruleOpeningItem) {
-                    return this.scopeRuleOpeningMembers(ruleOpeningItem, false,previous);
+                    return this.scopeRuleOpeningMembers(ruleOpeningItem,previous);
                 }
             }
             const previousType = inferType(previous, new Map());
             if (isRuleOpeningType(previousType)) {
-                return this.scopeRuleOpeningMembers(previousType.literal);
+                throw new String("in sos-scope.ts line 54")
+               // return this.scopeRuleOpeningMembers(previousType.literal);
             }else if (isParserRuleType(previousType)) {
                 //either the rule has been open and then we need the cope of this ruleOpening or not and then only "assigments" have to be considered
                 const sosSpecItem: SoSSpec | undefined = getContainerOfType(previous?.$container, isSoSSpec);
@@ -75,6 +60,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                     for(var ro of sosSpecItem.rtdAndRules){
                         if (isRuleOpening(ro)){
                             if (ro.onRule.$refText === previousType.literal.name){
+                                
                                 return this.scopeRuleOpeningMembers(ro);
                             }
                         }
@@ -215,7 +201,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
 
     }
 
-    private scopeRuleOpeningMembers(ruleOpeningItem: RuleOpening, isForSchedulingRule: boolean = false, context: MemberCall | undefined = undefined): Scope {
+    private scopeRuleOpeningMembers(ruleOpeningItem: RuleOpening, context: MemberCall | undefined = undefined): Scope {
         
         var allScopeElements: AstNode[] = (ruleOpeningItem.onRule?.ref !== undefined)?this.getAllAssignments(ruleOpeningItem.onRule.ref.definition) : [];
         allScopeElements = allScopeElements.concat((ruleOpeningItem.onRule?.ref !== undefined)?this.getAllRules(ruleOpeningItem.onRule.ref.definition):[])        

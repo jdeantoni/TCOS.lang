@@ -1,13 +1,26 @@
 grammar FiniteStateMachine
 
 entry FSMModel:
-    (states+=State | transitions+=Transition)*;
+    events+=Event
+    fsms+=FSM;
+
+FSM:
+    name=ID ':' (states+=State | transitions+=Transition)*;
+
+Event:
+    name=ID;
 
 State:
-    (isInitial?='*')? 'state' name=ID;
+    (isInitial?='*')? 'state' name=ID'{'
+        'in'':' inTransitions+=[Transition:ID]
+        'out'':' outTransitions+=[Transition:ID]
+    '}';
 
 Transition:
-    name=ID':' source=[State:ID] '--'event=ID'-->' target=[State:ID];
+    name=ID':' source=[State:ID] 
+    '---'('when' event=[Event:ID] | 'after' time=INT) 
+    '/' 
+    sentEvent=[Event:ID] '-->' target=[State:ID];
 
 hidden terminal WS: /\s+/;
 terminal ID: /[_a-zA-Z][\w_]*/;

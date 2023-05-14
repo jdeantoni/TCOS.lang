@@ -16,23 +16,11 @@ export const FiniteStateMachineGrammar = (): Grammar => loadedFiniteStateMachine
       "name": "FSMModel",
       "entry": true,
       "definition": {
-        "$type": "Alternatives",
+        "$type": "Group",
         "elements": [
           {
             "$type": "Assignment",
-            "feature": "states",
-            "operator": "+=",
-            "terminal": {
-              "$type": "RuleCall",
-              "rule": {
-                "$ref": "#/rules@1"
-              },
-              "arguments": []
-            }
-          },
-          {
-            "$type": "Assignment",
-            "feature": "transitions",
+            "feature": "events",
             "operator": "+=",
             "terminal": {
               "$type": "RuleCall",
@@ -41,11 +29,105 @@ export const FiniteStateMachineGrammar = (): Grammar => loadedFiniteStateMachine
               },
               "arguments": []
             }
+          },
+          {
+            "$type": "Assignment",
+            "feature": "fsms",
+            "operator": "+=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@1"
+              },
+              "arguments": []
+            }
           }
-        ],
-        "cardinality": "*"
+        ]
       },
       "definesHiddenTokens": false,
+      "fragment": false,
+      "hiddenTokens": [],
+      "parameters": [],
+      "wildcard": false
+    },
+    {
+      "$type": "ParserRule",
+      "name": "FSM",
+      "definition": {
+        "$type": "Group",
+        "elements": [
+          {
+            "$type": "Assignment",
+            "feature": "name",
+            "operator": "=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@6"
+              },
+              "arguments": []
+            }
+          },
+          {
+            "$type": "Keyword",
+            "value": ":"
+          },
+          {
+            "$type": "Alternatives",
+            "elements": [
+              {
+                "$type": "Assignment",
+                "feature": "states",
+                "operator": "+=",
+                "terminal": {
+                  "$type": "RuleCall",
+                  "rule": {
+                    "$ref": "#/rules@3"
+                  },
+                  "arguments": []
+                }
+              },
+              {
+                "$type": "Assignment",
+                "feature": "transitions",
+                "operator": "+=",
+                "terminal": {
+                  "$type": "RuleCall",
+                  "rule": {
+                    "$ref": "#/rules@4"
+                  },
+                  "arguments": []
+                }
+              }
+            ],
+            "cardinality": "*"
+          }
+        ]
+      },
+      "definesHiddenTokens": false,
+      "entry": false,
+      "fragment": false,
+      "hiddenTokens": [],
+      "parameters": [],
+      "wildcard": false
+    },
+    {
+      "$type": "ParserRule",
+      "name": "Event",
+      "definition": {
+        "$type": "Assignment",
+        "feature": "name",
+        "operator": "=",
+        "terminal": {
+          "$type": "RuleCall",
+          "rule": {
+            "$ref": "#/rules@6"
+          },
+          "arguments": []
+        }
+      },
+      "definesHiddenTokens": false,
+      "entry": false,
       "fragment": false,
       "hiddenTokens": [],
       "parameters": [],
@@ -78,10 +160,72 @@ export const FiniteStateMachineGrammar = (): Grammar => loadedFiniteStateMachine
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@4"
+                "$ref": "#/rules@6"
               },
               "arguments": []
             }
+          },
+          {
+            "$type": "Keyword",
+            "value": "{"
+          },
+          {
+            "$type": "Keyword",
+            "value": "in"
+          },
+          {
+            "$type": "Keyword",
+            "value": ":"
+          },
+          {
+            "$type": "Assignment",
+            "feature": "inTransitions",
+            "operator": "+=",
+            "terminal": {
+              "$type": "CrossReference",
+              "type": {
+                "$ref": "#/rules@4"
+              },
+              "terminal": {
+                "$type": "RuleCall",
+                "rule": {
+                  "$ref": "#/rules@6"
+                },
+                "arguments": []
+              },
+              "deprecatedSyntax": false
+            }
+          },
+          {
+            "$type": "Keyword",
+            "value": "out"
+          },
+          {
+            "$type": "Keyword",
+            "value": ":"
+          },
+          {
+            "$type": "Assignment",
+            "feature": "outTransitions",
+            "operator": "+=",
+            "terminal": {
+              "$type": "CrossReference",
+              "type": {
+                "$ref": "#/rules@4"
+              },
+              "terminal": {
+                "$type": "RuleCall",
+                "rule": {
+                  "$ref": "#/rules@6"
+                },
+                "arguments": []
+              },
+              "deprecatedSyntax": false
+            }
+          },
+          {
+            "$type": "Keyword",
+            "value": "}"
           }
         ]
       },
@@ -105,7 +249,7 @@ export const FiniteStateMachineGrammar = (): Grammar => loadedFiniteStateMachine
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@4"
+                "$ref": "#/rules@6"
               },
               "arguments": []
             }
@@ -121,12 +265,12 @@ export const FiniteStateMachineGrammar = (): Grammar => loadedFiniteStateMachine
             "terminal": {
               "$type": "CrossReference",
               "type": {
-                "$ref": "#/rules@1"
+                "$ref": "#/rules@3"
               },
               "terminal": {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@4"
+                  "$ref": "#/rules@6"
                 },
                 "arguments": []
               },
@@ -135,18 +279,83 @@ export const FiniteStateMachineGrammar = (): Grammar => loadedFiniteStateMachine
           },
           {
             "$type": "Keyword",
-            "value": "--"
+            "value": "---"
+          },
+          {
+            "$type": "Alternatives",
+            "elements": [
+              {
+                "$type": "Group",
+                "elements": [
+                  {
+                    "$type": "Keyword",
+                    "value": "when"
+                  },
+                  {
+                    "$type": "Assignment",
+                    "feature": "event",
+                    "operator": "=",
+                    "terminal": {
+                      "$type": "CrossReference",
+                      "type": {
+                        "$ref": "#/rules@2"
+                      },
+                      "terminal": {
+                        "$type": "RuleCall",
+                        "rule": {
+                          "$ref": "#/rules@6"
+                        },
+                        "arguments": []
+                      },
+                      "deprecatedSyntax": false
+                    }
+                  }
+                ]
+              },
+              {
+                "$type": "Group",
+                "elements": [
+                  {
+                    "$type": "Keyword",
+                    "value": "after"
+                  },
+                  {
+                    "$type": "Assignment",
+                    "feature": "time",
+                    "operator": "=",
+                    "terminal": {
+                      "$type": "RuleCall",
+                      "rule": {
+                        "$ref": "#/rules@7"
+                      },
+                      "arguments": []
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "$type": "Keyword",
+            "value": "/"
           },
           {
             "$type": "Assignment",
-            "feature": "event",
+            "feature": "sentEvent",
             "operator": "=",
             "terminal": {
-              "$type": "RuleCall",
-              "rule": {
-                "$ref": "#/rules@4"
+              "$type": "CrossReference",
+              "type": {
+                "$ref": "#/rules@2"
               },
-              "arguments": []
+              "terminal": {
+                "$type": "RuleCall",
+                "rule": {
+                  "$ref": "#/rules@6"
+                },
+                "arguments": []
+              },
+              "deprecatedSyntax": false
             }
           },
           {
@@ -160,12 +369,12 @@ export const FiniteStateMachineGrammar = (): Grammar => loadedFiniteStateMachine
             "terminal": {
               "$type": "CrossReference",
               "type": {
-                "$ref": "#/rules@1"
+                "$ref": "#/rules@3"
               },
               "terminal": {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@4"
+                  "$ref": "#/rules@6"
                 },
                 "arguments": []
               },

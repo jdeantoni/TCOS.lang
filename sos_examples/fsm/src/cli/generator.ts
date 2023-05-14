@@ -10,7 +10,7 @@ export function generateJavaScript(model: FSMModel, filePath: string, destinatio
 
     const fileNode = new CompositeGeneratorNode();
     fileNode.append('"use strict";', NL, NL);
-    model.states.forEach(greeting => fileNode.append(`console.log('${greeting.name}!');`, NL));
+    // model.states.forEach(greeting => fileNode.append(`console.log('${greeting.name}!');`, NL));
 
     if (!fs.existsSync(data.destination)) {
         fs.mkdirSync(data.destination, { recursive: true });

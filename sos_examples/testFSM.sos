@@ -2,9 +2,35 @@ testFSM
 import "fsm/src/language-server/finite-state-machine.langium"
 
 open non atomic rule FSMModel {
-    var currentState:State
+    sched{
+        fsms.at(0).transitions.
+    }
 
-    rwr                    
-       --------------------------- init
-            <this,σ> ~> currentState = states.at(0)
+                        
+    // ----------------------------------------- init
+    //  <this,σ> ~> currentState = states.at(0)
+}
+
+open non atomic rule State {
+    var isCurrentState:boolean = false;
+
+                        
+    --------------------------------------- init
+    <this,σ> ~> isCurrentState = isInitial;
+
+
+    ---------------------------- evaluate
+     <this,σ> ~> isCurrentState;
+}
+
+open non atomic rule Transition{
+
+             
+
+    
+         <source.isCurrentState,σ> -> true 
+    -------------------------------------------- fire
+      <this,σ> ~> source.isCurrentState = false
+                  target.isCurrentState = true;
+        
 }

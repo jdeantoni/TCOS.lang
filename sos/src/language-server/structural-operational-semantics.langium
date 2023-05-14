@@ -39,7 +39,7 @@ SchedulingConstraint:
 
 RWRule: 
     {infer RWRule}
-       'rwr' (premise+=SemanticEquivalence (';' premise+=SemanticEquivalence)* )? 
+       ('rwr')? (premise+=SemanticEquivalence (';' premise+=SemanticEquivalence)* )? 
         ('-')+ name=ID
         conclusion=Conclusion;
 
@@ -55,7 +55,7 @@ SemanticEquivalence:
 //     '('Logical')';
  
 Conclusion:
-   '<this,σ>' '~>' ('<'(ruleStart=MemberCall) ',σ>' |outState+=(SoSAssignment)+);  
+   '<this,σ>' '~>' ('<'(ruleStart=MemberCall) ',σ>' |outState+=(SoSAssignment)+) ";" ;  
 
 TemporaryVariable returns NamedElement:
     {infer TemporaryVariable}
@@ -66,7 +66,7 @@ TemporaryVariable returns NamedElement:
 
 VariableDeclaration returns NamedElement: 
     {infer VariableDeclaration} 
-    ('var') ? name=ID (':' type=TypeReference)? (assignment?='=' value=Expression)? ;
+    ('var') ? name=ID (':' type=TypeReference)? (assignment?='=' value=Expression)? ';' ; 
 
 Expression:
     SoSAssignment;

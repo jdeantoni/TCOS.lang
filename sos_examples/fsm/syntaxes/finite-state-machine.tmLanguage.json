@@ -10,7 +10,7 @@
     },
     {
       "name": "keyword.control.finite-state-machine",
-      "match": "\\b(state)\\b"
+      "match": "\\b(after|in|out|state|when)\\b"
     },
     {
       "name": "string.quoted.double.finite-state-machine",
