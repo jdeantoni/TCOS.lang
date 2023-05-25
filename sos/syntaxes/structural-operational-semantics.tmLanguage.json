@@ -10,7 +10,7 @@
     },
     {
       "name": "keyword.control.structural-operational-semantics",
-      "match": "\\b(and|atomic|boolean|coincides_with|event|false|foreach|implies|import|in|nil|non|number|open|or|precedes|rule|rwr|sched|string|struct|this|true|var|void|xor)\\b|\\B(<this,σ>)\\B"
+      "match": "\\b(and|boolean|event|false|import|nil|number|open|or|parallel|rwr|string|struct|terminated|this|true|unordered|var|void|when|xor)\\b|\\B(<this,σ>)\\B"
     },
     {
       "name": "string.quoted.double.structural-operational-semantics",

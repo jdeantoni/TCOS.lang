@@ -2,19 +2,28 @@ grammar SimpleL
 
 entry Model:
     statements+=(Statement)*;
+
 Bloc:
     '{'
     statements+=(Statement)*
     '}';
+
+ParallelBloc:
+    '|'
+    ('|' statements+=Statement)*
+    '|';
+
 Statement:
-    VarDecl | Expr;
+    VarDecl | Expr | Assignment | Bloc | ParallelBloc;
+
 Expr:
-    VarRef|Plus|If|Assignment;
- 
+    VarRef|Plus|If;
+
 If:
     'if' '('cond=VarRef ')'
     then=Bloc
     ('else' else=Bloc)?;
+
 VarDecl:
     'var' name=ID ('=' initialValue=INT)?;
 Plus:

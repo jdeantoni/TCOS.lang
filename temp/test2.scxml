@@ -1,0 +1,401 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" binding="early" xmlns:qt="http://www.qt.io/2015/02/scxml-ext" qt:editorversion="10.0.1" initial="mainState">
+
+    <state id="mainState">
+
+        <parallel id="parts">
+
+            <state id="prog" initial="prog.startv1Decl">
+
+                <state id="prog.idle">
+
+                    <transition type="internal" event="prog.start" target="prog.startv1Decl"/>
+                </state>
+                <state id="prog.startv1Decl">
+
+                    <onentry>
+                        <raise event="v1Decl.start"/>
+                    </onentry>
+                    <transition type="internal" event="v1Decl.finish" target="prog.startv2Decl"/>
+                </state>
+                <state id="prog.startv2Decl">
+
+                    <onentry>
+                        <raise event="v2Decl.start"/>
+                    </onentry>
+                    <transition type="internal" event="v2Decl.finish" target="prog.startparBloc"/>
+                </state>
+                <state id="prog.startparBloc">
+
+                    <onentry>
+                        <raise event="parBloc.start"/>
+                    </onentry>
+                    <transition type="internal" event="parBloc.finish" target="prog.startIf"/>
+                </state>
+                <state id="prog.startIf">
+
+                    <onentry>
+                        <raise event="if.start"/>
+                    </onentry>
+                    <transition type="internal" event="if.finish" target="prog.idle">
+                        <log label="finish prog"/>
+                        <raise event="prog.finish"/>
+                    </transition>
+                </state>
+            </state>
+            <state id="parBloc" initial="parBloc.idle">
+
+                <state id="parBloc.idle">
+
+                    <transition type="internal" event="parBloc.start" target="parBloc.startAllStatements">
+                        <log label="start parBloc"/>
+
+                    </transition>
+                </state>
+                <parallel id="parBloc.startAllStatements">
+
+                    <state id="parBloc.v1Assign1" initial="parBloc.startv1Assign1">
+
+                        <state id="parBloc.startv1Assign1">
+
+                            <onentry>
+                                <raise event="v1Assign1.start"/>
+                            </onentry>
+                            <transition type="internal" event="v1Assign1.finish" target="parBloc.finishv1Assign1"/>
+                        </state>
+                        <final id="parBloc.finishv1Assign1">
+
+                        </final>
+                    </state>
+                    <state id="parBloc.v2Assign1" initial="parBloc.startv2Assign1">
+
+                        <state id="parBloc.startv2Assign1">
+
+                            <onentry>
+                                <raise event="v2Assign1.start"/>
+                            </onentry>
+                            <transition type="internal" event="v2Assign1.finish" target="parBloc.finishv2Assign1"/>
+                        </state>
+                        <final id="parBloc.finishv2Assign1">
+
+                        </final>
+                    </state>
+                    <transition type="internal" event="done.state.parBloc.startAllStatements" target="parBloc.idle">
+                        <log label="finish parBloc"/>
+
+                        <raise event="parBloc.finish"/>
+                    </transition>
+                </parallel>
+            </state>
+            <state id="v1Decl" initial="v1Decl.idle">
+
+                <state id="v1Decl.idle">
+
+                    <transition type="internal" event="v1Decl.start" target="v1Decl.started"/>
+                </state>
+                <state id="v1Decl.started">
+
+                    <onentry>
+                        <log label="start v1Decl"/>
+                        <raise event="v1Decl.doAction1"/>
+                    </onentry>
+                    <transition type="internal" target="v1Decl.idle">
+                        <raise event="v1Decl.finish"/>
+                    </transition>
+                </state>
+            </state>
+            <state id="v2Decl" initial="v2Decl.idle">
+
+                <state id="v2Decl.idle">
+
+                    <transition type="internal" event="v2Decl.start" target="v2Decl.started"/>
+                </state>
+                <state id="v2Decl.started">
+
+                    <onentry>
+                        <log label="start v2Decl"/>
+                        <raise event="v2Decl.doAction1"/>
+                    </onentry>
+                    <transition type="internal" target="v2Decl.idle">
+                        <raise event="v2Decl.finish"/>
+                    </transition>
+                </state>
+            </state>
+            <state id="v1Assign1" initial="v1Assign1.idle">
+
+                <state id="v1Assign1.idle">
+
+                    <transition type="internal" event="v1Assign1.start" target="v1Assign1.started"/>
+                </state>
+                <state id="v1Assign1.started">
+
+                    <onentry>
+                        <log label="start v1Assign1"/>
+                        <raise event="firstPlus.start"/>
+                    </onentry>
+                    <transition type="internal" event="firstPlus.finish" target="v1Assign1.firstPlusDone"/>
+                </state>
+                <state id="v1Assign1.firstPlusDone">
+
+                    <onentry>
+                        <raise event="v1Assign1.doAction1"/>
+                    </onentry>
+                    <transition type="internal" target="v1Assign1.idle">
+                        <raise event="v1Assign1.finish"/>
+                        <log label="finish v1Assign1">
+
+                        </log>
+                    </transition>
+                </state>
+            </state>
+            <state id="firstPlus" initial="firstPlus.idle">
+
+                <state id="firstPlus.idle">
+
+                    <transition type="internal" event="firstPlus.start" target="firstPlus.started"/>
+                </state>
+                <state id="firstPlus.started">
+
+                    <onentry>
+                        <log label="start firstPlus"/>
+                        <raise event="v1Ref1.start"/>
+                    </onentry>
+                    <transition type="internal" event="v1Ref1.finish" target="firstPlus.leftDone"/>
+                </state>
+                <state id="firstPlus.leftDone">
+
+                    <onentry>
+                        <raise event="v1Ref2.start"/>
+                    </onentry>
+                    <transition type="internal" event="v1Ref2.finish" target="firstPlus.rightDone"/>
+                </state>
+                <state id="firstPlus.rightDone">
+
+                    <onentry>
+                        <raise event="firstPlus.doAction1"/>
+                    </onentry>
+                    <transition type="internal" target="firstPlus.idle">
+                        <log label="finish firstPlus"/>
+                        <raise event="firstPlus.finish"/>
+                    </transition>
+                </state>
+            </state>
+            <state id="v2Assign1" initial="v2Assign1.idle">
+
+                <state id="v2Assign1.idle">
+
+                    <transition type="internal" event="v2Assign1.start" target="v2Assign1.started"/>
+                </state>
+                <state id="v2Assign1.started">
+
+                    <onentry>
+                        <raise event="secondPlus.start"/>
+                        <log label="start v2Assign1">
+
+                        </log>
+                    </onentry>
+                    <transition type="internal" event="secondPlus.finish" target="v2Assign1.secondPlusDone"/>
+                </state>
+                <state id="v2Assign1.secondPlusDone">
+
+                    <onentry>
+                        <raise event="v2Assign1.doAction1"/>
+                    </onentry>
+                    <transition type="internal" target="v2Assign1.idle">
+                        <raise event="v2Assign1.finish"/>
+                        <log label="finish v2Assign1">
+
+                        </log>
+                    </transition>
+                </state>
+            </state>
+            <state id="secondPlus" initial="secondPlus.idle">
+
+                <state id="secondPlus.idle">
+
+                    <transition type="internal" event="secondPlus.start" target="secondPlus.started"/>
+                </state>
+                <state id="secondPlus.started">
+
+                    <onentry>
+                        <log label="start secondPlus"/>
+                        <raise event="v2Ref1.start"/>
+                    </onentry>
+                    <transition type="internal" event="v2Ref1.finish" target="secondPlus.leftDone"/>
+                </state>
+                <state id="secondPlus.leftDone">
+
+                    <onentry>
+                        <raise event="v2Ref2.start"/>
+                    </onentry>
+                    <transition type="internal" event="v2Ref2.finish" target="secondPlus.rightDone"/>
+                </state>
+                <state id="secondPlus.rightDone">
+
+                    <onentry>
+                        <raise event="secondPlus.doAction1"/>
+                    </onentry>
+                    <transition type="internal" target="secondPlus.idle">
+                        <log label="finish secondPlus"/>
+                        <raise event="secondPlus.finish"/>
+                    </transition>
+                </state>
+            </state>
+            <state id="if" initial="if.idle">
+                <state id="if.idle">
+                    <transition event="if.start" target="if.started"/>
+                </state>
+                <parallel id="if.started">
+                    <transition event="done.state.if.started" target ="if.idle">
+                        <raise event="if.finish"/>
+                    </transition>
+                    <state id="ifTrue" initial="ifTrue.started">
+
+                        <state id="ifTrue.started">
+
+                            <onentry>
+                                <log label="start if (True rule)"/>
+                                <raise event="v1Ref3.start"/>
+                            </onentry>
+                            <transition type="internal" event="test1" target="ifTrue.condTrue"/>
+                            <transition type="internal" event="test2" target="ifTrue.final">
+                                <log label="finish if (True rule)"/>
+                            </transition>
+                        </state>
+                        <state id="ifTrue.condTrue">
+
+                            <onentry>
+                                <raise event="bloc1.start"/>
+                            </onentry>
+                            <transition type="internal" event="bloc1.finish" target="ifTrue.final">
+                                <log label="finish if (True rule)"/>
+                                <raise event="ifTrue.finish"/>
+                            </transition>
+                        </state>
+                        <final id="ifTrue.final"/>
+                    </state>
+
+                    <state id="ifFalse" initial="ifFalse.started">
+
+                        <state id="ifFalse.started">
+
+                            <onentry>
+                                <log label="start if (False rule)"/>
+                                <raise event="v1Ref3.start"/>
+                            </onentry>
+                            <transition type="internal" event="test2" target="ifFalse.condFalse"/>
+                            <transition type="internal" event="test1" target="ifFalse.final">
+                                <log label="finish if (False rule)"/>
+                            </transition>
+                        </state>
+                        <state id="ifFalse.condFalse">
+
+                            <onentry>
+                                <raise event="bloc2.start"/>
+                            </onentry>
+                            <transition type="internal" event="bloc2.finish" target="ifFalse.final">
+                                <log label="finish if (False rule)"/>
+                                <raise event="ifFalse.finish"/>
+                            </transition>
+                        </state>
+                        <final id="ifFalse.final"/>
+                    </state>
+                </parallel>
+            </state>
+            <state id="bloc1" initial="bloc1.idle">
+
+                <state id="bloc1.idle">
+
+                    <transition type="internal" event="bloc1.start" target="bloc1.startv2Assign2"/>
+                </state>
+                <state id="bloc1.startv2Assign2">
+
+                    <onentry>
+                        <log label="start bloc1"/>
+                        <raise event="v2Assign2.start"/>
+                    </onentry>
+                    <transition type="internal" event="v2Assign2.finish" target="bloc1.idle">
+                        <log label="finish bloc1"/>
+                        <raise event="bloc1.finish"/>
+                    </transition>
+                </state>
+            </state>
+            <state id="bloc2" initial="bloc2.idle">
+
+                <state id="bloc2.idle">
+
+                    <transition type="internal" event="bloc2.start" target="bloc2.startv1Assign2"/>
+                </state>
+                <state id="bloc2.startv1Assign2">
+
+                    <onentry>
+                        <log label="start bloc2"/>
+                        <raise event="v1Assign2.start"/>
+                    </onentry>
+                    <transition type="internal" event="v1Assign2.finish" target="bloc2.idle">
+                        <log label="finish bloc2"/>
+                        <raise event="bloc2.finish"/>
+                    </transition>
+                </state>
+            </state>
+            <state id="v1Ref1" initial="v1Ref1.idle">
+                <state id="v1Ref1.idle">
+                    <transition event="v1Ref1.start" target="v1Ref1.idle">
+                        <raise event="v1Ref1.finish"/>
+                    </transition>
+                </state>
+            </state>
+             <state id="v1Ref2" initial="v1Ref2.idle">
+                <state id="v1Ref2.idle">
+                    <transition event="v1Ref2.start" target="v1Ref2.idle">
+                        <raise event="v1Ref2.finish"/>
+                    </transition>
+                </state>
+            </state>
+            <state id="v1Ref3" initial="v1Ref3.idle">
+                <state id="v1Ref3.idle">
+                    <transition event="v1Ref3.start" target="v1Ref3.idle">
+                        <raise event="v1Ref3.finish"/>
+                    </transition>
+                </state>
+            </state>
+            <state id="v2Ref1" initial="v2Ref1.idle">
+                <state id="v2Ref1.idle">
+                    <transition event="v2Ref1.start" target="v2Ref1.idle">
+                        <raise event="v2Ref1.finish"/>
+                    </transition>
+                </state>
+            </state>
+             <state id="v2Ref2" initial="v2Ref2.idle">
+                <state id="v2Ref2.idle">
+                    <transition event="v2Ref2.start" target="v2Ref2.idle">
+                        <raise event="v2Ref2.finish"/>
+                    </transition>
+                </state>
+            </state>
+            <state id="v2Assign2" initial="v2Assign2.idle">
+                <state id="v2Assign2.idle">
+                    <transition type="internal" event="v2Assign2.start" target="v2Assign2.started"/>
+                </state>
+                <state id="v2Assign2.started">
+                    <onentry>
+                        <log label="start v2Assign2">                        </log>
+
+                        <raise event="v1Ref3.start"/>
+                    </onentry>
+                    <transition type="internal" event="v1Ref3.finish" target="v2Assign2.v1Ref3Done"/>
+                </state>
+                <state id="v2Assign2.v1Ref3Done">
+                    <onentry>
+                        <raise event="v2Assign2.doAction1"/>
+                    </onentry>
+                    <transition type="internal" target="v2Assign2.idle">
+                        <raise event="v2Assign2.finish"/>
+                        <log label="finish v2Assign2">
+                        </log>
+                    </transition>
+                </state>
+            </state>
+        </parallel>
+    </state>
+</scxml>

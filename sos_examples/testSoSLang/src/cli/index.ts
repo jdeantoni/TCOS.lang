@@ -4,7 +4,7 @@ import { Model } from '../language-server/generated/ast';
 import { SimpleLLanguageMetaData } from '../language-server/generated/module';
 import { createSimpleLServices } from '../language-server/simple-l-module';
 import { extractAstNode } from './cli-util';
-import { generateJavaScript } from './generator';
+import { generateJavaScript } from './generator_manuallycodedReference';
 import { NodeFileSystem } from 'langium/node';
 
 export const generateAction = async (fileName: string, opts: GenerateOptions): Promise<void> => {
@@ -30,7 +30,7 @@ export default function(): void {
         .command('generate')
         .argument('<file>', `source file (possible file extensions: ${fileExtensions})`)
         .option('-d, --destination <dir>', 'destination directory of generating')
-        .description('generates JavaScript code that prints "Hello, {name}!" for each greeting in a source file')
+        .description('generates JavaScript code that generate scxml and c codes')
         .action(generateAction);
 
     program.parse(process.argv);

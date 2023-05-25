@@ -3,75 +3,68 @@ import "testSoSLang/src/language-server/simple-l.langium"
 
 
 
-open non atomic rule Model { 
+open Model { 
 
-    sched { startEvaluation coincides_with statements.first().startEvaluation}
-    sched { finishEvaluation coincides_with statements.last().finishEvaluation}
-    sched foreach i in [0; statements.length()[ {
-        statements.at(i).finishEvaluation precedes statements.at(i+1).startEvaluation 
-    }
+      <statements,σ> -> ⍊
+    ------------------------- statementsInOrder1
+         <this,σ> ~> ⍊
+
 }
 
-open non atomic rule Bloc {
+open Bloc {
 
-    //var test: Statement
-
-    sched { startEvaluation coincides_with statements.first().startEvaluation}
-    sched { finishEvaluation coincides_with statements.last().finishEvaluation}
-    sched foreach i in [0; statements.length()[ {
-        statements.at(i).finishEvaluation precedes statements.at(i+1).startEvaluation 
-    }
+      <statements,σ> -> ⍊
+    ----------------------- statementsInOrder2
+        <this,σ> ~> ⍊
 }
 
-open non atomic rule VarDecl {
+open ParallelBloc {
 
+      parallel <statements,σ> -> ⍊
+    -------------------------------- statementsInOrder2
+            <this,σ> ~> ⍊
+}
+
+open VarDecl {
+
+    var start: event;
     var currentValue:number = initialValue;
 
+            when start;
+    ----------------------------- evaluate
+     <this,σ> ~> currentValue = initialValue; ⍊
+
+}
+
+open VarRef {
       
     --------------------------- evaluate
-     <this,σ> ~> currentValue;
-
+         <this,σ> ~> ref.currentValue;
 }
 
-open atomic rule VarRef {
-    
-      <ref,σ> -> value:number
-    --------------------------- evaluate
-         <this,σ> ~> value;
-
-}
-
-open atomic rule Plus {
+open Plus {
    
     <right,σ> -> n2:number ; <left,σ> -> n1:number
     ---------------------------------------------- evaluate
-                 <this,σ> ~> n1 + n2 ;
+                 <this,σ> ~> n1 + n2 ; ⍊
 }
 
 
-open non atomic rule If {
-    sched {startEvaluation coincides_with evalCond}
-    sched {evalCond precedes (condTrue xor condFalse)}
-
-
-       <cond,σ> -> resCond:boolean
-    -------------------------------- evalCond
-          <this,σ> ~> resCond;
-
+open If {
 
        <cond,σ> -> true 
     ---------------------- condTrue
-     <this,σ> ~> <then,σ>;
+     <this,σ> ~> <then,σ>; ⍊ 
 
 
        <cond,σ> -> false
     ---------------------- condFalse
-     <this,σ> ~> <else,σ>;
+     <this,σ> ~> <else,σ>; ⍊
 
 } 
 
-open non atomic rule Assignment {
-          <right,σ> -> resRight: number         //here we cannot know the type. inference must be improved to avoid void type
-    ------------------------------------------- evaluate
-      <this,σ> ~> left.currentValue = resRight;
+open Assignment {
+          <right,σ> -> resRight: number                         //here we cannot know the type. inference must be improved to avoid void type
+    ----------------------------------------------- evaluate
+      <this,σ> ~> left.currentValue = resRight; ⍊
 }

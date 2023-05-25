@@ -1,17 +1,15 @@
 testFSM
 import "fsm/src/language-server/finite-state-machine.langium"
 
-open non atomic rule FSMModel {
-    sched{
-        fsms.at(0).transitions.
-    }
+open FSMModel {
+   
 
                         
     // ----------------------------------------- init
     //  <this,σ> ~> currentState = states.at(0)
 }
 
-open non atomic rule State {
+open State {
     var isCurrentState:boolean = false;
 
                         
@@ -23,7 +21,7 @@ open non atomic rule State {
      <this,σ> ~> isCurrentState;
 }
 
-open non atomic rule Transition{
+open Transition{
 
              
 

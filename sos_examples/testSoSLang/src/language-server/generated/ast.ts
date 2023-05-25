@@ -6,7 +6,7 @@
 /* eslint-disable */
 import { AstNode, AbstractAstReflection, Reference, ReferenceInfo, TypeMetaData } from 'langium';
 
-export type Expr = Assignment | If | Plus | VarRef;
+export type Expr = If | Plus | VarRef;
 
 export const Expr = 'Expr';
 
@@ -14,7 +14,7 @@ export function isExpr(item: unknown): item is Expr {
     return reflection.isInstance(item, Expr);
 }
 
-export type Statement = Expr | VarDecl;
+export type Statement = Assignment | Bloc | Expr | ParallelBloc | VarDecl;
 
 export const Statement = 'Statement';
 
@@ -23,7 +23,7 @@ export function isStatement(item: unknown): item is Statement {
 }
 
 export interface Assignment extends AstNode {
-    readonly $container: Assignment | Bloc | If | Model | Plus;
+    readonly $container: Assignment | Bloc | If | Model | ParallelBloc | Plus;
     readonly $type: 'Assignment';
     left: Reference<VarDecl>
     right: Expr
@@ -36,7 +36,7 @@ export function isAssignment(item: unknown): item is Assignment {
 }
 
 export interface Bloc extends AstNode {
-    readonly $container: If;
+    readonly $container: Assignment | Bloc | If | Model | ParallelBloc | Plus;
     readonly $type: 'Bloc';
     statements: Array<Statement>
 }
@@ -48,7 +48,7 @@ export function isBloc(item: unknown): item is Bloc {
 }
 
 export interface If extends AstNode {
-    readonly $container: Assignment | Bloc | If | Model | Plus;
+    readonly $container: Assignment | Bloc | If | Model | ParallelBloc | Plus;
     readonly $type: 'If';
     cond: VarRef
     else?: Bloc
@@ -72,8 +72,20 @@ export function isModel(item: unknown): item is Model {
     return reflection.isInstance(item, Model);
 }
 
+export interface ParallelBloc extends AstNode {
+    readonly $container: Assignment | Bloc | If | Model | ParallelBloc | Plus;
+    readonly $type: 'ParallelBloc';
+    statements: Array<Statement>
+}
+
+export const ParallelBloc = 'ParallelBloc';
+
+export function isParallelBloc(item: unknown): item is ParallelBloc {
+    return reflection.isInstance(item, ParallelBloc);
+}
+
 export interface Plus extends AstNode {
-    readonly $container: Assignment | Bloc | If | Model | Plus;
+    readonly $container: Assignment | Bloc | If | Model | ParallelBloc | Plus;
     readonly $type: 'Plus';
     left: VarRef
     right: Expr
@@ -86,7 +98,7 @@ export function isPlus(item: unknown): item is Plus {
 }
 
 export interface VarDecl extends AstNode {
-    readonly $container: Assignment | Bloc | If | Model | Plus;
+    readonly $container: Assignment | Bloc | If | Model | ParallelBloc | Plus;
     readonly $type: 'VarDecl';
     initialValue?: number
     name: string
@@ -99,7 +111,7 @@ export function isVarDecl(item: unknown): item is VarDecl {
 }
 
 export interface VarRef extends AstNode {
-    readonly $container: Assignment | Bloc | If | Model | Plus;
+    readonly $container: Assignment | Bloc | If | Model | ParallelBloc | Plus;
     readonly $type: 'VarRef';
     ref: Reference<VarDecl>
 }
@@ -116,6 +128,7 @@ export interface SimpleLAstType {
     Expr: Expr
     If: If
     Model: Model
+    ParallelBloc: ParallelBloc
     Plus: Plus
     Statement: Statement
     VarDecl: VarDecl
@@ -125,20 +138,22 @@ export interface SimpleLAstType {
 export class SimpleLAstReflection extends AbstractAstReflection {
 
     getAllTypes(): string[] {
-        return ['Assignment', 'Bloc', 'Expr', 'If', 'Model', 'Plus', 'Statement', 'VarDecl', 'VarRef'];
+        return ['Assignment', 'Bloc', 'Expr', 'If', 'Model', 'ParallelBloc', 'Plus', 'Statement', 'VarDecl', 'VarRef'];
     }
 
     protected override computeIsSubtype(subtype: string, supertype: string): boolean {
         switch (subtype) {
             case Assignment:
+            case Bloc:
+            case ParallelBloc:
+            case VarDecl:
+            case Expr: {
+                return this.isSubtype(Statement, supertype);
+            }
             case If:
             case Plus:
             case VarRef: {
                 return this.isSubtype(Expr, supertype);
-            }
-            case VarDecl:
-            case Expr: {
-                return this.isSubtype(Statement, supertype);
             }
             default: {
                 return false;
@@ -172,6 +187,14 @@ export class SimpleLAstReflection extends AbstractAstReflection {
             case 'Model': {
                 return {
                     name: 'Model',
+                    mandatory: [
+                        { name: 'statements', type: 'array' }
+                    ]
+                };
+            }
+            case 'ParallelBloc': {
+                return {
+                    name: 'ParallelBloc',
                     mandatory: [
                         { name: 'statements', type: 'array' }
                     ]

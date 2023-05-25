@@ -13,40 +13,41 @@ entry SoSSpec:
 //on purpose no if conditions. They should be queried and scheduled by CCSL like ordering
 RuleOpening:
     {infer RuleOpening} 
-    (name=ID)? 'open' (isNonAtomic?='non')? 'atomic' 'rule' onRule=[ParserRule:ID] '{'
+    (name=ID)? 'open' onRule=[ParserRule:ID] '{'
     (runtimeState+=(VariableDeclaration) |
-    rules+=(RWRule| QueryRule | SchedulingRule))* 
+    rules+=Rule)* 
 
     '}' 
 ;
 
 ImportStatement:
 	'import' importURI=STRING; 
- 
+
 // Sigma:
 //     '{'
 //         stateParts 
 //     '}';
 
-SchedulingRule:
-    "sched" (condition=Logical "implies")? (loop=SequenceLoop)? constraint=SchedulingConstraint; 
- 
-SequenceLoop:
-    'foreach' itVar=TemporaryVariable 'in' '[' lowerBound=NUMBER ';' upperBound=Expression '['; 
 
-SchedulingConstraint:
-    '{'left=Expression operator=("precedes" | ("coincides_with")) right=Expression'}';  
+Rule:
+    (RWRule/*| ExpressionRule | ControlFlowRule*/);
+
+// ControlFlowRule:
+//     "sched" (condition=Logical "implies")? (loop=SequenceLoop)? constraint=SchedulingConstraint; 
+ 
+// SequenceLoop:
+//     'foreach' itVar=TemporaryVariable 'in' '[' lowerBound=NUMBER ';' upperBound=Expression '['; 
+
+// SchedulingConstraint:
+//     '{'left=Expression operator=("precedes" | ("coincides_with")) right=Expression'}';  
 
 RWRule: 
     {infer RWRule}
-       ('rwr')? (premise+=SemanticEquivalence (';' premise+=SemanticEquivalence)* )? 
+       ('rwr')? ("when" guardEvents+=Expression ('^' guardEvents+=Expression )* )? (isParallel?=("parallel"|"unordered"))? (premise+=SemanticEquivalence (';' premise+=SemanticEquivalence)* )? 
         ('-')+ name=ID
-        conclusion=Conclusion;
+        conclusion=Conclusion; 
 
-QueryRule: //a query should not modify the state (RTD)
-    {infer QueryRule}
-        '?' (premise+=SemanticEquivalence)  //TODO: check that no implied rules modifies the state
-        ;
+
 
 SemanticEquivalence: 
     ('<'(left=Expression) ',σ>' operator=('->') right=(TemporaryVariable|PrimaryExpression))*;  
@@ -55,10 +56,10 @@ SemanticEquivalence:
 //     '('Logical')';
  
 Conclusion:
-   '<this,σ>' '~>' ('<'(ruleStart=MemberCall) ',σ>' |outState+=(SoSAssignment)+) ";" ;  
+   '<this,σ>' '~>' ('<'(ruleStart=MemberCall) ',σ>' ";" |(outState+=SoSAssignment)+ ";")? (isDying?=TerminatedExpression)? ;  
 
 TemporaryVariable returns NamedElement:
-    {infer TemporaryVariable}
+    {infer TemporaryVariable} 
     name=ID (':' type=TypeReference)?;
 
 
@@ -120,7 +121,8 @@ PrimaryExpression infers Expression:
     StringExpression |
     BooleanExpression |
     NumberExpression |
-    NilExpression;
+    NilExpression |
+    TerminatedExpression;
 
 FeatureCall infers Expression:
 	{infer MemberCall}
@@ -140,6 +142,8 @@ NumberExpression: value=NUMBER;
 StringExpression: value=STRING;
 BooleanExpression: value?='true' | 'false';
 NilExpression: value='nil';
+TerminatedExpression: value='terminated' | '⍊';
+
 
 // FunctionDeclaration:
 //     'fun' name=ID '(' (parameters+=Parameter (',' parameters+=Parameter)*)? ')' ':' returnType=TypeReference body=ExpressionBlock;

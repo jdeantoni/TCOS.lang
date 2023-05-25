@@ -10,7 +10,7 @@ import {
 } from 'langium';
 
 import { AbstractRule, Assignment, CrossReference, isAlternatives, isAssignment, isMemberCall, isRuleOpening, isRWRule, 
-         isSchedulingRule, isSoSSpec, isTemporaryVariable, MemberCall, MethodMember, Parameter,
+         isSoSSpec, isTemporaryVariable, MemberCall, MethodMember, Parameter,
          ParserRule, RuleOpening, RWRule, SoSSpec, TypeReference, VariableDeclaration} from './generated/ast';
 import { getRuleOpeningChain, inferType } from './type-system/infer';
 import { isParserRuleType, isRuleOpeningType } from './type-system/descriptions';
@@ -205,7 +205,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         
         var allScopeElements: AstNode[] = (ruleOpeningItem.onRule?.ref !== undefined)?this.getAllAssignments(ruleOpeningItem.onRule.ref.definition) : [];
         allScopeElements = allScopeElements.concat((ruleOpeningItem.onRule?.ref !== undefined)?this.getAllRules(ruleOpeningItem.onRule.ref.definition):[])        
-        //if (! isForSchedulingRule)
+        //if (! isForControlFlowRule)
         var allMembers:AstNode[] = []
         if (context && context.element && context.element.ref && isAssignment(context.element.ref) 
             && isCrossReference((context.element.ref as unknown as Assignment).terminal)){
@@ -241,11 +241,11 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                     if(isRWRule(rule)){
                         allScopeElements.push(rule)
                     }
-                    if(isSchedulingRule(rule)){
-                        if(rule.loop){
-                            allScopeElements.push(rule.loop.itVar)
-                        }
-                    }
+                    // if(isControlFlowRule(rule)){
+                    //     if(rule.loop){
+                    //         allScopeElements.push(rule.loop.itVar)
+                    //     }
+                    // }
                 }
                 
             }
