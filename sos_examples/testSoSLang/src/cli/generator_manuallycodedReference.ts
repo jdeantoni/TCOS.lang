@@ -117,10 +117,10 @@ function generateSCXML(scxmlFile: CompositeGeneratorNode, model: Model) {
             const modelName: string = getName(node)
             if (node.statements.length > 0){
                 scxmlFile.append(`
-                <state id="${modelName}" initial="${modelName}.start${getName(model.statements[0])}">
-                        <state id="${modelName}.idle">
-                            <transition type="internal" event="${modelName}.start" target="${modelName}.start${getName(model.statements[0])}"/>
-                        </state>`, NL
+            <state id="${modelName}" initial="${modelName}.start${getName(model.statements[0])}">
+                    <state id="${modelName}.idle">
+                        <transition type="internal" event="${modelName}.start" target="${modelName}.start${getName(model.statements[0])}"/>
+                    </state>`, NL
                 );     
 
                 for (let index = 0; index < model.statements.length; index++) {
@@ -128,16 +128,16 @@ function generateSCXML(scxmlFile: CompositeGeneratorNode, model: Model) {
                     const statementName: string = getName(statement)
                     const nexStateName: string = index == model.statements.length-1 ? modelName+".idle": modelName+".start"+getName(node.statements[index+1])
                     scxmlFile.append(`
-                    <state id="${modelName}.start${statementName}">
-                            <onentry>
-                                <raise event="${statementName}.start"/>
-                            </onentry>
-                            <transition type="internal" event="${statementName}.finish" target="${nexStateName}"/>
-                    </state>`, NL
+                <state id="${modelName}.start${statementName}">
+                        <onentry>
+                            <raise event="${statementName}.start"/>
+                        </onentry>
+                        <transition type="internal" event="${statementName}.finish" target="${nexStateName}"/>
+                </state>`, NL
                     );     
                 }
                 scxmlFile.append(`
-                </state>`, NL
+            </state>`, NL
                 );  
             }
         }
@@ -145,27 +145,27 @@ function generateSCXML(scxmlFile: CompositeGeneratorNode, model: Model) {
             const blocName: string = getName(node)
             if (node.statements.length > 0){
                 scxmlFile.append(`
-                <state id="${blocName}" initial="${blocName}.start${getName(model.statements[0])}">
-                        <state id="${blocName}.idle">
-                            <transition type="internal" event="${blocName}.start" target="${blocName}.start${getName(node.statements[0])}"/>
-                        </state>`, NL
+            <state id="${blocName}" initial="${blocName}.start${getName(model.statements[0])}">
+                    <state id="${blocName}.idle">
+                        <transition type="internal" event="${blocName}.start" target="${blocName}.start${getName(node.statements[0])}"/>
+                    </state>`, NL
                 );     
 
-                for (let index = 0; index < model.statements.length; index++) {
-                    const statement: AstNode = model.statements[index];
+                for (let index = 0; index < node.statements.length; index++) {
+                    const statement: AstNode = node.statements[index];
                     const statementName: string = getName(statement)
-                    const nexStateName: string = index == model.statements.length-1 ? blocName+".idle": blocName+".start"+getName(node.statements[index+1])
+                    const nexStateName: string = index == node.statements.length-1 ? blocName+".idle": blocName+".start"+getName(node.statements[index+1])
                     scxmlFile.append(`
-                    <state id="${blocName}.start${statementName}">
-                            <onentry>
-                                <raise event="${statementName}.start"/>
-                            </onentry>
-                            <transition type="internal" event="${statementName}.finish" target="${nexStateName}"/>
-                    </state>`, NL
+                <state id="${blocName}.start${statementName}">
+                        <onentry>
+                            <raise event="${statementName}.start"/>
+                        </onentry>
+                        <transition type="internal" event="${statementName}.finish" target="${nexStateName}"/>
+                </state>`, NL
                     );     
                 }
                 scxmlFile.append(`
-                </state>`, NL
+            </state>`, NL
                 );  
             }
         }
@@ -173,38 +173,38 @@ function generateSCXML(scxmlFile: CompositeGeneratorNode, model: Model) {
             const blocName: string = getName(node)
             if (node.statements.length > 0){
                 scxmlFile.append(`
-                <state id="${blocName}" initial="${blocName}c.idle">
-                    <state id="${blocName}.idle">
-                        <transition type="internal" event="${blocName}.start" target="${blocName}.startAllStatements">
-                            <log label="start ${blocName}"/>
-                        </transition>
-                    </state>
-                    <parallel id="${blocName}.startAllStatements">`, NL
+            <state id="${blocName}" initial="${blocName}c.idle">
+                <state id="${blocName}.idle">
+                    <transition type="internal" event="${blocName}.start" target="${blocName}.startAllStatements">
+                        <log label="start ${blocName}"/>
+                    </transition>
+                </state>
+                <parallel id="${blocName}.startAllStatements">`, NL
                 );     
 
-                for (let index = 0; index < model.statements.length; index++) {
-                    const statement: AstNode = model.statements[index];
+                for (let index = 0; index < node.statements.length; index++) {
+                    const statement: AstNode = node.statements[index];
                     const statementName: string = getName(statement)
                     const nexStateName: string = blocName+".finish"+statementName
                     scxmlFile.append(`
-                    <state id="${blocName}.${statementName}" initial="${blocName}.start${statementName}">
-                        <state id="${blocName}.start${statementName}">
-                                <onentry>
-                                    <raise event="${statementName}.start"/>
-                                </onentry>
-                                <transition type="internal" event="${statementName}.finish" target="${nexStateName}"/>
-                        </state>
-                        <final id="${nexStateName}">
-                        </final>`, NL
+                <state id="${blocName}.${statementName}" initial="${blocName}.start${statementName}">
+                    <state id="${blocName}.start${statementName}">
+                            <onentry>
+                                <raise event="${statementName}.start"/>
+                            </onentry>
+                            <transition type="internal" event="${statementName}.finish" target="${nexStateName}"/>
+                    </state>
+                    <final id="${nexStateName}">
+                    </final>`, NL
                     );     
                 }
                 scxmlFile.append(`
-                    <transition type="internal" event="done.state.${blocName}.startAllStatements" target="${blocName}.idle">
-                        <log label="finish ${blocName}"/>
-                        <raise event="${blocName}.finish"/>
-                    </transition>
-                    </parallel>
-                </state>`, NL
+                <transition type="internal" event="done.state.${blocName}.startAllStatements" target="${blocName}.idle">
+                    <log label="finish ${blocName}"/>
+                    <raise event="${blocName}.finish"/>
+                </transition>
+                </parallel>
+            </state>`, NL
                 );  
             }
         }
@@ -503,10 +503,6 @@ function generateSCXML(scxmlFile: CompositeGeneratorNode, model: Model) {
 </scxml>`, NL
     );
 
-
-    scxmlFile.append(`
-    }
-    `, NL);
 }
 
 function getName(node:AstNode | Reference<AstNode> | undefined): string {

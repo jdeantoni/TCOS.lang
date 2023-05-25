@@ -2,42 +2,411 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" binding="early" xmlns:qt="http://www.qt.io/2015/02/scxml-ext" qt:editorversion="10.0.1" initial="mainState">
     <state id="mainState">
-        <parallel id="parts">
+        <parallel id="allRules">
 
-        <state id=" Model0_0_12_1" initial=" Model0_0_12_1.startVarDecl0_0_0_10">
-                <state id="Model0_0_12_1.idle">
-                    <transition type="internal" event="Model0_0_12_1.start" target="Model0_0_12_1.startVarDecl0_0_0_10"/>
+            <state id="Model0_0_12_1" initial="Model0_0_12_1.startVarDecl0_0_0_10">
+                    <state id="Model0_0_12_1.idle">
+                        <transition type="internal" event="Model0_0_12_1.start" target="Model0_0_12_1.startVarDecl0_0_0_10"/>
+                    </state>
+
+                <state id="Model0_0_12_1.startVarDecl0_0_0_10">
+                        <onentry>
+                            <raise event="VarDecl0_0_0_10.start"/>
+                        </onentry>
+                        <transition type="internal" event="VarDecl0_0_0_10.finish" target="Model0_0_12_1.startVarDecl1_0_1_10"/>
                 </state>
 
-            <state id="Model0_0_12_1.startVarDecl0_0_0_10">
-                    <onentry>
-                        <raise event="VarDecl0_0_0_10.start"/>
-                    </onentry>
-                    <transition type="internal" event="VarDecl0_0_0_10.finish" target="Model0_0_12_1.startVarDecl1_0_1_10"/>
+                <state id="Model0_0_12_1.startVarDecl1_0_1_10">
+                        <onentry>
+                            <raise event="VarDecl1_0_1_10.start"/>
+                        </onentry>
+                        <transition type="internal" event="VarDecl1_0_1_10.finish" target="Model0_0_12_1.startParallelBloc2_4_5_5"/>
+                </state>
+
+                <state id="Model0_0_12_1.startParallelBloc2_4_5_5">
+                        <onentry>
+                            <raise event="ParallelBloc2_4_5_5.start"/>
+                        </onentry>
+                        <transition type="internal" event="ParallelBloc2_4_5_5.finish" target="Model0_0_12_1.startIf6_0_12_1"/>
+                </state>
+
+                <state id="Model0_0_12_1.startIf6_0_12_1">
+                        <onentry>
+                            <raise event="If6_0_12_1.start"/>
+                        </onentry>
+                        <transition type="internal" event="If6_0_12_1.finish" target="Model0_0_12_1.idle"/>
+                </state>
+
             </state>
 
-            <state id="Model0_0_12_1.startVarDecl1_0_1_10">
+            <state id="VarDecl0_0_0_10" initial="VarDecl0_0_0_10.idle">
+                <state id="VarDecl0_0_0_10.idle">
+                    <transition type="internal" event="VarDecl0_0_0_10.start" target="VarDecl0_0_0_10.started"/>
+                </state>
+                <state id="VarDecl0_0_0_10.started">
                     <onentry>
-                        <raise event="VarDecl1_0_1_10.start"/>
+                        <log label="start VarDecl0_0_0_10"/>
+                        <raise event="VarDecl0_0_0_10.doAction1"/>
                     </onentry>
-                    <transition type="internal" event="VarDecl1_0_1_10.finish" target="Model0_0_12_1.startParallelBloc2_4_5_5"/>
+                    <transition type="internal" target="VarDecl0_0_0_10.idle">
+                        <raise event="VarDecl0_0_0_10.finish"/>
+                    </transition>
+                </state>
+            </state>
+            
+
+            <state id="VarDecl1_0_1_10" initial="VarDecl1_0_1_10.idle">
+                <state id="VarDecl1_0_1_10.idle">
+                    <transition type="internal" event="VarDecl1_0_1_10.start" target="VarDecl1_0_1_10.started"/>
+                </state>
+                <state id="VarDecl1_0_1_10.started">
+                    <onentry>
+                        <log label="start VarDecl1_0_1_10"/>
+                        <raise event="VarDecl1_0_1_10.doAction1"/>
+                    </onentry>
+                    <transition type="internal" target="VarDecl1_0_1_10.idle">
+                        <raise event="VarDecl1_0_1_10.finish"/>
+                    </transition>
+                </state>
+            </state>
+            
+
+            <state id="ParallelBloc2_4_5_5" initial="ParallelBloc2_4_5_5c.idle">
+                <state id="ParallelBloc2_4_5_5.idle">
+                    <transition type="internal" event="ParallelBloc2_4_5_5.start" target="ParallelBloc2_4_5_5.startAllStatements">
+                        <log label="start ParallelBloc2_4_5_5"/>
+                    </transition>
+                </state>
+                <parallel id="ParallelBloc2_4_5_5.startAllStatements">
+
+                <state id="ParallelBloc2_4_5_5.Assignment3_6_3_18" initial="ParallelBloc2_4_5_5.startAssignment3_6_3_18">
+                    <state id="ParallelBloc2_4_5_5.startAssignment3_6_3_18">
+                            <onentry>
+                                <raise event="Assignment3_6_3_18.start"/>
+                            </onentry>
+                            <transition type="internal" event="Assignment3_6_3_18.finish" target="ParallelBloc2_4_5_5.finishAssignment3_6_3_18"/>
+                    </state>
+                    <final id="ParallelBloc2_4_5_5.finishAssignment3_6_3_18">
+                    </final>
+
+                <state id="ParallelBloc2_4_5_5.Assignment4_6_4_18" initial="ParallelBloc2_4_5_5.startAssignment4_6_4_18">
+                    <state id="ParallelBloc2_4_5_5.startAssignment4_6_4_18">
+                            <onentry>
+                                <raise event="Assignment4_6_4_18.start"/>
+                            </onentry>
+                            <transition type="internal" event="Assignment4_6_4_18.finish" target="ParallelBloc2_4_5_5.finishAssignment4_6_4_18"/>
+                    </state>
+                    <final id="ParallelBloc2_4_5_5.finishAssignment4_6_4_18">
+                    </final>
+
+                <transition type="internal" event="done.state.ParallelBloc2_4_5_5.startAllStatements" target="ParallelBloc2_4_5_5.idle">
+                    <log label="finish ParallelBloc2_4_5_5"/>
+                    <raise event="ParallelBloc2_4_5_5.finish"/>
+                </transition>
+                </parallel>
             </state>
 
-            <state id="Model0_0_12_1.startParallelBloc2_4_5_5">
+            <state id="Assignment3_6_3_18" initial="Assignment3_6_3_18.idle">
+                <state id="Assignment3_6_3_18.idle">
+                    <transition type="internal" event="Assignment3_6_3_18.start" target="Assignment3_6_3_18.started"/>
+                </state>
+                <state id="Assignment3_6_3_18.started">
                     <onentry>
-                        <raise event="ParallelBloc2_4_5_5.start"/>
+                        <log label="start Assignment3_6_3_18"/>
+                        <raise event="Plus3_11_3_18.start"/>
                     </onentry>
-                    <transition type="internal" event="ParallelBloc2_4_5_5.finish" target="Model0_0_12_1.startIf6_0_12_1"/>
+                    <transition type="internal" event="VarDecl0_0_0_10.finish" target="Assignment3_6_3_18.Plus3_11_3_18Done"/>
+                </state>
+                <state id="Assignment3_6_3_18.Plus3_11_3_18Done">
+                    <onentry>
+                        <raise event="Assignment3_6_3_18.doAction1"/>
+                    </onentry>
+                    <transition type="internal" target="Assignment3_6_3_18.idle">
+                        <raise event="Assignment3_6_3_18.finish"/>
+                        <log label="finish Assignment3_6_3_18">
+                        </log>
+                    </transition>
+                </state>
+            </state>
+            
+
+            <state id="Plus3_11_3_18" initial="Plus3_11_3_18.idle">
+                <state id="Plus3_11_3_18.idle">
+                    <transition type="internal" event="Plus3_11_3_18.start" target="Plus3_11_3_18.started"/>
+                </state>
+                <state id="Plus3_11_3_18.started">
+                    <onentry>
+                        <log label="start Plus3_11_3_18"/>
+                        <raise event="VarRef3_11_3_13.start"/>
+                    </onentry>
+                    <transition type="internal" event="VarRef3_11_3_13.finish" target="Plus3_11_3_18.leftDone"/>
+                </state>
+                <state id="Plus3_11_3_18.leftDone">
+                    <onentry>
+                        <raise event="VarRef3_16_3_18.start"/>
+                    </onentry>
+                    <transition type="internal" event="VarRef3_16_3_18.finish" target="Plus3_11_3_18.rightDone"/>
+                </state>
+                <state id="Plus3_11_3_18.rightDone">
+                    <onentry>
+                        <raise event="Plus3_11_3_18.doAction1"/>
+                    </onentry>
+                    <transition type="internal" target="Plus3_11_3_18.idle">
+                        <log label="finish Plus3_11_3_18"/>
+                        <raise event="Plus3_11_3_18.finish"/>
+                    </transition>
+                </state>
+            </state>
+            
+
+            <state id="VarRef3_11_3_13" initial="VarRef3_11_3_13.idle">
+                <state id="VarRef3_11_3_13.idle">
+                    <transition event="VarRef3_11_3_13.start" target="VarRef3_11_3_13.idle">
+                        <raise event="VarRef3_11_3_13.doAction1"/>
+                        <raise event="VarRef3_11_3_13.finish"/>
+                    </transition>
+                </state>
             </state>
 
-            <state id="Model0_0_12_1.startIf6_0_12_1">
-                    <onentry>
-                        <raise event="If6_0_12_1.start"/>
-                    </onentry>
-                    <transition type="internal" event="If6_0_12_1.finish" target="Model0_0_12_1.idle"/>
+            <state id="VarRef3_16_3_18" initial="VarRef3_16_3_18.idle">
+                <state id="VarRef3_16_3_18.idle">
+                    <transition event="VarRef3_16_3_18.start" target="VarRef3_16_3_18.idle">
+                        <raise event="VarRef3_16_3_18.doAction1"/>
+                        <raise event="VarRef3_16_3_18.finish"/>
+                    </transition>
+                </state>
             </state>
 
-        </state>
+            <state id="Assignment4_6_4_18" initial="Assignment4_6_4_18.idle">
+                <state id="Assignment4_6_4_18.idle">
+                    <transition type="internal" event="Assignment4_6_4_18.start" target="Assignment4_6_4_18.started"/>
+                </state>
+                <state id="Assignment4_6_4_18.started">
+                    <onentry>
+                        <log label="start Assignment4_6_4_18"/>
+                        <raise event="Plus4_11_4_18.start"/>
+                    </onentry>
+                    <transition type="internal" event="VarDecl1_0_1_10.finish" target="Assignment4_6_4_18.Plus4_11_4_18Done"/>
+                </state>
+                <state id="Assignment4_6_4_18.Plus4_11_4_18Done">
+                    <onentry>
+                        <raise event="Assignment4_6_4_18.doAction1"/>
+                    </onentry>
+                    <transition type="internal" target="Assignment4_6_4_18.idle">
+                        <raise event="Assignment4_6_4_18.finish"/>
+                        <log label="finish Assignment4_6_4_18">
+                        </log>
+                    </transition>
+                </state>
+            </state>
+            
+
+            <state id="Plus4_11_4_18" initial="Plus4_11_4_18.idle">
+                <state id="Plus4_11_4_18.idle">
+                    <transition type="internal" event="Plus4_11_4_18.start" target="Plus4_11_4_18.started"/>
+                </state>
+                <state id="Plus4_11_4_18.started">
+                    <onentry>
+                        <log label="start Plus4_11_4_18"/>
+                        <raise event="VarRef4_11_4_13.start"/>
+                    </onentry>
+                    <transition type="internal" event="VarRef4_11_4_13.finish" target="Plus4_11_4_18.leftDone"/>
+                </state>
+                <state id="Plus4_11_4_18.leftDone">
+                    <onentry>
+                        <raise event="VarRef4_16_4_18.start"/>
+                    </onentry>
+                    <transition type="internal" event="VarRef4_16_4_18.finish" target="Plus4_11_4_18.rightDone"/>
+                </state>
+                <state id="Plus4_11_4_18.rightDone">
+                    <onentry>
+                        <raise event="Plus4_11_4_18.doAction1"/>
+                    </onentry>
+                    <transition type="internal" target="Plus4_11_4_18.idle">
+                        <log label="finish Plus4_11_4_18"/>
+                        <raise event="Plus4_11_4_18.finish"/>
+                    </transition>
+                </state>
+            </state>
+            
+
+            <state id="VarRef4_11_4_13" initial="VarRef4_11_4_13.idle">
+                <state id="VarRef4_11_4_13.idle">
+                    <transition event="VarRef4_11_4_13.start" target="VarRef4_11_4_13.idle">
+                        <raise event="VarRef4_11_4_13.doAction1"/>
+                        <raise event="VarRef4_11_4_13.finish"/>
+                    </transition>
+                </state>
+            </state>
+
+            <state id="VarRef4_16_4_18" initial="VarRef4_16_4_18.idle">
+                <state id="VarRef4_16_4_18.idle">
+                    <transition event="VarRef4_16_4_18.start" target="VarRef4_16_4_18.idle">
+                        <raise event="VarRef4_16_4_18.doAction1"/>
+                        <raise event="VarRef4_16_4_18.finish"/>
+                    </transition>
+                </state>
+            </state>
+
+            <state id="If6_0_12_1" initial="If6_0_12_1.idle">
+                <state id="If6_0_12_1.idle">
+                    <transition event="If6_0_12_1.start" target="If6_0_12_1.started"/>
+                </state>
+                <parallel id="If6_0_12_1.started">
+                    <transition event="done.state.If6_0_12_1.started" target ="If6_0_12_1.idle">
+                        <raise event="If6_0_12_1.finish"/>
+                    </transition>
+                    
+                    <state id="If6_0_12_1True" initial="If6_0_12_1True.started">
+                        <state id="If6_0_12_1True.started">
+                            <onentry>
+                                <log label="start If6_0_12_1 (True rule)"/>
+                                <raise event="VarRef6_4_6_6.start"/>
+                            </onentry>
+                            <transition type="internal" event="test1" target="If6_0_12_1True.condTrue"/>
+                            <transition type="internal" event="test2" target="If6_0_12_1True.final">
+                                <log label="finish If6_0_12_1 (True rule)"/>
+                            </transition>
+                        </state>
+                        <state id="If6_0_12_1True.condTrue">
+                            <onentry>
+                                <raise event="Bloc7_0_9_1.start"/>
+                            </onentry>
+                            <transition type="internal" event="Bloc7_0_9_1.finish" target="If6_0_12_1True.final">
+                                <log label="finish If6_0_12_1 (True rule)"/>
+                                <raise event="If6_0_12_1True.finish"/>
+                            </transition>
+                        </state>
+                        <final id="If6_0_12_1True.final"/>
+                    </state>
+                    <state id="If6_0_12_1False" initial="If6_0_12_1False.started">
+                        <state id="If6_0_12_1False.started">
+                            <onentry>
+                                <log label="start If6_0_12_1 (False rule)"/>
+                                <raise event="VarRef6_4_6_6.start"/>
+                            </onentry>
+                            <transition type="internal" event="test2" target="If6_0_12_1False.condFalse"/>
+                            <transition type="internal" event="test1" target="If6_0_12_1False.final">
+                                <log label="finish If6_0_12_1 (False rule)"/>
+                            </transition>
+                        </state>
+                        <state id="If6_0_12_1False.condFalse">
+                            <onentry>
+                                <raise event="Bloc10_0_12_1.start"/>
+                            </onentry>
+                            <transition type="internal" event="Bloc10_0_12_1.finish" target="If6_0_12_1False.final">
+                                <log label="finish If6_0_12_1 (False rule)"/>
+                                <raise event="If6_0_12_1False.finish"/>
+                            </transition>
+                        </state>
+                        <final id="If6_0_12_1False.final"/>
+                    </state>
+                </parallel>
+            </state>
+            
+
+            <state id="VarRef6_4_6_6" initial="VarRef6_4_6_6.idle">
+                <state id="VarRef6_4_6_6.idle">
+                    <transition event="VarRef6_4_6_6.start" target="VarRef6_4_6_6.idle">
+                        <raise event="VarRef6_4_6_6.doAction1"/>
+                        <raise event="VarRef6_4_6_6.finish"/>
+                    </transition>
+                </state>
+            </state>
+
+            <state id="Bloc7_0_9_1" initial="Bloc7_0_9_1.startVarDecl0_0_0_10">
+                    <state id="Bloc7_0_9_1.idle">
+                        <transition type="internal" event="Bloc7_0_9_1.start" target="Bloc7_0_9_1.startAssignment8_4_8_11"/>
+                    </state>
+
+                <state id="Bloc7_0_9_1.startAssignment8_4_8_11">
+                        <onentry>
+                            <raise event="Assignment8_4_8_11.start"/>
+                        </onentry>
+                        <transition type="internal" event="Assignment8_4_8_11.finish" target="Bloc7_0_9_1.idle"/>
+                </state>
+
+            </state>
+
+            <state id="Assignment8_4_8_11" initial="Assignment8_4_8_11.idle">
+                <state id="Assignment8_4_8_11.idle">
+                    <transition type="internal" event="Assignment8_4_8_11.start" target="Assignment8_4_8_11.started"/>
+                </state>
+                <state id="Assignment8_4_8_11.started">
+                    <onentry>
+                        <log label="start Assignment8_4_8_11"/>
+                        <raise event="VarRef8_9_8_11.start"/>
+                    </onentry>
+                    <transition type="internal" event="VarDecl1_0_1_10.finish" target="Assignment8_4_8_11.VarRef8_9_8_11Done"/>
+                </state>
+                <state id="Assignment8_4_8_11.VarRef8_9_8_11Done">
+                    <onentry>
+                        <raise event="Assignment8_4_8_11.doAction1"/>
+                    </onentry>
+                    <transition type="internal" target="Assignment8_4_8_11.idle">
+                        <raise event="Assignment8_4_8_11.finish"/>
+                        <log label="finish Assignment8_4_8_11">
+                        </log>
+                    </transition>
+                </state>
+            </state>
+            
+
+            <state id="VarRef8_9_8_11" initial="VarRef8_9_8_11.idle">
+                <state id="VarRef8_9_8_11.idle">
+                    <transition event="VarRef8_9_8_11.start" target="VarRef8_9_8_11.idle">
+                        <raise event="VarRef8_9_8_11.doAction1"/>
+                        <raise event="VarRef8_9_8_11.finish"/>
+                    </transition>
+                </state>
+            </state>
+
+            <state id="Bloc10_0_12_1" initial="Bloc10_0_12_1.startVarDecl0_0_0_10">
+                    <state id="Bloc10_0_12_1.idle">
+                        <transition type="internal" event="Bloc10_0_12_1.start" target="Bloc10_0_12_1.startAssignment11_4_11_11"/>
+                    </state>
+
+                <state id="Bloc10_0_12_1.startAssignment11_4_11_11">
+                        <onentry>
+                            <raise event="Assignment11_4_11_11.start"/>
+                        </onentry>
+                        <transition type="internal" event="Assignment11_4_11_11.finish" target="Bloc10_0_12_1.idle"/>
+                </state>
+
+            </state>
+
+            <state id="Assignment11_4_11_11" initial="Assignment11_4_11_11.idle">
+                <state id="Assignment11_4_11_11.idle">
+                    <transition type="internal" event="Assignment11_4_11_11.start" target="Assignment11_4_11_11.started"/>
+                </state>
+                <state id="Assignment11_4_11_11.started">
+                    <onentry>
+                        <log label="start Assignment11_4_11_11"/>
+                        <raise event="VarRef11_9_11_11.start"/>
+                    </onentry>
+                    <transition type="internal" event="VarDecl0_0_0_10.finish" target="Assignment11_4_11_11.VarRef11_9_11_11Done"/>
+                </state>
+                <state id="Assignment11_4_11_11.VarRef11_9_11_11Done">
+                    <onentry>
+                        <raise event="Assignment11_4_11_11.doAction1"/>
+                    </onentry>
+                    <transition type="internal" target="Assignment11_4_11_11.idle">
+                        <raise event="Assignment11_4_11_11.finish"/>
+                        <log label="finish Assignment11_4_11_11">
+                        </log>
+                    </transition>
+                </state>
+            </state>
+            
+
+            <state id="VarRef11_9_11_11" initial="VarRef11_9_11_11.idle">
+                <state id="VarRef11_9_11_11.idle">
+                    <transition event="VarRef11_9_11_11.start" target="VarRef11_9_11_11.idle">
+                        <raise event="VarRef11_9_11_11.doAction1"/>
+                        <raise event="VarRef11_9_11_11.finish"/>
+                    </transition>
+                </state>
+            </state>
 
         </parallel>
     </state>
