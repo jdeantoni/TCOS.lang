@@ -187,7 +187,7 @@ function generateSCXML(scxmlFile: CompositeGeneratorNode, model: Model) {
                     const statementName: string = getName(statement)
                     const nexStateName: string = blocName+".finish"+statementName
                     scxmlFile.append(`
-                    <state id="${blocName}.v1Assign1" initial="${blocName}.startv1Assign1">
+                    <state id="${blocName}.${statementName}" initial="${blocName}.start${statementName}">
                         <state id="${blocName}.start${statementName}">
                                 <onentry>
                                     <raise event="${statementName}.start"/>
@@ -208,6 +208,177 @@ function generateSCXML(scxmlFile: CompositeGeneratorNode, model: Model) {
                 );  
             }
         }
+        if(isVarDecl(node)){
+            const varDeclName: string = getName(node)
+            scxmlFile.append(`
+            <state id="${varDeclName}" initial="${varDeclName}.idle">
+                <state id="${varDeclName}.idle">
+                    <transition type="internal" event="${varDeclName}.start" target="${varDeclName}.started"/>
+                </state>
+                <state id="${varDeclName}.started">
+                    <onentry>
+                        <log label="start ${varDeclName}"/>
+                        <raise event="${varDeclName}.doAction1"/>
+                    </onentry>
+                    <transition type="internal" target="${varDeclName}.idle">
+                        <raise event="${varDeclName}.finish"/>
+                    </transition>
+                </state>
+            </state>
+            `,NL
+            );
+        }
+        if(isAssignment(node)){
+            const assignmentName: string = getName(node)
+            const leftName: string = getName(node.left)
+            const rightName: string = getName(node.right)
+            scxmlFile.append(`
+            <state id="${assignmentName}" initial="${assignmentName}.idle">
+                <state id="${assignmentName}.idle">
+                    <transition type="internal" event="${assignmentName}.start" target="${assignmentName}.started"/>
+                </state>
+                <state id="${assignmentName}.started">
+                    <onentry>
+                        <log label="start ${assignmentName}"/>
+                        <raise event="${rightName}.start"/>
+                    </onentry>
+                    <transition type="internal" event="${leftName}.finish" target="${assignmentName}.${rightName}Done"/>
+                </state>
+                <state id="${assignmentName}.${rightName}Done">
+                    <onentry>
+                        <raise event="${assignmentName}.doAction1"/>
+                    </onentry>
+                    <transition type="internal" target="${assignmentName}.idle">
+                        <raise event="${assignmentName}.finish"/>
+                        <log label="finish ${assignmentName}">
+                        </log>
+                    </transition>
+                </state>
+            </state>
+            `,NL
+            );
+        }
+
+        if(isPlus(node)){
+            const plusName: string = getName(node)
+            const leftName: string = getName(node.left)
+            const rightName: string = getName(node.right)
+            scxmlFile.append(`
+            <state id="${plusName}" initial="${plusName}.idle">
+                <state id="${plusName}.idle">
+                    <transition type="internal" event="${plusName}.start" target="${plusName}.started"/>
+                </state>
+                <state id="${plusName}.started">
+                    <onentry>
+                        <log label="start ${plusName}"/>
+                        <raise event="${leftName}.start"/>
+                    </onentry>
+                    <transition type="internal" event="${leftName}.finish" target="${plusName}.leftDone"/>
+                </state>
+                <state id="${plusName}.leftDone">
+                    <onentry>
+                        <raise event="${rightName}.start"/>
+                    </onentry>
+                    <transition type="internal" event="${rightName}.finish" target="${plusName}.rightDone"/>
+                </state>
+                <state id="${plusName}.rightDone">
+                    <onentry>
+                        <raise event="${plusName}.doAction1"/>
+                    </onentry>
+                    <transition type="internal" target="${plusName}.idle">
+                        <log label="finish ${plusName}"/>
+                        <raise event="${plusName}.finish"/>
+                    </transition>
+                </state>
+            </state>
+            `,NL
+            );
+        }
+
+        if(isIf(node)){
+            const ifName: string = getName(node)
+            const condName: string = getName(node.cond)
+            const thenName: string = getName(node.then)
+            const elseName: string = getName(node.else)
+
+            scxmlFile.append(`
+            <state id="${ifName}" initial="${ifName}.idle">
+                <state id="${ifName}.idle">
+                    <transition event="${ifName}.start" target="${ifName}.started"/>
+                </state>
+                <parallel id="${ifName}.started">
+                    <transition event="done.state.${ifName}.started" target ="${ifName}.idle">
+                        <raise event="${ifName}.finish"/>
+                    </transition>
+                    
+                    <state id="${ifName}True" initial="${ifName}True.started">
+                        <state id="${ifName}True.started">
+                            <onentry>
+                                <log label="start ${ifName} (True rule)"/>
+                                <raise event="${condName}.start"/>
+                            </onentry>
+                            <transition type="internal" event="test1" target="${ifName}True.condTrue"/>
+                            <transition type="internal" event="test2" target="${ifName}True.final">
+                                <log label="finish ${ifName} (True rule)"/>
+                            </transition>
+                        </state>
+                        <state id="${ifName}True.condTrue">
+                            <onentry>
+                                <raise event="${thenName}.start"/>
+                            </onentry>
+                            <transition type="internal" event="${thenName}.finish" target="${ifName}True.final">
+                                <log label="finish ${ifName} (True rule)"/>
+                                <raise event="${ifName}True.finish"/>
+                            </transition>
+                        </state>
+                        <final id="${ifName}True.final"/>
+                    </state>
+                    <state id="${ifName}False" initial="${ifName}False.started">
+                        <state id="${ifName}False.started">
+                            <onentry>
+                                <log label="start ${ifName} (False rule)"/>
+                                <raise event="${condName}.start"/>
+                            </onentry>
+                            <transition type="internal" event="test2" target="${ifName}False.condFalse"/>
+                            <transition type="internal" event="test1" target="${ifName}False.final">
+                                <log label="finish ${ifName} (False rule)"/>
+                            </transition>
+                        </state>
+                        <state id="${ifName}False.condFalse">
+                            <onentry>
+                                <raise event="${elseName}.start"/>
+                            </onentry>
+                            <transition type="internal" event="${elseName}.finish" target="${ifName}False.final">
+                                <log label="finish ${ifName} (False rule)"/>
+                                <raise event="${ifName}False.finish"/>
+                            </transition>
+                        </state>
+                        <final id="${ifName}False.final"/>
+                    </state>
+                </parallel>
+            </state>
+            `,NL
+            );
+        }
+
+        if(isVarRef(node)){
+            const varRefName: string = getName(node)
+            scxmlFile.append(`
+            <state id="${varRefName}" initial="${varRefName}.idle">
+                <state id="${varRefName}.idle">
+                    <transition event="${varRefName}.start" target="${varRefName}.idle">
+                        <raise event="${varRefName}.doAction1"/>
+                        <raise event="${varRefName}.finish"/>
+                    </transition>
+                </state>
+            </state>`,NL
+            );
+        }
+
+
+
+
+
 
     }
 
