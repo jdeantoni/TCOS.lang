@@ -4,7 +4,7 @@ import {
     LanguageClient, LanguageClientOptions, ServerOptions, TransportKind
 } from 'vscode-languageclient/node';
 
-// import {SoSScopeProvider} from './language-server/sos-scope';
+// require('./language-server/sos-scope.ts');
 
 let client: LanguageClient;
 

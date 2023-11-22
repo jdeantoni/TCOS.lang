@@ -43,20 +43,29 @@ Rule:
 
 RWRule: 
     {infer RWRule}
-       ('rwr')? ("when" guardEvents+=Expression ('^' guardEvents+=Expression )* )? (isParallel?=("parallel"|"unordered"))? (premise+=SemanticEquivalence (';' premise+=SemanticEquivalence)* )? 
+       ('rwr')? ("when" guardEvents+=MemberCall ('^' guardEvents+=MemberCall )* )? (premise+=SemanticEquivalence (';' premise+=SemanticEquivalence)* )? 
         ('-')+ name=ID
         conclusion=Conclusion; 
 
 
 
 SemanticEquivalence: 
-    ('<'(left=Expression) ',σ>' operator=('->') right=(TemporaryVariable|PrimaryExpression))*;  
+    ('<'(left=Expression) ',''σ''>' operator=('->') right=(TemporaryVariable|PrimaryExpression))*;  
 // Premise:
 //     {infer Premise}  
 //     '('Logical')';
  
 Conclusion:
-   '<this,σ>' '~>' ('<'(ruleStart=MemberCall) ',σ>' ";" |(outState+=SoSAssignment)+ ";")? (isDying?=TerminatedExpression)? ;  
+   '<''this'',''σ''>' '~>' ( ('!'|'send') (ruleSync=RuleSync  ';') |(outState+=SoSAssignment)+ ";")? (isDying?='⍊')? ; //(isDying?=TerminateExpression)?  
+
+RuleSync:
+    rule=(SingleRuleSync | CollectionRuleSync);
+
+SingleRuleSync:
+    '<'member=MemberCall',' 'σ' '>' ;//'.' status=(SyncExpression);
+
+CollectionRuleSync:
+   collection=MemberCall '->' (order=("parallel"|"sequential") '.')?'foreach''('varDecl=TemporaryVariable ('=>'|'|') singleRule=SingleRuleSync')';
 
 TemporaryVariable returns NamedElement:
     {infer TemporaryVariable} 
@@ -121,8 +130,8 @@ PrimaryExpression infers Expression:
     StringExpression |
     BooleanExpression |
     NumberExpression |
-    NilExpression |
-    TerminatedExpression;
+    NilExpression; //|
+    // SyncExpression;
 
 FeatureCall infers Expression:
 	{infer MemberCall}
@@ -137,12 +146,15 @@ FeatureCall infers Expression:
 UnaryExpression:
    operator=('!' | '-' | '+') value=Expression
 ;
+// SyncExpression:
+//     (StartExpression | TerminateExpression);
 
 NumberExpression: value=NUMBER;
 StringExpression: value=STRING;
 BooleanExpression: value?='true' | 'false';
 NilExpression: value='nil';
-TerminatedExpression: value='terminated' | '⍊';
+// StartExpression: value='starts' | '⊤';
+// TerminateExpression: value='terminates' | '⍊';
 
 
 // FunctionDeclaration:

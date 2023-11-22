@@ -174,7 +174,7 @@ function getRwrRuleType(rwr: RWRule) {
             return "bool"
         }
     }
-    if (rwr.conclusion.ruleStart) {
+    if (rwr.conclusion.ruleSync) {
         return "void"
     }
     return "error in type inference for rule "+rwr.name+" in rule opened on "+(rwr.$container as RuleOpening).onRule

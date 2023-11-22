@@ -1,10 +1,10 @@
 {
   "compilerOptions": {
+    "sourceMap": true,
     "target": "ES6",
     "module": "commonjs",
     "lib": ["ESNext"],
-    "sourceMap": true,
-    "outDir": "out",
+    "outDir": "out/",
     "strict": true,
     "noUnusedLocals": true,
     "noImplicitReturns": true,

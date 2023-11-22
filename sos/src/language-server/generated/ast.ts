@@ -30,7 +30,7 @@ export function isCondition(item: unknown): item is Condition {
     return reflection.isInstance(item, Condition);
 }
 
-export type Expression = BinaryExpression | BooleanExpression | MemberCall | NilExpression | NumberExpression | StringExpression | TerminatedExpression | UnaryExpression;
+export type Expression = BinaryExpression | BooleanExpression | MemberCall | NilExpression | NumberExpression | StringExpression | UnaryExpression;
 
 export const Expression = 'Expression';
 
@@ -89,7 +89,7 @@ export function isAtomType(item: unknown): item is AtomType {
 }
 
 export interface BinaryExpression extends AstNode {
-    readonly $container: BinaryExpression | Conclusion | MemberCall | RWRule | SemanticEquivalence | UnaryExpression | VariableDeclaration;
+    readonly $container: BinaryExpression | CollectionRuleSync | Conclusion | MemberCall | RWRule | SemanticEquivalence | SingleRuleSync | UnaryExpression | VariableDeclaration;
     readonly $type: 'BinaryExpression';
     left: Expression
     operator: '!=' | '*' | '+' | '-' | '/' | '<' | '<=' | '=' | '==' | '>' | '>=' | 'and' | 'or' | 'xor'
@@ -103,7 +103,7 @@ export function isBinaryExpression(item: unknown): item is BinaryExpression {
 }
 
 export interface BooleanExpression extends AstNode {
-    readonly $container: BinaryExpression | Conclusion | MemberCall | RWRule | SemanticEquivalence | UnaryExpression | VariableDeclaration;
+    readonly $container: BinaryExpression | CollectionRuleSync | Conclusion | MemberCall | RWRule | SemanticEquivalence | SingleRuleSync | UnaryExpression | VariableDeclaration;
     readonly $type: 'BooleanExpression';
     value: boolean
 }
@@ -114,12 +114,27 @@ export function isBooleanExpression(item: unknown): item is BooleanExpression {
     return reflection.isInstance(item, BooleanExpression);
 }
 
+export interface CollectionRuleSync extends AstNode {
+    readonly $container: RuleSync;
+    readonly $type: 'CollectionRuleSync';
+    collection: Expression
+    order?: 'parallel' | 'sequential'
+    singleRule: SingleRuleSync
+    varDecl: NamedElement
+}
+
+export const CollectionRuleSync = 'CollectionRuleSync';
+
+export function isCollectionRuleSync(item: unknown): item is CollectionRuleSync {
+    return reflection.isInstance(item, CollectionRuleSync);
+}
+
 export interface Conclusion extends AstNode {
     readonly $container: RWRule;
     readonly $type: 'Conclusion';
     isDying: boolean
     outState: Array<Expression>
-    ruleStart?: Expression
+    ruleSync?: RuleSync
 }
 
 export const Conclusion = 'Conclusion';
@@ -155,7 +170,7 @@ export function isDisjunction(item: unknown): item is Disjunction {
 }
 
 export interface FieldMember extends AstNode {
-    readonly $container: RuleOpening | SemanticEquivalence | SoSSpec | Struct | TypeReference;
+    readonly $container: CollectionRuleSync | RuleOpening | SemanticEquivalence | SoSSpec | Struct | TypeReference;
     readonly $type: 'FieldMember';
     name: string
     type: TypeReference
@@ -261,7 +276,7 @@ export function isLiteralCondition(item: unknown): item is LiteralCondition {
 }
 
 export interface MemberCall extends AstNode {
-    readonly $container: BinaryExpression | Conclusion | MemberCall | RWRule | SemanticEquivalence | UnaryExpression | VariableDeclaration;
+    readonly $container: BinaryExpression | CollectionRuleSync | Conclusion | MemberCall | RWRule | SemanticEquivalence | SingleRuleSync | UnaryExpression | VariableDeclaration;
     readonly $type: 'MemberCall';
     arguments: Array<Expression>
     element?: Reference<NamedElement>
@@ -276,7 +291,7 @@ export function isMemberCall(item: unknown): item is MemberCall {
 }
 
 export interface MethodMember extends AstNode {
-    readonly $container: RuleOpening | SemanticEquivalence | SoSSpec | Struct | TypeReference;
+    readonly $container: CollectionRuleSync | RuleOpening | SemanticEquivalence | SoSSpec | Struct | TypeReference;
     readonly $type: 'MethodMember';
     name: string
     parameters: Array<Parameter>
@@ -316,7 +331,7 @@ export function isNegation(item: unknown): item is Negation {
 }
 
 export interface NilExpression extends AstNode {
-    readonly $container: BinaryExpression | Conclusion | MemberCall | RWRule | SemanticEquivalence | UnaryExpression | VariableDeclaration;
+    readonly $container: BinaryExpression | CollectionRuleSync | Conclusion | MemberCall | RWRule | SemanticEquivalence | SingleRuleSync | UnaryExpression | VariableDeclaration;
     readonly $type: 'NilExpression';
     value: 'nil'
 }
@@ -328,7 +343,7 @@ export function isNilExpression(item: unknown): item is NilExpression {
 }
 
 export interface NumberExpression extends AstNode {
-    readonly $container: BinaryExpression | Conclusion | MemberCall | RWRule | SemanticEquivalence | UnaryExpression | VariableDeclaration;
+    readonly $container: BinaryExpression | CollectionRuleSync | Conclusion | MemberCall | RWRule | SemanticEquivalence | SingleRuleSync | UnaryExpression | VariableDeclaration;
     readonly $type: 'NumberExpression';
     value: number
 }
@@ -398,7 +413,7 @@ export function isReturnType(item: unknown): item is ReturnType {
 }
 
 export interface RuleOpening extends AstNode {
-    readonly $container: RuleOpening | SemanticEquivalence | SoSSpec | Struct | TypeReference;
+    readonly $container: CollectionRuleSync | RuleOpening | SemanticEquivalence | SoSSpec | Struct | TypeReference;
     readonly $type: 'RuleOpening';
     name?: string
     onRule: Reference<ParserRule>
@@ -412,12 +427,23 @@ export function isRuleOpening(item: unknown): item is RuleOpening {
     return reflection.isInstance(item, RuleOpening);
 }
 
+export interface RuleSync extends AstNode {
+    readonly $container: Conclusion;
+    readonly $type: 'RuleSync';
+    rule: CollectionRuleSync | SingleRuleSync
+}
+
+export const RuleSync = 'RuleSync';
+
+export function isRuleSync(item: unknown): item is RuleSync {
+    return reflection.isInstance(item, RuleSync);
+}
+
 export interface RWRule extends AstNode {
-    readonly $container: RuleOpening | SemanticEquivalence | SoSSpec | Struct | TypeReference;
+    readonly $container: CollectionRuleSync | RuleOpening | SemanticEquivalence | SoSSpec | Struct | TypeReference;
     readonly $type: 'RWRule';
     conclusion: Conclusion
     guardEvents: Array<Expression>
-    isParallel: boolean
     name: string
     premise: Array<SemanticEquivalence>
 }
@@ -442,8 +468,20 @@ export function isSemanticEquivalence(item: unknown): item is SemanticEquivalenc
     return reflection.isInstance(item, SemanticEquivalence);
 }
 
+export interface SingleRuleSync extends AstNode {
+    readonly $container: CollectionRuleSync | RuleSync;
+    readonly $type: 'SingleRuleSync';
+    member: Expression
+}
+
+export const SingleRuleSync = 'SingleRuleSync';
+
+export function isSingleRuleSync(item: unknown): item is SingleRuleSync {
+    return reflection.isInstance(item, SingleRuleSync);
+}
+
 export interface SoSPrimitiveType extends AstNode {
-    readonly $container: RuleOpening | SemanticEquivalence | SoSSpec | Struct | TypeReference;
+    readonly $container: CollectionRuleSync | RuleOpening | SemanticEquivalence | SoSSpec | Struct | TypeReference;
     readonly $type: 'SoSPrimitiveType';
     name: 'boolean' | 'event' | 'number' | 'string' | 'void'
 }
@@ -468,7 +506,7 @@ export function isSoSSpec(item: unknown): item is SoSSpec {
 }
 
 export interface StringExpression extends AstNode {
-    readonly $container: BinaryExpression | Conclusion | MemberCall | RWRule | SemanticEquivalence | UnaryExpression | VariableDeclaration;
+    readonly $container: BinaryExpression | CollectionRuleSync | Conclusion | MemberCall | RWRule | SemanticEquivalence | SingleRuleSync | UnaryExpression | VariableDeclaration;
     readonly $type: 'StringExpression';
     value: string
 }
@@ -480,7 +518,7 @@ export function isStringExpression(item: unknown): item is StringExpression {
 }
 
 export interface Struct extends AstNode {
-    readonly $container: RuleOpening | SemanticEquivalence | SoSSpec | Struct | TypeReference;
+    readonly $container: CollectionRuleSync | RuleOpening | SemanticEquivalence | SoSSpec | Struct | TypeReference;
     readonly $type: 'Struct';
     members: Array<FieldMember>
     name: string
@@ -494,7 +532,7 @@ export function isStruct(item: unknown): item is Struct {
 }
 
 export interface TemporaryVariable extends AstNode {
-    readonly $container: RuleOpening | SemanticEquivalence | SoSSpec | Struct | TypeReference;
+    readonly $container: CollectionRuleSync | RuleOpening | SemanticEquivalence | SoSSpec | Struct | TypeReference;
     readonly $type: 'TemporaryVariable';
     name: string
     type?: TypeReference
@@ -520,18 +558,6 @@ export const TerminalRule = 'TerminalRule';
 
 export function isTerminalRule(item: unknown): item is TerminalRule {
     return reflection.isInstance(item, TerminalRule);
-}
-
-export interface TerminatedExpression extends AstNode {
-    readonly $container: BinaryExpression | Conclusion | MemberCall | RWRule | SemanticEquivalence | UnaryExpression | VariableDeclaration;
-    readonly $type: 'TerminatedExpression';
-    value?: 'terminated'
-}
-
-export const TerminatedExpression = 'TerminatedExpression';
-
-export function isTerminatedExpression(item: unknown): item is TerminatedExpression {
-    return reflection.isInstance(item, TerminatedExpression);
 }
 
 export interface Type extends AstNode {
@@ -575,7 +601,7 @@ export function isTypeReference(item: unknown): item is TypeReference {
 }
 
 export interface UnaryExpression extends AstNode {
-    readonly $container: BinaryExpression | Conclusion | MemberCall | RWRule | SemanticEquivalence | UnaryExpression | VariableDeclaration;
+    readonly $container: BinaryExpression | CollectionRuleSync | Conclusion | MemberCall | RWRule | SemanticEquivalence | SingleRuleSync | UnaryExpression | VariableDeclaration;
     readonly $type: 'UnaryExpression';
     operator: '!' | '+' | '-'
     value: Expression
@@ -588,7 +614,7 @@ export function isUnaryExpression(item: unknown): item is UnaryExpression {
 }
 
 export interface VariableDeclaration extends AstNode {
-    readonly $container: RuleOpening | SemanticEquivalence | SoSSpec | Struct | TypeReference;
+    readonly $container: CollectionRuleSync | RuleOpening | SemanticEquivalence | SoSSpec | Struct | TypeReference;
     readonly $type: 'VariableDeclaration';
     assignment: boolean
     name: string
@@ -814,6 +840,7 @@ export interface StructuralOperationalSemanticsAstType {
     BinaryExpression: BinaryExpression
     BooleanExpression: BooleanExpression
     CharacterRange: CharacterRange
+    CollectionRuleSync: CollectionRuleSync
     Conclusion: Conclusion
     Condition: Condition
     Conjunction: Conjunction
@@ -847,7 +874,9 @@ export interface StructuralOperationalSemanticsAstType {
     Rule: Rule
     RuleCall: RuleCall
     RuleOpening: RuleOpening
+    RuleSync: RuleSync
     SemanticEquivalence: SemanticEquivalence
+    SingleRuleSync: SingleRuleSync
     SoSPrimitiveType: SoSPrimitiveType
     SoSSpec: SoSSpec
     StringExpression: StringExpression
@@ -857,7 +886,6 @@ export interface StructuralOperationalSemanticsAstType {
     TerminalGroup: TerminalGroup
     TerminalRule: TerminalRule
     TerminalRuleCall: TerminalRuleCall
-    TerminatedExpression: TerminatedExpression
     Type: Type
     TypeAttribute: TypeAttribute
     TypeReference: TypeReference
@@ -871,7 +899,7 @@ export interface StructuralOperationalSemanticsAstType {
 export class StructuralOperationalSemanticsAstReflection extends AbstractAstReflection {
 
     getAllTypes(): string[] {
-        return ['AbstractElement', 'AbstractRule', 'AbstractType', 'Action', 'Alternatives', 'Assignment', 'AtomType', 'BinaryExpression', 'BooleanExpression', 'CharacterRange', 'Conclusion', 'Condition', 'Conjunction', 'CrossReference', 'Disjunction', 'Expression', 'FieldMember', 'Grammar', 'GrammarImport', 'Group', 'ImportStatement', 'InferredType', 'Interface', 'Keyword', 'LambdaParameter', 'LiteralCondition', 'MemberCall', 'MethodMember', 'NamedArgument', 'NamedElement', 'NegatedToken', 'Negation', 'NilExpression', 'NumberExpression', 'Parameter', 'ParameterReference', 'ParserRule', 'RWRule', 'RegexToken', 'ReturnType', 'Rule', 'RuleCall', 'RuleOpening', 'SemanticEquivalence', 'SoSPrimitiveType', 'SoSSpec', 'StringExpression', 'Struct', 'TemporaryVariable', 'TerminalAlternatives', 'TerminalGroup', 'TerminalRule', 'TerminalRuleCall', 'TerminatedExpression', 'Type', 'TypeAttribute', 'TypeReference', 'UnaryExpression', 'UnorderedGroup', 'UntilToken', 'VariableDeclaration', 'Wildcard'];
+        return ['AbstractElement', 'AbstractRule', 'AbstractType', 'Action', 'Alternatives', 'Assignment', 'AtomType', 'BinaryExpression', 'BooleanExpression', 'CharacterRange', 'CollectionRuleSync', 'Conclusion', 'Condition', 'Conjunction', 'CrossReference', 'Disjunction', 'Expression', 'FieldMember', 'Grammar', 'GrammarImport', 'Group', 'ImportStatement', 'InferredType', 'Interface', 'Keyword', 'LambdaParameter', 'LiteralCondition', 'MemberCall', 'MethodMember', 'NamedArgument', 'NamedElement', 'NegatedToken', 'Negation', 'NilExpression', 'NumberExpression', 'Parameter', 'ParameterReference', 'ParserRule', 'RWRule', 'RegexToken', 'ReturnType', 'Rule', 'RuleCall', 'RuleOpening', 'RuleSync', 'SemanticEquivalence', 'SingleRuleSync', 'SoSPrimitiveType', 'SoSSpec', 'StringExpression', 'Struct', 'TemporaryVariable', 'TerminalAlternatives', 'TerminalGroup', 'TerminalRule', 'TerminalRuleCall', 'Type', 'TypeAttribute', 'TypeReference', 'UnaryExpression', 'UnorderedGroup', 'UntilToken', 'VariableDeclaration', 'Wildcard'];
     }
 
     protected override computeIsSubtype(subtype: string, supertype: string): boolean {
@@ -882,7 +910,6 @@ export class StructuralOperationalSemanticsAstReflection extends AbstractAstRefl
             case NilExpression:
             case NumberExpression:
             case StringExpression:
-            case TerminatedExpression:
             case UnaryExpression: {
                 return this.isSubtype(Expression, supertype);
             }
@@ -1094,7 +1121,6 @@ export class StructuralOperationalSemanticsAstReflection extends AbstractAstRefl
                     name: 'RWRule',
                     mandatory: [
                         { name: 'guardEvents', type: 'array' },
-                        { name: 'isParallel', type: 'boolean' },
                         { name: 'premise', type: 'array' }
                     ]
                 };

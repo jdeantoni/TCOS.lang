@@ -5,40 +5,46 @@ import "testSoSLang/src/language-server/simple-l.langium"
 
 open Model { 
 
-      <statements,σ> -> ⍊
-    ------------------------- statementsInOrder1
-         <this,σ> ~> ⍊
+
+                            when starts; 
+    -------------------------------------------------------------------- statementsInOrder1
+      <this,σ> ~> ! statements->sequential.foreach(s => <s.starts ,σ>);
+
+
+
+         when statements.last().terminates;                  //change to "when lastOf(<statements,σ>.terminates)" ?
+    -------------------------------------------stopModel
+              <this,σ> ~> ⍊
 
 }
 
 open Bloc {
 
-      <statements,σ> -> ⍊
-    ----------------------- statementsInOrder2
-        <this,σ> ~> ⍊
+                          when starts;
+    ----------------------------------------------------------- statementsInOrder2
+        <this,σ> ~> ! statements->foreach(s => <s.starts,σ>); ⍊
 }
 
 open ParallelBloc {
 
-      parallel <statements,σ> -> ⍊
-    -------------------------------- statementsInOrder2
-            <this,σ> ~> ⍊
+                          when starts;
+    ----------------------------------------------------------- statementsInParallel
+        <this,σ> ~> ! statements->parallel.foreach(s => <s.starts,σ>); ⍊
 }
 
 open VarDecl {
 
-    var start: event;
     var currentValue:number = initialValue;
 
-            when start;
+            when starts;
     ----------------------------- evaluate
      <this,σ> ~> currentValue = initialValue; ⍊
 
 }
 
 open VarRef {
-      
-    --------------------------- evaluate
+                when starts;
+    ------------------------------------- evaluate
          <this,σ> ~> ref.currentValue;
 }
 
@@ -52,14 +58,14 @@ open Plus {
 
 open If {
 
-       <cond,σ> -> true 
-    ---------------------- condTrue
-     <this,σ> ~> <then,σ>; ⍊ 
+              <cond,σ> -> true 
+    ------------------------------------- condTrue
+     <this,σ> ~> ! <then.starts, σ>; ⍊
 
 
-       <cond,σ> -> false
-    ---------------------- condFalse
-     <this,σ> ~> <else,σ>; ⍊
+              <cond,σ> -> false
+    ----------------------------------- condFalse
+     <this,σ> ~> ! <else.starts,σ>; ⍊
 
 } 
 
