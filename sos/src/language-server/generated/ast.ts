@@ -446,12 +446,24 @@ export interface RWRule extends AstNode {
     guardEvents: Array<Expression>
     name: string
     premise: Array<SemanticEquivalence>
+    selectionPolicy?: SelectionPolicy
 }
 
 export const RWRule = 'RWRule';
 
 export function isRWRule(item: unknown): item is RWRule {
     return reflection.isInstance(item, RWRule);
+}
+
+export interface SelectionPolicy extends AstNode {
+    readonly $container: RWRule;
+    readonly $type: 'SelectionPolicy';
+}
+
+export const SelectionPolicy = 'SelectionPolicy';
+
+export function isSelectionPolicy(item: unknown): item is SelectionPolicy {
+    return reflection.isInstance(item, SelectionPolicy);
 }
 
 export interface SemanticEquivalence extends AstNode {
@@ -875,6 +887,7 @@ export interface StructuralOperationalSemanticsAstType {
     RuleCall: RuleCall
     RuleOpening: RuleOpening
     RuleSync: RuleSync
+    SelectionPolicy: SelectionPolicy
     SemanticEquivalence: SemanticEquivalence
     SingleRuleSync: SingleRuleSync
     SoSPrimitiveType: SoSPrimitiveType
@@ -899,7 +912,7 @@ export interface StructuralOperationalSemanticsAstType {
 export class StructuralOperationalSemanticsAstReflection extends AbstractAstReflection {
 
     getAllTypes(): string[] {
-        return ['AbstractElement', 'AbstractRule', 'AbstractType', 'Action', 'Alternatives', 'Assignment', 'AtomType', 'BinaryExpression', 'BooleanExpression', 'CharacterRange', 'CollectionRuleSync', 'Conclusion', 'Condition', 'Conjunction', 'CrossReference', 'Disjunction', 'Expression', 'FieldMember', 'Grammar', 'GrammarImport', 'Group', 'ImportStatement', 'InferredType', 'Interface', 'Keyword', 'LambdaParameter', 'LiteralCondition', 'MemberCall', 'MethodMember', 'NamedArgument', 'NamedElement', 'NegatedToken', 'Negation', 'NilExpression', 'NumberExpression', 'Parameter', 'ParameterReference', 'ParserRule', 'RWRule', 'RegexToken', 'ReturnType', 'Rule', 'RuleCall', 'RuleOpening', 'RuleSync', 'SemanticEquivalence', 'SingleRuleSync', 'SoSPrimitiveType', 'SoSSpec', 'StringExpression', 'Struct', 'TemporaryVariable', 'TerminalAlternatives', 'TerminalGroup', 'TerminalRule', 'TerminalRuleCall', 'Type', 'TypeAttribute', 'TypeReference', 'UnaryExpression', 'UnorderedGroup', 'UntilToken', 'VariableDeclaration', 'Wildcard'];
+        return ['AbstractElement', 'AbstractRule', 'AbstractType', 'Action', 'Alternatives', 'Assignment', 'AtomType', 'BinaryExpression', 'BooleanExpression', 'CharacterRange', 'CollectionRuleSync', 'Conclusion', 'Condition', 'Conjunction', 'CrossReference', 'Disjunction', 'Expression', 'FieldMember', 'Grammar', 'GrammarImport', 'Group', 'ImportStatement', 'InferredType', 'Interface', 'Keyword', 'LambdaParameter', 'LiteralCondition', 'MemberCall', 'MethodMember', 'NamedArgument', 'NamedElement', 'NegatedToken', 'Negation', 'NilExpression', 'NumberExpression', 'Parameter', 'ParameterReference', 'ParserRule', 'RWRule', 'RegexToken', 'ReturnType', 'Rule', 'RuleCall', 'RuleOpening', 'RuleSync', 'SelectionPolicy', 'SemanticEquivalence', 'SingleRuleSync', 'SoSPrimitiveType', 'SoSSpec', 'StringExpression', 'Struct', 'TemporaryVariable', 'TerminalAlternatives', 'TerminalGroup', 'TerminalRule', 'TerminalRuleCall', 'Type', 'TypeAttribute', 'TypeReference', 'UnaryExpression', 'UnorderedGroup', 'UntilToken', 'VariableDeclaration', 'Wildcard'];
     }
 
     protected override computeIsSubtype(subtype: string, supertype: string): boolean {

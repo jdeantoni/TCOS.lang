@@ -43,9 +43,13 @@ Rule:
 
 RWRule: 
     {infer RWRule}
-       ('rwr')? ("when" guardEvents+=MemberCall ('^' guardEvents+=MemberCall )* )? (premise+=SemanticEquivalence (';' premise+=SemanticEquivalence)* )? 
+       ('rwr')? ("when" (selectionPolicy=SelectionPolicy)? ((guardEvents+=MemberCall) | ('(' guardEvents+=MemberCall ('^' guardEvents+=MemberCall )* ')')) )? (premise+=SemanticEquivalence (';' premise+=SemanticEquivalence)* )? 
         ('-')+ name=ID
-        conclusion=Conclusion; 
+        conclusion=Conclusion;
+
+SelectionPolicy:
+   {infer SelectionPolicy}
+   ("firstOf" | "lastOf") ; 
 
 
 
@@ -56,7 +60,7 @@ SemanticEquivalence:
 //     '('Logical')';
  
 Conclusion:
-   '<''this'',''σ''>' '~>' ( ('!'|'send') (ruleSync=RuleSync  ';') |(outState+=SoSAssignment)+ ";")? (isDying?='⍊')? ; //(isDying?=TerminateExpression)?  
+   '<''this'',''σ''>' '~>' ((ruleSync=RuleSync  ';') |(outState+=SoSAssignment)+ ";")? (isDying?='⍊')? ; //(isDying?=TerminateExpression)?  
 
 RuleSync:
     rule=(SingleRuleSync | CollectionRuleSync);

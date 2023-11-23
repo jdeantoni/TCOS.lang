@@ -7,13 +7,13 @@ open Model {
 
 
                             when starts; 
-    -------------------------------------------------------------------- statementsInOrder1
-      <this,σ> ~> ! statements->sequential.foreach(s => <s.starts ,σ>);
+    ------------------------------------------------------------ statementsInOrder1
+      <this,σ> ~> statements->sequential.foreach(s => <s,σ>);
 
 
 
-         when statements.last().terminates;                  //change to "when lastOf(<statements,σ>.terminates)" ?
-    -------------------------------------------stopModel
+         when statements.last().terminates;                  
+    -------------------------------------------                 finishModel
               <this,σ> ~> ⍊
 
 }
@@ -21,56 +21,71 @@ open Model {
 open Bloc {
 
                           when starts;
-    ----------------------------------------------------------- statementsInOrder2
-        <this,σ> ~> ! statements->foreach(s => <s.starts,σ>); ⍊
+    ----------------------------------------------------------- startsBloc
+        <this,σ> ~> statements->foreach(s => <s,σ>); ⍊
+
+  
+          when statements.last().terminates;             
+    -------------------------------------------                 finishBloc
+              <this,σ> ~> ⍊
 }
 
 open ParallelBloc {
 
                           when starts;
-    ----------------------------------------------------------- statementsInParallel
-        <this,σ> ~> ! statements->parallel.foreach(s => <s.starts,σ>); ⍊
+    ----------------------------------------------------------- startsParallelBloc
+        <this,σ> ~> statements->parallel.foreach(s => <s,σ>);
+
+
+
+       when lastOf (statements.terminates);
+    -----------------------------------------                   finishParallelBloc
+                  <this,σ> ~> ⍊
+
 }
 
 open VarDecl {
 
     var currentValue:number = initialValue;
 
-            when starts;
-    ----------------------------- evaluate
+
+                    when starts;
+    ---------------------------------------------               initializeVar
      <this,σ> ~> currentValue = initialValue; ⍊
 
 }
 
 open VarRef {
                 when starts;
-    ------------------------------------- evaluate
+    -------------------------------------                       accessVarRef
          <this,σ> ~> ref.currentValue;
 }
 
 open Plus {
    
     <right,σ> -> n2:number ; <left,σ> -> n1:number
-    ---------------------------------------------- evaluate
-                 <this,σ> ~> n1 + n2 ; ⍊
+    ----------------------------------------------              evaluatePlus
+             <this,σ> ~> n1 + n2 ; ⍊
 }
 
 
 open If {
 
+              when starts;
               <cond,σ> -> true 
-    ------------------------------------- condTrue
-     <this,σ> ~> ! <then.starts, σ>; ⍊
+    -----------------------------------                         condTrue
+      <this,σ> ~> <then.starts, σ>; ⍊
 
 
+              when starts;
               <cond,σ> -> false
-    ----------------------------------- condFalse
-     <this,σ> ~> ! <else.starts,σ>; ⍊
+    -----------------------------------                         condFalse
+      <this,σ> ~> <else.starts,σ>; ⍊
 
 } 
 
 open Assignment {
-          <right,σ> -> resRight: number                         //here we cannot know the type. inference must be improved to avoid void type
-    ----------------------------------------------- evaluate
+          <right,σ> -> resRight: number                         
+    -----------------------------------------------             executeAssignment
       <this,σ> ~> left.currentValue = resRight; ⍊
 }
