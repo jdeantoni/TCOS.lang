@@ -54,13 +54,13 @@ SelectionPolicy:
 
 
 SemanticEquivalence: 
-    ('<'(left=Expression) ',''σ''>' operator=('->') right=(TemporaryVariable|PrimaryExpression))*;  
+    ('<'(left=MemberCall) ',''σ''>' operator=('->') ('⍊')? ('(')?right=(TemporaryVariable|PrimaryExpression)(')')?)*;  
 // Premise:
 //     {infer Premise}  
 //     '('Logical')';
  
 Conclusion:
-   '<''this'',''σ''>' '~>' ((ruleSync=RuleSync  ';') |(outState+=SoSAssignment)+ ";")? (isDying?='⍊')? ; //(isDying?=TerminateExpression)?  
+   '<''this'',''σ''>' '~>'  (('unordered')? ('(')? (ruleSync=RuleSync) (')')? )? ((isDying?='⍊')? ('(')?(outState+=SoSAssignment)+ (')')? ";")? ; //(isDying?=TerminateExpression)?  
 
 RuleSync:
     rule=(SingleRuleSync | CollectionRuleSync);

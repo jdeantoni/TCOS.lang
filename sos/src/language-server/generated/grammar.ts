@@ -470,6 +470,16 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             }
           },
           {
+            "$type": "Keyword",
+            "value": "⍊",
+            "cardinality": "?"
+          },
+          {
+            "$type": "Keyword",
+            "value": "(",
+            "cardinality": "?"
+          },
+          {
             "$type": "Assignment",
             "feature": "right",
             "operator": "=",
@@ -492,6 +502,11 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 }
               ]
             }
+          },
+          {
+            "$type": "Keyword",
+            "value": ")",
+            "cardinality": "?"
           }
         ],
         "cardinality": "*"
@@ -534,62 +549,79 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "value": "~>"
           },
           {
-            "$type": "Alternatives",
+            "$type": "Group",
             "elements": [
               {
-                "$type": "Group",
-                "elements": [
-                  {
-                    "$type": "Assignment",
-                    "feature": "ruleSync",
-                    "operator": "=",
-                    "terminal": {
-                      "$type": "RuleCall",
-                      "rule": {
-                        "$ref": "#/rules@8"
-                      },
-                      "arguments": []
-                    }
-                  },
-                  {
-                    "$type": "Keyword",
-                    "value": ";"
-                  }
-                ]
+                "$type": "Keyword",
+                "value": "unordered",
+                "cardinality": "?"
               },
               {
-                "$type": "Group",
-                "elements": [
-                  {
-                    "$type": "Assignment",
-                    "feature": "outState",
-                    "operator": "+=",
-                    "terminal": {
-                      "$type": "RuleCall",
-                      "rule": {
-                        "$ref": "#/rules@14"
-                      },
-                      "arguments": []
-                    },
-                    "cardinality": "+"
+                "$type": "Keyword",
+                "value": "(",
+                "cardinality": "?"
+              },
+              {
+                "$type": "Assignment",
+                "feature": "ruleSync",
+                "operator": "=",
+                "terminal": {
+                  "$type": "RuleCall",
+                  "rule": {
+                    "$ref": "#/rules@8"
                   },
-                  {
-                    "$type": "Keyword",
-                    "value": ";"
-                  }
-                ]
+                  "arguments": []
+                }
+              },
+              {
+                "$type": "Keyword",
+                "value": ")",
+                "cardinality": "?"
               }
             ],
             "cardinality": "?"
           },
           {
-            "$type": "Assignment",
-            "feature": "isDying",
-            "operator": "?=",
-            "terminal": {
-              "$type": "Keyword",
-              "value": "⍊"
-            },
+            "$type": "Group",
+            "elements": [
+              {
+                "$type": "Assignment",
+                "feature": "isDying",
+                "operator": "?=",
+                "terminal": {
+                  "$type": "Keyword",
+                  "value": "⍊"
+                },
+                "cardinality": "?"
+              },
+              {
+                "$type": "Keyword",
+                "value": "(",
+                "cardinality": "?"
+              },
+              {
+                "$type": "Assignment",
+                "feature": "outState",
+                "operator": "+=",
+                "terminal": {
+                  "$type": "RuleCall",
+                  "rule": {
+                    "$ref": "#/rules@14"
+                  },
+                  "arguments": []
+                },
+                "cardinality": "+"
+              },
+              {
+                "$type": "Keyword",
+                "value": ")",
+                "cardinality": "?"
+              },
+              {
+                "$type": "Keyword",
+                "value": ";"
+              }
+            ],
             "cardinality": "?"
           }
         ]

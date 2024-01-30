@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { AstNode, CompositeGeneratorNode, NL, Reference, isReference, streamAllContents, streamAst, toString } from 'langium';
 import path from 'path';
-import { Model, isAssignment, isBloc, isIf, isModel, isParallelBloc, isPlus, isVarDecl, isVarRef } from '../language-server/generated/ast';
+import { Model, isAssignment, isBloc, isIf, isModel, isParallelBloc, isPlus, isVariable, isVarRef } from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
 import { Range, integer } from 'vscode-languageclient';
 
@@ -44,7 +44,7 @@ function generateCode(codeFile: CompositeGeneratorNode, headerFile: CompositeGen
     var allRtdValues: Map<AstNode,number> = new Map<AstNode, number>();
 
     for (var node of streamAllContents(model)) {
-        if(isVarDecl(node)){
+        if(isVariable(node)){
             allRtdPositions.set(node,globalVariableCounter++)
             allRtdValues.set(node,(node.initialValue)?node.initialValue:0)
         }
@@ -55,7 +55,7 @@ function generateCode(codeFile: CompositeGeneratorNode, headerFile: CompositeGen
     `,NL)
 
     for (var node of streamAllContents(model)) {
-        if(isVarDecl(node)){
+        if(isVariable(node)){
             headerFile.append(`int ${getName(node)}_evaluate();`,NL)
             codeFile.append(`
             inline int ${getName(node)}_evaluate(){
@@ -75,8 +75,8 @@ function generateCode(codeFile: CompositeGeneratorNode, headerFile: CompositeGen
             headerFile.append(`void ${getName(node)}_evaluate();`,NL)
             codeFile.append(`
             inline void ${getName(node)}_evaluate(){
-                int resRight = ${getName(node.right)}_evaluate();
-                varList[${allRtdPositions.get((node.left as Reference).ref as AstNode)}] = resRight;
+                int resRight = ${getName(node.expr)}_evaluate();
+                varList[${allRtdPositions.get((node.variable as Reference).ref as AstNode)}] = resRight;
             }`,NL)
         }
 
@@ -101,14 +101,14 @@ function generateCode(codeFile: CompositeGeneratorNode, headerFile: CompositeGen
 function generateSCXML(scxmlFile: CompositeGeneratorNode, model: Model) {
     var allClocks: String[] = [];
     for (var node of streamAst(model)) {
-        if( isModel(node) || isBloc(node) || isParallelBloc(node) || isVarDecl(node) || isIf(node) || isAssignment(node) || isPlus(node)){ //for all opened Concept
+        if( isModel(node) || isBloc(node) || isParallelBloc(node) || isVariable(node) || isIf(node) || isAssignment(node) || isPlus(node)){ //for all opened Concept
             allClocks.push(getName(node) + "_start");
             allClocks.push(getName(node) + "_finish");
         }
     }
      scxmlFile.append(`
 <?xml version="1.0" encoding="UTF-8"?>
-<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" binding="early" xmlns:qt="http://www.qt.io/2015/02/scxml-ext" qt:editorversion="10.0.1" initial="mainState">
+<scxml xmlns="http://www.w3.org/2005/07/scxml" initial="mainState">
     <state id="mainState">
         <parallel id="allRules">`, NL
     );
@@ -208,7 +208,7 @@ function generateSCXML(scxmlFile: CompositeGeneratorNode, model: Model) {
                 );  
             }
         }
-        if(isVarDecl(node)){
+        if(isVariable(node)){
             const varDeclName: string = getName(node)
             scxmlFile.append(`
             <state id="${varDeclName}" initial="${varDeclName}.idle">
@@ -230,8 +230,8 @@ function generateSCXML(scxmlFile: CompositeGeneratorNode, model: Model) {
         }
         if(isAssignment(node)){
             const assignmentName: string = getName(node)
-            const leftName: string = getName(node.left)
-            const rightName: string = getName(node.right)
+            const leftName: string = getName(node.variable)
+            const rightName: string = getName(node.expr)
             scxmlFile.append(`
             <state id="${assignmentName}" initial="${assignmentName}.idle">
                 <state id="${assignmentName}.idle">

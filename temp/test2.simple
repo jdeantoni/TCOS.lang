@@ -1,9 +1,9 @@
 var v1 = 0          //v1Decl
 var v2 = 4          //v2Decl
-    |               //parBloc1
-    | v1 = v1 + v1  //v1Assign1 - firstPlus -v1Ref1 - v1Ref2
-    | v2 = v2 + v2  //v2Assign1 - secondPlus -v2Ref1 - v2Ref2
-    |
+//     |               //parBloc1
+//     | v1 = v1 + v1  //v1Assign1 - firstPlus -v1Ref1 - v1Ref2
+//     | v2 = v2 + v2  //v2Assign1 - secondPlus -v2Ref1 - v2Ref2
+//     |
 if (v1)             //if
 {                   //bloc1
     v2 = v1         //v2Assign2 - v1Ref3

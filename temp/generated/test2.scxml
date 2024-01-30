@@ -1,6 +1,4 @@
-
-<?xml version="1.0" encoding="UTF-8"?>
-<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" binding="early" xmlns:qt="http://www.qt.io/2015/02/scxml-ext" qt:editorversion="10.0.1" initial="mainState">
+<scxml xmlns="http://www.w3.org/2005/07/scxml" initial="mainState">
     <state id="mainState">
         <parallel id="allRules">
 
@@ -20,14 +18,7 @@
                         <onentry>
                             <raise event="VarDecl1_0_1_10.start"/>
                         </onentry>
-                        <transition type="internal" event="VarDecl1_0_1_10.finish" target="Model0_0_12_1.startParallelBloc2_4_5_5"/>
-                </state>
-
-                <state id="Model0_0_12_1.startParallelBloc2_4_5_5">
-                        <onentry>
-                            <raise event="ParallelBloc2_4_5_5.start"/>
-                        </onentry>
-                        <transition type="internal" event="ParallelBloc2_4_5_5.finish" target="Model0_0_12_1.startIf6_0_12_1"/>
+                        <transition type="internal" event="VarDecl1_0_1_10.finish" target="Model0_0_12_1.startIf6_0_12_1"/>
                 </state>
 
                 <state id="Model0_0_12_1.startIf6_0_12_1">
@@ -70,183 +61,6 @@
                 </state>
             </state>
             
-
-            <state id="ParallelBloc2_4_5_5" initial="ParallelBloc2_4_5_5c.idle">
-                <state id="ParallelBloc2_4_5_5.idle">
-                    <transition type="internal" event="ParallelBloc2_4_5_5.start" target="ParallelBloc2_4_5_5.startAllStatements">
-                        <log label="start ParallelBloc2_4_5_5"/>
-                    </transition>
-                </state>
-                <parallel id="ParallelBloc2_4_5_5.startAllStatements">
-
-                <state id="ParallelBloc2_4_5_5.Assignment3_6_3_18" initial="ParallelBloc2_4_5_5.startAssignment3_6_3_18">
-                    <state id="ParallelBloc2_4_5_5.startAssignment3_6_3_18">
-                            <onentry>
-                                <raise event="Assignment3_6_3_18.start"/>
-                            </onentry>
-                            <transition type="internal" event="Assignment3_6_3_18.finish" target="ParallelBloc2_4_5_5.finishAssignment3_6_3_18"/>
-                    </state>
-                    <final id="ParallelBloc2_4_5_5.finishAssignment3_6_3_18">
-                    </final>
-
-                <state id="ParallelBloc2_4_5_5.Assignment4_6_4_18" initial="ParallelBloc2_4_5_5.startAssignment4_6_4_18">
-                    <state id="ParallelBloc2_4_5_5.startAssignment4_6_4_18">
-                            <onentry>
-                                <raise event="Assignment4_6_4_18.start"/>
-                            </onentry>
-                            <transition type="internal" event="Assignment4_6_4_18.finish" target="ParallelBloc2_4_5_5.finishAssignment4_6_4_18"/>
-                    </state>
-                    <final id="ParallelBloc2_4_5_5.finishAssignment4_6_4_18">
-                    </final>
-
-                <transition type="internal" event="done.state.ParallelBloc2_4_5_5.startAllStatements" target="ParallelBloc2_4_5_5.idle">
-                    <log label="finish ParallelBloc2_4_5_5"/>
-                    <raise event="ParallelBloc2_4_5_5.finish"/>
-                </transition>
-                </parallel>
-            </state>
-
-            <state id="Assignment3_6_3_18" initial="Assignment3_6_3_18.idle">
-                <state id="Assignment3_6_3_18.idle">
-                    <transition type="internal" event="Assignment3_6_3_18.start" target="Assignment3_6_3_18.started"/>
-                </state>
-                <state id="Assignment3_6_3_18.started">
-                    <onentry>
-                        <log label="start Assignment3_6_3_18"/>
-                        <raise event="Plus3_11_3_18.start"/>
-                    </onentry>
-                    <transition type="internal" event="VarDecl0_0_0_10.finish" target="Assignment3_6_3_18.Plus3_11_3_18Done"/>
-                </state>
-                <state id="Assignment3_6_3_18.Plus3_11_3_18Done">
-                    <onentry>
-                        <raise event="Assignment3_6_3_18.doAction1"/>
-                    </onentry>
-                    <transition type="internal" target="Assignment3_6_3_18.idle">
-                        <raise event="Assignment3_6_3_18.finish"/>
-                        <log label="finish Assignment3_6_3_18">
-                        </log>
-                    </transition>
-                </state>
-            </state>
-            
-
-            <state id="Plus3_11_3_18" initial="Plus3_11_3_18.idle">
-                <state id="Plus3_11_3_18.idle">
-                    <transition type="internal" event="Plus3_11_3_18.start" target="Plus3_11_3_18.started"/>
-                </state>
-                <state id="Plus3_11_3_18.started">
-                    <onentry>
-                        <log label="start Plus3_11_3_18"/>
-                        <raise event="VarRef3_11_3_13.start"/>
-                    </onentry>
-                    <transition type="internal" event="VarRef3_11_3_13.finish" target="Plus3_11_3_18.leftDone"/>
-                </state>
-                <state id="Plus3_11_3_18.leftDone">
-                    <onentry>
-                        <raise event="VarRef3_16_3_18.start"/>
-                    </onentry>
-                    <transition type="internal" event="VarRef3_16_3_18.finish" target="Plus3_11_3_18.rightDone"/>
-                </state>
-                <state id="Plus3_11_3_18.rightDone">
-                    <onentry>
-                        <raise event="Plus3_11_3_18.doAction1"/>
-                    </onentry>
-                    <transition type="internal" target="Plus3_11_3_18.idle">
-                        <log label="finish Plus3_11_3_18"/>
-                        <raise event="Plus3_11_3_18.finish"/>
-                    </transition>
-                </state>
-            </state>
-            
-
-            <state id="VarRef3_11_3_13" initial="VarRef3_11_3_13.idle">
-                <state id="VarRef3_11_3_13.idle">
-                    <transition event="VarRef3_11_3_13.start" target="VarRef3_11_3_13.idle">
-                        <raise event="VarRef3_11_3_13.doAction1"/>
-                        <raise event="VarRef3_11_3_13.finish"/>
-                    </transition>
-                </state>
-            </state>
-
-            <state id="VarRef3_16_3_18" initial="VarRef3_16_3_18.idle">
-                <state id="VarRef3_16_3_18.idle">
-                    <transition event="VarRef3_16_3_18.start" target="VarRef3_16_3_18.idle">
-                        <raise event="VarRef3_16_3_18.doAction1"/>
-                        <raise event="VarRef3_16_3_18.finish"/>
-                    </transition>
-                </state>
-            </state>
-
-            <state id="Assignment4_6_4_18" initial="Assignment4_6_4_18.idle">
-                <state id="Assignment4_6_4_18.idle">
-                    <transition type="internal" event="Assignment4_6_4_18.start" target="Assignment4_6_4_18.started"/>
-                </state>
-                <state id="Assignment4_6_4_18.started">
-                    <onentry>
-                        <log label="start Assignment4_6_4_18"/>
-                        <raise event="Plus4_11_4_18.start"/>
-                    </onentry>
-                    <transition type="internal" event="VarDecl1_0_1_10.finish" target="Assignment4_6_4_18.Plus4_11_4_18Done"/>
-                </state>
-                <state id="Assignment4_6_4_18.Plus4_11_4_18Done">
-                    <onentry>
-                        <raise event="Assignment4_6_4_18.doAction1"/>
-                    </onentry>
-                    <transition type="internal" target="Assignment4_6_4_18.idle">
-                        <raise event="Assignment4_6_4_18.finish"/>
-                        <log label="finish Assignment4_6_4_18">
-                        </log>
-                    </transition>
-                </state>
-            </state>
-            
-
-            <state id="Plus4_11_4_18" initial="Plus4_11_4_18.idle">
-                <state id="Plus4_11_4_18.idle">
-                    <transition type="internal" event="Plus4_11_4_18.start" target="Plus4_11_4_18.started"/>
-                </state>
-                <state id="Plus4_11_4_18.started">
-                    <onentry>
-                        <log label="start Plus4_11_4_18"/>
-                        <raise event="VarRef4_11_4_13.start"/>
-                    </onentry>
-                    <transition type="internal" event="VarRef4_11_4_13.finish" target="Plus4_11_4_18.leftDone"/>
-                </state>
-                <state id="Plus4_11_4_18.leftDone">
-                    <onentry>
-                        <raise event="VarRef4_16_4_18.start"/>
-                    </onentry>
-                    <transition type="internal" event="VarRef4_16_4_18.finish" target="Plus4_11_4_18.rightDone"/>
-                </state>
-                <state id="Plus4_11_4_18.rightDone">
-                    <onentry>
-                        <raise event="Plus4_11_4_18.doAction1"/>
-                    </onentry>
-                    <transition type="internal" target="Plus4_11_4_18.idle">
-                        <log label="finish Plus4_11_4_18"/>
-                        <raise event="Plus4_11_4_18.finish"/>
-                    </transition>
-                </state>
-            </state>
-            
-
-            <state id="VarRef4_11_4_13" initial="VarRef4_11_4_13.idle">
-                <state id="VarRef4_11_4_13.idle">
-                    <transition event="VarRef4_11_4_13.start" target="VarRef4_11_4_13.idle">
-                        <raise event="VarRef4_11_4_13.doAction1"/>
-                        <raise event="VarRef4_11_4_13.finish"/>
-                    </transition>
-                </state>
-            </state>
-
-            <state id="VarRef4_16_4_18" initial="VarRef4_16_4_18.idle">
-                <state id="VarRef4_16_4_18.idle">
-                    <transition event="VarRef4_16_4_18.start" target="VarRef4_16_4_18.idle">
-                        <raise event="VarRef4_16_4_18.doAction1"/>
-                        <raise event="VarRef4_16_4_18.finish"/>
-                    </transition>
-                </state>
-            </state>
 
             <state id="If6_0_12_1" initial="If6_0_12_1.idle">
                 <state id="If6_0_12_1.idle">
@@ -411,6 +225,3 @@
         </parallel>
     </state>
 </scxml>
-
-    }
-    

@@ -44,12 +44,12 @@ open ParallelBloc {
 
 }
 
-open VarDecl {
+open Variable {
 
-    var currentValue:number = initialValue;
+    var currentValue;
 
 
-                    when starts;
+                when starts;
     ---------------------------------------------               initializeVar
      <this,σ> ~> currentValue = initialValue; ⍊
 
@@ -85,7 +85,59 @@ open If {
 } 
 
 open Assignment {
-          <right,σ> -> resRight: number                         
-    -----------------------------------------------             executeAssignment
-      <this,σ> ~> left.currentValue = resRight; ⍊
+
+          when starts
+    --------------------------                                  executeAssignment
+      <this,σ> ~> <expr,σ>;
+
+
+          <expr,σ> -> resRight: number                         
+    --------------------------------------------------          executeAssignment2
+      <this,σ> ~> variable.currentValue = resRight; ⍊
+}
+
+// open Conjunction {
+//           when starts                   
+//     -------------------------                                   evaluateConjunction
+//       <this,σ> ~> <lhs,σ>;
+
+          
+//           <lhs,σ> -> true
+//     -------------------------                                   evaluateConjunction2
+//       <this,σ> ~> <rhs,σ>;
+
+
+//         <lhs,σ> -> false
+//     -------------------------                                   evaluateConjunction3
+//       <this,σ> ~> false; ⍊
+
+         
+//          <rhs,σ> -> true
+//     -------------------------                                   evaluateConjunction4
+//       <this,σ> ~> true;  ⍊
+
+// }
+
+
+open Conjunction {
+
+          when starts;                   
+    -------------------------                                   evaluateConjunction
+      <this,σ> ~> <lhs,σ> ;   
+
+          
+          <lhs,σ> -> true
+    -------------------------                                   evaluateConjunction2
+      <this,σ> ~> <rhs,σ>;
+
+
+        <lhs,σ> -> false
+    -------------------------                                   evaluateConjunction3
+      <this,σ> ~> ⍊ ;
+
+         
+         <rhs,σ> -> true
+    -------------------------                                   evaluateConjunction4
+      <this,σ> ~> true;  ⍊
+
 }
