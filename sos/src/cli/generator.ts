@@ -1,8 +1,8 @@
 import fs from 'fs';
-import {AstNode, CompositeGeneratorNode, Grammar, NL, streamAst, toString } from 'langium';
-import { MemberCall,  RWRule, RuleOpening, SoSSpec, TemporaryVariable, isBinaryExpression, isRWRule, isRuleOpening, isTemporaryVariable, isVariableDeclaration } from '../language-server/generated/ast'; //VariableDeclaration
+import {CompositeGeneratorNode, Grammar, NL, streamAst, toString } from 'langium';
+import {  RWRule, RuleOpening, SoSSpec, TemporaryVariable, isRWRule, isRuleOpening, isTemporaryVariable, isValuedEventEmission, isVariableDeclaration } from '../language-server/generated/ast'; //VariableDeclaration
 import { extractDestinationAndName, FilePathData } from './cli-util';
-import { print } from '../utils/sos-utils';
+// import { print } from '../utils/sos-utils';
 import { inferType } from '../language-server/type-system/infer';
 import path from 'path';
 
@@ -33,13 +33,20 @@ export function generateStuffFromSoS(model: SoSSpec, grammar: Grammar[], filePat
                         inline ${rwrRuleType} \${getName(node)}_${rwr.name}(){`)
                         
                         
-                    for(var prem of rwr.premise){
-                        if(isTemporaryVariable(prem.right)){
-                            if(prem.left){
-                                fileNode.append(`
-                            ${getAstNodeType(prem.right)} ${(prem.right as TemporaryVariable).name} = \${getName(node.${print(prem.left,"")})}_evaluate();`)
-                            }     
-                        }
+                    /**
+                     * TODO: manage premise recursively to add temporary variable in the scope
+                     */
+                    // for(var prem of rwr.premise){
+                    //     if(isTemporaryVariable(prem.right)){
+                    //         if(prem.left){
+                    //             fileNode.append(`
+                    //         ${getAstNodeType(prem.right)} ${(prem.right as TemporaryVariable).name} = \${getName(node.${print(prem.left,"")})}_evaluate();`)
+                    //         }     
+                    //     }
+                    // }
+                    if(isTemporaryVariable(rwr.premise)){
+                        rwr.premise as TemporaryVariable
+                        // this code is here but should be removed
                     }
     
                     //should be linked by ccsl
@@ -48,22 +55,28 @@ export function generateStuffFromSoS(model: SoSSpec, grammar: Grammar[], filePat
                     //         call ${rwr.conclusion.ruleStart}
                     //     `)
                     // }
-                    for(var os of rwr.conclusion.outState){
-                        if (isVariableDeclaration((os as MemberCall).element?.ref)){
+                    for(var os of rwr.conclusion.eventemissions){
+                        if (isValuedEventEmission(os) && isVariableDeclaration(os.data)){
                             fileNode.append(`
                             return varList[\${allRtdPositions.get(node)}];`)
                         }
-                        else if(isBinaryExpression(os) && os.operator ==='='){ //left is a VarRef
-                                fileNode.append(`
-                                return varList[\${allRtdPositions.get((node.left as Reference).ref as AstNode)}] = ${print(os.right,"")};
-                            `)
-                        }
-                        else{
-                            fileNode.append(`
-                            return ${print(os,"")};`)
-                        }
-                        
                     }
+
+                    /**
+                     * TODO
+                     */
+                    // for(var sm of rwr.conclusion.statemodifications){
+                    //     if(isBinaryExpression(sm) && sm.rhs ==='='){ //left is a VarRef
+                    //             fileNode.append(`
+                    //             return varList[\${allRtdPositions.get((node.left as Reference).ref as AstNode)}] = ${print(os.right,"")};
+                    //         `)
+                    //     }
+                    //     else{
+                    //         fileNode.append(`
+                    //         return ${print(os,"")};`)
+                    //     }
+                        
+                    // }
 
 
                 fileNode.append(//      
@@ -143,27 +156,27 @@ export function generateStuffFromSoS(model: SoSSpec, grammar: Grammar[], filePat
 }
 
 
-function getAstNodeType(node: AstNode) {
+// function getAstNodeType(node: AstNode) {
    
-        var rawType = inferType(node, new Map());
-        if(rawType.$type ==="number"){
-            return "int"
-        }
-        if(rawType.$type ==="error"){
-            console.log("error type inference:"+rawType.message)
-            return "void"
-        }
-        if(rawType.$type ==="boolean"){
-            return "bool"
-        }
+//         var rawType = inferType(node, new Map());
+//         if(rawType.$type ==="number"){
+//             return "int"
+//         }
+//         if(rawType.$type ==="error"){
+//             console.log("error type inference:"+rawType.message)
+//             return "void"
+//         }
+//         if(rawType.$type ==="boolean"){
+//             return "bool"
+//         }
    
-    return "error in type inference for node "+node+":"+node.$type
-}
+//     return "error in type inference for node "+node+":"+node.$type
+// }
 
 
 function getRwrRuleType(rwr: RWRule) {
-    if (rwr.conclusion.outState.length > 0) {
-        var rawType:string = inferType(rwr.conclusion.outState[rwr.conclusion.outState.length - 1], new Map()).$type;
+    if (rwr.conclusion.statemodifications.length > 0) {
+        var rawType:string = inferType(rwr.conclusion.statemodifications[rwr.conclusion.statemodifications.length - 1], new Map()).$type;
         if(rawType ==="number"){
             return "int"
         }
@@ -174,7 +187,7 @@ function getRwrRuleType(rwr: RWRule) {
             return "bool"
         }
     }
-    if (rwr.conclusion.ruleSync) {
+    if (rwr.conclusion.eventemissions.some(em => isValuedEventEmission(em))) {
         return "void"
     }
     return "error in type inference for rule "+rwr.name+" in rule opened on "+(rwr.$container as RuleOpening).onRule

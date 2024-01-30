@@ -18,7 +18,7 @@ State:
 
 Transition:
     name=ID':' source=[State:ID] 
-    '---'('when' event=[Event:ID] | 'after' time=INT) 
+    '---'('when' guardEvent=[Event:ID] | 'after' time=INT) 
     '/' 
     sentEvent=[Event:ID] '-->' target=[State:ID];
 

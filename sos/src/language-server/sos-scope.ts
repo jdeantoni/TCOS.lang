@@ -6,10 +6,10 @@
 
 import {
     AstNode,
-    DefaultScopeComputation, DefaultScopeProvider, EMPTY_SCOPE, getContainerOfType, Grammar, LangiumServices, ReferenceInfo,Scope, ScopeOptions, stream, StreamScope
+    DefaultScopeComputation, DefaultScopeProvider, EMPTY_SCOPE, getContainerOfType, Grammar, LangiumServices, ReferenceInfo,Scope, ScopeOptions, stream, streamAllContents, StreamScope
 } from 'langium';
 
-import { AbstractRule, Assignment, CollectionRuleSync, CrossReference, isAlternatives, isAssignment, isCollectionRuleSync, isMemberCall, isRuleOpening, isRWRule, 
+import { AbstractRule, Assignment, CollectionRuleSync, CrossReference, isAlternatives, isAssignment, isCollectionRuleSync, isMemberCall, isRuleOpening, isRuleSync, isRWRule, 
          isSoSSpec, isTemporaryVariable, MemberCall, MethodMember, Parameter,
          ParserRule, RuleOpening, RWRule, SoSSpec, TypeReference, VariableDeclaration} from './generated/ast';
 import { getRuleOpeningChain, inferType } from './type-system/infer';
@@ -241,9 +241,12 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         }
             for(let rule of ruleOpeningItem.rules){
                 if(isRWRule(rule)){
-                    for(var prem of (rule as RWRule).premise){
-                        if(isTemporaryVariable(prem.right)){
-                            allMembers.push(prem.right)
+                    /**
+                     * TODO: add temporary variable in scope with recursive call
+                     */
+                    for(let expr of streamAllContents((rule as RWRule).premise.eventExpression)){
+                        if(isTemporaryVariable(expr)){
+                            allMembers.push(expr)
                         }
                     }
                 }
@@ -312,12 +315,18 @@ export class SoSScopeProvider extends DefaultScopeProvider {
     private getAllTemporaryVariable(ruleOpeningItem: RuleOpening): AstNode[] {
         var alltempVars: AstNode[] = [];
         ruleOpeningItem.rules.forEach(rule => {
-            if (isRWRule(rule)) {
-                let e = (rule as RWRule).conclusion.ruleSync?.rule;
-                if (isCollectionRuleSync(e)) {
-                    if (isTemporaryVariable((e as CollectionRuleSync).varDecl)) {
-                        alltempVars.push((e as CollectionRuleSync).varDecl);
+            if (isRWRule(rule) && (rule as RWRule)?.conclusion !== undefined){
+
+                for(let emission of (rule as RWRule)?.conclusion?.eventemissions){
+                    if (isRuleSync(emission)){
+                        let e = emission?.rule;
+                        if (isCollectionRuleSync(e)) {
+                            if (isTemporaryVariable((e as CollectionRuleSync).varDecl)) {
+                                alltempVars.push((e as CollectionRuleSync).varDecl);
+                            }
                     }
+                    }
+                    
                 }
             }
         });

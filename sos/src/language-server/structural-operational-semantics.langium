@@ -14,8 +14,8 @@ entry SoSSpec:
 RuleOpening:
     {infer RuleOpening} 
     (name=ID)? 'open' onRule=[ParserRule:ID] '{'
-    (runtimeState+=(VariableDeclaration) |
-    rules+=Rule)* 
+    (runtimeState+=(VariableDeclaration))*
+    (rules+=RWRule)* 
 
     '}' 
 ;
@@ -23,44 +23,130 @@ RuleOpening:
 ImportStatement:
 	'import' importURI=STRING; 
 
-// Sigma:
-//     '{'
-//         stateParts 
-//     '}';
 
 
-Rule:
-    (RWRule/*| ExpressionRule | ControlFlowRule*/);
+RWRule:
+	premise=Premise
+    ('-')+ name=ID
+	conclusion=Conclusion
+;
 
-// ControlFlowRule:
-//     "sched" (condition=Logical "implies")? (loop=SequenceLoop)? constraint=SchedulingConstraint; 
- 
-// SequenceLoop:
-//     'foreach' itVar=TemporaryVariable 'in' '[' lowerBound=NUMBER ';' upperBound=Expression '['; 
 
-// SchedulingConstraint:
-//     '{'left=Expression operator=("precedes" | ("coincides_with")) right=Expression'}';  
 
-RWRule: 
-    {infer RWRule}
-       ('rwr')? ("when" (selectionPolicy=SelectionPolicy)? ((guardEvents+=MemberCall) | ('(' guardEvents+=MemberCall ('^' guardEvents+=MemberCall )* ')')) )? (premise+=SemanticEquivalence (';' premise+=SemanticEquivalence)* )? 
-        ('-')+ name=ID
-        conclusion=Conclusion;
+EventExpression:
+	EventRef |  NaryEventExpression | EventConjunction | EventDisjunction | ValuedEventRef | ValuedEventRefConstantComparison;
+
+// BooleanExpression:
+// 	BooleanConjunction | BooleanDisjunction | DataComparison;
+
+EventEmission:
+	SimpleEventEmission | ValuedEventEmission | RuleSync;
+
+Data:
+	EventValueRef | Constant | ValuedEventRefConstantComparison;
+
+Expression:
+	EventValueRef | Constant | ValuedEventRefConstantComparison | UnaryMinus | FunctionCallExpr | ClassicalExpression;
+
+EString returns string:
+	STRING | ID;
+
+Premise:
+	'when' eventExpression=EventExpression
+	( '[' booleanExpression+=(Comparison) ']' )?
+	;
+
+
+Conclusion:
+	'<''this'',''σ''>' '~>' ((eventemissions+=EventEmission)|
+                         	(statemodifications+=StateModification))+ 
+	;
+
+EventRef:
+	ExplicitEventRef | RuleSync;
+
+
+ExplicitEventRef:
+	membercall=MemberCall
+	;
+
+// BinaryEventExpression_Impl:
+// 	'BinaryEventExpression'
+// 	'{'
+// 		'lhs' lhs=EventExpression
+// 		'rhs' rhs=EventExpression
+// 	'}';
+
+NaryEventExpression:
+	policy = SelectionPolicy '(' ((events+=EventExpression)* | collection=MemberCall)')' 
+	;
+
+EventConjunction:
+	'('lhs=EventExpression
+		'^' rhs=EventExpression')'
+	;
+
+EventDisjunction:
+	'('lhs=EventExpression
+		'v' rhs=EventExpression')'
+	;
+
+ValuedEventRef:
+	ExplicitValuedEventRef | ImplicitValuedEventRef;
+
+ImplicitValuedEventRef:
+	'<'member=MemberCall',' 'σ' '>' '->' tempVar=TemporaryVariable;
+
+
+ExplicitValuedEventRef:
+	membercall=MemberCall'('tempVar=TemporaryVariable')'
+	;
+
+ValuedEventRefConstantComparison:
+	ExplicitValuedEventRefConstantComparison | ImplicitValuedEventRefConstantComparison;
+
+ExplicitValuedEventRefConstantComparison:
+	membercall=MemberCall'(='literal=EString'=)'
+	;
+
+ImplicitValuedEventRefConstantComparison:
+	'<'member=MemberCall',' 'σ' '>' '->' literal=(NumberExpression|StringExpression|BooleanExpression);
+	
+
+
+
+EventValueRef:
+	value=[ValuedEventRef:EString]
+	;
+
+Constant:
+	literal=EString
+	;
+
+SimpleEventEmission:
+	('emits')? event=MemberCall (";")?
+	;
+
+StateModification:
+	lhs=MemberCall ':=' rhs=ClassicalExpression (';')?
+	;
+
+ValuedEventEmission:
+	('emits')? event=MemberCall
+		'(' data=ClassicalExpression')' (";")?;
+
+UnaryMinus:
+	'-' expression=Expression
+;
+
+FunctionCallExpr:
+	name=ID
+		'(' (parameters+=Expression ( "," parameters+=Expression)*)? ')';
+
 
 SelectionPolicy:
    {infer SelectionPolicy}
    ("firstOf" | "lastOf") ; 
-
-
-
-SemanticEquivalence: 
-    ('<'(left=MemberCall) ',''σ''>' operator=('->') ('⍊')? ('(')?right=(TemporaryVariable|PrimaryExpression)(')')?)*;  
-// Premise:
-//     {infer Premise}  
-//     '('Logical')';
- 
-Conclusion:
-   '<''this'',''σ''>' '~>'  (('unordered')? ('(')? (ruleSync=RuleSync) (')')? )? ((isDying?='⍊')? ('(')?(outState+=SoSAssignment)+ (')')? ";")? ; //(isDying?=TerminateExpression)?  
 
 RuleSync:
     rule=(SingleRuleSync | CollectionRuleSync);
@@ -68,8 +154,9 @@ RuleSync:
 SingleRuleSync:
     '<'member=MemberCall',' 'σ' '>' ;//'.' status=(SyncExpression);
 
+
 CollectionRuleSync:
-   collection=MemberCall '->' (order=("parallel"|"sequential") '.')?'foreach''('varDecl=TemporaryVariable ('=>'|'|') singleRule=SingleRuleSync')';
+   collection=MemberCall '->' (order=("parallel"|"sequential") '.')?'foreach''('varDecl=TemporaryVariable ('=>'|'|') singleRule=EventEmission')';
 
 TemporaryVariable returns NamedElement:
     {infer TemporaryVariable} 
@@ -82,46 +169,50 @@ VariableDeclaration returns NamedElement:
     {infer VariableDeclaration} 
     ('var') ? name=ID (':' type=TypeReference)? (assignment?='=' value=Expression)? ';' ; 
 
-Expression:
-    SoSAssignment;
+ClassicalExpression:
+    Addition;
 
-SoSAssignment infers Expression:
-    Addition ({infer BinaryExpression.left=current} operator=('=') right=Addition)*;
+// SoSAssignment infers Expression:
+//     Addition ({infer BinaryExpression.left=current} operator=('=') right=Addition)*;
 
-Addition infers Expression: 
+Addition infers ClassicalExpression: 
     Multiplication ({infer BinaryExpression.left=current} operator=('+' | '-') right=Multiplication)*;
 
-Multiplication infers Expression:
+Multiplication infers ClassicalExpression:
     Logical ({infer BinaryExpression.left=current} operator=('*' | '/') right=Logical)*;
 
-Logical infers Expression:
+Logical infers ClassicalExpression:
     Comparison ({infer BinaryExpression.left=current} operator=('and' | 'or' | 'xor') right=Comparison)*; 
 
-Comparison infers Expression:
+Comparison infers ClassicalExpression:
     MemberCall ({infer BinaryExpression.left=current} operator=('<' | '<=' | '>' | '>=' | '==' | '!=') right=MemberCall)*; 
 
-
-MemberCall infers Expression:
-    Primary
+MemberCall infers ClassicalExpression:
+	    Primary
 	({infer MemberCall.previous=current}
         // Member call with function call
         ("." element=[NamedElement:ID] (
 		explicitOperationCall?='('
 		(
-		    arguments+=Expression (',' arguments+=Expression)*
+		    arguments+=ClassicalExpression (',' arguments+=ClassicalExpression)*
 		)?
 		')')? 
         // Chained function call
         | (
 		explicitOperationCall?='('
 		(
-		    arguments+=Expression (',' arguments+=Expression)*
+		    arguments+=ClassicalExpression (',' arguments+=ClassicalExpression)*
 		)?
 		')'))
     )*;
 
-Primary infers Expression:
-    '(' Expression ')' |
+MethodMember:
+     name=ID '(' (parameters+=Parameter (',' parameters+=Parameter)*)? ')' ':' returnType=TypeReference;  //body=ExpressionBlock;
+FieldMember:
+    name=ID ':' type=TypeReference;
+
+Primary infers ClassicalExpression:
+    '(' ClassicalExpression ')' |
     UnaryExpression |
     PrimaryExpression |
    // RtdOrStructCall |
@@ -130,65 +221,41 @@ Primary infers Expression:
 /*RtdOrStructCall infers Expression:
     ('this''.'rightRTD=[NamedElement:QualifiedName] | 'struct''.'rightStruct=[AbstractElement:ID]);
 */
-PrimaryExpression infers Expression: 
+PrimaryExpression infers ClassicalExpression: 
     StringExpression |
     BooleanExpression |
     NumberExpression |
-    NilExpression; //|
-    // SyncExpression;
+    NilExpression 
+	;
 
-FeatureCall infers Expression:
+FeatureCall infers ClassicalExpression:
 	{infer MemberCall}
 	((element=[NamedElement:ID] | element=[NamedElement:'this'] | element=[NamedElement:'struct']))
     // Optional function call after referencing an element
     (explicitOperationCall?='('
 	(
-	    arguments+=Expression (',' arguments+=Expression)*
+	    arguments+=ClassicalExpression (',' arguments+=ClassicalExpression)*
 	)?
 	')')?;
 
 UnaryExpression:
-   operator=('!' | '-' | '+') value=Expression
-;
-// SyncExpression:
-//     (StartExpression | TerminateExpression);
+   operator=('!' | '-' | '+') value=ClassicalExpression
+	;
 
 NumberExpression: value=NUMBER;
 StringExpression: value=STRING;
 BooleanExpression: value?='true' | 'false';
 NilExpression: value='nil';
-// StartExpression: value='starts' | '⊤';
-// TerminateExpression: value='terminates' | '⍊';
 
-
-// FunctionDeclaration:
-//     'fun' name=ID '(' (parameters+=Parameter (',' parameters+=Parameter)*)? ')' ':' returnType=TypeReference body=ExpressionBlock;
-
-// Parameter: name=ID ':' type=TypeReference;
-
-Struct: 'struct' name=ID ('<' superClass=[Struct:ID])? '{'
-    members+=FieldMember*
-'}';
-
-// ClassMember: MethodMember | FieldMember; 
-
-MethodMember:
-     name=ID '(' (parameters+=Parameter (',' parameters+=Parameter)*)? ')' ':' returnType=TypeReference;  //body=ExpressionBlock;
-
-FieldMember:
-    name=ID ':' type=TypeReference;
-
-TypeReference: reference=/*[Struct:ID]|*/[AbstractRule:ID]   
+TypeReference: reference=[AbstractRule:ID]   
     | primitive=SoSPrimitiveType  
-  //  | '(' ( parameters+=LambdaParameter (',' parameters+=LambdaParameter)*)? ')' '=>' returnType=TypeReference;
 ;
 
 SoSPrimitiveType:
     name=("string" | "number" | "boolean" | "void" | "event"); 
 
-LambdaParameter: (name=ID ':')? type=TypeReference;
 
-type NamedElement = /*Parameter | FunctionDeclaration |*/ VariableDeclaration /*| MethodMember*/ | FieldMember | Struct | RuleOpening | TemporaryVariable | SoSPrimitiveType | RWRule |MethodMember ;  
+type NamedElement = /*Parameter | FunctionDeclaration |*/ MethodMember |VariableDeclaration | RuleOpening | TemporaryVariable | SoSPrimitiveType | RWRule  ;  
 
 // hidden terminal WS: /\s+/;
 // terminal ID: /[_a-zA-Z][\w_]*/;

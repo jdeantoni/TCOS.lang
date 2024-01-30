@@ -151,9 +151,10 @@ function inferBinaryExpression(expr: BinaryExpression, cache: Map<AstNode, TypeD
         } else {
             return createNumberType();
         }
-    } else if (expr.operator === '=') {
-        return right;
     }
+    /* else if (expr.operator === ':=') {
+        return right;
+    }*/
     return createErrorType('Could not infer type from binary expression', expr);
 }
 

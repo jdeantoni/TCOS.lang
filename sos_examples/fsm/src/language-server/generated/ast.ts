@@ -62,7 +62,7 @@ export function isState(item: unknown): item is State {
 export interface Transition extends AstNode {
     readonly $container: FSM;
     readonly $type: 'Transition';
-    event?: Reference<Event>
+    guardEvent?: Reference<Event>
     name: string
     sentEvent: Reference<Event>
     source: Reference<State>
@@ -105,7 +105,7 @@ export class FiniteStateMachineAstReflection extends AbstractAstReflection {
             case 'State:outTransitions': {
                 return Transition;
             }
-            case 'Transition:event':
+            case 'Transition:guardEvent':
             case 'Transition:sentEvent': {
                 return Event;
             }

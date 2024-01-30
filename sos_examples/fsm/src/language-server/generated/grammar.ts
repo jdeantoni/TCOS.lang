@@ -293,7 +293,7 @@ export const FiniteStateMachineGrammar = (): Grammar => loadedFiniteStateMachine
                   },
                   {
                     "$type": "Assignment",
-                    "feature": "event",
+                    "feature": "guardEvent",
                     "operator": "=",
                     "terminal": {
                       "$type": "CrossReference",

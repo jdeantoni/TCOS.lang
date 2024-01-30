@@ -5,42 +5,42 @@ import "testSoSLang/src/language-server/simple-l.langium"
 
 open Model { 
 
-
-                            //since entry  
+ var starts: event;
+                            when starts   
     ------------------------------------------------------------ statementsInOrder1
-      <this,σ> ~> statements->sequential.foreach(s => <s,σ>);
+      <this,σ> ~> statements->sequential.foreach(s => <s,σ>)
 
 
 
-         when statements.last().terminates;                  
+        when statements.last().terminates                  
     -------------------------------------------                 finishModel
-              <this,σ> ~> ⍊
+              <this,σ> ~> terminates;
 
 }
 
 open Bloc {
 
-                          when starts;
+                          when starts
     ----------------------------------------------------------- startsBloc
-        <this,σ> ~> statements->foreach(s => <s,σ>); ⍊
+        <this,σ> ~> statements->foreach(s => <s,σ>) terminates;
 
   
-          when statements.last().terminates;             
+          when statements.last().terminates            
     -------------------------------------------                 finishBloc
-              <this,σ> ~> ⍊
+              <this,σ> ~> terminates;
 }
 
 open ParallelBloc {
 
-                          when starts;
+                          when starts
     ----------------------------------------------------------- startsParallelBloc
-        <this,σ> ~> statements->parallel.foreach(s => <s,σ>);
+        <this,σ> ~> statements->parallel.foreach(s => emits s.starts)
 
 
 
-       when lastOf (statements.terminates);
+          when lastOf(<statements,σ>)
     -----------------------------------------                   finishParallelBloc
-                  <this,σ> ~> ⍊
+            <this,σ> ~> terminates
 
 }
 
@@ -49,95 +49,101 @@ open Variable {
     var currentValue;
 
 
-                when starts;
+                when starts
     ---------------------------------------------               initializeVar
-     <this,σ> ~> currentValue = initialValue; ⍊
+     <this,σ> ~> currentValue := initialValue ; terminates ;
 
 }
 
 open VarRef {
-                when starts;
-    -------------------------------------                       accessVarRef
-         <this,σ> ~> ref.currentValue;
+                  when starts
+    ---------------------------------------------               accessVarRef
+      <this,σ> ~> terminates(ref.currentValue);
 }
 
 open Plus {
    
-    <right,σ> -> n2:number ; <left,σ> -> n1:number
-    ----------------------------------------------              evaluatePlus
-             <this,σ> ~> n1 + n2 ; ⍊
+      when (<right,σ> -> n2 ^ <left,σ> -> n1)
+    -------------------------------------------                 evaluatePlus
+        <this,σ> ~>  terminates((n1 + n2));
 }
 
 
 open If {
 
-              when starts;
-              <cond,σ> -> true 
-    -----------------------------------                         condTrue
-      <this,σ> ~> <then.starts, σ>; ⍊
+            when starts
+    ------------------------------                             condStart
+      <this,σ> ~> <cond,σ>
 
 
-              when starts;
-              <cond,σ> -> false
-    -----------------------------------                         condFalse
-      <this,σ> ~> <else.starts,σ>; ⍊
+          when <cond,σ> -> true 
+    -----------------------------------                        condTrueStart
+      <this,σ> ~> <then,σ> terminates
 
+
+      when cond.terminates(false) 
+    -------------------------------                            condFalseStart
+      <this,σ> ~> else.starts
+
+        when else.terminates 
+    -------------------------------                            condFalseStop
+       <this,σ> ~> terminates
 } 
 
 open Assignment {
 
           when starts
     --------------------------                                  executeAssignment
-      <this,σ> ~> <expr,σ>;
+      <this,σ> ~> <expr,σ>
 
 
-          <expr,σ> -> resRight: number                         
-    --------------------------------------------------          executeAssignment2
-      <this,σ> ~> variable.currentValue = resRight; ⍊
+          when <expr,σ> -> resRight: number                         
+    ----------------------------------------------------------- executeAssignment2
+      <this,σ> ~> variable.currentValue := resRight; terminates
 }
 
-// open Conjunction {
-//           when starts                   
-//     -------------------------                                   evaluateConjunction
-//       <this,σ> ~> <lhs,σ>;
-
-          
-//           <lhs,σ> -> true
-//     -------------------------                                   evaluateConjunction2
-//       <this,σ> ~> <rhs,σ>;
-
-
-//         <lhs,σ> -> false
-//     -------------------------                                   evaluateConjunction3
-//       <this,σ> ~> false; ⍊
-
-         
-//          <rhs,σ> -> true
-//     -------------------------                                   evaluateConjunction4
-//       <this,σ> ~> true;  ⍊
-
-// }
-
-
-open Conjunction {
-
-          when starts;                   
+open Conjunction { //lazy version
+          when starts                   
     -------------------------                                   evaluateConjunction
-      <this,σ> ~> <lhs,σ> ;   
+      <this,σ> ~> <lhs,σ>
 
           
-          <lhs,σ> -> true
+      when <lhs,σ> -> true
     -------------------------                                   evaluateConjunction2
-      <this,σ> ~> <rhs,σ>;
+      <this,σ> ~> <rhs,σ>
 
 
-        <lhs,σ> -> false
-    -------------------------                                   evaluateConjunction3
-      <this,σ> ~> ⍊ ;
+          when <lhs,σ> -> false
+    ----------------------------------                          evaluateConjunction3
+      <this,σ> ~> terminates(false)
 
          
-         <rhs,σ> -> true
+          when <rhs,σ> -> true
+    -------------------------------                             evaluateConjunction4
+      <this,σ> ~> terminates(true)
+
+}
+
+
+open Conjunction { //parallel version
+
+          when starts                   
+    -------------------------                                   evaluateConjunction
+      <this,σ> ~> <lhs,σ>   
+
+          
+      when <lhs,σ> -> true
+    -------------------------                                   evaluateConjunction2
+      <this,σ> ~> <rhs,σ>
+
+
+          when <lhs,σ> -> false
+    -----------------------------------                         evaluateConjunction3
+      <this,σ> ~> terminates(false) ;
+
+         
+      when <rhs,σ> -> true
     -------------------------                                   evaluateConjunction4
-      <this,σ> ~> true;  ⍊
+      <this,σ> ~> terminates(true);
 
 }

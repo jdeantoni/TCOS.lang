@@ -1,4 +1,5 @@
 import { SoSSpec, RuleOpening, RWRule } from '../generated/ast';
+// @ts-ignore 
 import { GeneratorContext, LangiumDiagramGenerator } from 'langium-sprotty';
 import { SEdge, SLabel, SModelRoot, SNode, SPort } from 'sprotty-protocol';
 
@@ -47,7 +48,7 @@ export class StatesDiagramGenerator extends LangiumDiagramGenerator {
     protected generateEdge(rule: RWRule, { idCache }: GeneratorContext<SoSSpec>): SEdge {
         const sourceId = idCache.getId(rule.$container);
         const targetId = idCache.getId(rule.$container);
-        const edgeId = idCache.uniqueId(`${sourceId}:${rule.guardEvents?.map(e => e.$type)}:${targetId}`, rule);
+        const edgeId = idCache.uniqueId(`${sourceId}:${rule.premise.eventExpression?.$type}:${targetId}`, rule);
         return {
             type: 'edge',
             id: edgeId,
