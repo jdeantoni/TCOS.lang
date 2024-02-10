@@ -78,7 +78,7 @@ ExplicitEventRef:
 // 	'}';
 
 NaryEventExpression:
-	policy = SelectionPolicy '(' ((events+=EventExpression)* | collection=MemberCall)')' 
+	policy = SelectionPolicy '(' (collection=MemberCall)')' 
 	;
 
 EventConjunction:
@@ -156,7 +156,7 @@ SingleRuleSync:
 
 
 CollectionRuleSync:
-   collection=MemberCall '->' (order=("parallel"|"sequential") '.')?'foreach''('varDecl=TemporaryVariable ('=>'|'|') singleRule=EventEmission')';
+   collection=MemberCall '->' (order=("concurrent"|"sequential") '.')'foreach''('varDecl=TemporaryVariable ('=>'|'|') singleRule=EventEmission')';
 
 TemporaryVariable returns NamedElement:
     {infer TemporaryVariable} 
@@ -167,7 +167,7 @@ TemporaryVariable returns NamedElement:
 
 VariableDeclaration returns NamedElement: 
     {infer VariableDeclaration} 
-    ('var') ? name=ID (':' type=TypeReference)? (assignment?='=' value=Expression)? ';' ; 
+    ('var') ? name=ID (':' type=TypeReference)? (assignment?='=' value=ClassicalExpression)? ';' ; 
 
 ClassicalExpression:
     Addition;

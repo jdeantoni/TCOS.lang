@@ -213,6 +213,31 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         }
         allScopeElements.push(lastFunction);
 
+        var allReaders: MethodMember = {
+            name: "allReaders",
+            $containerProperty: "methods",
+            $container: ruleOpeningItem,
+            $document: ruleOpeningItem.$document,
+            $cstNode: ruleOpeningItem.$cstNode,
+            parameters: [],
+            $type: 'MethodMember',
+            returnType: {
+                $container: undefined as unknown as MethodMember, //not sure how to do better
+                $type: 'TypeReference'
+            }
+        }
+
+        if(context){
+            var type = getType(context)
+            var returnType : TypeReference = {
+                reference: {ref:(isAbstractRule(type)?type:undefined), $refText:((isAbstractRule(type)?type.name:'undefined'))},
+                $container: allReaders,
+                $type: "TypeReference"
+            }
+            allReaders.returnType = returnType
+        }
+        allScopeElements.push(allReaders);
+
     }
 
     private scopeRuleOpeningMembers(ruleOpeningItem: RuleOpening, context: MemberCall | undefined = undefined): Scope {
@@ -277,26 +302,19 @@ export class SoSScopeProvider extends DefaultScopeProvider {
 
     private addClocks(ruleOpeningItem: RuleOpening): AstNode[] {
         var res : AstNode[] =[]
-        const start: VariableDeclaration = {
-            $container: ruleOpeningItem,
-            $type: 'VariableDeclaration',
-            name: "starts",
-            $cstNode: ruleOpeningItem.$cstNode,
-            $containerProperty: "clocks",
-            assignment: false
-        };
-        start.type = {
-            $container: start,
-            $type: 'TypeReference'
-        };
-        start.type.primitive= {name:'event', $container:start.type, $type:'SoSPrimitiveType'}
+        res.push(this.addClock(ruleOpeningItem, "starts"));
+        res.push(this.addClock(ruleOpeningItem, "updates"));
+        res.push(this.addClock(ruleOpeningItem, "cleanup"));
+        res.push(this.addClock(ruleOpeningItem, "terminates"));
+        
+        return res
+    }
 
-        res.push(start);
-
+    private addClock(ruleOpeningItem: RuleOpening, clockName: string): VariableDeclaration {
         const finish: VariableDeclaration = {
             $container: ruleOpeningItem,
             $type: 'VariableDeclaration',
-            name: "terminates",
+            name: clockName,
             $cstNode: ruleOpeningItem.$cstNode,
             $containerProperty: "clocks",
             assignment: false
@@ -305,11 +323,9 @@ export class SoSScopeProvider extends DefaultScopeProvider {
             $container: finish,
             $type: 'TypeReference',
         };
-        finish.type.primitive= {name:'event', $container:finish.type, $type:'SoSPrimitiveType'}
+        finish.type.primitive = { name: 'event', $container: finish.type, $type: 'SoSPrimitiveType' };
 
-        res.push(finish);
-        
-        return res
+        return finish;
     }
 
     private getAllTemporaryVariable(ruleOpeningItem: RuleOpening): AstNode[] {

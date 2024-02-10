@@ -659,34 +659,16 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "value": "("
           },
           {
-            "$type": "Alternatives",
-            "elements": [
-              {
-                "$type": "Assignment",
-                "feature": "events",
-                "operator": "+=",
-                "terminal": {
-                  "$type": "RuleCall",
-                  "rule": {
-                    "$ref": "#/rules@4"
-                  },
-                  "arguments": []
-                },
-                "cardinality": "*"
+            "$type": "Assignment",
+            "feature": "collection",
+            "operator": "=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@40"
               },
-              {
-                "$type": "Assignment",
-                "feature": "collection",
-                "operator": "=",
-                "terminal": {
-                  "$type": "RuleCall",
-                  "rule": {
-                    "$ref": "#/rules@40"
-                  },
-                  "arguments": []
-                }
-              }
-            ]
+              "arguments": []
+            }
           },
           {
             "$type": "Keyword",
@@ -1537,7 +1519,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                   "elements": [
                     {
                       "$type": "Keyword",
-                      "value": "parallel"
+                      "value": "concurrent"
                     },
                     {
                       "$type": "Keyword",
@@ -1550,8 +1532,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "$type": "Keyword",
                 "value": "."
               }
-            ],
-            "cardinality": "?"
+            ]
           },
           {
             "$type": "Keyword",
@@ -1744,7 +1725,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@7"
+                    "$ref": "#/rules@35"
                   },
                   "arguments": []
                 }

@@ -6,86 +6,98 @@ import "testSoSLang/src/language-server/simple-l.langium"
 open Model { 
 
 
-                            //since entry  
+                            when starts 
     ------------------------------------------------------------ statementsInOrder1
-      <this,σ> ~> statements->sequential.foreach(s => <s,σ>);
+      <this,σ> ~> statements->sequential.foreach(s => <s,σ>)
 
 
 
-         when statements.last().terminates;                  
+         when statements.last().terminates                 
     -------------------------------------------                 finishModel
-              <this,σ> ~> ⍊
+              <this,σ> ~> terminates
 
 }
 
 open Bloc {
 
-                          when starts;
+                          when starts
     ----------------------------------------------------------- startsBloc
-        <this,σ> ~> statements->foreach(s => <s,σ>); ⍊
+        <this,σ> ~> statements->sequential.foreach(s => <s,σ>)
 
   
-          when statements.last().terminates;             
+          when lastOf(statements.terminates)   
     -------------------------------------------                 finishBloc
-              <this,σ> ~> ⍊
+              <this,σ> ~> terminates
 }
 
 open ParallelBloc {
 
-                          when starts;
+                          when starts
     ----------------------------------------------------------- startsParallelBloc
-        <this,σ> ~> statements->parallel.foreach(s => <s,σ>);
+        <this,σ> ~> statements->concurrent.foreach(s => <s,σ>)
 
 
 
-       when lastOf (statements.terminates);
+       when lastOf(statements.terminates) 
     -----------------------------------------                   finishParallelBloc
-                  <this,σ> ~> ⍊
+                  <this,σ> ~> terminates
 
 }
 
-open VarDecl {
+open Variable {
 
     var currentValue:number = initialValue;
 
 
-                    when starts;
+                    when starts
     ---------------------------------------------               initializeVar
-     <this,σ> ~> currentValue = initialValue; ⍊
+     <this,σ> ~> currentValue := initialValue
+                 terminates
 
 }
 
 open VarRef {
-                when starts;
+                when starts
     -------------------------------------                       accessVarRef
-         <this,σ> ~> ref.currentValue;
+         <this,σ> ~> terminates(ref.currentValue)
 }
 
 open Plus {
    
-    <right,σ> -> n2:number ; <left,σ> -> n1:number
+              when starts
+    -------------------------------------                       startPlus
+      <this,σ> ~> emits right.starts
+                  emits left.starts
+
+    when (<right,σ> -> n2:number ^ <left,σ> -> n1:number)
     ----------------------------------------------              evaluatePlus
-             <this,σ> ~> n1 + n2 ; ⍊
+             <this,σ> ~> terminates(n1 + n2)
+                        
 }
 
 
 open If {
 
-              when starts;
-              <cond,σ> -> true 
+              when (starts ^
+              <cond,σ> -> true) 
     -----------------------------------                         condTrue
-      <this,σ> ~> <then.starts, σ>; ⍊
+      <this,σ> ~> <then.starts, σ>
 
 
-              when starts;
-              <cond,σ> -> false
+              when (starts ^
+              <cond,σ> -> false)
     -----------------------------------                         condFalse
-      <this,σ> ~> <else.starts,σ>; ⍊
+      <this,σ> ~> <else.starts,σ>
+
+        when(then.terminates v else.terminates)
+    ---------------------------------------------               condEnd
+               <this,σ> ~> terminates
 
 } 
 
 open Assignment {
-          <right,σ> -> resRight: number                         
+          when <expr,σ> -> resRight: number                         
     -----------------------------------------------             executeAssignment
-      <this,σ> ~> left.currentValue = resRight; ⍊
+      <this,σ> ~> variable.currentValue := resRight
+                  terminates
 }

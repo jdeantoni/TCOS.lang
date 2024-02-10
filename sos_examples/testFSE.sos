@@ -5,7 +5,6 @@ import "testSoSLang/src/language-server/simple-l.langium"
 
 open Model { 
 
- var starts: event;
                             when starts   
     ------------------------------------------------------------ statementsInOrder1
       <this,σ> ~> statements->sequential.foreach(s => <s,σ>)
@@ -14,31 +13,31 @@ open Model {
 
         when statements.last().terminates                  
     -------------------------------------------                 finishModel
-              <this,σ> ~> terminates;
+              <this,σ> ~> terminates
 
 }
 
 open Bloc {
 
                           when starts
-    ----------------------------------------------------------- startsBloc
-        <this,σ> ~> statements->foreach(s => <s,σ>) terminates;
+    -----------------------------------------------------       startsBloc
+            <this,σ> ~> statements->sequential.foreach(s => <s,σ>)
 
   
-          when statements.last().terminates            
-    -------------------------------------------                 finishBloc
-              <this,σ> ~> terminates;
+              when statements.last().terminates            
+        -------------------------------------------                 finishBloc
+                  <this,σ> ~> terminates
 }
 
 open ParallelBloc {
 
                           when starts
-    ----------------------------------------------------------- startsParallelBloc
-        <this,σ> ~> statements->parallel.foreach(s => emits s.starts)
+    -------------------------------------------------------------------- startsParallelBloc
+      <this,σ> ~> statements->concurrent.foreach(s => emits s.starts)
 
 
 
-          when lastOf(<statements,σ>)
+      when lastOf(statements.terminates)
     -----------------------------------------                   finishParallelBloc
             <this,σ> ~> terminates
 
@@ -51,21 +50,29 @@ open Variable {
 
                 when starts
     ---------------------------------------------               initializeVar
-     <this,σ> ~> currentValue := initialValue ; terminates ;
+     <this,σ> ~> currentValue := initialValue
+                 terminates 
 
 }
 
 open VarRef {
+
                   when starts
     ---------------------------------------------               accessVarRef
-      <this,σ> ~> terminates(ref.currentValue);
+      <this,σ> ~> terminates(ref.currentValue)
+
 }
 
 open Plus {
+
+                  when starts
+    -------------------------------------------                 startPlus
+        <this,σ> ~> <right,σ>
+                    <left,σ>
    
       when (<right,σ> -> n2 ^ <left,σ> -> n1)
-    -------------------------------------------                 evaluatePlus
-        <this,σ> ~>  terminates((n1 + n2));
+    -------------------------------------------                 FinishPlus
+        <this,σ> ~> terminates((n1 + n2))
 }
 
 
@@ -78,16 +85,18 @@ open If {
 
           when <cond,σ> -> true 
     -----------------------------------                        condTrueStart
-      <this,σ> ~> <then,σ> terminates
+          <this,σ> ~> <then,σ>
 
 
       when cond.terminates(false) 
     -------------------------------                            condFalseStart
       <this,σ> ~> else.starts
+      
 
-        when else.terminates 
-    -------------------------------                            condFalseStop
-       <this,σ> ~> terminates
+        when (else.terminates  v then.terminates)
+    -----------------------------------------------            condStop
+                <this,σ> ~> terminates
+
 } 
 
 open Assignment {
@@ -97,9 +106,11 @@ open Assignment {
       <this,σ> ~> <expr,σ>
 
 
-          when <expr,σ> -> resRight: number                         
+          when <expr,σ> -> resRight                       
     ----------------------------------------------------------- executeAssignment2
-      <this,σ> ~> variable.currentValue := resRight; terminates
+      <this,σ> ~> variable.currentValue := resRight 
+                  variable.allReaders()->concurrent.foreach(r => r.updates)
+                  terminates
 }
 
 open Conjunction { //lazy version

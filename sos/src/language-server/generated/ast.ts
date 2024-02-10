@@ -168,7 +168,7 @@ export interface CollectionRuleSync extends AstNode {
     readonly $container: RuleSync;
     readonly $type: 'CollectionRuleSync';
     collection: ClassicalExpression
-    order?: 'parallel' | 'sequential'
+    order: 'concurrent' | 'sequential'
     singleRule: EventEmission
     varDecl: NamedElement
 }
@@ -484,8 +484,7 @@ export function isNamedArgument(item: unknown): item is NamedArgument {
 export interface NaryEventExpression extends AstNode {
     readonly $container: BinaryExpression | CollectionRuleSync | Conclusion | EventConjunction | EventDisjunction | ExplicitEventRef | ExplicitValuedEventRef | ExplicitValuedEventRefConstantComparison | FunctionCallExpr | ImplicitValuedEventRef | ImplicitValuedEventRefConstantComparison | MemberCall | NaryEventExpression | Premise | SimpleEventEmission | SingleRuleSync | StateModification | UnaryExpression | UnaryMinus | ValuedEventEmission | VariableDeclaration;
     readonly $type: 'NaryEventExpression';
-    collection?: ClassicalExpression
-    events: Array<EventExpression>
+    collection: ClassicalExpression
     policy: SelectionPolicy
 }
 
@@ -841,7 +840,7 @@ export interface VariableDeclaration extends AstNode {
     assignment: boolean
     name: string
     type?: TypeReference
-    value?: Expression
+    value?: ClassicalExpression
 }
 
 export const VariableDeclaration = 'VariableDeclaration';
@@ -1374,14 +1373,6 @@ export class StructuralOperationalSemanticsAstReflection extends AbstractAstRefl
                     name: 'NamedArgument',
                     mandatory: [
                         { name: 'calledByName', type: 'boolean' }
-                    ]
-                };
-            }
-            case 'NaryEventExpression': {
-                return {
-                    name: 'NaryEventExpression',
-                    mandatory: [
-                        { name: 'events', type: 'array' }
                     ]
                 };
             }

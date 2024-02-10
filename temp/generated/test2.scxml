@@ -1,24 +1,26 @@
+
+<?xml version="1.0" encoding="UTF-8"?>
 <scxml xmlns="http://www.w3.org/2005/07/scxml" initial="mainState">
     <state id="mainState">
         <parallel id="allRules">
 
-            <state id="Model0_0_12_1" initial="Model0_0_12_1.startVarDecl0_0_0_10">
+            <state id="Model0_0_12_1" initial="Model0_0_12_1.startVariable0_0_0_10">
                     <state id="Model0_0_12_1.idle">
-                        <transition type="internal" event="Model0_0_12_1.start" target="Model0_0_12_1.startVarDecl0_0_0_10"/>
+                        <transition type="internal" event="Model0_0_12_1.start" target="Model0_0_12_1.startVariable0_0_0_10"/>
                     </state>
 
-                <state id="Model0_0_12_1.startVarDecl0_0_0_10">
+                <state id="Model0_0_12_1.startVariable0_0_0_10">
                         <onentry>
-                            <raise event="VarDecl0_0_0_10.start"/>
+                            <raise event="Variable0_0_0_10.start"/>
                         </onentry>
-                        <transition type="internal" event="VarDecl0_0_0_10.finish" target="Model0_0_12_1.startVarDecl1_0_1_10"/>
+                        <transition type="internal" event="Variable0_0_0_10.finish" target="Model0_0_12_1.startVariable1_0_1_10"/>
                 </state>
 
-                <state id="Model0_0_12_1.startVarDecl1_0_1_10">
+                <state id="Model0_0_12_1.startVariable1_0_1_10">
                         <onentry>
-                            <raise event="VarDecl1_0_1_10.start"/>
+                            <raise event="Variable1_0_1_10.start"/>
                         </onentry>
-                        <transition type="internal" event="VarDecl1_0_1_10.finish" target="Model0_0_12_1.startIf6_0_12_1"/>
+                        <transition type="internal" event="Variable1_0_1_10.finish" target="Model0_0_12_1.startIf6_0_12_1"/>
                 </state>
 
                 <state id="Model0_0_12_1.startIf6_0_12_1">
@@ -30,33 +32,33 @@
 
             </state>
 
-            <state id="VarDecl0_0_0_10" initial="VarDecl0_0_0_10.idle">
-                <state id="VarDecl0_0_0_10.idle">
-                    <transition type="internal" event="VarDecl0_0_0_10.start" target="VarDecl0_0_0_10.started"/>
+            <state id="Variable0_0_0_10" initial="Variable0_0_0_10.idle">
+                <state id="Variable0_0_0_10.idle">
+                    <transition type="internal" event="Variable0_0_0_10.start" target="Variable0_0_0_10.started"/>
                 </state>
-                <state id="VarDecl0_0_0_10.started">
+                <state id="Variable0_0_0_10.started">
                     <onentry>
-                        <log label="start VarDecl0_0_0_10"/>
-                        <raise event="VarDecl0_0_0_10.doAction1"/>
+                        <log label="start Variable0_0_0_10"/>
+                        <raise event="Variable0_0_0_10.doAction1"/>
                     </onentry>
-                    <transition type="internal" target="VarDecl0_0_0_10.idle">
-                        <raise event="VarDecl0_0_0_10.finish"/>
+                    <transition type="internal" target="Variable0_0_0_10.idle">
+                        <raise event="Variable0_0_0_10.finish"/>
                     </transition>
                 </state>
             </state>
             
 
-            <state id="VarDecl1_0_1_10" initial="VarDecl1_0_1_10.idle">
-                <state id="VarDecl1_0_1_10.idle">
-                    <transition type="internal" event="VarDecl1_0_1_10.start" target="VarDecl1_0_1_10.started"/>
+            <state id="Variable1_0_1_10" initial="Variable1_0_1_10.idle">
+                <state id="Variable1_0_1_10.idle">
+                    <transition type="internal" event="Variable1_0_1_10.start" target="Variable1_0_1_10.started"/>
                 </state>
-                <state id="VarDecl1_0_1_10.started">
+                <state id="Variable1_0_1_10.started">
                     <onentry>
-                        <log label="start VarDecl1_0_1_10"/>
-                        <raise event="VarDecl1_0_1_10.doAction1"/>
+                        <log label="start Variable1_0_1_10"/>
+                        <raise event="Variable1_0_1_10.doAction1"/>
                     </onentry>
-                    <transition type="internal" target="VarDecl1_0_1_10.idle">
-                        <raise event="VarDecl1_0_1_10.finish"/>
+                    <transition type="internal" target="Variable1_0_1_10.idle">
+                        <raise event="Variable1_0_1_10.finish"/>
                     </transition>
                 </state>
             </state>
@@ -128,7 +130,7 @@
                 </state>
             </state>
 
-            <state id="Bloc7_0_9_1" initial="Bloc7_0_9_1.startVarDecl0_0_0_10">
+            <state id="Bloc7_0_9_1" initial="Bloc7_0_9_1.startVariable0_0_0_10">
                     <state id="Bloc7_0_9_1.idle">
                         <transition type="internal" event="Bloc7_0_9_1.start" target="Bloc7_0_9_1.startAssignment8_4_8_11"/>
                     </state>
@@ -151,7 +153,7 @@
                         <log label="start Assignment8_4_8_11"/>
                         <raise event="VarRef8_9_8_11.start"/>
                     </onentry>
-                    <transition type="internal" event="VarDecl1_0_1_10.finish" target="Assignment8_4_8_11.VarRef8_9_8_11Done"/>
+                    <transition type="internal" event="Variable1_0_1_10.finish" target="Assignment8_4_8_11.VarRef8_9_8_11Done"/>
                 </state>
                 <state id="Assignment8_4_8_11.VarRef8_9_8_11Done">
                     <onentry>
@@ -175,7 +177,7 @@
                 </state>
             </state>
 
-            <state id="Bloc10_0_12_1" initial="Bloc10_0_12_1.startVarDecl0_0_0_10">
+            <state id="Bloc10_0_12_1" initial="Bloc10_0_12_1.startVariable0_0_0_10">
                     <state id="Bloc10_0_12_1.idle">
                         <transition type="internal" event="Bloc10_0_12_1.start" target="Bloc10_0_12_1.startAssignment11_4_11_11"/>
                     </state>
@@ -198,7 +200,7 @@
                         <log label="start Assignment11_4_11_11"/>
                         <raise event="VarRef11_9_11_11.start"/>
                     </onentry>
-                    <transition type="internal" event="VarDecl0_0_0_10.finish" target="Assignment11_4_11_11.VarRef11_9_11_11Done"/>
+                    <transition type="internal" event="Variable0_0_0_10.finish" target="Assignment11_4_11_11.VarRef11_9_11_11Done"/>
                 </state>
                 <state id="Assignment11_4_11_11.VarRef11_9_11_11Done">
                     <onentry>
