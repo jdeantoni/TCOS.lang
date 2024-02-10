@@ -10,7 +10,7 @@
     },
     {
       "name": "keyword.control.simple-l",
-      "match": "\\b(else|if|var)\\b"
+      "match": "\\b(else|false|if|true|var)\\b"
     },
     {
       "name": "string.quoted.double.simple-l",

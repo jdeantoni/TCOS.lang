@@ -59,20 +59,8 @@ open VarRef {
 
                   when starts
     ---------------------------------------------               accessVarRef
-      <this,σ> ~> terminates(ref.currentValue)
+      <this,σ> ~> terminates //(ref.currentValue)
 
-}
-
-open Plus {
-
-                  when starts
-    -------------------------------------------                 startPlus
-        <this,σ> ~> <right,σ>
-                    <left,σ>
-   
-      when (<right,σ> -> n2 ^ <left,σ> -> n1)
-    -------------------------------------------                 FinishPlus
-        <this,σ> ~> terminates((n1 + n2))
 }
 
 
@@ -88,12 +76,12 @@ open If {
           <this,σ> ~> <then,σ>
 
 
-      when cond.terminates(false) 
+      when <cond,σ> -> false 
     -------------------------------                            condFalseStart
-      <this,σ> ~> else.starts
+      <this,σ> ~> <else,σ>
       
 
-        when (else.terminates  v then.terminates)
+        when (<else,σ>  v <then,σ> )
     -----------------------------------------------            condStop
                 <this,σ> ~> terminates
 
@@ -108,8 +96,8 @@ open Assignment {
 
           when <expr,σ> -> resRight                       
     ----------------------------------------------------------- executeAssignment2
-      <this,σ> ~> variable.currentValue := resRight 
-                  variable.allReaders()->concurrent.foreach(r => r.updates)
+      <this,σ> ~> //variable.currentValue := resRight 
+                  //variable.allReaders()->concurrent.foreach(r => r.updates)
                   terminates
 }
 
@@ -126,35 +114,47 @@ open Conjunction { //lazy version
 
           when <lhs,σ> -> false
     ----------------------------------                          evaluateConjunction3
-      <this,σ> ~> terminates(false)
+      <this,σ> ~> terminates//(false)
 
          
           when <rhs,σ> -> true
     -------------------------------                             evaluateConjunction4
-      <this,σ> ~> terminates(true)
+      <this,σ> ~> terminates//(true)
 
 }
 
 
-open Conjunction { //parallel version
+// open Conjunction { //parallel version
 
-          when starts                   
-    -------------------------                                   evaluateConjunction
-      <this,σ> ~> <lhs,σ>   
+//           when starts                   
+//     -------------------------                                   evaluateConjunction
+//       <this,σ> ~> <lhs,σ>   
 
           
-      when <lhs,σ> -> true
-    -------------------------                                   evaluateConjunction2
-      <this,σ> ~> <rhs,σ>
+//       when <lhs,σ> -> true
+//     -------------------------                                   evaluateConjunction2
+//       <this,σ> ~> <rhs,σ>
 
 
-          when <lhs,σ> -> false
-    -----------------------------------                         evaluateConjunction3
-      <this,σ> ~> terminates(false) ;
+//           when <lhs,σ> -> false
+//     -----------------------------------                         evaluateConjunction3
+//       <this,σ> ~> terminates(false) ;
 
          
-      when <rhs,σ> -> true
-    -------------------------                                   evaluateConjunction4
-      <this,σ> ~> terminates(true);
+//       when <rhs,σ> -> true
+//     -------------------------                                   evaluateConjunction4
+//       <this,σ> ~> terminates(true);
 
+// }
+
+open Plus {
+
+                  when starts
+    -------------------------------------------                 startPlus
+        <this,σ> ~> <right,σ>
+                    <left,σ>
+   
+      when (<right,σ> -> n2 ^ <left,σ> -> n1)
+    -------------------------------------------                 FinishPlus
+        <this,σ> ~> terminates//((n1 + n2))
 }

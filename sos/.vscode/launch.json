@@ -11,9 +11,7 @@
             "name": "Launch Extension",
             "request": "launch",
             "type": "extensionHost",
-            "outFiles": [
-                "${workspaceFolder}/out/**/*.js"
-            ],
+
             "sourceMaps": true
         },
         {
@@ -22,9 +20,7 @@
 			"request": "attach",
 			"port": 6009,
             "sourceMaps": true,
-			"outFiles": [
-                "${workspaceFolder}/out/**/*.js"
-            ],
+
 		}
 
     ],
@@ -34,9 +30,7 @@
             "breakOnLoad": true,
 			"name": "Launch Extension and attach to Language Server",
 			"configurations": ["Launch Extension", "Attach to Language Server"],
-            "outFiles": [
-                "${workspaceFolder}/out/**/*.js"
-            ],
+
 		}
 	],
     // "webRoot": "${workspaceFolder}/../",
@@ -45,7 +39,5 @@
     //     "!**/node_modules/**"
     //   ]
     "sourceMaps": true,
-    "outFiles": [
-        "${workspaceFolder}/out/**/*.js"
-    ]
+
 }

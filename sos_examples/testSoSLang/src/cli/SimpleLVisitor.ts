@@ -1,5 +1,5 @@
 import { AstNode } from "langium";
-import { Assignment, Bloc, Conjunction, Disjunction, If, Model, ParallelBloc, Plus, Variable, VarRef } from "../language-server/generated/ast";
+import { Assignment, Bloc, Conjunction, Disjunction, If, Model, ParallelBloc, Plus, Variable, VarRef, BooleanConst } from "../language-server/generated/ast";
 import { AndJoin, Choice, Fork, Graph, Node, OrJoin, Step } from "../ccfg/ccfglib";
 
 export interface SimpleLVisitor {
@@ -15,9 +15,11 @@ export interface SimpleLVisitor {
     visitPlus(node: Plus): [Node,Node];
     visitVariable(node: Variable): [Node,Node];
     visitVarRef(node: VarRef): [Node,Node];
+    visitBooleanConst(node: BooleanConst): [Node,Node];
 }
 
 export class CCFGVisitor implements SimpleLVisitor {
+   
     ccfg: Graph = new Graph();
 
 
@@ -51,6 +53,9 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         if (node.$type == "VarRef") {
             return this.visitVarRef(node as VarRef);
+        }
+        if (node.$type == "BooleanConst") {
+            return this.visitBooleanConst(node as BooleanConst);
         }
         throw new Error("Not implemented: " + node.$type);
     }
@@ -247,6 +252,17 @@ export class CCFGVisitor implements SimpleLVisitor {
         return [startsNode,terminatesNode]
     }
     visitVarRef(node: VarRef): [Node,Node] {
+        let startsNode: Node = new Step(node.$cstNode?.text+" starts")
+        this.ccfg.addNode(startsNode)
+        let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
+        this.ccfg.addNode(terminatesNode)
+        
+        this.ccfg.addEdge(startsNode,terminatesNode)
+
+        return [startsNode,terminatesNode]
+    }
+
+    visitBooleanConst(node: BooleanConst): [Node, Node] {
         let startsNode: Node = new Step(node.$cstNode?.text+" starts")
         this.ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")

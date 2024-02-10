@@ -20,7 +20,10 @@ Expr:
     VarRef|Plus|If|BooleanExpression;
 
 BooleanExpression:
-    Conjunction | Disjunction;
+    Conjunction | Disjunction | BooleanConst;
+
+BooleanConst:
+    value=('true' | 'false');
 
 Conjunction:
     '('lhs=BooleanExpression '&&' rhs=BooleanExpression')';

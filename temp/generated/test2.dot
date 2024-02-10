@@ -47,6 +47,14 @@ digraph G {
   "45" [label="45" shape="ellipse"];
   "46" [label="46" shape="ellipse"];
   "47" [label="or" shape="invtriangle"];
+  "48" [label="48" shape="ellipse"];
+  "49" [label="49" shape="ellipse"];
+  "50" [label="50" shape="ellipse"];
+  "51" [label="51" shape="ellipse"];
+  "52" [label="52" shape="ellipse"];
+  "53" [label="53" shape="ellipse"];
+  "54" [label="or" shape="invtriangle"];
+  "55" [label="55" shape="diamond"];
   "2" -> "3" [label=""];
   "0" -> "2" [label=""];
   "4" -> "5" [label=""];
@@ -97,5 +105,14 @@ digraph G {
   "42" -> "47" [label=""];
   "47" -> "31" [label=""];
   "7" -> "30" [label=""];
-  "31" -> "1" [label=""];
+  "50" -> "51" [label=""];
+  "52" -> "53" [label=""];
+  "48" -> "50" [label=""];
+  "51" -> "55" [label=""];
+  "55" -> "52" [label=""];
+  "55" -> "54" [label=""];
+  "53" -> "54" [label=""];
+  "54" -> "49" [label=""];
+  "31" -> "48" [label=""];
+  "49" -> "1" [label=""];
 }

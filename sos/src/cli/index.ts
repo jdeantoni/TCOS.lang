@@ -4,12 +4,15 @@ import { StructuralOperationalSemanticsLanguageMetaData } from '../language-serv
 import { createStructuralOperationalSemanticsServices } from '../language-server/structural-operational-semantics-module';
 
 import { extractSosAndGrammarModels } from './cli-util';
-import { generateStuffFromSoS } from './generator';
+import { generateStuffFromSoS } from './generatorCCFGCompiler';
 import { NodeFileSystem } from 'langium/node';
 
 export const generateAction = async (fileName: string, opts: GenerateOptions): Promise<void> => {
     const services = createStructuralOperationalSemanticsServices(NodeFileSystem).StructuralOperationalSemantics;
     const model = await extractSosAndGrammarModels(fileName, services);
+    if (model[0].$document != undefined){
+        services.references.Linker.link(model[0].$document)
+    }
     const generatedFilePath = generateStuffFromSoS(model[0],model[1], fileName, opts.destination);
     console.log(chalk.green(`Stuff code generated successfully: ${generatedFilePath}`));
 };
