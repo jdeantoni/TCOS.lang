@@ -1,36 +1,66 @@
 testFSM
 import "fsm/src/language-server/finite-state-machine.langium"
 
-open non atomic rule FSMModel {
-    sched{
-        fsms.at(0).transitions.
-    }
+open FSMModel{
+                         when starts
+    ------------------------------------------------------ FSMstart
+       <this,σ> ~> fsms->parallel.foreach(fsm => <fsm,σ>)
 
-                        
-    // ----------------------------------------- init
-    //  <this,σ> ~> currentState = states.at(0)
+        when lastOf(fsms.terminates)
+    -------------------------------------                  FSMend
+         <this,σ> ~> terminates
+
 }
 
-open non atomic rule State {
+
+open FSM {
+    var currentState:State;
+
+                    when starts
+    ----------------------------------------- init
+     <this,σ> ~> currentState := states.at(0)
+}
+
+open Event {
+
+    var isOccuring:event;
+
+            when starts
+    --------------------------   fugaceEvent
+      <this,σ> ~> terminates    
+}
+
+open State {
     var isCurrentState:boolean = false;
 
-                        
+            when starts            
     --------------------------------------- init
-    <this,σ> ~> isCurrentState = isInitial;
+    <this,σ> ~> isCurrentState := isInitial;
 
-
+            when starts
     ---------------------------- evaluate
      <this,σ> ~> isCurrentState;
 }
 
-open non atomic rule Transition{
+open Transition{
+
+    var isSensitive:boolean = false;
+
+            when starts
+    --------------------------------------- init
+        <this,σ> ~> isSensitive := true;
+
+            
 
              
+      when (guardEvent.terminates) [isSensitive == true]
+    ------------------------------------------------------ fire
+         <this,σ> ~> source.isCurrentState := false
+                     target.isCurrentState := true;
+                     isSensitive := false;
+                     terminates;
+
 
     
-         <source.isCurrentState,σ> -> true 
-    -------------------------------------------- fire
-      <this,σ> ~> source.isCurrentState = false
-                  target.isCurrentState = true;
         
 }

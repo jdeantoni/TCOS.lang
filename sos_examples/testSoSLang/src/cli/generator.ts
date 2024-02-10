@@ -1,7 +1,7 @@
 
 import fs from 'fs';
 import { AstNode, CompositeGeneratorNode, NL, Reference, isReference, streamAllContents, streamAst, toString } from 'langium';
-import { Model, isAssignment, isBloc, isIf, isModel, isPlus, isVarDecl, isVarRef } from '../language-server/generated/ast';
+import { Model, isAssignment, isBloc, isIf, isModel, isPlus, isVariable, isVarRef } from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
 import { Range, integer } from 'vscode-languageclient';
 import path from 'path';
@@ -47,7 +47,7 @@ function generateCode(codeFile: CompositeGeneratorNode, headerFile: CompositeGen
     var allRtdValues: Map<AstNode,number> = new Map<AstNode, number>();
 
     for (var node of streamAllContents(model)) {
-        if(isVarDecl(node)){
+        if(isVariable(node)){
             allRtdPositions.set(node,globalVariableCounter++)
             allRtdValues.set(node,(node.initialValue)?node.initialValue:0)
         }
@@ -59,7 +59,7 @@ function generateCode(codeFile: CompositeGeneratorNode, headerFile: CompositeGen
 
     for (var node of streamAllContents(model)) {
 
-                    if (isVarDecl(node)){
+                    if (isVariable(node)){
                         headerFile.append(`int ${getName(node)}_evaluate();`,NL)
                         codeFile.append(`
                         inline int ${getName(node)}_evaluate(){
@@ -103,8 +103,8 @@ function generateCode(codeFile: CompositeGeneratorNode, headerFile: CompositeGen
                         headerFile.append(`int ${getName(node)}_evaluate();`,NL)
                         codeFile.append(`
                         inline int ${getName(node)}_evaluate(){
-                            int resRight = ${getName(node.right)}_evaluate();
-                                return varList[${allRtdPositions.get((node.left as Reference).ref as AstNode)}] = resRight;
+                            int resRight = ${getName(node.expr)}_evaluate();
+                                return varList[${allRtdPositions.get((node.variable as Reference).ref as AstNode)}] = resRight;
                                 
                         }`,NL)
                     }   }
@@ -125,7 +125,7 @@ function generateCode(codeFile: CompositeGeneratorNode, headerFile: CompositeGen
         var allClocks: String[] = [];
         for (var node of streamAst(model)) {
     
-            if( isModel(node) || isBloc(node) || isVarDecl(node) || isIf(node) || isAssignment(node) ){ //for non atomic rules
+            if( isModel(node) || isBloc(node) || isVariable(node) || isIf(node) || isAssignment(node) ){ //for non atomic rules
                 allClocks.push(getName(node) + "_startEvaluation");
                 allClocks.push(getName(node) + "_finishEvaluation");
             }
@@ -205,7 +205,7 @@ function generateCode(codeFile: CompositeGeneratorNode, headerFile: CompositeGen
                         }
             }
             
-            if(isVarDecl(node)){
+            if(isVariable(node)){
             
                 ccslFile.append(`
                     Precedence ${getName(node) + '_startEvaluation'} < (max: 1) ${getName(node) + '_finishEvaluation'}`, NL

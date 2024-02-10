@@ -1,8 +1,8 @@
 import fs from 'fs';
-import {AstNode, CompositeGeneratorNode, Grammar, NL, streamAst, toString } from 'langium';
-import { Expression, MemberCall,  RWRule, RuleOpening, SoSSpec, TemporaryVariable, isBinaryExpression, isMemberCall, isRWRule, isRuleOpening, isSchedulingRule, isTemporaryVariable, isVariableDeclaration } from '../language-server/generated/ast'; //VariableDeclaration
+import {CompositeGeneratorNode, Grammar, NL, streamAst, toString } from 'langium';
+import {  RWRule, RuleOpening, SoSSpec, TemporaryVariable, isRWRule, isRuleOpening, isTemporaryVariable, isValuedEventEmission, isVariableDeclaration } from '../language-server/generated/ast'; //VariableDeclaration
 import { extractDestinationAndName, FilePathData } from './cli-util';
-import { print } from '../utils/sos-utils';
+// import { print } from '../utils/sos-utils';
 import { inferType } from '../language-server/type-system/infer';
 import path from 'path';
 
@@ -33,13 +33,20 @@ export function generateStuffFromSoS(model: SoSSpec, grammar: Grammar[], filePat
                         inline ${rwrRuleType} \${getName(node)}_${rwr.name}(){`)
                         
                         
-                    for(var prem of rwr.premise){
-                        if(isTemporaryVariable(prem.right)){
-                            if(prem.left){
-                                fileNode.append(`
-                            ${getAstNodeType(prem.right)} ${(prem.right as TemporaryVariable).name} = \${getName(node.${print(prem.left,"")})}_evaluate();`)
-                            }     
-                        }
+                    /**
+                     * TODO: manage premise recursively to add temporary variable in the scope
+                     */
+                    // for(var prem of rwr.premise){
+                    //     if(isTemporaryVariable(prem.right)){
+                    //         if(prem.left){
+                    //             fileNode.append(`
+                    //         ${getAstNodeType(prem.right)} ${(prem.right as TemporaryVariable).name} = \${getName(node.${print(prem.left,"")})}_evaluate();`)
+                    //         }     
+                    //     }
+                    // }
+                    if(isTemporaryVariable(rwr.premise)){
+                        rwr.premise as TemporaryVariable
+                        // this code is here but should be removed
                     }
     
                     //should be linked by ccsl
@@ -48,22 +55,28 @@ export function generateStuffFromSoS(model: SoSSpec, grammar: Grammar[], filePat
                     //         call ${rwr.conclusion.ruleStart}
                     //     `)
                     // }
-                    for(var os of rwr.conclusion.outState){
-                        if (isVariableDeclaration((os as MemberCall).element?.ref)){
+                    for(var os of rwr.conclusion.eventemissions){
+                        if (isValuedEventEmission(os) && isVariableDeclaration(os.data)){
                             fileNode.append(`
                             return varList[\${allRtdPositions.get(node)}];`)
                         }
-                        else if(isBinaryExpression(os) && os.operator ==='='){ //left is a VarRef
-                                fileNode.append(`
-                                return varList[\${allRtdPositions.get((node.left as Reference).ref as AstNode)}] = ${print(os.right,"")};
-                            `)
-                        }
-                        else{
-                            fileNode.append(`
-                            return ${print(os,"")};`)
-                        }
-                        
                     }
+
+                    /**
+                     * TODO
+                     */
+                    // for(var sm of rwr.conclusion.statemodifications){
+                    //     if(isBinaryExpression(sm) && sm.rhs ==='='){ //left is a VarRef
+                    //             fileNode.append(`
+                    //             return varList[\${allRtdPositions.get((node.left as Reference).ref as AstNode)}] = ${print(os.right,"")};
+                    //         `)
+                    //     }
+                    //     else{
+                    //         fileNode.append(`
+                    //         return ${print(os,"")};`)
+                    //     }
+                        
+                    // }
 
 
                 fileNode.append(//      
@@ -143,27 +156,27 @@ export function generateStuffFromSoS(model: SoSSpec, grammar: Grammar[], filePat
 }
 
 
-function getAstNodeType(node: AstNode) {
+// function getAstNodeType(node: AstNode) {
    
-        var rawType = inferType(node, new Map());
-        if(rawType.$type ==="number"){
-            return "int"
-        }
-        if(rawType.$type ==="error"){
-            console.log("error type inference:"+rawType.message)
-            return "void"
-        }
-        if(rawType.$type ==="boolean"){
-            return "bool"
-        }
+//         var rawType = inferType(node, new Map());
+//         if(rawType.$type ==="number"){
+//             return "int"
+//         }
+//         if(rawType.$type ==="error"){
+//             console.log("error type inference:"+rawType.message)
+//             return "void"
+//         }
+//         if(rawType.$type ==="boolean"){
+//             return "bool"
+//         }
    
-    return "error in type inference for node "+node+":"+node.$type
-}
+//     return "error in type inference for node "+node+":"+node.$type
+// }
 
 
 function getRwrRuleType(rwr: RWRule) {
-    if (rwr.conclusion.outState.length > 0) {
-        var rawType:string = inferType(rwr.conclusion.outState[rwr.conclusion.outState.length - 1], new Map()).$type;
+    if (rwr.conclusion.statemodifications.length > 0) {
+        var rawType:string = inferType(rwr.conclusion.statemodifications[rwr.conclusion.statemodifications.length - 1], new Map()).$type;
         if(rawType ==="number"){
             return "int"
         }
@@ -174,7 +187,7 @@ function getRwrRuleType(rwr: RWRule) {
             return "bool"
         }
     }
-    if (rwr.conclusion.ruleStart) {
+    if (rwr.conclusion.eventemissions.some(em => isValuedEventEmission(em))) {
         return "void"
     }
     return "error in type inference for rule "+rwr.name+" in rule opened on "+(rwr.$container as RuleOpening).onRule
@@ -253,11 +266,11 @@ function generateThegenerateCCSLFunction(fileNode: CompositeGeneratorNode, model
         for (var node of streamAst(model)) {
     `);
     var nonAtomicRuleName: string[]=[]
-    for(let ro of model.rtdAndRules){
-        if (ro.isNonAtomic && ro.onRule.ref !== undefined){
-            nonAtomicRuleName.push(ro.onRule.ref.name)
-        }
-    }
+   // for(let ro of model.rtdAndRules){
+        // if (ro.isNonAtomic && ro.onRule.ref !== undefined){
+        //     nonAtomicRuleName.push(ro.onRule.ref.name)
+        // }
+   // }
     var isTests:string[] = nonAtomicRuleName.map(rn => " is"+rn+"(node) ");
     fileNode.append(`
             if(${isTests.join("||")}){ //for non atomic rules
@@ -295,79 +308,79 @@ function generateThegenerateCCSLFunction(fileNode: CompositeGeneratorNode, model
             if(is${node.onRule.$refText}(node)){
             `)
             
-            if(node.isNonAtomic){
-                fileNode.append(`
-                ccslFile.append(\`
-                    Precedence \${getName(node) + '_startEvaluation'} < (max: 1) \${getName(node) + '_finishEvaluation'}\`, NL
-                );
-                `)
-            }
-            for(let schedRule of node.rules){
-                if(isSchedulingRule(schedRule)){
-                    if(schedRule.loop === undefined){
-                        if(schedRule.constraint.operator === "coincides_with"){
-                            var leftArg:string = getQueryStringFromMemberCall(schedRule.constraint.left)
-                            var rightArg:string = getQueryStringFromMemberCall(schedRule.constraint.right)
-                            createCoincidence(fileNode,leftArg,rightArg)
-                        }
-                        if(schedRule.constraint.operator === "precedes"){
-                            var leftArg:string = getQueryStringFromMemberCall(schedRule.constraint.left)
-                            if(isMemberCall(schedRule.constraint.right)){
-                                var rightArg:string = getQueryStringFromMemberCall(schedRule.constraint.right)
-                                createPrecedence(fileNode,leftArg,rightArg)
-                            }
-                            //TODO generalize and add recursion
-                            if(isBinaryExpression(schedRule.constraint.right)){
-                                if(schedRule.constraint.right.operator == "xor"){
-                                    fileNode.append(`
-                ccslFile.append(\`
-                Let tmp_\${getName(node)}_xor be \${getName(${getQueryStringFromMemberCall(schedRule.constraint.right.left)}} + \${getName(${getQueryStringFromMemberCall(schedRule.constraint.right.right)}} //may be 'or' instead of +
-                Exclusion \${getName(node)}_condTrue # \${getName(node)}_condFalse
-                Precedence \${getName(${leftArg}} < tmp_\${getName(node)}_xor
-                \`)
-                                    `)
+            // if(node.isNonAtomic){
+            //     fileNode.append(`
+            //     ccslFile.append(\`
+            //         Precedence \${getName(node) + '_startEvaluation'} < (max: 1) \${getName(node) + '_finishEvaluation'}\`, NL
+            //     );
+            //     `)
+            // }
+            // for(let schedRule of node.rules){
+            //     if(isControlFlowRule(schedRule)){
+            //         if(schedRule.loop === undefined){
+            //             if(schedRule.constraint.operator === "coincides_with"){
+            //                 var leftArg:string = getQueryStringFromMemberCall(schedRule.constraint.left)
+            //                 var rightArg:string = getQueryStringFromMemberCall(schedRule.constraint.right)
+            //                 createCoincidence(fileNode,leftArg,rightArg)
+            //             }
+            //             if(schedRule.constraint.operator === "precedes"){
+            //                 var leftArg:string = getQueryStringFromMemberCall(schedRule.constraint.left)
+            //                 if(isMemberCall(schedRule.constraint.right)){
+            //                     var rightArg:string = getQueryStringFromMemberCall(schedRule.constraint.right)
+            //                     createPrecedence(fileNode,leftArg,rightArg)
+            //                 }
+            //                 //TODO generalize and add recursion
+            //                 if(isBinaryExpression(schedRule.constraint.right)){
+            //                     if(schedRule.constraint.right.operator == "xor"){
+            //                         fileNode.append(`
+            //     ccslFile.append(\`
+            //     Let tmp_\${getName(node)}_xor be \${getName(${getQueryStringFromMemberCall(schedRule.constraint.right.left)}} + \${getName(${getQueryStringFromMemberCall(schedRule.constraint.right.right)}} //may be 'or' instead of +
+            //     Exclusion \${getName(node)}_condTrue # \${getName(node)}_condFalse
+            //     Precedence \${getName(${leftArg}} < tmp_\${getName(node)}_xor
+            //     \`)
+            //                         `)
                                     
-                                }
-                            }
-                        }
-                    }else{
-                        fileNode.append(`
-                        var loopList: String[][] = [];
-                        for (let ${schedRule.loop.itVar.name} = ${schedRule.loop.lowerBound}; ${schedRule.loop.itVar.name} < node.${print(schedRule.loop.upperBound,".")} - 1; i++) {
-                            const e1 = ${getQueryStringFromMemberCall(schedRule.constraint.left,true)};
-                            const e2 = ${getQueryStringFromMemberCall(schedRule.constraint.right,true)};
-                            loopList.push([getName(e1)+'_${getQueryStringFromMemberCall(schedRule.constraint.left,false,true)}', getName(e2)+'_${getQueryStringFromMemberCall(schedRule.constraint.right,false,true)}']);
-                        }
-                        for(var couple of loopList){
-                        `)
-                        if(schedRule.constraint.operator === "coincides_with"){
-                            fileNode.append(`
-                            ccslFile.append(\`
-                            SubClock \${couple[0]} <- \${couple[1]}
-                            SubClock \${couple[1]} <- \${couple[0]} \`, NL
-                            );
-                            `)
-                        }
-                        if(schedRule.constraint.operator === "precedes"){
-                            fileNode.append(`
-                            ccslFile.append(\`
-                            Precedence \${couple[0]} < \${couple[1]} \`, NL
-                            );
-                            `)
-                        }
-                        fileNode.append(`
-                        }`
-                        )
+            //                     }
+            //                 }
+            //             }
+            //         }else{
+            //             fileNode.append(`
+            //             var loopList: String[][] = [];
+            //             for (let ${schedRule.loop.itVar.name} = ${schedRule.loop.lowerBound}; ${schedRule.loop.itVar.name} < node.${print(schedRule.loop.upperBound,".")} - 1; i++) {
+            //                 const e1 = ${getQueryStringFromMemberCall(schedRule.constraint.left,true)};
+            //                 const e2 = ${getQueryStringFromMemberCall(schedRule.constraint.right,true)};
+            //                 loopList.push([getName(e1)+'_${getQueryStringFromMemberCall(schedRule.constraint.left,false,true)}', getName(e2)+'_${getQueryStringFromMemberCall(schedRule.constraint.right,false,true)}']);
+            //             }
+            //             for(var couple of loopList){
+            //             `)
+            //             if(schedRule.constraint.operator === "coincides_with"){
+            //                 fileNode.append(`
+            //                 ccslFile.append(\`
+            //                 SubClock \${couple[0]} <- \${couple[1]}
+            //                 SubClock \${couple[1]} <- \${couple[0]} \`, NL
+            //                 );
+            //                 `)
+            //             }
+            //             if(schedRule.constraint.operator === "precedes"){
+            //                 fileNode.append(`
+            //                 ccslFile.append(\`
+            //                 Precedence \${couple[0]} < \${couple[1]} \`, NL
+            //                 );
+            //                 `)
+            //             }
+            //             fileNode.append(`
+            //             }`
+            //             )
                        
-            // var flatList: String[] = precedesList.map(sl => "Precedence "+sl.join(" < "));
-            // console.log(flatList);
-            // ccslFile.append(`
-            //         ${flatList.join(`
-            //         `)}`, NL
-            // );
-                    }
-                }
-            }
+            // // var flatList: String[] = precedesList.map(sl => "Precedence "+sl.join(" < "));
+            // // console.log(flatList);
+            // // ccslFile.append(`
+            // //         ${flatList.join(`
+            // //         `)}`, NL
+            // // );
+            //         }
+            //     }
+            // }
             fileNode.append(`
             }
             `)
@@ -390,35 +403,35 @@ function generateThegenerateCCSLFunction(fileNode: CompositeGeneratorNode, model
     `)
 }
 
-function createCoincidence(fileNode:CompositeGeneratorNode, arg0: string, arg1: string) {
-    fileNode.append(`
-                ccslFile.append(\`
-                    SubClocking \${getName(${arg0}} <- \${getName(${arg1}} //should be the first non atomic one
-                    SubClocking \${getName(${arg1}} <- \${getName(${arg0}}\`, NL
-                );
-                `)
-}
+// function createCoincidence(fileNode:CompositeGeneratorNode, arg0: string, arg1: string) {
+//     fileNode.append(`
+//                 ccslFile.append(\`
+//                     SubClocking \${getName(${arg0}} <- \${getName(${arg1}} //should be the first non atomic one
+//                     SubClocking \${getName(${arg1}} <- \${getName(${arg0}}\`, NL
+//                 );
+//                 `)
+// }
 
-function createPrecedence(fileNode: CompositeGeneratorNode, leftArg: string, rightArg: string) {
-    fileNode.append(`
-                ccslFile.append(\`
-                    Precedence \${getName(${leftArg}} < \${getName(${rightArg}} \`, NL
-                );
-                `)
-}
+// function createPrecedence(fileNode: CompositeGeneratorNode, leftArg: string, rightArg: string) {
+//     fileNode.append(`
+//                 ccslFile.append(\`
+//                     Precedence \${getName(${leftArg}} < \${getName(${rightArg}} \`, NL
+//                 );
+//                 `)
+// }
 
-function getQueryStringFromMemberCall(expr: Expression,noLast=false,onlyLast=false): string {
-    var rawQuery = "node."+print(expr,".")
-    var splitQuery = rawQuery.split(".")
-    var lastSeg = splitQuery.pop()
-    if(onlyLast){
-        if(lastSeg){
-            return lastSeg;
-        }
-    }
-    splitQuery = splitQuery.map(q => (q=="first()")?"at(0)":q).map(q => (q=="last()")?"at("+splitQuery.slice(0,splitQuery.indexOf(q)).join(".")+".length-1)":q)
-    return splitQuery.join(".")+((noLast)?"":`) + '_${lastSeg}'`)
-}
+// function getQueryStringFromMemberCall(expr: Expression,noLast=false,onlyLast=false): string {
+//     var rawQuery = "node."+print(expr,".")
+//     var splitQuery = rawQuery.split(".")
+//     var lastSeg = splitQuery.pop()
+//     if(onlyLast){
+//         if(lastSeg){
+//             return lastSeg;
+//         }
+//     }
+//     splitQuery = splitQuery.map(q => (q=="first()")?"at(0)":q).map(q => (q=="last()")?"at("+splitQuery.slice(0,splitQuery.indexOf(q)).join(".")+".length-1)":q)
+//     return splitQuery.join(".")+((noLast)?"":`) + '_${lastSeg}'`)
+// }
 
 
 

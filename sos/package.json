@@ -47,6 +47,7 @@
         "chalk": "^4.1.2",
         "commander": "^8.0.0",
         "langium": "~1.0.0",
+        "langium-sprotty": "2.1.0",
         "vscode-languageclient": "^8.0.2",
         "vscode-languageserver": "^8.0.2",
         "vscode-uri": "^3.0.2"

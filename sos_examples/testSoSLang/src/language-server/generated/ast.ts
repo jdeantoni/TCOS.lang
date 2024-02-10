@@ -6,7 +6,15 @@
 /* eslint-disable */
 import { AstNode, AbstractAstReflection, Reference, ReferenceInfo, TypeMetaData } from 'langium';
 
-export type Expr = Assignment | If | Plus | VarRef;
+export type BooleanExpression = Conjunction | Disjunction;
+
+export const BooleanExpression = 'BooleanExpression';
+
+export function isBooleanExpression(item: unknown): item is BooleanExpression {
+    return reflection.isInstance(item, BooleanExpression);
+}
+
+export type Expr = BooleanExpression | If | Plus | VarRef;
 
 export const Expr = 'Expr';
 
@@ -14,7 +22,7 @@ export function isExpr(item: unknown): item is Expr {
     return reflection.isInstance(item, Expr);
 }
 
-export type Statement = Expr | VarDecl;
+export type Statement = Assignment | Bloc | Expr | ParallelBloc | Variable;
 
 export const Statement = 'Statement';
 
@@ -23,10 +31,10 @@ export function isStatement(item: unknown): item is Statement {
 }
 
 export interface Assignment extends AstNode {
-    readonly $container: Assignment | Bloc | If | Model | Plus;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus;
     readonly $type: 'Assignment';
-    left: Reference<VarDecl>
-    right: Expr
+    expr: Expr
+    variable: Reference<Variable>
 }
 
 export const Assignment = 'Assignment';
@@ -36,7 +44,7 @@ export function isAssignment(item: unknown): item is Assignment {
 }
 
 export interface Bloc extends AstNode {
-    readonly $container: If;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus;
     readonly $type: 'Bloc';
     statements: Array<Statement>
 }
@@ -47,8 +55,34 @@ export function isBloc(item: unknown): item is Bloc {
     return reflection.isInstance(item, Bloc);
 }
 
+export interface Conjunction extends AstNode {
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus;
+    readonly $type: 'Conjunction';
+    lhs: BooleanExpression
+    rhs: BooleanExpression
+}
+
+export const Conjunction = 'Conjunction';
+
+export function isConjunction(item: unknown): item is Conjunction {
+    return reflection.isInstance(item, Conjunction);
+}
+
+export interface Disjunction extends AstNode {
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus;
+    readonly $type: 'Disjunction';
+    lhs: BooleanExpression
+    rhs: BooleanExpression
+}
+
+export const Disjunction = 'Disjunction';
+
+export function isDisjunction(item: unknown): item is Disjunction {
+    return reflection.isInstance(item, Disjunction);
+}
+
 export interface If extends AstNode {
-    readonly $container: Assignment | Bloc | If | Model | Plus;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus;
     readonly $type: 'If';
     cond: VarRef
     else?: Bloc
@@ -72,8 +106,20 @@ export function isModel(item: unknown): item is Model {
     return reflection.isInstance(item, Model);
 }
 
+export interface ParallelBloc extends AstNode {
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus;
+    readonly $type: 'ParallelBloc';
+    statements: Array<Statement>
+}
+
+export const ParallelBloc = 'ParallelBloc';
+
+export function isParallelBloc(item: unknown): item is ParallelBloc {
+    return reflection.isInstance(item, ParallelBloc);
+}
+
 export interface Plus extends AstNode {
-    readonly $container: Assignment | Bloc | If | Model | Plus;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus;
     readonly $type: 'Plus';
     left: VarRef
     right: Expr
@@ -85,23 +131,23 @@ export function isPlus(item: unknown): item is Plus {
     return reflection.isInstance(item, Plus);
 }
 
-export interface VarDecl extends AstNode {
-    readonly $container: Assignment | Bloc | If | Model | Plus;
-    readonly $type: 'VarDecl';
+export interface Variable extends AstNode {
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus;
+    readonly $type: 'Variable';
     initialValue?: number
     name: string
 }
 
-export const VarDecl = 'VarDecl';
+export const Variable = 'Variable';
 
-export function isVarDecl(item: unknown): item is VarDecl {
-    return reflection.isInstance(item, VarDecl);
+export function isVariable(item: unknown): item is Variable {
+    return reflection.isInstance(item, Variable);
 }
 
 export interface VarRef extends AstNode {
-    readonly $container: Assignment | Bloc | If | Model | Plus;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus;
     readonly $type: 'VarRef';
-    ref: Reference<VarDecl>
+    ref: Reference<Variable>
 }
 
 export const VarRef = 'VarRef';
@@ -113,32 +159,43 @@ export function isVarRef(item: unknown): item is VarRef {
 export interface SimpleLAstType {
     Assignment: Assignment
     Bloc: Bloc
+    BooleanExpression: BooleanExpression
+    Conjunction: Conjunction
+    Disjunction: Disjunction
     Expr: Expr
     If: If
     Model: Model
+    ParallelBloc: ParallelBloc
     Plus: Plus
     Statement: Statement
-    VarDecl: VarDecl
     VarRef: VarRef
+    Variable: Variable
 }
 
 export class SimpleLAstReflection extends AbstractAstReflection {
 
     getAllTypes(): string[] {
-        return ['Assignment', 'Bloc', 'Expr', 'If', 'Model', 'Plus', 'Statement', 'VarDecl', 'VarRef'];
+        return ['Assignment', 'Bloc', 'BooleanExpression', 'Conjunction', 'Disjunction', 'Expr', 'If', 'Model', 'ParallelBloc', 'Plus', 'Statement', 'VarRef', 'Variable'];
     }
 
     protected override computeIsSubtype(subtype: string, supertype: string): boolean {
         switch (subtype) {
             case Assignment:
-            case If:
-            case Plus:
-            case VarRef: {
-                return this.isSubtype(Expr, supertype);
-            }
-            case VarDecl:
+            case Bloc:
+            case ParallelBloc:
+            case Variable:
             case Expr: {
                 return this.isSubtype(Statement, supertype);
+            }
+            case Conjunction:
+            case Disjunction: {
+                return this.isSubtype(BooleanExpression, supertype);
+            }
+            case If:
+            case Plus:
+            case VarRef:
+            case BooleanExpression: {
+                return this.isSubtype(Expr, supertype);
             }
             default: {
                 return false;
@@ -149,9 +206,9 @@ export class SimpleLAstReflection extends AbstractAstReflection {
     getReferenceType(refInfo: ReferenceInfo): string {
         const referenceId = `${refInfo.container.$type}:${refInfo.property}`;
         switch (referenceId) {
-            case 'Assignment:left':
+            case 'Assignment:variable':
             case 'VarRef:ref': {
-                return VarDecl;
+                return Variable;
             }
             default: {
                 throw new Error(`${referenceId} is not a valid reference id.`);
@@ -172,6 +229,14 @@ export class SimpleLAstReflection extends AbstractAstReflection {
             case 'Model': {
                 return {
                     name: 'Model',
+                    mandatory: [
+                        { name: 'statements', type: 'array' }
+                    ]
+                };
+            }
+            case 'ParallelBloc': {
+                return {
+                    name: 'ParallelBloc',
                     mandatory: [
                         { name: 'statements', type: 'array' }
                     ]

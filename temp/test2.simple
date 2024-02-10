@@ -1,9 +1,14 @@
-var a = 0
-var b = 4
-a = a + a
-if (a){
-    b = a
-}else{
-    a = b
+var v1 = 0          //v1Decl
+var v2 = 4          //v2Decl
+     |               //parBloc1
+     | v1 = v1 + v1  //v1Assign1 - firstPlus -v1Ref1 - v1Ref2
+     | v2 = v2 + v2  //v2Assign1 - secondPlus -v2Ref1 - v2Ref2
+     |
+if (v1)             //if
+{                   //bloc1
+    v2 = v1         //v2Assign2 - v1Ref3
+}else               
+{                   //bloc2
+    v1 = v2         //v1Assign2 - v2Ref3
 }
-b = b + b
+

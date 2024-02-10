@@ -3,75 +3,101 @@ import "testSoSLang/src/language-server/simple-l.langium"
 
 
 
-open non atomic rule Model { 
+open Model { 
 
-    sched { startEvaluation coincides_with statements.first().startEvaluation}
-    sched { finishEvaluation coincides_with statements.last().finishEvaluation}
-    sched foreach i in [0; statements.length()[ {
-        statements.at(i).finishEvaluation precedes statements.at(i+1).startEvaluation 
-    }
+
+                            when starts 
+    ------------------------------------------------------------ statementsInOrder1
+      <this,σ> ~> statements->sequential.foreach(s => <s,σ>)
+
+
+
+         when statements.last().terminates                 
+    -------------------------------------------                 finishModel
+              <this,σ> ~> terminates
+
 }
 
-open non atomic rule Bloc {
+open Bloc {
 
-    //var test: Statement
+                          when starts
+    ----------------------------------------------------------- startsBloc
+        <this,σ> ~> statements->sequential.foreach(s => <s,σ>)
 
-    sched { startEvaluation coincides_with statements.first().startEvaluation}
-    sched { finishEvaluation coincides_with statements.last().finishEvaluation}
-    sched foreach i in [0; statements.length()[ {
-        statements.at(i).finishEvaluation precedes statements.at(i+1).startEvaluation 
-    }
+  
+          when lastOf(statements.terminates)   
+    -------------------------------------------                 finishBloc
+              <this,σ> ~> terminates
 }
 
-open non atomic rule VarDecl {
+open ParallelBloc {
+
+                          when starts
+    ----------------------------------------------------------- startsParallelBloc
+        <this,σ> ~> statements->concurrent.foreach(s => <s,σ>)
+
+
+
+       when lastOf(statements.terminates) 
+    -----------------------------------------                   finishParallelBloc
+                  <this,σ> ~> terminates
+
+}
+
+open Variable {
 
     var currentValue:number = initialValue;
 
-      
-    --------------------------- evaluate
-     <this,σ> ~> currentValue;
+
+                    when starts
+    ---------------------------------------------               initializeVar
+     <this,σ> ~> currentValue := initialValue
+                 terminates
 
 }
 
-open atomic rule VarRef {
-    
-      <ref,σ> -> value:number
-    --------------------------- evaluate
-         <this,σ> ~> value;
-
+open VarRef {
+                when starts
+    -------------------------------------                       accessVarRef
+         <this,σ> ~> terminates(ref.currentValue)
 }
 
-open atomic rule Plus {
+open Plus {
    
-    <right,σ> -> n2:number ; <left,σ> -> n1:number
-    ---------------------------------------------- evaluate
-                 <this,σ> ~> n1 + n2 ;
+              when starts
+    -------------------------------------                       startPlus
+      <this,σ> ~> emits right.starts
+                  emits left.starts
+
+    when (<right,σ> -> n2:number ^ <left,σ> -> n1:number)
+    ----------------------------------------------              evaluatePlus
+             <this,σ> ~> terminates(n1 + n2)
+                        
 }
 
 
-open non atomic rule If {
-    sched {startEvaluation coincides_with evalCond}
-    sched {evalCond precedes (condTrue xor condFalse)}
+open If {
+
+              when (starts ^
+              <cond,σ> -> true) 
+    -----------------------------------                         condTrue
+      <this,σ> ~> <then.starts, σ>
 
 
-       <cond,σ> -> resCond:boolean
-    -------------------------------- evalCond
-          <this,σ> ~> resCond;
+              when (starts ^
+              <cond,σ> -> false)
+    -----------------------------------                         condFalse
+      <this,σ> ~> <else.starts,σ>
 
-
-       <cond,σ> -> true 
-    ---------------------- condTrue
-     <this,σ> ~> <then,σ>;
-
-
-       <cond,σ> -> false
-    ---------------------- condFalse
-     <this,σ> ~> <else,σ>;
+        when(then.terminates v else.terminates)
+    ---------------------------------------------               condEnd
+               <this,σ> ~> terminates
 
 } 
 
-open non atomic rule Assignment {
-          <right,σ> -> resRight: number         //here we cannot know the type. inference must be improved to avoid void type
-    ------------------------------------------- evaluate
-      <this,σ> ~> left.currentValue = resRight;
+open Assignment {
+          when <expr,σ> -> resRight: number                         
+    -----------------------------------------------             executeAssignment
+      <this,σ> ~> variable.currentValue := resRight
+                  terminates
 }

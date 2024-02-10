@@ -2,27 +2,45 @@ grammar SimpleL
 
 entry Model:
     statements+=(Statement)*;
+
 Bloc:
     '{'
     statements+=(Statement)*
     '}';
+
+ParallelBloc:
+    '|'
+    ('|' statements+=Statement)*
+    '|';
+
 Statement:
-    VarDecl | Expr;
+    Variable | Expr | Assignment | Bloc | ParallelBloc;
+
 Expr:
-    VarRef|Plus|If|Assignment;
- 
+    VarRef|Plus|If|BooleanExpression;
+
+BooleanExpression:
+    Conjunction | Disjunction;
+
+Conjunction:
+    '('lhs=BooleanExpression '&&' rhs=BooleanExpression')';
+
+Disjunction:
+    '('lhs=BooleanExpression '||' rhs=BooleanExpression')';
+
 If:
     'if' '('cond=VarRef ')'
     then=Bloc
     ('else' else=Bloc)?;
-VarDecl:
+
+Variable:
     'var' name=ID ('=' initialValue=INT)?;
 Plus:
     left=VarRef '+' right=Expr ;
 Assignment:
-    left=[VarDecl:ID] '=' right=Expr;
+    variable=[Variable:ID] '=' expr=Expr;
 VarRef:
-    ref=[VarDecl:ID];
+    ref=[Variable:ID];
 
 
 
