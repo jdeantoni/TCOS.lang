@@ -34,7 +34,7 @@ RWRule:
 
 
 EventExpression:
-	EventRef |  NaryEventExpression | EventConjunction | EventDisjunction | ValuedEventRef | ValuedEventRefConstantComparison;
+	EventRef |  NaryEventExpression | EventCombination |  ValuedEventRef | ValuedEventRefConstantComparison;
 
 // BooleanExpression:
 // 	BooleanConjunction | BooleanDisjunction | DataComparison;
@@ -63,7 +63,7 @@ Conclusion:
 	;
 
 EventRef:
-	ExplicitEventRef | RuleSync;
+	ExplicitEventRef | SingleRuleSync;
 
 
 ExplicitEventRef:
@@ -81,6 +81,9 @@ NaryEventExpression:
 	policy = SelectionPolicy '(' (collection=MemberCall)')' 
 	;
 
+EventCombination:
+	EventConjunction | EventDisjunction;
+
 EventConjunction:
 	'('lhs=EventExpression
 		'^' rhs=EventExpression')'
@@ -95,22 +98,22 @@ ValuedEventRef:
 	ExplicitValuedEventRef | ImplicitValuedEventRef;
 
 ImplicitValuedEventRef:
-	'<'member=MemberCall',' 'σ' '>' '->' tempVar=TemporaryVariable;
+	'<'membercall=MemberCall',' 'σ' '>' '->' tempVar=TemporaryVariable;
 
 
 ExplicitValuedEventRef:
-	membercall=MemberCall'('tempVar=TemporaryVariable')'
+	membercall=MemberCall'['tempVar=TemporaryVariable']'
 	;
 
 ValuedEventRefConstantComparison:
 	ExplicitValuedEventRefConstantComparison | ImplicitValuedEventRefConstantComparison;
 
 ExplicitValuedEventRefConstantComparison:
-	membercall=MemberCall'(='literal=EString'=)'
+	membercall=MemberCall'[='literal=EString'=]'
 	;
 
 ImplicitValuedEventRefConstantComparison:
-	'<'member=MemberCall',' 'σ' '>' '->' literal=(NumberExpression|StringExpression|BooleanExpression);
+	'<'membercall=MemberCall',' 'σ' '>' '->' literal=(NumberExpression|StringExpression|BooleanExpression);
 	
 
 
@@ -149,7 +152,7 @@ SelectionPolicy:
    ("firstOf" | "lastOf") ; 
 
 RuleSync:
-    rule=(SingleRuleSync | CollectionRuleSync);
+    (SingleRuleSync | CollectionRuleSync);
 
 SingleRuleSync:
     '<'member=MemberCall',' 'σ' '>' ;//'.' status=(SyncExpression);

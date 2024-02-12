@@ -507,13 +507,17 @@ export const SimpleLGrammar = (): Grammar => loadedSimpleLGrammar ?? (loadedSimp
         "$type": "Group",
         "elements": [
           {
+            "$type": "Keyword",
+            "value": "("
+          },
+          {
             "$type": "Assignment",
             "feature": "left",
             "operator": "=",
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@13"
+                "$ref": "#/rules@4"
               },
               "arguments": []
             }
@@ -533,6 +537,10 @@ export const SimpleLGrammar = (): Grammar => loadedSimpleLGrammar ?? (loadedSimp
               },
               "arguments": []
             }
+          },
+          {
+            "$type": "Keyword",
+            "value": ")"
           }
         ]
       },

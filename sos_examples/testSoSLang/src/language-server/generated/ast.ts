@@ -133,7 +133,7 @@ export function isParallelBloc(item: unknown): item is ParallelBloc {
 export interface Plus extends AstNode {
     readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus;
     readonly $type: 'Plus';
-    left: VarRef
+    left: Expr
     right: Expr
 }
 

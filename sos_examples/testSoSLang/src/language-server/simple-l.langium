@@ -39,7 +39,7 @@ If:
 Variable:
     'var' name=ID ('=' initialValue=INT)?;
 Plus:
-    left=VarRef '+' right=Expr ;
+    "("left=Expr '+' right=Expr")" ;
 Assignment:
     variable=[Variable:ID] '=' expr=Expr;
 VarRef:

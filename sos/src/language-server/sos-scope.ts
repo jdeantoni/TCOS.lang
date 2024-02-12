@@ -335,10 +335,9 @@ export class SoSScopeProvider extends DefaultScopeProvider {
 
                 for(let emission of (rule as RWRule)?.conclusion?.eventemissions){
                     if (isRuleSync(emission)){
-                        let e = emission?.rule;
-                        if (isCollectionRuleSync(e)) {
-                            if (isTemporaryVariable((e as CollectionRuleSync).varDecl)) {
-                                alltempVars.push((e as CollectionRuleSync).varDecl);
+                        if (isCollectionRuleSync(emission)) {
+                            if (isTemporaryVariable((emission as CollectionRuleSync).varDecl)) {
+                                alltempVars.push((emission as CollectionRuleSync).varDecl);
                             }
                     }
                     }

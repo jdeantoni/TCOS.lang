@@ -1,6 +1,6 @@
 
 import { AstNode } from "langium";
-import { AndJoin, Choice, Fork, Graph, Node, OrJoin, Step } from "../../ccfg/ccfglib";
+import { Graph, Node, Step } from "../../ccfg/ccfglib";
 import { Model,Bloc,ParallelBloc,Variable,VarRef,If,Assignment,Conjunction,Plus } from "../../language-server/generated/ast";
 
 export interface SimpleLVisitor {
@@ -59,10 +59,9 @@ export class CCFGVisitor implements SimpleLVisitor {
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         this.ccfg.addNode(terminatesNode)
 // rule statementsInOrder1
-// rwr.premise.eventExpression.membercall elem : starts
+   //premise: starts:event
 // rule finishModel
-// rwr.premise.eventExpression.membercall elem : terminates
-// rwr.premise.eventExpression.membercall previous : MethodMember
+   //premise: statements:Statement[],last():Statement,terminates:event
 
         //TODO
 
@@ -75,10 +74,9 @@ export class CCFGVisitor implements SimpleLVisitor {
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         this.ccfg.addNode(terminatesNode)
 // rule startsBloc
-// rwr.premise.eventExpression.membercall elem : starts
+   //premise: starts:event
 // rule finishBloc
-// rwr.premise.eventExpression.membercall elem : terminates
-// rwr.premise.eventExpression.membercall previous : MethodMember
+   //premise: statements:Statement[],last():Statement,terminates:event
 
         //TODO
 
@@ -91,8 +89,9 @@ export class CCFGVisitor implements SimpleLVisitor {
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         this.ccfg.addNode(terminatesNode)
 // rule startsParallelBloc
-// rwr.premise.eventExpression.membercall elem : starts
+   //premise: starts:event
 // rule finishParallelBloc
+   //premise: 
 
         //TODO
 
@@ -105,7 +104,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         this.ccfg.addNode(terminatesNode)
 // rule initializeVar
-// rwr.premise.eventExpression.membercall elem : starts
+   //premise: starts:event
 
         //TODO
 
@@ -118,7 +117,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         this.ccfg.addNode(terminatesNode)
 // rule accessVarRef
-// rwr.premise.eventExpression.membercall elem : starts
+   //premise: starts:event
 
         //TODO
 
@@ -131,10 +130,13 @@ export class CCFGVisitor implements SimpleLVisitor {
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         this.ccfg.addNode(terminatesNode)
 // rule condStart
-// rwr.premise.eventExpression.membercall elem : starts
+   //premise: starts:event
 // rule condTrueStart
+   //premise: cond:VarRef,terminates:event
 // rule condFalseStart
+   //premise: cond:VarRef,terminates:event
 // rule condStop
+   //premise: else:Bloc,terminates:event,then:Bloc,terminates:event
 
         //TODO
 
@@ -147,8 +149,9 @@ export class CCFGVisitor implements SimpleLVisitor {
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         this.ccfg.addNode(terminatesNode)
 // rule executeAssignment
-// rwr.premise.eventExpression.membercall elem : starts
+   //premise: starts:event
 // rule executeAssignment2
+   //premise: expr:Expr,terminates:event
 
         //TODO
 
@@ -161,10 +164,13 @@ export class CCFGVisitor implements SimpleLVisitor {
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         this.ccfg.addNode(terminatesNode)
 // rule evaluateConjunction
-// rwr.premise.eventExpression.membercall elem : starts
+   //premise: starts:event
 // rule evaluateConjunction2
+   //premise: lhs:BooleanExpression,terminates:event
 // rule evaluateConjunction3
+   //premise: lhs:BooleanExpression,terminates:event
 // rule evaluateConjunction4
+   //premise: rhs:BooleanExpression,terminates:event
 
         //TODO
 
@@ -177,8 +183,9 @@ export class CCFGVisitor implements SimpleLVisitor {
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         this.ccfg.addNode(terminatesNode)
 // rule startPlus
-// rwr.premise.eventExpression.membercall elem : starts
+   //premise: starts:event
 // rule FinishPlus
+   //premise: right:Expr,terminates:event,left:Expr,terminates:event
 
         //TODO
 
