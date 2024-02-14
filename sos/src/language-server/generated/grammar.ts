@@ -1257,7 +1257,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           },
           {
             "$type": "Keyword",
-            "value": "("
+            "value": "["
           },
           {
             "$type": "Assignment",
@@ -1273,7 +1273,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           },
           {
             "$type": "Keyword",
-            "value": ")"
+            "value": "]"
           },
           {
             "$type": "Keyword",
@@ -1409,17 +1409,22 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             }
           },
           {
-            "$type": "Alternatives",
-            "elements": [
-              {
-                "$type": "Keyword",
-                "value": "firstOf"
-              },
-              {
-                "$type": "Keyword",
-                "value": "lastOf"
-              }
-            ]
+            "$type": "Assignment",
+            "feature": "operator",
+            "operator": "=",
+            "terminal": {
+              "$type": "Alternatives",
+              "elements": [
+                {
+                  "$type": "Keyword",
+                  "value": "firstOf"
+                },
+                {
+                  "$type": "Keyword",
+                  "value": "lastOf"
+                }
+              ]
+            }
           }
         ]
       },

@@ -5,14 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}"
-            ],
             "name": "Launch Extension",
-            "request": "launch",
-            "type": "extensionHost",
-
-            "sourceMaps": true
+			"type": "extensionHost",
+			"request": "launch",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}"
+			],
+			"outFiles": [
+				"${workspaceFolder}/out/**/*.js"
+			],
+			"preLaunchTask": "npm build"
         },
         {
 			"name": "Attach to Language Server",
@@ -20,7 +22,9 @@
 			"request": "attach",
 			"port": 6009,
             "sourceMaps": true,
-
+			"outFiles": [
+                "${workspaceFolder}/out/**/*.js"
+            ],
 		}
 
     ],
@@ -30,7 +34,9 @@
             "breakOnLoad": true,
 			"name": "Launch Extension and attach to Language Server",
 			"configurations": ["Launch Extension", "Attach to Language Server"],
-
+            "outFiles": [
+                "${workspaceFolder}/out/**/*.js"
+            ],
 		}
 	],
     // "webRoot": "${workspaceFolder}/../",
@@ -39,5 +45,7 @@
     //     "!**/node_modules/**"
     //   ]
     "sourceMaps": true,
-
+    "outFiles": [
+        "${workspaceFolder}/out/**/*.js"
+    ]
 }

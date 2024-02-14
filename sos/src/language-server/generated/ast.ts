@@ -649,6 +649,7 @@ export function isRWRule(item: unknown): item is RWRule {
 export interface SelectionPolicy extends AstNode {
     readonly $container: NaryEventExpression;
     readonly $type: 'SelectionPolicy';
+    operator: 'firstOf' | 'lastOf'
 }
 
 export const SelectionPolicy = 'SelectionPolicy';

@@ -34,7 +34,7 @@ Disjunction:
 If:
     'if' '('cond=VarRef ')'
     then=Bloc
-    ('else' else=Bloc)?;
+    ('else' else=Bloc);
 
 Variable:
     'var' name=ID ('=' initialValue=INT)?;

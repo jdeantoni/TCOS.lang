@@ -97,7 +97,7 @@ export interface If extends AstNode {
     readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus;
     readonly $type: 'If';
     cond: VarRef
-    else?: Bloc
+    else: Bloc
     then: Bloc
 }
 

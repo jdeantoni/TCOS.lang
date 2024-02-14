@@ -193,6 +193,7 @@ export class CCFGVisitor implements SimpleLVisitor {
             this.ccfg.addEdge(previous,childStartNode)
             previous = childTerminatesNode
         }
+        
         this.ccfg.addEdge(previous,terminatesNode)
 
         return [startsNode,terminatesNode]

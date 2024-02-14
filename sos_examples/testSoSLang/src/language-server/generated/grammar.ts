@@ -435,8 +435,7 @@ export const SimpleLGrammar = (): Grammar => loadedSimpleLGrammar ?? (loadedSimp
                   "arguments": []
                 }
               }
-            ],
-            "cardinality": "?"
+            ]
           }
         ]
       },

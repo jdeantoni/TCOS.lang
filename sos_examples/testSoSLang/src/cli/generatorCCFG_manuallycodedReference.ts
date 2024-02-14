@@ -3,7 +3,7 @@ import {  CompositeGeneratorNode, toString } from 'langium';
 import path from 'path';
 import { Model } from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
-import { CCFGVisitor } from './SimpleLVisitor';
+import { CCFGVisitor } from './generated/testFSE';
 
 
 export function generateCCFG(model: Model, filePath: string, destination: string | undefined): string {

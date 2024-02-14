@@ -136,7 +136,7 @@ StateModification:
 
 ValuedEventEmission:
 	('emits')? event=MemberCall
-		'(' data=ClassicalExpression')' (";")?;
+		'[' data=ClassicalExpression']' (";")?;
 
 UnaryMinus:
 	'-' expression=Expression
@@ -149,7 +149,7 @@ FunctionCallExpr:
 
 SelectionPolicy:
    {infer SelectionPolicy}
-   ("firstOf" | "lastOf") ; 
+   operator=("firstOf" | "lastOf") ; 
 
 RuleSync:
     (SingleRuleSync | CollectionRuleSync);

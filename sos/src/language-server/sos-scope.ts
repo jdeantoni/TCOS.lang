@@ -31,7 +31,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
 
     override getScope(context: ReferenceInfo): Scope {
         // target element of member calls
-        console.log("###getScopeProvider: context.property = "+context.property+"\n\t context.reference.$refText = "+context.reference.$refText)        
+        //console.log("###getScopeProvider: context.property = "+context.property+"\n\t context.reference.$refText = "+context.reference.$refText)        
         
 
 
