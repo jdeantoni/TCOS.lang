@@ -20,7 +20,10 @@ Expr:
     VarRef|Plus|If|BooleanExpression;
 
 BooleanExpression:
-    Conjunction | Disjunction;
+    Conjunction | Disjunction | BooleanConst;
+
+BooleanConst:
+    value=('true' | 'false');
 
 Conjunction:
     '('lhs=BooleanExpression '&&' rhs=BooleanExpression')';
@@ -31,12 +34,12 @@ Disjunction:
 If:
     'if' '('cond=VarRef ')'
     then=Bloc
-    ('else' else=Bloc)?;
+    ('else' else=Bloc);
 
 Variable:
     'var' name=ID ('=' initialValue=INT)?;
 Plus:
-    left=VarRef '+' right=Expr ;
+    "("left=Expr '+' right=Expr")" ;
 Assignment:
     variable=[Variable:ID] '=' expr=Expr;
 VarRef:

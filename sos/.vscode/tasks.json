@@ -7,6 +7,13 @@
 			"problemMatcher": [],
 			"label": "npm: langium:generate",
 			"detail": "langium generate"
+		},
+		{
+			"type": "npm",
+			"script": "build",
+			"problemMatcher": [],
+			"label": "npm build",
+			"detail": "build the project"
 		}
 	]
 }

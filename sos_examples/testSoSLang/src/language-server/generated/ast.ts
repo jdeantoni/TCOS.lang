@@ -6,7 +6,7 @@
 /* eslint-disable */
 import { AstNode, AbstractAstReflection, Reference, ReferenceInfo, TypeMetaData } from 'langium';
 
-export type BooleanExpression = Conjunction | Disjunction;
+export type BooleanExpression = BooleanConst | Conjunction | Disjunction;
 
 export const BooleanExpression = 'BooleanExpression';
 
@@ -55,6 +55,18 @@ export function isBloc(item: unknown): item is Bloc {
     return reflection.isInstance(item, Bloc);
 }
 
+export interface BooleanConst extends AstNode {
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus;
+    readonly $type: 'BooleanConst';
+    value: 'false' | 'true'
+}
+
+export const BooleanConst = 'BooleanConst';
+
+export function isBooleanConst(item: unknown): item is BooleanConst {
+    return reflection.isInstance(item, BooleanConst);
+}
+
 export interface Conjunction extends AstNode {
     readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus;
     readonly $type: 'Conjunction';
@@ -85,7 +97,7 @@ export interface If extends AstNode {
     readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus;
     readonly $type: 'If';
     cond: VarRef
-    else?: Bloc
+    else: Bloc
     then: Bloc
 }
 
@@ -121,7 +133,7 @@ export function isParallelBloc(item: unknown): item is ParallelBloc {
 export interface Plus extends AstNode {
     readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus;
     readonly $type: 'Plus';
-    left: VarRef
+    left: Expr
     right: Expr
 }
 
@@ -159,6 +171,7 @@ export function isVarRef(item: unknown): item is VarRef {
 export interface SimpleLAstType {
     Assignment: Assignment
     Bloc: Bloc
+    BooleanConst: BooleanConst
     BooleanExpression: BooleanExpression
     Conjunction: Conjunction
     Disjunction: Disjunction
@@ -175,7 +188,7 @@ export interface SimpleLAstType {
 export class SimpleLAstReflection extends AbstractAstReflection {
 
     getAllTypes(): string[] {
-        return ['Assignment', 'Bloc', 'BooleanExpression', 'Conjunction', 'Disjunction', 'Expr', 'If', 'Model', 'ParallelBloc', 'Plus', 'Statement', 'VarRef', 'Variable'];
+        return ['Assignment', 'Bloc', 'BooleanConst', 'BooleanExpression', 'Conjunction', 'Disjunction', 'Expr', 'If', 'Model', 'ParallelBloc', 'Plus', 'Statement', 'VarRef', 'Variable'];
     }
 
     protected override computeIsSubtype(subtype: string, supertype: string): boolean {
@@ -187,6 +200,7 @@ export class SimpleLAstReflection extends AbstractAstReflection {
             case Expr: {
                 return this.isSubtype(Statement, supertype);
             }
+            case BooleanConst:
             case Conjunction:
             case Disjunction: {
                 return this.isSubtype(BooleanExpression, supertype);

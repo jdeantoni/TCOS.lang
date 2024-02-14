@@ -5,16 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}"
-            ],
             "name": "Launch Extension",
-            "request": "launch",
-            "type": "extensionHost",
-            "outFiles": [
-                "${workspaceFolder}/out/**/*.js"
-            ],
-            "sourceMaps": true
+			"type": "extensionHost",
+			"request": "launch",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}"
+			],
+			"outFiles": [
+				"${workspaceFolder}/out/**/*.js"
+			],
+			"preLaunchTask": "npm build"
         },
         {
 			"name": "Attach to Language Server",
