@@ -208,6 +208,8 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
  * @returns the previous node name
  */
 function getPreviousNodeName(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow[], previousNodeName: string, file: CompositeGeneratorNode): string {
+    console.log("--------> ruleCF.premiseParticipants: "+ruleCF.premiseParticipants)
+    console.log("->> rule name " + ruleCF.rule.name)
     let isStartingRule = ruleCF.premiseParticipants[ruleCF.premiseParticipants.length - 1].name == "starts";
     if (isStartingRule) {
         return previousNodeName

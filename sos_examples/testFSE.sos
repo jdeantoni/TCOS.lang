@@ -59,7 +59,7 @@ open VarRef {
 
                   when starts
     ---------------------------------------------               accessVarRef
-      <this,σ> ~> terminates //(ref.currentValue)
+      <this,σ> ~> terminates//[ref.currentValue];
 
 }
 

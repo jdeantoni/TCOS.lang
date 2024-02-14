@@ -1,9 +1,11 @@
+import { AstNode } from "langium";
 import { integer } from "vscode-languageclient";
 
 export abstract class Node {
     static uidCounter: integer = 0;
     uid: integer;
     value:any;
+    astNode: AstNode | undefined;
     constructor(value: any) {
         this.uid = Node.uidCounter++;
         this.value = value;
