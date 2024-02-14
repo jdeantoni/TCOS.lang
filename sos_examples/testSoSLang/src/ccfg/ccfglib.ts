@@ -104,6 +104,10 @@ export class Graph {
         }
     }
 
+    getNodeFromName(name: string): Node | undefined {
+        return this.nodes.find(n => n.value === name);
+    }
+
 }
 
 export class Step extends Node {

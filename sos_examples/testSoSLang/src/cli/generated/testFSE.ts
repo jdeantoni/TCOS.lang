@@ -1,7 +1,7 @@
 
 import { AstNode } from "langium";
-import { AndJoin, Fork, Graph, Node, OrJoin, Step } from "../../ccfg/ccfglib";
-import { Model,Bloc,ParallelBloc,Variable,VarRef,If,Assignment,Conjunction,Plus } from "../../language-server/generated/ast";
+import { AndJoin, Choice, Fork, Graph, Node, OrJoin, Step } from "../../ccfg/ccfglib";
+import { Model,Bloc,ParallelBloc,Variable,VarRef,If,Assignment,Conjunction,Plus,BooleanConst } from "../../language-server/generated/ast";
 
 export interface SimpleLVisitor {
     visit(node: AstNode): [Node,Node];
@@ -16,6 +16,7 @@ export interface SimpleLVisitor {
      visitAssignment(node: Assignment): [Node,Node];
      visitConjunction(node: Conjunction): [Node,Node];
      visitPlus(node: Plus): [Node,Node];
+     visitBooleanConst(node: BooleanConst): [Node,Node];
 }
 
 export class CCFGVisitor implements SimpleLVisitor {
@@ -48,6 +49,9 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         if(node.$type == "Plus"){
             return this.visitPlus(node as Plus);
+        }
+        if(node.$type == "BooleanConst"){
+            return this.visitBooleanConst(node as BooleanConst);
         }
         throw new Error("Not implemented: " + node.$type);
     }
@@ -217,12 +221,32 @@ export class CCFGVisitor implements SimpleLVisitor {
         let [condStartsNode,condTerminatesNode] = this.visit(node.cond)
         this.ccfg.addEdge(previousNode,condStartsNode)
         
-        previousNode = condTerminatesNode
+        let condChoiceNodecondTrueStart = this.ccfg.getNodeFromName("condChoiceNode")
+        if (condChoiceNodecondTrueStart == undefined) {
+            let condChoiceNode = new Choice("condChoiceNode")
+            this.ccfg.addNode(condChoiceNode)
+            this.ccfg.addEdge(condTerminatesNode,condChoiceNode)
+            condChoiceNodecondTrueStart = condChoiceNode
+        }else{
+            this.ccfg.addEdge(condTerminatesNode,condChoiceNodecondTrueStart)
+        }
+        
+        previousNode = condChoiceNodecondTrueStart
     
         let [thenStartsNode,thenTerminatesNode] = this.visit(node.then)
         this.ccfg.addEdge(previousNode,thenStartsNode)
         
-        previousNode = condTerminatesNode
+        let condChoiceNodecondFalseStart = this.ccfg.getNodeFromName("condChoiceNode")
+        if (condChoiceNodecondFalseStart == undefined) {
+            let condChoiceNode = new Choice("condChoiceNode")
+            this.ccfg.addNode(condChoiceNode)
+            this.ccfg.addEdge(condTerminatesNode,condChoiceNode)
+            condChoiceNodecondFalseStart = condChoiceNode
+        }else{
+            this.ccfg.addEdge(condTerminatesNode,condChoiceNodecondFalseStart)
+        }
+        
+        previousNode = condChoiceNodecondFalseStart
     
         let [elseStartsNode,elseTerminatesNode] = this.visit(node.else)
         this.ccfg.addEdge(previousNode,elseStartsNode)
@@ -296,12 +320,32 @@ export class CCFGVisitor implements SimpleLVisitor {
         let [lhsStartsNode,lhsTerminatesNode] = this.visit(node.lhs)
         this.ccfg.addEdge(previousNode,lhsStartsNode)
         
-        previousNode = lhsTerminatesNode
+        let lhsChoiceNodeevaluateConjunction2 = this.ccfg.getNodeFromName("lhsChoiceNode")
+        if (lhsChoiceNodeevaluateConjunction2 == undefined) {
+            let lhsChoiceNode = new Choice("lhsChoiceNode")
+            this.ccfg.addNode(lhsChoiceNode)
+            this.ccfg.addEdge(lhsTerminatesNode,lhsChoiceNode)
+            lhsChoiceNodeevaluateConjunction2 = lhsChoiceNode
+        }else{
+            this.ccfg.addEdge(lhsTerminatesNode,lhsChoiceNodeevaluateConjunction2)
+        }
+        
+        previousNode = lhsChoiceNodeevaluateConjunction2
     
         let [rhsStartsNode,rhsTerminatesNode] = this.visit(node.rhs)
         this.ccfg.addEdge(previousNode,rhsStartsNode)
         
-        previousNode = lhsTerminatesNode
+        let lhsChoiceNodeevaluateConjunction3 = this.ccfg.getNodeFromName("lhsChoiceNode")
+        if (lhsChoiceNodeevaluateConjunction3 == undefined) {
+            let lhsChoiceNode = new Choice("lhsChoiceNode")
+            this.ccfg.addNode(lhsChoiceNode)
+            this.ccfg.addEdge(lhsTerminatesNode,lhsChoiceNode)
+            lhsChoiceNodeevaluateConjunction3 = lhsChoiceNode
+        }else{
+            this.ccfg.addEdge(lhsTerminatesNode,lhsChoiceNodeevaluateConjunction3)
+        }
+        
+        previousNode = lhsChoiceNodeevaluateConjunction3
     
         this.ccfg.addEdge(previousNode,joinNode)
         
@@ -346,6 +390,25 @@ export class CCFGVisitor implements SimpleLVisitor {
                 this.ccfg.addEdge(leftTerminatesNode,FinishPlusAndJoinNode)
                 
         previousNode = FinishPlusAndJoinNode
+    
+        this.ccfg.addEdge(previousNode,terminatesNode)
+        
+
+        return [startsNode,terminatesNode]
+    }
+
+    visitBooleanConst(node: BooleanConst): [Node,Node] {
+        let startsNode: Node = new Step(node.$cstNode?.text+" starts")
+        this.ccfg.addNode(startsNode)
+        let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
+        this.ccfg.addNode(terminatesNode)
+        // rule evalBooleanConst
+   //premise: starts:event
+   //conclusion: terminates:event
+
+        let previousNode =undefined
+        
+        previousNode = startsNode
     
         this.ccfg.addEdge(previousNode,terminatesNode)
         

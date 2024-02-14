@@ -117,9 +117,9 @@ open Conjunction { //lazy version
       <this,σ> ~> terminates//(false)
 
          
-          when <rhs,σ> -> true
+          when <rhs,σ> -> res
     -------------------------------                             evaluateConjunction4
-      <this,σ> ~> terminates//(true)
+      <this,σ> ~> terminates//(res)
 
 }
 
@@ -157,4 +157,11 @@ open Plus {
       when (<right,σ> -> n2 ^ <left,σ> -> n1)
     -------------------------------------------                 FinishPlus
         <this,σ> ~> terminates//((n1 + n2))
+}
+
+open BooleanConst{
+  
+                    when starts
+      -------------------------------------------                 evalBooleanConst
+          <this,σ> ~> terminates//(value)
 }

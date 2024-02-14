@@ -86,10 +86,10 @@ export class CCFGVisitor implements SimpleLVisitor {
         file.append(`
         let previousNode =undefined
         `)
-        handleRule(file, startingRules[0], previousNodeName, terminatesNodeName, rulesCF)
+        handleConclusion(startingRules[0], file, rulesCF, previousNodeName, terminatesNodeName);
         for (let ruleCF of rulesCF) {
             if (ruleCF != startingRules[0]) {
-                handleRule(file, ruleCF, previousNodeName, terminatesNodeName, rulesCF)
+                handleConclusion(ruleCF, file, rulesCF, previousNodeName, terminatesNodeName);
             }
         }
 
@@ -135,29 +135,6 @@ function checkIfMultipleTerminate(rulesCF: RuleControlFlow[]) {
     return hasMultipleTerminate;
 }
 
-function handleRule(file: CompositeGeneratorNode, ruleCF: RuleControlFlow, previousNodeName: string, terminatesNodeName: string, rulesCF: RuleControlFlow[]): void {
-    // let isStartingRule = ruleCF.premiseParticipants[ruleCF.premiseParticipants.length -1].name == "starts";
-    // if (isStartingRule){
-    //     return
-    // }
-
-    // let isMultipleSynchronization = ruleCF.rule.premise.eventExpression.$type == "EventConjunction" 
-    //                                 || ruleCF.rule.premise.eventExpression.$type == "EventDisjunction"
-    //                                 || ruleCF.rule.premise.eventExpression.$type == "NaryEventExpression";
-
-    // if (isMultipleSynchronization) {
-
-    // } else {
-    //     file.append(`
-    //     previousNode = ${getEmittingRuleName(ruleCF, rulesCF, previousNodeName)}TerminatesNode
-    //     let ${ruleCF.rule.name}StartsNode: Node = new Step("${ruleCF.rule.name} starts")
-    //     this.ccfg.addNode(${ruleCF.rule.name}StartsNode)
-    //     this.ccfg.addEdge(previousNode,${ruleCF.rule.name}StartsNode)
-    //     `)
-    // }
-
-    handleConclusion(ruleCF, file, rulesCF, previousNodeName, terminatesNodeName);
-}
 
 function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode, rulesCF: RuleControlFlow[], previousNodeName: string, terminatesNodeName: string) {
     file.append(`
@@ -233,6 +210,24 @@ function getPreviousNodeName(ruleCF: RuleControlFlow, previousNodeName: string, 
     let isStartingRule = ruleCF.premiseParticipants[ruleCF.premiseParticipants.length - 1].name == "starts";
     if (isStartingRule) {
         return previousNodeName
+    }
+
+    let isComparison = ruleCF.rule.premise.eventExpression.$type == "ExplicitValuedEventRefConstantComparison"
+                       || ruleCF.rule.premise.eventExpression.$type == "ImplicitValuedEventRefConstantComparison";
+
+    if (isComparison) {
+        file.append(`
+        let ${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name} = this.ccfg.getNodeFromName("${ruleCF.premiseParticipants[0].name}ChoiceNode")
+        if (${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name} == undefined) {
+            let ${ruleCF.premiseParticipants[0].name}ChoiceNode = new Choice("${ruleCF.premiseParticipants[0].name}ChoiceNode")
+            this.ccfg.addNode(${ruleCF.premiseParticipants[0].name}ChoiceNode)
+            this.ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode,${ruleCF.premiseParticipants[0].name}ChoiceNode)
+            ${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name} = ${ruleCF.premiseParticipants[0].name}ChoiceNode
+        }else{
+            this.ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode,${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name})
+        }
+        `)
+        return `${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name}`
     }
 
     let isMultipleSynchronization = ruleCF.rule.premise.eventExpression.$type == "EventConjunction"
