@@ -134,21 +134,20 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = startsNode
     
-        let forkNode: Node = new Fork("fork")
+        let forkNode: Node = new Fork("startsParallelBlocForkNode")
         this.ccfg.addNode(forkNode)
         this.ccfg.addEdge(previousNode,forkNode)
 
-        let startsParallelBlocFakeNode: Node = new AndJoin("and join")        
+        let startsParallelBlocFakeNode: Node = new AndJoin("startsParallelBlocFakeNode")    
+        this.ccfg.addNode(startsParallelBlocFakeNode)    
         for (var child of node.statements) {
             let [childStartsNode,childTerminatesNode] = this.visit(child)
             this.ccfg.addEdge(forkNode,childStartsNode)
             this.ccfg.addEdge(childTerminatesNode,startsParallelBlocFakeNode)
         }
         
-                    let finishParallelBlocLastOfNode: Node = new AndJoin("lastOf")
-                    this.ccfg.addNode(finishParallelBlocLastOfNode)
-                    //TODO: see how to add all predecessors
-                    //this.ccfg.addEdge(statementsTerminatesNode,finishParallelBlocLastOfNode)
+        let finishParallelBlocLastOfNode: Node = new AndJoin("finishParallelBlocLastOfNode")
+        this.ccfg.replaceNode(startsParallelBlocFakeNode,finishParallelBlocLastOfNode)                    
                     
         previousNode = finishParallelBlocLastOfNode
     
@@ -251,10 +250,10 @@ export class CCFGVisitor implements SimpleLVisitor {
         let [elseStartsNode,elseTerminatesNode] = this.visit(node.else)
         this.ccfg.addEdge(previousNode,elseStartsNode)
         
-                let condStopOrJoinNode: Node = new OrJoin("or join")
-                this.ccfg.addNode(condStopOrJoinNode)
-                this.ccfg.addEdge(elseTerminatesNode,condStopOrJoinNode)
-                this.ccfg.addEdge(thenTerminatesNode,condStopOrJoinNode)
+        let condStopOrJoinNode: Node = new OrJoin("condStopOrJoinNode")
+        this.ccfg.addNode(condStopOrJoinNode)
+        this.ccfg.addEdge(elseTerminatesNode,condStopOrJoinNode)
+        this.ccfg.addEdge(thenTerminatesNode,condStopOrJoinNode)
                 
         previousNode = condStopOrJoinNode
     
@@ -384,10 +383,10 @@ export class CCFGVisitor implements SimpleLVisitor {
         let [leftStartNode,leftTerminatesNode] = this.visit(node.left)
         this.ccfg.addEdge(startPlusForkNode,leftStartNode)
         
-                let FinishPlusAndJoinNode: Node = new AndJoin("and join")
-                this.ccfg.addNode(FinishPlusAndJoinNode)
-                this.ccfg.addEdge(rightTerminatesNode,FinishPlusAndJoinNode)
-                this.ccfg.addEdge(leftTerminatesNode,FinishPlusAndJoinNode)
+        let FinishPlusAndJoinNode: Node = new AndJoin("FinishPlusAndJoinNode")
+        this.ccfg.addNode(FinishPlusAndJoinNode)
+        this.ccfg.addEdge(rightTerminatesNode,FinishPlusAndJoinNode)
+        this.ccfg.addEdge(leftTerminatesNode,FinishPlusAndJoinNode)
                 
         previousNode = FinishPlusAndJoinNode
     

@@ -1,60 +1,116 @@
 digraph G {
-  "0" [label="0" shape="ellipse"];
-  "1" [label="1" shape="ellipse"];
-  "2" [label="2" shape="ellipse"];
-  "3" [label="3" shape="ellipse"];
-  "4" [label="4" shape="ellipse"];
-  "5" [label="5" shape="ellipse"];
-  "6" [label="6" shape="ellipse"];
-  "7" [label="7" shape="ellipse"];
+  "0" [label="var v1 = 0          //v1Decl
+var v2 = 4          //v2Decl
+     |               //parBloc1
+     | v1 = (v1 + v1)//v1Assign1 - firstPlus -v1Ref1 - v1Ref2
+     | v2 = (v2 + v2)  //v2Assign1 - secondPlus -v2Ref1 - v2Ref2
+     |
+if (v1)             //if
+{                   //bloc1
+    v2 = v1         //v2Assign2 - v1Ref3
+}else               
+{                   //bloc2
+    v1 = v2         //v1Assign2 - v2Ref3
+}
+
+
+(true && true) starts" shape="ellipse"];
+  "1" [label="var v1 = 0          //v1Decl
+var v2 = 4          //v2Decl
+     |               //parBloc1
+     | v1 = (v1 + v1)//v1Assign1 - firstPlus -v1Ref1 - v1Ref2
+     | v2 = (v2 + v2)  //v2Assign1 - secondPlus -v2Ref1 - v2Ref2
+     |
+if (v1)             //if
+{                   //bloc1
+    v2 = v1         //v2Assign2 - v1Ref3
+}else               
+{                   //bloc2
+    v1 = v2         //v1Assign2 - v2Ref3
+}
+
+
+(true && true) terminates" shape="ellipse"];
+  "2" [label="var v1 = 0 starts" shape="ellipse"];
+  "3" [label="var v1 = 0 terminates" shape="ellipse"];
+  "4" [label="var v2 = 4 starts" shape="ellipse"];
+  "5" [label="var v2 = 4 terminates" shape="ellipse"];
+  "6" [label="|               //parBloc1
+     | v1 = (v1 + v1)//v1Assign1 - firstPlus -v1Ref1 - v1Ref2
+     | v2 = (v2 + v2)  //v2Assign1 - secondPlus -v2Ref1 - v2Ref2
+     | starts" shape="ellipse"];
+  "7" [label="|               //parBloc1
+     | v1 = (v1 + v1)//v1Assign1 - firstPlus -v1Ref1 - v1Ref2
+     | v2 = (v2 + v2)  //v2Assign1 - secondPlus -v2Ref1 - v2Ref2
+     | terminates" shape="ellipse"];
   "8" [label="||" shape="triangle"];
-  "10" [label="10" shape="ellipse"];
-  "11" [label="11" shape="ellipse"];
-  "12" [label="12" shape="ellipse"];
-  "13" [label="13" shape="ellipse"];
-  "14" [label="||" shape="triangle"];
-  "15" [label="15" shape="ellipse"];
-  "16" [label="16" shape="ellipse"];
-  "17" [label="17" shape="ellipse"];
-  "18" [label="18" shape="ellipse"];
-  "19" [label="&&" shape="invtriangle"];
-  "20" [label="20" shape="ellipse"];
-  "21" [label="21" shape="ellipse"];
-  "22" [label="22" shape="ellipse"];
-  "23" [label="23" shape="ellipse"];
-  "24" [label="||" shape="triangle"];
-  "25" [label="25" shape="ellipse"];
-  "26" [label="26" shape="ellipse"];
-  "27" [label="27" shape="ellipse"];
-  "28" [label="28" shape="ellipse"];
-  "29" [label="&&" shape="invtriangle"];
   "30" [label="&&" shape="invtriangle"];
-  "31" [label="31" shape="ellipse"];
-  "32" [label="32" shape="ellipse"];
-  "33" [label="33" shape="ellipse"];
-  "34" [label="34" shape="ellipse"];
-  "35" [label="35" shape="diamond"];
-  "36" [label="36" shape="ellipse"];
-  "37" [label="37" shape="ellipse"];
-  "38" [label="38" shape="ellipse"];
-  "39" [label="39" shape="ellipse"];
-  "40" [label="40" shape="ellipse"];
-  "41" [label="41" shape="ellipse"];
-  "42" [label="42" shape="ellipse"];
-  "43" [label="43" shape="ellipse"];
-  "44" [label="44" shape="ellipse"];
-  "45" [label="45" shape="ellipse"];
-  "46" [label="46" shape="ellipse"];
-  "47" [label="47" shape="ellipse"];
+  "10" [label="v1 = (v1 + v1) starts" shape="ellipse"];
+  "11" [label="v1 = (v1 + v1) terminates" shape="ellipse"];
+  "12" [label="(v1 + v1) starts" shape="ellipse"];
+  "13" [label="(v1 + v1) terminates" shape="ellipse"];
+  "14" [label="||" shape="triangle"];
+  "15" [label="v1 starts" shape="ellipse"];
+  "16" [label="v1 terminates" shape="ellipse"];
+  "17" [label="v1 starts" shape="ellipse"];
+  "18" [label="v1 terminates" shape="ellipse"];
+  "19" [label="&&" shape="invtriangle"];
+  "20" [label="v2 = (v2 + v2) starts" shape="ellipse"];
+  "21" [label="v2 = (v2 + v2) terminates" shape="ellipse"];
+  "22" [label="(v2 + v2) starts" shape="ellipse"];
+  "23" [label="(v2 + v2) terminates" shape="ellipse"];
+  "24" [label="||" shape="triangle"];
+  "25" [label="v2 starts" shape="ellipse"];
+  "26" [label="v2 terminates" shape="ellipse"];
+  "27" [label="v2 starts" shape="ellipse"];
+  "28" [label="v2 terminates" shape="ellipse"];
+  "29" [label="&&" shape="invtriangle"];
+  "31" [label="if (v1)             //if
+{                   //bloc1
+    v2 = v1         //v2Assign2 - v1Ref3
+}else               
+{                   //bloc2
+    v1 = v2         //v1Assign2 - v2Ref3
+} starts" shape="ellipse"];
+  "32" [label="if (v1)             //if
+{                   //bloc1
+    v2 = v1         //v2Assign2 - v1Ref3
+}else               
+{                   //bloc2
+    v1 = v2         //v1Assign2 - v2Ref3
+} terminates" shape="ellipse"];
+  "33" [label="v1 starts" shape="ellipse"];
+  "34" [label="v1 terminates" shape="ellipse"];
+  "35" [label="condChoiceNode" shape="diamond"];
+  "36" [label="{                   //bloc1
+    v2 = v1         //v2Assign2 - v1Ref3
+} starts" shape="ellipse"];
+  "37" [label="{                   //bloc1
+    v2 = v1         //v2Assign2 - v1Ref3
+} terminates" shape="ellipse"];
+  "38" [label="v2 = v1 starts" shape="ellipse"];
+  "39" [label="v2 = v1 terminates" shape="ellipse"];
+  "40" [label="v1 starts" shape="ellipse"];
+  "41" [label="v1 terminates" shape="ellipse"];
+  "42" [label="{                   //bloc2
+    v1 = v2         //v1Assign2 - v2Ref3
+} starts" shape="ellipse"];
+  "43" [label="{                   //bloc2
+    v1 = v2         //v1Assign2 - v2Ref3
+} terminates" shape="ellipse"];
+  "44" [label="v1 = v2 starts" shape="ellipse"];
+  "45" [label="v1 = v2 terminates" shape="ellipse"];
+  "46" [label="v2 starts" shape="ellipse"];
+  "47" [label="v2 terminates" shape="ellipse"];
   "48" [label="or" shape="invtriangle"];
-  "49" [label="49" shape="ellipse"];
-  "50" [label="50" shape="ellipse"];
+  "49" [label="(true && true) starts" shape="ellipse"];
+  "50" [label="(true && true) terminates" shape="ellipse"];
   "51" [label="or" shape="invtriangle"];
-  "52" [label="52" shape="ellipse"];
-  "53" [label="53" shape="ellipse"];
-  "54" [label="54" shape="diamond"];
-  "55" [label="55" shape="ellipse"];
-  "56" [label="56" shape="ellipse"];
+  "52" [label="true starts" shape="ellipse"];
+  "53" [label="true terminates" shape="ellipse"];
+  "54" [label="lhsChoiceNode" shape="diamond"];
+  "55" [label="true starts" shape="ellipse"];
+  "56" [label="true terminates" shape="ellipse"];
   "2" -> "3" [label=""];
   "0" -> "2" [label=""];
   "4" -> "5" [label=""];
@@ -71,7 +127,7 @@ digraph G {
   "10" -> "12" [label=""];
   "13" -> "11" [label=""];
   "8" -> "10" [label=""];
-  "11" -> "9" [label=""];
+  "11" -> "30" [label=""];
   "22" -> "24" [label=""];
   "25" -> "26" [label=""];
   "24" -> "25" [label=""];
@@ -83,7 +139,7 @@ digraph G {
   "20" -> "22" [label=""];
   "23" -> "21" [label=""];
   "8" -> "20" [label=""];
-  "21" -> "9" [label=""];
+  "21" -> "30" [label=""];
   "30" -> "7" [label=""];
   "5" -> "6" [label=""];
   "33" -> "34" [label=""];

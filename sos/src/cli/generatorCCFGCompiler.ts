@@ -138,7 +138,7 @@ function checkIfMultipleTerminate(rulesCF: RuleControlFlow[]) {
 
 function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode, rulesCF: RuleControlFlow[], previousNodeName: string, terminatesNodeName: string) {
     file.append(`
-        previousNode = ${getPreviousNodeName(ruleCF, previousNodeName, file)}
+        previousNode = ${getPreviousNodeName(ruleCF, rulesCF, previousNodeName, file)}
     `)
     let isMultipleEmission = ruleCF.rule.conclusion.eventemissions.length > 1;
     if (isMultipleEmission) {
@@ -161,11 +161,12 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
             let isConcurrent = (ruleCF.rule.conclusion.eventemissions[0] as CollectionRuleSync).order == "concurrent";
             if (isConcurrent) {
                 file.append(`
-        let forkNode: Node = new Fork("fork")
+        let forkNode: Node = new Fork("${ruleCF.rule.name}ForkNode")
         this.ccfg.addNode(forkNode)
         this.ccfg.addEdge(previousNode,forkNode)
 
-        let ${ruleCF.rule.name}FakeNode: Node = new AndJoin("and join")        
+        let ${ruleCF.rule.name}FakeNode: Node = new AndJoin("${ruleCF.rule.name}FakeNode")    
+        this.ccfg.addNode(${ruleCF.rule.name}FakeNode)    
         for (var child of node.${ruleCF.conclusionParticipants[0].name}) {
             let [childStartsNode,childTerminatesNode] = this.visit(child)
             this.ccfg.addEdge(forkNode,childStartsNode)
@@ -206,7 +207,7 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
  * @param previousNodeName 
  * @returns the previous node name
  */
-function getPreviousNodeName(ruleCF: RuleControlFlow, previousNodeName: string, file: CompositeGeneratorNode): string {
+function getPreviousNodeName(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow[], previousNodeName: string, file: CompositeGeneratorNode): string {
     let isStartingRule = ruleCF.premiseParticipants[ruleCF.premiseParticipants.length - 1].name == "starts";
     if (isStartingRule) {
         return previousNodeName
@@ -240,35 +241,31 @@ function getPreviousNodeName(ruleCF: RuleControlFlow, previousNodeName: string, 
         switch (ruleCF.rule.premise.eventExpression.$type) {
             case "EventConjunction":
                 file.append(`
-                let ${ruleCF.rule.name}AndJoinNode: Node = new AndJoin("and join")
-                this.ccfg.addNode(${ruleCF.rule.name}AndJoinNode)
-                this.ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode,${ruleCF.rule.name}AndJoinNode)
-                this.ccfg.addEdge(${ruleCF.premiseParticipants[indexRight].name}TerminatesNode,${ruleCF.rule.name}AndJoinNode)
+        let ${ruleCF.rule.name}AndJoinNode: Node = new AndJoin("${ruleCF.rule.name}AndJoinNode")
+        this.ccfg.addNode(${ruleCF.rule.name}AndJoinNode)
+        this.ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode,${ruleCF.rule.name}AndJoinNode)
+        this.ccfg.addEdge(${ruleCF.premiseParticipants[indexRight].name}TerminatesNode,${ruleCF.rule.name}AndJoinNode)
                 `)
                 return `${ruleCF.rule.name}AndJoinNode`
             case "EventDisjunction":
                 file.append(`
-                let ${ruleCF.rule.name}OrJoinNode: Node = new OrJoin("or join")
-                this.ccfg.addNode(${ruleCF.rule.name}OrJoinNode)
-                this.ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode,${ruleCF.rule.name}OrJoinNode)
-                this.ccfg.addEdge(${ruleCF.premiseParticipants[indexRight].name}TerminatesNode,${ruleCF.rule.name}OrJoinNode)
+        let ${ruleCF.rule.name}OrJoinNode: Node = new OrJoin("${ruleCF.rule.name}OrJoinNode")
+        this.ccfg.addNode(${ruleCF.rule.name}OrJoinNode)
+        this.ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode,${ruleCF.rule.name}OrJoinNode)
+        this.ccfg.addEdge(${ruleCF.premiseParticipants[indexRight].name}TerminatesNode,${ruleCF.rule.name}OrJoinNode)
                 `)
                 return `${ruleCF.rule.name}OrJoinNode`
             case "NaryEventExpression":
                 if (ruleCF.rule.premise.eventExpression.policy.operator == "lastOf") {
                     file.append(`
-                    let ${ruleCF.rule.name}LastOfNode: Node = new AndJoin("lastOf")
-                    this.ccfg.addNode(${ruleCF.rule.name}LastOfNode)
-                    //TODO: see how to add all predecessors
-                    //this.ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode,${ruleCF.rule.name}LastOfNode)
+        let ${ruleCF.rule.name}LastOfNode: Node = new AndJoin("${ruleCF.rule.name}LastOfNode")
+        this.ccfg.replaceNode(${getEmittingRuleName(ruleCF,allRulesCF)}FakeNode,${ruleCF.rule.name}LastOfNode)                    
                     `)
                     return `${ruleCF.rule.name}LastOfNode`
                 } else {
                     file.append(`
-                    let ${ruleCF.rule.name}FirstOfNode: Node = new OrJoin("firstOf")
-                    this.ccfg.addNode(${ruleCF.rule.name}FirstOfNode)
-                    //TODO: see how to add all predecessors
-                    //this.ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode,${ruleCF.rule.name}FirstOfNode)
+        let ${ruleCF.rule.name}FirstOfNode: Node = new OrJoin("${ruleCF.rule.name}FirstOfNode")
+        this.ccfg.replaceNode(${getEmittingRuleName(ruleCF,allRulesCF)}FakeNode,${ruleCF.rule.name}FirstOfNode)
                     `)
                     return `${ruleCF.rule.name}FirstOfNode`
 
@@ -281,17 +278,15 @@ function getPreviousNodeName(ruleCF: RuleControlFlow, previousNodeName: string, 
     }
 }
 
-// function getEmittingRuleName(ruleCF: RuleControlFlow, allRulesCF: RuleControlFlow[], previousNodeName:string): string {
-//     let premiseFirstParticipant = ruleCF.premiseParticipants[0]
-//     console.log("-----> premiseFirstParticipant: ",premiseFirstParticipant)
-//     for(let rule of allRulesCF){
-//         console.log("-----> rule.conclusionParticipants[0]: ",rule.conclusionParticipants[0])
-//         if (rule.conclusionParticipants[0].name === premiseFirstParticipant.name){
-//             return rule.rule.name
-//         }
-//     }
-//     return previousNodeName
-// }
+function getEmittingRuleName(ruleCF: RuleControlFlow, allRulesCF: RuleControlFlow[]): string {
+    let premiseFirstParticipant = ruleCF.premiseParticipants[0]
+    for(let rule of allRulesCF){
+        if (rule.conclusionParticipants[0].name === premiseFirstParticipant.name){
+            return rule.rule.name
+        }
+    }
+    return "NotFound"+premiseFirstParticipant.name
+}
 
 
 

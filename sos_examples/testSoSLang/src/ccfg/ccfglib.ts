@@ -12,6 +12,7 @@ export abstract class Node {
     getType(): string {
         return this.constructor.name;
     }
+
 }
 
 export class Edge {
@@ -52,6 +53,21 @@ export class Graph {
         }
     }
 
+    replaceNode(oldNode: Node, newNode: Node): void {
+        let index = this.nodes.findIndex(n => n.uid === oldNode.uid);
+        if (index != -1) {
+            this.nodes[index] = newNode;
+        }
+        for (let edge of this.edges) {
+            if (edge.from === oldNode) {
+                edge.from = newNode;
+            }
+            if (edge.to === oldNode) {
+                edge.to = newNode;
+            }
+        }
+    }
+
   
 
 
@@ -73,9 +89,9 @@ export class Graph {
         //return node.value;
         switch(node.getType()){
             case "Step":
-                return node.uid.toString();
+                return node.value//uid.toString();
             case "Choice":
-                return node.uid.toString();
+                return node.value//uid.toString();
             case "OrJoin":
                 return "or";
             case "AndJoin":
