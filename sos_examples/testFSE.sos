@@ -101,34 +101,10 @@ open Assignment {
                   terminates
 }
 
-open Conjunction { //lazy version
-          when starts                   
-    -------------------------                                   evaluateConjunction
-      <this,σ> ~> <lhs,σ>
-
-          
-      when <lhs,σ> -> true
-    -------------------------                                   evaluateConjunction2
-      <this,σ> ~> <rhs,σ>
-
-
-          when <lhs,σ> -> false
-    ----------------------------------                          evaluateConjunction3
-      <this,σ> ~> terminates//(false)
-
-         
-          when <rhs,σ> -> res
-    -------------------------------                             evaluateConjunction4
-      <this,σ> ~> terminates//(res)
-
-}
-
-
-// open Conjunction { //parallel version
-
+// open Conjunction { //lazy version
 //           when starts                   
 //     -------------------------                                   evaluateConjunction
-//       <this,σ> ~> <lhs,σ>   
+//       <this,σ> ~> <lhs,σ>
 
           
 //       when <lhs,σ> -> true
@@ -137,15 +113,35 @@ open Conjunction { //lazy version
 
 
 //           when <lhs,σ> -> false
-//     -----------------------------------                         evaluateConjunction3
-//       <this,σ> ~> terminates(false) ;
+//     ----------------------------------                          evaluateConjunction3
+//       <this,σ> ~> terminates//(false)
 
          
-//       when <rhs,σ> -> true
-//     -------------------------                                   evaluateConjunction4
-//       <this,σ> ~> terminates(true);
+//           when <rhs,σ> -> res
+//     -------------------------------                             evaluateConjunction4
+//       <this,σ> ~> terminates//(res)
 
 // }
+
+
+open Conjunction { //parallel version
+
+          when starts                   
+    -------------------------                                   evaluateConjunction
+      <this,σ> ~> <lhs,σ>
+                  <rhs,σ>   
+
+          
+      when (<lhs,σ> -> true ^ <rhs,σ> -> res)
+    -------------------------------------------                 evaluateConjunction2
+          <this,σ> ~> terminates//(res)
+
+
+      when (<rhs,σ> -> true ^ <lhs,σ> -> res)
+    -------------------------------------------                 evaluateConjunction3
+          <this,σ> ~> terminates//(res)
+
+}
 
 open Plus {
 

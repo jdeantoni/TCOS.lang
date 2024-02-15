@@ -298,14 +298,12 @@ export class CCFGVisitor implements SimpleLVisitor {
         // rule evaluateConjunction
    //premise: starts:event
    //conclusion: lhs:BooleanExpression,starts:event
+   //conclusion: lhs:BooleanExpression,starts:event,rhs:BooleanExpression,starts:event
 // rule evaluateConjunction2
-   //premise: lhs:BooleanExpression,terminates:event
-   //conclusion: rhs:BooleanExpression,starts:event
-// rule evaluateConjunction3
-   //premise: lhs:BooleanExpression,terminates:event
+   //premise: lhs:BooleanExpression,terminates:event,rhs:BooleanExpression,terminates:event
    //conclusion: terminates:event
-// rule evaluateConjunction4
-   //premise: rhs:BooleanExpression,terminates:event
+// rule evaluateConjunction3
+   //premise: rhs:BooleanExpression,terminates:event,lhs:BooleanExpression,terminates:event
    //conclusion: terminates:event
 
         let joinNode: Node = new OrJoin(node.$cstNode?.text+" or join")
@@ -316,39 +314,39 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = startsNode
     
-        let [lhsStartsNode,lhsTerminatesNode] = this.visit(node.lhs)
-        this.ccfg.addEdge(previousNode,lhsStartsNode)
+        let evaluateConjunctionForkNode: Node = new Fork("evaluateConjunctionForkNode")
+        this.ccfg.addNode(evaluateConjunctionForkNode)
+        this.ccfg.addEdge(previousNode,evaluateConjunctionForkNode)
         
-        let lhsChoiceNodeevaluateConjunction2 = this.ccfg.getNodeFromName("lhsChoiceNode")
-        if (lhsChoiceNodeevaluateConjunction2 == undefined) {
-            let lhsChoiceNode = new Choice("lhsChoiceNode")
-            this.ccfg.addNode(lhsChoiceNode)
-            this.ccfg.addEdge(lhsTerminatesNode,lhsChoiceNode)
-            lhsChoiceNodeevaluateConjunction2 = lhsChoiceNode
-        }else{
-            this.ccfg.addEdge(lhsTerminatesNode,lhsChoiceNodeevaluateConjunction2)
-        }
+        let [lhsStartNode,lhsTerminatesNode] = this.visit(node.lhs)
+        this.ccfg.addEdge(evaluateConjunctionForkNode,lhsStartNode)
         
-        previousNode = lhsChoiceNodeevaluateConjunction2
-    
-        let [rhsStartsNode,rhsTerminatesNode] = this.visit(node.rhs)
-        this.ccfg.addEdge(previousNode,rhsStartsNode)
+        let [rhsStartNode,rhsTerminatesNode] = this.visit(node.rhs)
+        this.ccfg.addEdge(evaluateConjunctionForkNode,rhsStartNode)
         
-        let lhsChoiceNodeevaluateConjunction3 = this.ccfg.getNodeFromName("lhsChoiceNode")
-        if (lhsChoiceNodeevaluateConjunction3 == undefined) {
-            let lhsChoiceNode = new Choice("lhsChoiceNode")
-            this.ccfg.addNode(lhsChoiceNode)
-            this.ccfg.addEdge(lhsTerminatesNode,lhsChoiceNode)
-            lhsChoiceNodeevaluateConjunction3 = lhsChoiceNode
-        }else{
-            this.ccfg.addEdge(lhsTerminatesNode,lhsChoiceNodeevaluateConjunction3)
-        }
-        
-        previousNode = lhsChoiceNodeevaluateConjunction3
+        let evaluateConjunction2AndJoinNode: Node = new AndJoin("evaluateConjunction2AndJoinNode")
+        this.ccfg.addNode(evaluateConjunction2AndJoinNode)
+        this.ccfg.addEdge(lhsTerminatesNode,evaluateConjunction2AndJoinNode)
+        this.ccfg.addEdge(rhsTerminatesNode,evaluateConjunction2AndJoinNode)
+                
+        let evaluateConjunction2ConditionNode: Node = new Choice("evaluateConjunction2ConditionNode")
+        this.ccfg.addNode(evaluateConjunction2ConditionNode)
+        this.ccfg.addEdge(evaluateConjunction2AndJoinNode,evaluateConjunction2ConditionNode)
+            
+        previousNode = evaluateConjunction2ConditionNode
     
         this.ccfg.addEdge(previousNode,joinNode)
         
-        previousNode = rhsTerminatesNode
+        let evaluateConjunction3AndJoinNode: Node = new AndJoin("evaluateConjunction3AndJoinNode")
+        this.ccfg.addNode(evaluateConjunction3AndJoinNode)
+        this.ccfg.addEdge(rhsTerminatesNode,evaluateConjunction3AndJoinNode)
+        this.ccfg.addEdge(lhsTerminatesNode,evaluateConjunction3AndJoinNode)
+                
+        let evaluateConjunction3ConditionNode: Node = new Choice("evaluateConjunction3ConditionNode")
+        this.ccfg.addNode(evaluateConjunction3ConditionNode)
+        this.ccfg.addEdge(evaluateConjunction3AndJoinNode,evaluateConjunction3ConditionNode)
+            
+        previousNode = evaluateConjunction3ConditionNode
     
         this.ccfg.addEdge(previousNode,joinNode)
         

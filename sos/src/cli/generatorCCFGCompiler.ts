@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { CompositeGeneratorNode, Grammar, NL, toString } from 'langium';
-import { CollectionRuleSync, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, RWRule, RuleOpening, SingleRuleSync, SoSSpec, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration } from '../language-server/generated/ast'; //VariableDeclaration
+import { CollectionRuleSync, EventCombination, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, RWRule, RuleOpening, SingleRuleSync, SoSSpec, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration } from '../language-server/generated/ast'; //VariableDeclaration
 import { extractDestinationAndName, FilePathData } from './cli-util';
 import path from 'path';
 import { Assignment } from 'langium/lib/grammar/generated/ast';
@@ -76,6 +76,8 @@ export class CCFGVisitor implements SimpleLVisitor {
         let hasMultipleTerminate = checkIfMultipleTerminate(rulesCF);
 
         if (hasMultipleTerminate) {
+            //TODO: handle multiple terminate in case the rules premise are comparisons, in which cases a choice node is required
+
             file.append(`
         let joinNode: Node = new OrJoin(node.$cstNode?.text+" or join")
         this.ccfg.addNode(joinNode)
@@ -208,17 +210,19 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
  * @returns the previous node name
  */
 function getPreviousNodeName(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow[], previousNodeName: string, file: CompositeGeneratorNode): string {
-    console.log("--------> ruleCF.premiseParticipants: "+ruleCF.premiseParticipants)
-    console.log("->> rule name " + ruleCF.rule.name)
-    let isStartingRule = ruleCF.premiseParticipants[ruleCF.premiseParticipants.length - 1].name == "starts";
+    let isStartingRule = ruleCF.premiseParticipants[0].name == "starts";
     if (isStartingRule) {
         return previousNodeName
     }
 
-    let isComparison = ruleCF.rule.premise.eventExpression.$type == "ExplicitValuedEventRefConstantComparison"
-                       || ruleCF.rule.premise.eventExpression.$type == "ImplicitValuedEventRefConstantComparison";
+    /**
+     * TODO : handle the general case where the premise is a complex comparison, typically inside a conjunction or disjunction
+     * In this case, a choice node is required after the synchronization node. Somehow, the previous node mechanism should be recursive
+     */
+    let isSimpleComparison = ruleCF.rule.premise.eventExpression.$type == "ExplicitValuedEventRefConstantComparison"
+                            || ruleCF.rule.premise.eventExpression.$type == "ImplicitValuedEventRefConstantComparison";
 
-    if (isComparison) {
+    if (isSimpleComparison) {
         file.append(`
         let ${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name} = this.ccfg.getNodeFromName("${ruleCF.premiseParticipants[0].name}ChoiceNode")
         if (${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name} == undefined) {
@@ -239,7 +243,7 @@ function getPreviousNodeName(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow
 
     if (isMultipleSynchronization) {
         const indexRight = ruleCF.premiseParticipants.findIndex(p => p.type == "event") + 1
-
+        let multipleSynchroName: string = ""
         switch (ruleCF.rule.premise.eventExpression.$type) {
             case "EventConjunction":
                 file.append(`
@@ -248,7 +252,8 @@ function getPreviousNodeName(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow
         this.ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode,${ruleCF.rule.name}AndJoinNode)
         this.ccfg.addEdge(${ruleCF.premiseParticipants[indexRight].name}TerminatesNode,${ruleCF.rule.name}AndJoinNode)
                 `)
-                return `${ruleCF.rule.name}AndJoinNode`
+                multipleSynchroName=  `${ruleCF.rule.name}AndJoinNode`
+                break
             case "EventDisjunction":
                 file.append(`
         let ${ruleCF.rule.name}OrJoinNode: Node = new OrJoin("${ruleCF.rule.name}OrJoinNode")
@@ -256,28 +261,47 @@ function getPreviousNodeName(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow
         this.ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode,${ruleCF.rule.name}OrJoinNode)
         this.ccfg.addEdge(${ruleCF.premiseParticipants[indexRight].name}TerminatesNode,${ruleCF.rule.name}OrJoinNode)
                 `)
-                return `${ruleCF.rule.name}OrJoinNode`
+                multipleSynchroName= `${ruleCF.rule.name}OrJoinNode`
+                break
             case "NaryEventExpression":
                 if (ruleCF.rule.premise.eventExpression.policy.operator == "lastOf") {
                     file.append(`
         let ${ruleCF.rule.name}LastOfNode: Node = new AndJoin("${ruleCF.rule.name}LastOfNode")
         this.ccfg.replaceNode(${getEmittingRuleName(ruleCF,allRulesCF)}FakeNode,${ruleCF.rule.name}LastOfNode)                    
                     `)
-                    return `${ruleCF.rule.name}LastOfNode`
+                    multipleSynchroName= `${ruleCF.rule.name}LastOfNode`
                 } else {
                     file.append(`
         let ${ruleCF.rule.name}FirstOfNode: Node = new OrJoin("${ruleCF.rule.name}FirstOfNode")
         this.ccfg.replaceNode(${getEmittingRuleName(ruleCF,allRulesCF)}FakeNode,${ruleCF.rule.name}FirstOfNode)
                     `)
-                    return `${ruleCF.rule.name}FirstOfNode`
-
+                    multipleSynchroName= `${ruleCF.rule.name}FirstOfNode`
+                    break
                 }
         }
-        throw new Error("multiple synchronization in getPreviousNodeName Not implemented: " + ruleCF.rule.premise.eventExpression.$type);
-
+        if (ruleCF.rule.premise.eventExpression.$type === "NaryEventExpression") {
+            return multipleSynchroName
+        }
+        let ownsACondition = chekIfOwnsACondition(ruleCF.rule.premise.eventExpression as EventCombination)
+        if(ownsACondition){
+            file.append(`
+        let ${ruleCF.rule.name}ConditionNode: Node = new Choice("${ruleCF.rule.name}ConditionNode")
+        this.ccfg.addNode(${ruleCF.rule.name}ConditionNode)
+        this.ccfg.addEdge(${multipleSynchroName},${ruleCF.rule.name}ConditionNode)
+            `)
+            return `${ruleCF.rule.name}ConditionNode`
+        }else{
+            return multipleSynchroName
+        }
     } else {
         return `${ruleCF.premiseParticipants[0].name}TerminatesNode`
     }
+}
+
+function chekIfOwnsACondition(comb: EventCombination): boolean {
+    return comb.lhs.$type == "ExplicitValuedEventRefConstantComparison" || comb.lhs.$type == "ImplicitValuedEventRefConstantComparison"
+            ||
+           comb.rhs.$type == "ExplicitValuedEventRefConstantComparison" || comb.rhs.$type == "ImplicitValuedEventRefConstantComparison"
 }
 
 function getEmittingRuleName(ruleCF: RuleControlFlow, allRulesCF: RuleControlFlow[]): string {
