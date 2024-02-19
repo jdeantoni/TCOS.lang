@@ -1,10 +1,8 @@
 import fs from 'fs';
-import { CompositeGeneratorNode, Grammar, NL, toString } from 'langium';
-import { CollectionRuleSync, EventCombination, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, RWRule, RuleOpening, SingleRuleSync, SoSSpec, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration } from '../language-server/generated/ast'; //VariableDeclaration
-import { extractDestinationAndName, FilePathData } from './cli-util';
+import { CompositeGeneratorNode, Grammar,  NL, toString } from 'langium';
+import { Assignment, CollectionRuleSync, EventCombination, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, RWRule, RuleOpening, SingleRuleSync, SoSSpec, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration } from '../language-server/generated/ast.js'; //VariableDeclaration
+import { extractDestinationAndName, FilePathData } from './cli-util.js';
 import path from 'path';
-import { Assignment } from 'langium/lib/grammar/generated/ast';
-
 
 
 
@@ -21,7 +19,7 @@ export function generateStuffFromSoS(model: SoSSpec, grammar: Grammar[], filePat
     let conceptNames: string[] = []
 
     for (var openedRule of model.rtdAndRules) {
-        if (openedRule.onRule.ref != undefined) {
+        if (openedRule.onRule?.ref != undefined) {
             conceptNames.push(openedRule.onRule.ref.name)
         }
     }
@@ -57,7 +55,7 @@ export class CCFGVisitor implements SimpleLVisitor {
 
     for (var openedRule of model.rtdAndRules) {
         let name: string = ""
-        if (openedRule.onRule.ref != undefined) {
+        if (openedRule.onRule?.ref != undefined) {
             name = openedRule.onRule.ref.name
         }
         file.append(`
@@ -137,7 +135,15 @@ function checkIfMultipleTerminate(rulesCF: RuleControlFlow[]) {
     return hasMultipleTerminate;
 }
 
-
+/**
+ * generates nodes and edges corresponding to the conclusion of a rule. 
+ * Require to retrieve the previous node name which itself construct the nodes and edges of the premise
+ * @param ruleCF: the current rule
+ * @param file : the file containing the generated compiler
+ * @param rulesCF: all the rules of the opened concept 
+ * @param previousNodeName 
+ * @param terminatesNodeName 
+ */
 function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode, rulesCF: RuleControlFlow[], previousNodeName: string, terminatesNodeName: string) {
     file.append(`
         previousNode = ${getPreviousNodeName(ruleCF, rulesCF, previousNodeName, file)}

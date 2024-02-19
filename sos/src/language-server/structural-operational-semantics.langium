@@ -58,8 +58,8 @@ Premise:
 
 
 Conclusion:
-	'<''this'',''σ''>' '~>' ((eventemissions+=EventEmission)|
-                         	(statemodifications+=StateModification))+ 
+	'<''this'',''σ''>' '~>' (statemodifications+=StateModification)*
+							(eventemissions+=EventEmission)* 
 	;
 
 EventRef:
@@ -127,16 +127,16 @@ Constant:
 	;
 
 SimpleEventEmission:
-	('emits')? event=MemberCall (";")?
+	('emits')? event=MemberCall
 	;
 
 StateModification:
-	lhs=MemberCall ':=' rhs=ClassicalExpression (';')?
+	lhs=MemberCall ':=' rhs=ClassicalExpression ';'
 	;
 
 ValuedEventEmission:
-	('emits')? event=MemberCall
-		'[' data=ClassicalExpression']' (";")?;
+	('emits')? event=MemberCall '[' data=ClassicalExpression']'
+	;
 
 UnaryMinus:
 	'-' expression=Expression

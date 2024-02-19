@@ -1,18 +1,19 @@
 testSimpleL
-import "testSoSLang/src/language-server/simple-l.langium"
+
+import "./testSoSLang/src/language-server/simple-l.langium"
 
 
 
 open Model { 
 
-                            when starts   
+                            when starts
     ------------------------------------------------------------ statementsInOrder1
       <this,σ> ~> statements->sequential.foreach(s => <s,σ>)
 
 
 
-        when statements.last().terminates                  
-    -------------------------------------------                 finishModel
+        when statements.last().terminates
+    -------------------------------------------                finishModel
               <this,σ> ~> terminates
 
 }
@@ -20,12 +21,12 @@ open Model {
 open Bloc {
 
                           when starts
-    -----------------------------------------------------       startsBloc
+    -----------------------------------------------------      startsBloc
             <this,σ> ~> statements->sequential.foreach(s => <s,σ>)
 
   
               when statements.last().terminates            
-        -------------------------------------------                 finishBloc
+        -------------------------------------------            finishBloc
                   <this,σ> ~> terminates
 }
 
@@ -38,7 +39,7 @@ open ParallelBloc {
 
 
       when lastOf(statements.terminates)
-    -----------------------------------------                   finishParallelBloc
+    -----------------------------------------                  finishParallelBloc
             <this,σ> ~> terminates
 
 }
@@ -49,20 +50,18 @@ open Variable {
 
 
                 when starts
-    ---------------------------------------------               initializeVar
-     <this,σ> ~> currentValue := initialValue
+    ---------------------------------------------              initializeVar
+     <this,σ> ~> currentValue := initialValue;
                  terminates 
 
 }
 
 open VarRef {
-
                   when starts
-    ---------------------------------------------               accessVarRef
-      <this,σ> ~> terminates//[ref.currentValue];
-
-}
-
+    ---------------------------------------------              accessVarRef 
+      <this,σ> ~> emits terminates[theVar.currentValue]
+  
+} 
 
 open If {
 
@@ -82,21 +81,19 @@ open If {
       
 
         when (<else,σ>  v <then,σ> )
-    -----------------------------------------------            condStop
-                <this,σ> ~> terminates
+    -----------------------------------                        condStop
+          <this,σ> ~> terminates
 
 } 
 
 open Assignment {
-
           when starts
     --------------------------                                  executeAssignment
       <this,σ> ~> <expr,σ>
 
-
           when <expr,σ> -> resRight                       
     ----------------------------------------------------------- executeAssignment2
-      <this,σ> ~> //variable.currentValue := resRight 
+      <this,σ> ~> //variable.currentValue := resRight; 
                   //variable.allReaders()->concurrent.foreach(r => r.updates)
                   terminates
 }
@@ -125,39 +122,33 @@ open Assignment {
 
 
 open Conjunction { //parallel version
-
           when starts                   
     -------------------------                                   evaluateConjunction
       <this,σ> ~> <lhs,σ>
                   <rhs,σ>   
-
-          
+ 
       when (<lhs,σ> -> true ^ <rhs,σ> -> res)
     -------------------------------------------                 evaluateConjunction2
-          <this,σ> ~> terminates//(res)
-
+          <this,σ> ~> terminates[res]
 
       when (<rhs,σ> -> true ^ <lhs,σ> -> res)
     -------------------------------------------                 evaluateConjunction3
-          <this,σ> ~> terminates//(res)
-
+          <this,σ> ~> terminates[res]
 }
 
 open Plus {
-
                   when starts
     -------------------------------------------                 startPlus
         <this,σ> ~> <right,σ>
                     <left,σ>
    
       when (<right,σ> -> n2 ^ <left,σ> -> n1)
-    -------------------------------------------                 FinishPlus
-        <this,σ> ~> terminates//((n1 + n2))
+    -------------------------------------------                 finishPlus
+        <this,σ> ~> terminates[(n1 + n2)]
 }
 
 open BooleanConst{
-  
                     when starts
-      -------------------------------------------                 evalBooleanConst
-          <this,σ> ~> terminates//(value)
+    -------------------------------------------                 evalBooleanConst
+          <this,σ> ~> terminates[value]
 }

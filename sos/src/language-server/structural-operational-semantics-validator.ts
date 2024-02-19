@@ -1,6 +1,6 @@
 import { ValidationAcceptor, ValidationChecks } from 'langium';
-import { SoSSpec, StructuralOperationalSemanticsAstType } from './generated/ast';
-import type { StructuralOperationalSemanticsServices } from './structural-operational-semantics-module';
+import { SoSSpec, StructuralOperationalSemanticsAstType } from './generated/ast.js';
+import type { StructuralOperationalSemanticsServices } from './structural-operational-semantics-module.js';
 
 /**
  * Register custom validation checks.

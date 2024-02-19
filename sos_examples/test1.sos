@@ -51,7 +51,7 @@ open Variable {
 
                     when starts
     ---------------------------------------------               initializeVar
-     <this,σ> ~> currentValue := initialValue
+     <this,σ> ~> currentValue := initialValue;
                  terminates
 
 }
@@ -59,7 +59,7 @@ open Variable {
 open VarRef {
                 when starts
     -------------------------------------                       accessVarRef
-         <this,σ> ~> terminates(ref.currentValue)
+         <this,σ> ~> terminates(theVar.currentValue)
 }
 
 open Plus {
@@ -98,6 +98,6 @@ open If {
 open Assignment {
           when <expr,σ> -> resRight: number                         
     -----------------------------------------------             executeAssignment
-      <this,σ> ~> variable.currentValue := resRight
+      <this,σ> ~> variable.currentValue := resRight;
                   terminates
 }

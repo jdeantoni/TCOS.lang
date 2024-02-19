@@ -4,7 +4,7 @@ import "fsm/src/language-server/finite-state-machine.langium"
 open FSMModel{
                          when starts
     ------------------------------------------------------ FSMstart
-       <this,σ> ~> fsms->parallel.foreach(fsm => <fsm,σ>)
+       <this,σ> ~> fsms->concurrent.foreach(fsm => <fsm,σ>)
 
         when lastOf(fsms.terminates)
     -------------------------------------                  FSMend
@@ -18,12 +18,16 @@ open FSM {
 
                     when starts
     ----------------------------------------- init
-     <this,σ> ~> currentState := states.at(0)
+     <this,σ> ~> currentState := initialState;
+                 <initialState,σ>
+
+                when (terminates)
+    -------------------------------------                  end
+          <this,σ> ~> terminates
+                        
 }
 
 open Event {
-
-    var isOccuring:event;
 
             when starts
     --------------------------   fugaceEvent
@@ -35,11 +39,14 @@ open State {
 
             when starts            
     --------------------------------------- init
-    <this,σ> ~> isCurrentState := isInitial;
+    <this,σ> ~> isCurrentState := true;
+                outTransitions->concurrent.foreach(transition => <transition,σ>)
 
-            when starts
-    ---------------------------- evaluate
-     <this,σ> ~> isCurrentState;
+
+          when lastOf(outTransitions.terminates)
+    -------------------------------------                  end
+          <this,σ> ~> terminates
+
 }
 
 open Transition{
@@ -49,16 +56,17 @@ open Transition{
             when starts
     --------------------------------------- init
         <this,σ> ~> isSensitive := true;
+                    emits starts
+
 
             
 
              
       when (guardEvent.terminates) [isSensitive == true]
     ------------------------------------------------------ fire
-         <this,σ> ~> source.isCurrentState := false
-                     target.isCurrentState := true;
+         <this,σ> ~> source.isCurrentState := false;
                      isSensitive := false;
-                     terminates;
+                     terminates
 
 
     

@@ -5,7 +5,8 @@ entry FSMModel:
     fsms+=FSM;
 
 FSM:
-    name=ID ':' (states+=State | transitions+=Transition)*;
+    name=ID ':' initialState=[State:ID] 
+    (states+=State | transitions+=Transition)*;
 
 Event:
     name=ID;

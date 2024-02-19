@@ -6,19 +6,19 @@
 
 import {
     AstNode,
-    DefaultScopeComputation, DefaultScopeProvider, EMPTY_SCOPE, getContainerOfType, Grammar, LangiumServices, ReferenceInfo,Scope, ScopeOptions, stream, streamAllContents, StreamScope
+    DefaultScopeComputation, DefaultScopeProvider, EMPTY_SCOPE, getContainerOfType, LangiumServices, ReferenceInfo,Scope, ScopeOptions, stream, streamAllContents, StreamScope
 } from 'langium';
 
-import { AbstractRule, Assignment, CollectionRuleSync, CrossReference, isAlternatives, isAssignment, isCollectionRuleSync, isMemberCall, isRuleOpening, isRuleSync, isRWRule, 
-         isSoSSpec, isTemporaryVariable, MemberCall, MethodMember, Parameter,
-         ParserRule, RuleOpening, RWRule, SoSSpec, TypeReference, VariableDeclaration} from './generated/ast';
-import { getRuleOpeningChain, inferType } from './type-system/infer';
-import { isParserRuleType, isRuleOpeningType } from './type-system/descriptions';
-import { AbstractElement } from './generated/ast';
-import { isGroup } from './generated/ast';
-import { Group } from './generated/ast';
-import { Alternatives, isAbstractRule, isCrossReference, isGrammar } from 'langium/lib/grammar/generated/ast';
-import { getType } from '../utils/sos-utils';
+import { AbstractRule, Assignment, CollectionRuleSync, CrossReference, isAbstractRule, isAlternatives, isAssignment, isCollectionRuleSync, isMemberCall, isRuleOpening, isRuleSync, isRWRule, 
+         isSoSSpec, isTemporaryVariable, MemberCall, MethodMember, Parameter,isCrossReference, isGrammar,
+         ParserRule, RuleOpening, RWRule, SoSSpec, TypeReference, VariableDeclaration,
+         Alternatives} from './generated/ast.js';
+import { getRuleOpeningChain, inferType } from './type-system/infer.js';
+import { isParserRuleType, isRuleOpeningType } from './type-system/descriptions.js';
+import { AbstractElement } from './generated/ast.js';
+import { isGroup } from './generated/ast.js';
+import { Group } from './generated/ast.js';
+import { getType } from '../utils/sos-utils.js';
 
 
 
@@ -65,7 +65,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                 if (sosSpecItem){
                     for(var ro of sosSpecItem.rtdAndRules){
                         if (isRuleOpening(ro)){
-                            if (ro.onRule.$refText === previousType.literal.name){
+                            if (ro.onRule?.$refText === previousType.literal.name){
                                 
                                 return this.scopeRuleOpeningMembers(ro);
                             }
@@ -253,7 +253,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
             var contextRuleOpeningItem = undefined
             if (sosSpec){
                 for(let rule of sosSpec?.rtdAndRules){
-                    if (isRuleOpening(rule) && rule.onRule.ref === parserRule){
+                    if (isRuleOpening(rule) && rule.onRule?.ref === parserRule){
                         contextRuleOpeningItem = rule
                     }
                 }
@@ -370,7 +370,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
 
     private getAllRules(element: AbstractElement): AbstractRule[] {
         var allAbstractRules: AbstractRule[] = [];
-        const grammar: Grammar | undefined = getContainerOfType(element.$container, isGrammar);
+        const grammar = getContainerOfType(element.$container, isGrammar);
 
         if (grammar) {
             allAbstractRules = allAbstractRules.concat(grammar.rules)

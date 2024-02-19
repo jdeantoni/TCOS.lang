@@ -363,7 +363,7 @@ export class CCFGVisitor implements SimpleLVisitor {
    //premise: starts:event
    //conclusion: right:Expr,starts:event
    //conclusion: right:Expr,starts:event,left:Expr,starts:event
-// rule FinishPlus
+// rule finishPlus
    //premise: right:Expr,terminates:event,left:Expr,terminates:event
    //conclusion: terminates:event
 
@@ -381,12 +381,12 @@ export class CCFGVisitor implements SimpleLVisitor {
         let [leftStartNode,leftTerminatesNode] = this.visit(node.left)
         this.ccfg.addEdge(startPlusForkNode,leftStartNode)
         
-        let FinishPlusAndJoinNode: Node = new AndJoin("FinishPlusAndJoinNode")
-        this.ccfg.addNode(FinishPlusAndJoinNode)
-        this.ccfg.addEdge(rightTerminatesNode,FinishPlusAndJoinNode)
-        this.ccfg.addEdge(leftTerminatesNode,FinishPlusAndJoinNode)
+        let finishPlusAndJoinNode: Node = new AndJoin("finishPlusAndJoinNode")
+        this.ccfg.addNode(finishPlusAndJoinNode)
+        this.ccfg.addEdge(rightTerminatesNode,finishPlusAndJoinNode)
+        this.ccfg.addEdge(leftTerminatesNode,finishPlusAndJoinNode)
                 
-        previousNode = FinishPlusAndJoinNode
+        previousNode = finishPlusAndJoinNode
     
         this.ccfg.addEdge(previousNode,terminatesNode)
         

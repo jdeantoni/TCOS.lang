@@ -159,7 +159,7 @@ export function isVariable(item: unknown): item is Variable {
 export interface VarRef extends AstNode {
     readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus;
     readonly $type: 'VarRef';
-    ref: Reference<Variable>
+    theVar: Reference<Variable>
 }
 
 export const VarRef = 'VarRef';
@@ -221,7 +221,7 @@ export class SimpleLAstReflection extends AbstractAstReflection {
         const referenceId = `${refInfo.container.$type}:${refInfo.property}`;
         switch (referenceId) {
             case 'Assignment:variable':
-            case 'VarRef:ref': {
+            case 'VarRef:theVar': {
                 return Variable;
             }
             default: {

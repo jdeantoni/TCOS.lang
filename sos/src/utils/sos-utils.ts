@@ -1,9 +1,8 @@
-import {isAbstractRule, isCrossReference } from "langium/lib/grammar/generated/ast"
-import { CrossReference, TemporaryVariable, isBinaryExpression, isRuleCall, isTemporaryVariable } from "../language-server/generated/ast"
+import { isAbstractRule, isCrossReference,CrossReference, TemporaryVariable, isBinaryExpression, isRuleCall, isTemporaryVariable } from "../language-server/generated/ast.js"
 import { MemberCall, NamedElement, AbstractRule, TypeReference, VariableDeclaration, 
          isTypeReference, isVariableDeclaration, RuleOpening, isMemberCall, isRWRule, isMethodMember,
-         isNamedElement, isAssignment, RuleCall, Expression } from "../language-server/generated/ast"
-import { isNumberExpression } from "../language-server/generated/ast"
+         isNamedElement, isAssignment, RuleCall, Expression } from "../language-server/generated/ast.js"
+import { isNumberExpression } from "../language-server/generated/ast.js"
 import { AstNode, Reference, isReference } from "langium"
 
 export function getType(elem: MemberCall): NamedElement | AbstractRule;

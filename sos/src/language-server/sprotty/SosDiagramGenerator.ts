@@ -1,4 +1,4 @@
-import { SoSSpec, RuleOpening, RWRule } from '../generated/ast';
+import { SoSSpec, RuleOpening, RWRule } from '../generated/ast.js';
 // @ts-ignore 
 import { GeneratorContext, LangiumDiagramGenerator } from 'langium-sprotty';
 import { SEdge, SLabel, SModelRoot, SNode, SPort } from 'sprotty-protocol';
@@ -20,7 +20,7 @@ export class StatesDiagramGenerator extends LangiumDiagramGenerator {
     }
 
     protected generateNode(rule: RuleOpening, { idCache }: GeneratorContext<SoSSpec>): SNode {
-        const nodeId = idCache.uniqueId(rule.name, rule);
+        const nodeId = idCache.uniqueId(rule.name!=undefined?rule.name:"", rule);
         return {
             type: 'node',
             id: nodeId,

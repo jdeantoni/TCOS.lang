@@ -84,7 +84,7 @@ function generateCode(codeFile: CompositeGeneratorNode, headerFile: CompositeGen
             headerFile.append(`int ${getName(node)}_evaluate();`,NL)
             codeFile.append(`
             inline int ${getName(node)}_evaluate(){
-                int value = ${getName(node.ref)}_evaluate();
+                int value = ${getName(node.theVar)}_evaluate();
                 return value;
             }`,NL)
         }
