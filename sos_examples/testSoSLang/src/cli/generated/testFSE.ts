@@ -1,7 +1,23 @@
 
-import { AstNode } from "langium";
+import { AstNode, Reference, isReference } from "langium";
 import { AndJoin, Choice, Fork, Graph, Node, OrJoin, Step } from "../../ccfg/ccfglib";
-import { Model,Bloc,ParallelBloc,Variable,VarRef,If,Assignment,Conjunction,Plus,BooleanConst } from "../../language-server/generated/ast";
+
+    import { Range, integer } from "vscode-languageserver";
+
+    var globalUnNamedCounter:integer = 0
+
+    function getName(node:AstNode | Reference<AstNode> | undefined): string {
+        if(isReference(node)){
+            node = node.ref
+        }
+        if(node !==undefined && node.$cstNode){
+            var r: Range = node.$cstNode?.range
+            return node.$type+r.start.line+"_"+r.start.character+"_"+r.end.line+"_"+r.end.character;
+        }else{
+            return "noName"+globalUnNamedCounter++
+        }
+    }
+    import { Model,Bloc,ParallelBloc,Variable,VarRef,If,Assignment,Conjunction,Plus,BooleanConst } from "../../language-server/generated/ast";
 
 export interface SimpleLVisitor {
     visit(node: AstNode): [Node,Node];
@@ -57,7 +73,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     }
     
     visitModel(node: Model): [Node,Node] {
-        let startsNode: Node = new Step(node.$cstNode?.text+" starts")
+        let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
         this.ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         this.ccfg.addNode(terminatesNode)
@@ -72,6 +88,8 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = startsNode
     
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         for (var child of node.statements) {
             let [childStartsNode,childTerminatesNode] = this.visit(child)
             this.ccfg.addEdge(previousNode,childStartsNode)
@@ -79,16 +97,22 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         let statementsTerminatesNode = previousNode
         
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         previousNode = statementsTerminatesNode
+    
+    previousNode.actions =[...previousNode.actions, ...[]]
     
         this.ccfg.addEdge(previousNode,terminatesNode)
         
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
 
         return [startsNode,terminatesNode]
     }
 
     visitBloc(node: Bloc): [Node,Node] {
-        let startsNode: Node = new Step(node.$cstNode?.text+" starts")
+        let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
         this.ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         this.ccfg.addNode(terminatesNode)
@@ -103,6 +127,8 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = startsNode
     
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         for (var child of node.statements) {
             let [childStartsNode,childTerminatesNode] = this.visit(child)
             this.ccfg.addEdge(previousNode,childStartsNode)
@@ -110,16 +136,22 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         let statementsTerminatesNode = previousNode
         
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         previousNode = statementsTerminatesNode
+    
+    previousNode.actions =[...previousNode.actions, ...[]]
     
         this.ccfg.addEdge(previousNode,terminatesNode)
         
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
 
         return [startsNode,terminatesNode]
     }
 
     visitParallelBloc(node: ParallelBloc): [Node,Node] {
-        let startsNode: Node = new Step(node.$cstNode?.text+" starts")
+        let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
         this.ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         this.ccfg.addNode(terminatesNode)
@@ -134,6 +166,8 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = startsNode
     
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         let forkNode: Node = new Fork("startsParallelBlocForkNode")
         this.ccfg.addNode(forkNode)
         this.ccfg.addEdge(previousNode,forkNode)
@@ -146,19 +180,25 @@ export class CCFGVisitor implements SimpleLVisitor {
             this.ccfg.addEdge(childTerminatesNode,startsParallelBlocFakeNode)
         }
         
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         let finishParallelBlocLastOfNode: Node = new AndJoin("finishParallelBlocLastOfNode")
         this.ccfg.replaceNode(startsParallelBlocFakeNode,finishParallelBlocLastOfNode)                    
                     
         previousNode = finishParallelBlocLastOfNode
     
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         this.ccfg.addEdge(previousNode,terminatesNode)
         
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
 
         return [startsNode,terminatesNode]
     }
 
     visitVariable(node: Variable): [Node,Node] {
-        let startsNode: Node = new Step(node.$cstNode?.text+" starts")
+        let startsNode: Node = new Step(node.$cstNode?.text+" starts",[`int* ${getName(node)}currentValue = new int();`])
         this.ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         this.ccfg.addNode(terminatesNode)
@@ -170,14 +210,18 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = startsNode
     
+    previousNode.actions =[...previousNode.actions, ...[`sigma["${getName(node)}currentValue"] = ${node.initialValue};`]]
+    
         this.ccfg.addEdge(previousNode,terminatesNode)
         
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
 
         return [startsNode,terminatesNode]
     }
 
     visitVarRef(node: VarRef): [Node,Node] {
-        let startsNode: Node = new Step(node.$cstNode?.text+" starts")
+        let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
         this.ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         this.ccfg.addNode(terminatesNode)
@@ -189,14 +233,18 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = startsNode
     
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         this.ccfg.addEdge(previousNode,terminatesNode)
         
+    previousNode.actions =[...previousNode.actions, ...[`number* ${getName(node)}1588 = ([object Object] *) sigma["${getName(node.theVar)}currentValue"];`]]
+    
 
         return [startsNode,terminatesNode]
     }
 
     visitIf(node: If): [Node,Node] {
-        let startsNode: Node = new Step(node.$cstNode?.text+" starts")
+        let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
         this.ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         this.ccfg.addNode(terminatesNode)
@@ -217,9 +265,13 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = startsNode
     
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         let [condStartsNode,condTerminatesNode] = this.visit(node.cond)
         this.ccfg.addEdge(previousNode,condStartsNode)
         
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         let condChoiceNodecondTrueStart = this.ccfg.getNodeFromName("condChoiceNode")
         if (condChoiceNodecondTrueStart == undefined) {
             let condChoiceNode = new Choice("condChoiceNode")
@@ -232,9 +284,13 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = condChoiceNodecondTrueStart
     
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         let [thenStartsNode,thenTerminatesNode] = this.visit(node.then)
         this.ccfg.addEdge(previousNode,thenStartsNode)
         
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         let condChoiceNodecondFalseStart = this.ccfg.getNodeFromName("condChoiceNode")
         if (condChoiceNodecondFalseStart == undefined) {
             let condChoiceNode = new Choice("condChoiceNode")
@@ -247,9 +303,13 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = condChoiceNodecondFalseStart
     
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         let [elseStartsNode,elseTerminatesNode] = this.visit(node.else)
         this.ccfg.addEdge(previousNode,elseStartsNode)
         
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         let condStopOrJoinNode: Node = new OrJoin("condStopOrJoinNode")
         this.ccfg.addNode(condStopOrJoinNode)
         this.ccfg.addEdge(elseTerminatesNode,condStopOrJoinNode)
@@ -257,14 +317,18 @@ export class CCFGVisitor implements SimpleLVisitor {
                 
         previousNode = condStopOrJoinNode
     
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         this.ccfg.addEdge(previousNode,terminatesNode)
         
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
 
         return [startsNode,terminatesNode]
     }
 
     visitAssignment(node: Assignment): [Node,Node] {
-        let startsNode: Node = new Step(node.$cstNode?.text+" starts")
+        let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
         this.ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         this.ccfg.addNode(terminatesNode)
@@ -279,19 +343,27 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = startsNode
     
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         let [exprStartsNode,exprTerminatesNode] = this.visit(node.expr)
         this.ccfg.addEdge(previousNode,exprStartsNode)
         
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         previousNode = exprTerminatesNode
+    
+    previousNode.actions =[...previousNode.actions, ...[]]
     
         this.ccfg.addEdge(previousNode,terminatesNode)
         
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
 
         return [startsNode,terminatesNode]
     }
 
     visitConjunction(node: Conjunction): [Node,Node] {
-        let startsNode: Node = new Step(node.$cstNode?.text+" starts")
+        let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
         this.ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         this.ccfg.addNode(terminatesNode)
@@ -314,6 +386,8 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = startsNode
     
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         let evaluateConjunctionForkNode: Node = new Fork("evaluateConjunctionForkNode")
         this.ccfg.addNode(evaluateConjunctionForkNode)
         this.ccfg.addEdge(previousNode,evaluateConjunctionForkNode)
@@ -324,6 +398,8 @@ export class CCFGVisitor implements SimpleLVisitor {
         let [rhsStartNode,rhsTerminatesNode] = this.visit(node.rhs)
         this.ccfg.addEdge(evaluateConjunctionForkNode,rhsStartNode)
         
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         let evaluateConjunction2AndJoinNode: Node = new AndJoin("evaluateConjunction2AndJoinNode")
         this.ccfg.addNode(evaluateConjunction2AndJoinNode)
         this.ccfg.addEdge(lhsTerminatesNode,evaluateConjunction2AndJoinNode)
@@ -335,8 +411,12 @@ export class CCFGVisitor implements SimpleLVisitor {
             
         previousNode = evaluateConjunction2ConditionNode
     
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         this.ccfg.addEdge(previousNode,joinNode)
         
+    previousNode.actions =[...previousNode.actions, ...[`error* ${getName(node)}3729 = ${getName(node)}res;`]]
+    
         let evaluateConjunction3AndJoinNode: Node = new AndJoin("evaluateConjunction3AndJoinNode")
         this.ccfg.addNode(evaluateConjunction3AndJoinNode)
         this.ccfg.addEdge(rhsTerminatesNode,evaluateConjunction3AndJoinNode)
@@ -348,14 +428,18 @@ export class CCFGVisitor implements SimpleLVisitor {
             
         previousNode = evaluateConjunction3ConditionNode
     
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         this.ccfg.addEdge(previousNode,joinNode)
         
+    previousNode.actions =[...previousNode.actions, ...[`error* ${getName(node)}3899 = ${getName(node)}res;`]]
+    
 
         return [startsNode,terminatesNode]
     }
 
     visitPlus(node: Plus): [Node,Node] {
-        let startsNode: Node = new Step(node.$cstNode?.text+" starts")
+        let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
         this.ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         this.ccfg.addNode(terminatesNode)
@@ -371,6 +455,8 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = startsNode
     
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         let startPlusForkNode: Node = new Fork("startPlusForkNode")
         this.ccfg.addNode(startPlusForkNode)
         this.ccfg.addEdge(previousNode,startPlusForkNode)
@@ -381,6 +467,8 @@ export class CCFGVisitor implements SimpleLVisitor {
         let [leftStartNode,leftTerminatesNode] = this.visit(node.left)
         this.ccfg.addEdge(startPlusForkNode,leftStartNode)
         
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         let finishPlusAndJoinNode: Node = new AndJoin("finishPlusAndJoinNode")
         this.ccfg.addNode(finishPlusAndJoinNode)
         this.ccfg.addEdge(rightTerminatesNode,finishPlusAndJoinNode)
@@ -388,14 +476,18 @@ export class CCFGVisitor implements SimpleLVisitor {
                 
         previousNode = finishPlusAndJoinNode
     
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         this.ccfg.addEdge(previousNode,terminatesNode)
         
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
 
         return [startsNode,terminatesNode]
     }
 
     visitBooleanConst(node: BooleanConst): [Node,Node] {
-        let startsNode: Node = new Step(node.$cstNode?.text+" starts")
+        let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
         this.ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         this.ccfg.addNode(terminatesNode)
@@ -407,8 +499,12 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = startsNode
     
+    previousNode.actions =[...previousNode.actions, ...[]]
+    
         this.ccfg.addEdge(previousNode,terminatesNode)
         
+    previousNode.actions =[...previousNode.actions, ...[`error* ${getName(node)}4417 = ${getName(node)}undefined;`]]
+    
 
         return [startsNode,terminatesNode]
     }

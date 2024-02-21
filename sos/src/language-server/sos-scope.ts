@@ -157,7 +157,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                 $container: lengthFunction,
                 $type: "TypeReference"
             }
-            returnType.primitive={name:"number",$container:returnType,$type:"SoSPrimitiveType"}
+            returnType.primitive={name:"integer",$container:returnType,$type:"SoSPrimitiveType"}
             lengthFunction.returnType = returnType
         }
 

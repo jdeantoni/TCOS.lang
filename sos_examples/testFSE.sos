@@ -46,7 +46,7 @@ open ParallelBloc {
 
 open Variable {
 
-    var currentValue;
+    var currentValue: integer;
 
 
                 when starts

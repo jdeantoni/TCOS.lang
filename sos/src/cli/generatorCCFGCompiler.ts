@@ -1,8 +1,9 @@
 import fs from 'fs';
 import { CompositeGeneratorNode, Grammar,  NL, toString } from 'langium';
-import { Assignment, CollectionRuleSync, EventCombination, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, RWRule, RuleOpening, SingleRuleSync, SoSSpec, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration } from '../language-server/generated/ast.js'; //VariableDeclaration
+import { Assignment, CollectionRuleSync, EventCombination, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, RWRule, RuleOpening, SingleRuleSync, SoSSpec, TypeReference, ValuedEventEmission, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration } from '../language-server/generated/ast.js'; //VariableDeclaration
 import { extractDestinationAndName, FilePathData } from './cli-util.js';
 import path from 'path';
+import { inferType } from '../language-server/type-system/infer.js';
 
 
 
@@ -15,6 +16,24 @@ export function generateStuffFromSoS(model: SoSSpec, grammar: Grammar[], filePat
     const file = new CompositeGeneratorNode();
 
     writePreambule(file, data);
+
+    file.append(`
+    import { Range, integer } from "vscode-languageserver";
+
+    var globalUnNamedCounter:integer = 0
+
+    function getName(node:AstNode | Reference<AstNode> | undefined): string {
+        if(isReference(node)){
+            node = node.ref
+        }
+        if(node !==undefined && node.$cstNode){
+            var r: Range = node.$cstNode?.range
+            return node.$type+r.start.line+"_"+r.start.character+"_"+r.end.line+"_"+r.end.character;
+        }else{
+            return "noName"+globalUnNamedCounter++
+        }
+    }
+    `)
 
     let conceptNames: string[] = []
 
@@ -60,7 +79,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         file.append(`
     visit${name}(node: ${name}): [Node,Node] {
-        let startsNode: Node = new Step(node.$cstNode?.text+" starts")
+        let startsNode: Node = new Step(node.$cstNode?.text+" starts",[${visitVariableDeclaration(openedRule.runtimeState as VariableDeclaration[])}])
         this.ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         this.ccfg.addNode(terminatesNode)
@@ -148,6 +167,11 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
     file.append(`
         previousNode = ${getPreviousNodeName(ruleCF, rulesCF, previousNodeName, file)}
     `)
+    let actionsString = ""
+    actionsString = visitStateModifications(ruleCF, actionsString);
+    file.append(`
+    previousNode.actions =[...previousNode.actions, ...[${actionsString}]]
+    `);
     let isMultipleEmission = ruleCF.rule.conclusion.eventemissions.length > 1;
     if (isMultipleEmission) {
         file.append(`
@@ -207,7 +231,15 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
             }
         }
     }
+    let eventEmissionActions = ""
+    for(let emission of ruleCF.rule.conclusion.eventemissions){
+        eventEmissionActions = eventEmissionActions + visitValuedEventEmission(emission as ValuedEventEmission)
+    }
+    file.append(`
+    previousNode.actions =[...previousNode.actions, ...[${eventEmissionActions}]]
+    `);
 }
+
 
 /**
  * returns the previous node name. May imply the creation of new nodes in case of multiple synchronizations that may require a decision or join node
@@ -334,7 +366,7 @@ function checkIfEventEmissionIsCollectionBased(ruleCF: RuleControlFlow) {
 
 function writePreambule(fileNode: CompositeGeneratorNode, data: FilePathData) {
     fileNode.append(`
-import { AstNode } from "langium";
+import { AstNode, Reference, isReference } from "langium";
 import { AndJoin, Choice, Fork, Graph, Node, OrJoin, Step } from "../../ccfg/ccfglib";`, NL)
 }
 
@@ -562,4 +594,86 @@ function splitArrayByParticipants(elements: TypedElement[]): TypedElement[][] {
     }
     
     return result;
+}
+/**
+ * for now in c++ like form but should be an interface to the target language
+ * @param runtimeState 
+ * @returns 
+ */
+function visitVariableDeclaration(runtimeState: VariableDeclaration[] | undefined): string {
+    var res : string = ""
+    if (runtimeState != undefined) {
+        for(let vardDecl of runtimeState){
+            res = res + `\`${getVariableType(vardDecl.type)}* \${getName(node)}${vardDecl.name} = new ${getVariableType(vardDecl.type)}();\``
+        }
+    }
+    return res
+}
+
+/**
+ * for now in c++ like form but should be an interface to the target language
+ * @param runtimeState 
+ * @returns 
+ */
+function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefined): string {
+    var res : string = ""
+    if (valuedEmission != undefined) {
+        let varType = inferType(valuedEmission.data, new Map())
+        if(valuedEmission.data != undefined && valuedEmission.data.$type == "MemberCall"){
+            let prev = (valuedEmission.data.previous as MemberCall)?.element?.$refText
+            let elem = valuedEmission.data.element?.ref
+            if(elem == undefined){
+                return res
+            }
+            if(elem?.$type == "VariableDeclaration"){
+                res = res + `\`${varType.$type}* \${getName(node)}${valuedEmission.data.$cstNode?.offset} = (${varType.$type} *) sigma["\${getName(node.${prev != undefined?prev:elem.name})}${elem.name}"];\``
+            }else{
+                res = res + `\`${varType.$type}* \${getName(node)}${valuedEmission.data.$cstNode?.offset} = \${getName(node)}${prev != undefined?prev:elem.name};\`` 
+            }
+        }
+    }
+    return res
+}
+
+// function visitValuedEventEmission(valuedEvent: ValuedEventRef | undefined): string {
+//     var res : string = ""
+//     if (valuedEvent != undefined) {
+//         res = res + `\`${getVariableType((valuedEvent.tempVar as TemporaryVariable).type)}* \${getName(node)}${valuedEvent.tempVar.name} = (${getVariableType((valuedEvent.tempVar as TemporaryVariable).type)} *) sigma["\${getName(node.${valuedEvent.tempVar.name})}currentValue"];`}();\``
+//     }
+//     return res
+// }
+
+
+/**
+ * for now in c++ like form but should be an interface to the target language
+ * @param ruleCF 
+ * @param actionsString 
+ * @returns 
+ */
+function visitStateModifications(ruleCF: RuleControlFlow, actionsString: string) {
+    for (let action of ruleCF.rule.conclusion.statemodifications) {
+        actionsString = actionsString + `\`sigma[\"\${getName(node)}${action.lhs.$cstNode?.text}\"] = \${node.${action.rhs.$cstNode?.text}};\``;
+    }
+    return actionsString;
+}
+
+function getVariableType(type: TypeReference | undefined) {
+    if (type?.primitive) {
+        let fullName = type.primitive.name;
+        switch (fullName) {
+            case "integer":
+                return "int";
+            case "string":
+                return "std::string";
+            case "boolean":
+                return "bool";
+            case "void":
+                return "void";
+            default:
+                return "unknown";
+        }
+    } else if (type?.reference) {
+        return type.reference.ref?.name;
+    }
+    return "unknown"
 }

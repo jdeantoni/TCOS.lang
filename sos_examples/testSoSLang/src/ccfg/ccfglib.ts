@@ -6,9 +6,12 @@ export abstract class Node {
     uid: integer;
     value:any;
     astNode: AstNode | undefined;
-    constructor(value: any) {
+    actions: string[];
+
+    constructor(value: any, theActions: string[] = []) {
         this.uid = Node.uidCounter++;
         this.value = value;
+        this.actions = theActions;
     }
 
     getType(): string {
@@ -21,6 +24,7 @@ export class Edge {
     from: Node;
     to: Node;
     label?: string;
+    astNode: AstNode | undefined;
 
     constructor(from: Node, to: Node, label?: string) {
         this.from = from;
@@ -47,12 +51,14 @@ export class Graph {
         return node;
     }
 
-    addEdge(from: Node, to: Node, label:string=""): void {
-        let res = this.edges.find(e => e.from === from && e.to === to);
+    addEdge(from: Node, to: Node, label:string=""): Edge {
+        let res : Edge | undefined = this.edges.find(e => e.from === from && e.to === to);
         if (res == undefined) {
             const edge = new Edge(from, to);
             this.edges.push(edge);
+            return edge;
         }
+        return res;
     }
 
     replaceNode(oldNode: Node, newNode: Node): void {
@@ -81,10 +87,14 @@ export class Graph {
             dot += `  "${node.uid}" [label="${label}" shape="${shape}"];\n`;
         }
         for (let edge of this.edges) {
-            dot += `  "${edge.from.uid}" -> "${edge.to.uid}" [label="${(edge.label != undefined)?edge.label:""}"];\n`;
+            dot += `  "${edge.from.uid}" -> "${edge.to.uid}" [label="${this.getEdgeLabel(edge)}"];\n`;
         }
         dot += '}';
         return dot;
+    }
+
+    getEdgeLabel(edge: Edge): string {
+        return edge.from.actions.map(a => a.replaceAll("\"","\\\"")).join(";\n");
     }
 
     getNodeLabel(node: Node): string {
@@ -129,8 +139,9 @@ export class Graph {
 }
 
 export class Step extends Node {
-    constructor(value: any) {
-        super(value);
+    
+    constructor(value: any, theActions: string[] = []) {
+        super(value, theActions);
     }
 }
 

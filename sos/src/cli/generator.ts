@@ -13,7 +13,7 @@ import { EventEmission } from '../language-server/generated/ast.js';
 
 
 
-export function generateStuffFromSoS(model: SoSSpec, grammar: Grammar[], filePath: string, destination: string | undefined): string {
+export function generateSigma(model: SoSSpec, grammar: Grammar[], filePath: string, destination: string | undefined): string {
     const data = extractDestinationAndName(filePath, destination);
     const generatedFilePath = `${path.join(data.destination, data.name)}.ts`;
     const fileNode = new CompositeGeneratorNode();

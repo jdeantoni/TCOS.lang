@@ -6,6 +6,7 @@ export abstract class Node {
     uid: integer;
     value:any;
     astNode: AstNode | undefined;
+
     constructor(value: any) {
         this.uid = Node.uidCounter++;
         this.value = value;
@@ -21,6 +22,7 @@ export class Edge {
     from: Node;
     to: Node;
     label?: string;
+    astNode: AstNode | undefined;
 
     constructor(from: Node, to: Node, label?: string) {
         this.from = from;
@@ -47,12 +49,14 @@ export class Graph {
         return node;
     }
 
-    addEdge(from: Node, to: Node, label:string=""): void {
-        let res = this.edges.find(e => e.from === from && e.to === to);
+    addEdge(from: Node, to: Node, label:string=""): Edge {
+        let res : Edge | undefined = this.edges.find(e => e.from === from && e.to === to);
         if (res == undefined) {
             const edge = new Edge(from, to);
             this.edges.push(edge);
+            return edge;
         }
+        return res;
     }
 
     replaceNode(oldNode: Node, newNode: Node): void {

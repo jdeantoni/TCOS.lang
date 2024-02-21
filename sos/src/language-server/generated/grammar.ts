@@ -2850,7 +2850,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             },
             {
               "$type": "Keyword",
-              "value": "number"
+              "value": "integer"
             },
             {
               "$type": "Keyword",

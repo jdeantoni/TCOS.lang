@@ -99,7 +99,7 @@ export function inferType(node: AstNode | undefined, cache: Map<AstNode, TypeDes
 
 function inferTypeRef(node: TypeReference, cache: Map<AstNode, TypeDescription>): TypeDescription {
     if (node.primitive) {
-        if (node.primitive.name === 'number') {
+        if (node.primitive.name === 'integer') {
             return createNumberType();
         } else if (node.primitive.name === 'string') {
             return createStringType();

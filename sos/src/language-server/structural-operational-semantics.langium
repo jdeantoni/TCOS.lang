@@ -255,7 +255,7 @@ TypeReference: reference=[AbstractRule:ID]
 ;
 
 SoSPrimitiveType:
-    name=("string" | "number" | "boolean" | "void" | "event"); 
+    name=("string" | "integer" | "boolean" | "void" | "event"); 
 
 
 type NamedElement = /*Parameter | FunctionDeclaration |*/ MethodMember |VariableDeclaration | RuleOpening | TemporaryVariable | SoSPrimitiveType | RWRule  ;  
