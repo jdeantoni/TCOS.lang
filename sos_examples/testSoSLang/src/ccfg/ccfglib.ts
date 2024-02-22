@@ -94,7 +94,7 @@ export class Graph {
     }
 
     getEdgeLabel(edge: Edge): string {
-        return edge.from.actions.map(a => a.replaceAll("\"","\\\"")).join(";\n");
+        return edge.from.actions.map(a => a.replaceAll("\"","\\\"")).join("\n");
     }
 
     getNodeLabel(node: Node): string {

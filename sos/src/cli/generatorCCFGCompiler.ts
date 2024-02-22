@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { CompositeGeneratorNode, Grammar,  NL, toString } from 'langium';
-import { Assignment, CollectionRuleSync, EventCombination, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, RWRule, RuleOpening, SingleRuleSync, SoSSpec, TypeReference, ValuedEventEmission, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration } from '../language-server/generated/ast.js'; //VariableDeclaration
+import { Assignment, BinaryExpression, CollectionRuleSync, EventCombination, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, RWRule, RuleOpening, SingleRuleSync, SoSSpec, TypeReference, ValuedEventEmission, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration } from '../language-server/generated/ast.js'; //VariableDeclaration
 import { extractDestinationAndName, FilePathData } from './cli-util.js';
 import path from 'path';
 import { inferType } from '../language-server/type-system/infer.js';
@@ -233,7 +233,9 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
     }
     let eventEmissionActions = ""
     for(let emission of ruleCF.rule.conclusion.eventemissions){
-        eventEmissionActions = eventEmissionActions + visitValuedEventEmission(emission as ValuedEventEmission)
+        if(emission.$type == "ValuedEventEmission"){
+            eventEmissionActions = eventEmissionActions + visitValuedEventEmission(emission as ValuedEventEmission)
+        }
     }
     file.append(`
     previousNode.actions =[...previousNode.actions, ...[${eventEmissionActions}]]
@@ -291,6 +293,20 @@ function getPreviousNodeName(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow
         this.ccfg.addEdge(${ruleCF.premiseParticipants[indexRight].name}TerminatesNode,${ruleCF.rule.name}AndJoinNode)
                 `)
                 multipleSynchroName=  `${ruleCF.rule.name}AndJoinNode`
+                let lhs = ruleCF.rule.premise.eventExpression.lhs
+                if(lhs.$type == "ExplicitValuedEventRef" || lhs.$type == "ImplicitValuedEventRef"){
+                    let leftActions: string = visitValuedEventRef(lhs as ValuedEventRef)
+                    file.append(`
+        ${multipleSynchroName}.actions = [...${multipleSynchroName}.actions, ...[${leftActions}]]
+                    `)
+                }
+                let rhs = ruleCF.rule.premise.eventExpression.rhs
+                if(rhs.$type == "ExplicitValuedEventRef" || rhs.$type == "ImplicitValuedEventRef"){
+                    let rightActions: string = visitValuedEventRef(rhs as ValuedEventRef)
+                    file.append(`
+        ${multipleSynchroName}.actions = [...${multipleSynchroName}.actions, ...[${rightActions}]]
+                    `)
+                }
                 break
             case "EventDisjunction":
                 file.append(`
@@ -332,6 +348,10 @@ function getPreviousNodeName(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow
             return multipleSynchroName
         }
     } else {
+        let varActions: string = visitValuedEventRef(ruleCF.rule.premise.eventExpression as ValuedEventRef)
+        file.append(`
+        ${ruleCF.premiseParticipants[0].name}TerminatesNode.actions = [...${ruleCF.premiseParticipants[0].name}TerminatesNode.actions, ...[${varActions}]]
+        `)
         return `${ruleCF.premiseParticipants[0].name}TerminatesNode`
     }
 }
@@ -595,6 +615,35 @@ function splitArrayByParticipants(elements: TypedElement[]): TypedElement[][] {
     
     return result;
 }
+
+
+
+/**
+ * for now in c++ like form but should be an interface to the target language
+ * @param runtimeState
+ * @returns
+ */
+function visitValuedEventRef(valuedEventRef: ValuedEventRef | undefined): string {
+    var res : string = ""
+    if (valuedEventRef != undefined) {
+        let v = valuedEventRef.tempVar
+        let varType = inferType(v, new Map())
+        let typeName = getCPPVariableTypeName(varType.$type)
+        if(valuedEventRef.tempVar != undefined && valuedEventRef.$type == "ImplicitValuedEventRef"){
+            //on the left of = it was getName(node.${(valuedEventRef.membercall as MemberCall).element?.$refText})
+            res = res + `\`${typeName}* \${getName(node)}${v.$cstNode?.offset} = \${getName(node.${(valuedEventRef.membercall as MemberCall).element?.$refText})}${"terminates"};//valuedEventRef ${valuedEventRef.tempVar.name}\``
+        }
+        if(valuedEventRef.tempVar != undefined && valuedEventRef.$type == "ExplicitValuedEventRef"){
+            let prev = (valuedEventRef.membercall as MemberCall)?.previous
+            res = res + `\`${typeName}* \${getName(node)}${v.$cstNode?.offset} = \${getName(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRef.membercall as MemberCall).element?.$refText};//valuedEventRef ${valuedEventRef.tempVar.name}\``
+        }
+    }
+    return res
+}
+
+
+
+
 /**
  * for now in c++ like form but should be an interface to the target language
  * @param runtimeState 
@@ -604,7 +653,7 @@ function visitVariableDeclaration(runtimeState: VariableDeclaration[] | undefine
     var res : string = ""
     if (runtimeState != undefined) {
         for(let vardDecl of runtimeState){
-            res = res + `\`${getVariableType(vardDecl.type)}* \${getName(node)}${vardDecl.name} = new ${getVariableType(vardDecl.type)}();\``
+            res = res + `\`sigma["\${getName(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}();\``
         }
     }
     return res
@@ -619,18 +668,40 @@ function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefine
     var res : string = ""
     if (valuedEmission != undefined) {
         let varType = inferType(valuedEmission.data, new Map())
+        let typeName = getCPPVariableTypeName(varType.$type)
         if(valuedEmission.data != undefined && valuedEmission.data.$type == "MemberCall"){
-            let prev = (valuedEmission.data.previous as MemberCall)?.element?.$refText
-            let elem = valuedEmission.data.element?.ref
-            if(elem == undefined){
-                return res
-            }
-            if(elem?.$type == "VariableDeclaration"){
-                res = res + `\`${varType.$type}* \${getName(node)}${valuedEmission.data.$cstNode?.offset} = (${varType.$type} *) sigma["\${getName(node.${prev != undefined?prev:elem.name})}${elem.name}"];\``
-            }else{
-                res = res + `\`${varType.$type}* \${getName(node)}${valuedEmission.data.$cstNode?.offset} = \${getName(node)}${prev != undefined?prev:elem.name};\`` 
-            }
+            res = createVariableFromMemberCall(valuedEmission.data as MemberCall, typeName)
         }
+        if(valuedEmission.data != undefined && valuedEmission.data.$type == "BinaryExpression"){
+            let lhs = (valuedEmission.data as BinaryExpression).left
+            let lhsType = inferType(lhs, new Map())
+            let lhsTypeName = getCPPVariableTypeName(lhsType.$type)
+            let leftRes = createVariableFromMemberCall(lhs as MemberCall, lhsTypeName)
+            res = res + leftRes+","
+            let rhs = (valuedEmission.data as BinaryExpression).right
+            let rhsType = inferType(rhs, new Map())
+            let rhsTypeName = getCPPVariableTypeName(rhsType.$type)
+            let rightRes = createVariableFromMemberCall(rhs as MemberCall, rhsTypeName)
+            res = res + rightRes+","
+            let applyOp = (valuedEmission.data as BinaryExpression).operator
+            res = res + `\`${typeName} \${getName(node)}${valuedEmission.data.$cstNode?.offset} = \${getName(node)}${rhs.$cstNode?.offset} ${applyOp} \${getName(node)}${rhs.$cstNode?.offset};\``
+        }
+        res = res + `,\`${typeName} \${getName(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  \${getName(node)}${valuedEmission.data.$cstNode?.offset};\``
+    }
+    return res
+}
+
+function createVariableFromMemberCall(data: MemberCall, typeName: string): string {
+    let res: string = ""
+    let prev = (data.previous as MemberCall)?.element
+    let elem = data.element?.ref
+    if (elem == undefined) {
+        return res
+    }
+    if (elem?.$type == "VariableDeclaration") {
+        res = res + `\`${typeName} \${getName(node)}${data.$cstNode?.offset} = *(${typeName} *) sigma["\${getName(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name}"];//${elem.name}}\``
+    } else {
+        res = res + `\`${typeName} \${getName(node)}${data.$cstNode?.offset} = \${getName(node)}${prev != undefined ? prev?.ref?.$cstNode?.offset : elem.$cstNode?.offset};\ //${elem.name}\``
     }
     return res
 }
@@ -651,11 +722,41 @@ function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefine
  * @returns 
  */
 function visitStateModifications(ruleCF: RuleControlFlow, actionsString: string) {
+    let res : string = ""
+    let sep = ""
     for (let action of ruleCF.rule.conclusion.statemodifications) {
-        actionsString = actionsString + `\`sigma[\"\${getName(node)}${action.lhs.$cstNode?.text}\"] = \${node.${action.rhs.$cstNode?.text}};\``;
+        /**
+         * TODO: fix this and avoid memory leak by deleting, constructing appropriately...
+         */
+        let rhsType = inferType(action.rhs, new Map())
+        let prev = ((action.rhs as MemberCall).previous as MemberCall)?.element
+        let elem = (action.rhs as MemberCall).element?.ref
+        if (elem == undefined) {
+            return res
+        }
+        res = res + sep + createVariableFromMemberCall(action.lhs as MemberCall, getCPPVariableTypeName(rhsType.$type))
+        sep = ","
+        res = res + sep + `\`sigma[\"\${getName(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name}"] = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};//TODO: fix this and avoid memory leak by deleting, constructing appropriately..\``;
     }
-    return actionsString;
+    return res;
 }
+
+function getCPPVariableTypeName(typeName: string): string {
+    switch (typeName) {
+        case "integer":
+            return "int";
+        case "string":
+            return "std::string";
+        case "boolean":
+            return "bool";
+        case "void":
+            return "void";
+        default:
+            return "void";
+    }
+    return "void"
+}
+
 
 function getVariableType(type: TypeReference | undefined) {
     if (type?.primitive) {

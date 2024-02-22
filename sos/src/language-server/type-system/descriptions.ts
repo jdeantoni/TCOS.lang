@@ -80,19 +80,19 @@ export function isStringType(item: TypeDescription): item is StringTypeDescripti
 }
 
 export interface NumberTypeDescription {
-    readonly $type: "number",
+    readonly $type: "integer",
     readonly literal?: NumberExpression
 }
 
 export function createNumberType(literal?: NumberExpression): NumberTypeDescription {
     return {
-        $type: "number",
+        $type: "integer",
         literal
     };
 }
 
 export function isNumberType(item: TypeDescription): item is NumberTypeDescription {
-    return item.$type === "number";
+    return item.$type === "integer";
 }
 
 export interface FunctionTypeDescription {

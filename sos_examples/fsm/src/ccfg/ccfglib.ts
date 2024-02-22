@@ -6,10 +6,12 @@ export abstract class Node {
     uid: integer;
     value:any;
     astNode: AstNode | undefined;
+    actions: string[];
 
-    constructor(value: any) {
+    constructor(value: any, theActions: string[] = []) {
         this.uid = Node.uidCounter++;
         this.value = value;
+        this.actions = theActions;
     }
 
     getType(): string {
@@ -85,10 +87,14 @@ export class Graph {
             dot += `  "${node.uid}" [label="${label}" shape="${shape}"];\n`;
         }
         for (let edge of this.edges) {
-            dot += `  "${edge.from.uid}" -> "${edge.to.uid}" [label="${(edge.label != undefined)?edge.label:""}"];\n`;
+            dot += `  "${edge.from.uid}" -> "${edge.to.uid}" [label="${this.getEdgeLabel(edge)}"];\n`;
         }
         dot += '}';
         return dot;
+    }
+
+    getEdgeLabel(edge: Edge): string {
+        return edge.from.actions.map(a => a.replaceAll("\"","\\\"")).join("\n");
     }
 
     getNodeLabel(node: Node): string {
@@ -133,8 +139,9 @@ export class Graph {
 }
 
 export class Step extends Node {
-    constructor(value: any) {
-        super(value);
+    
+    constructor(value: any, theActions: string[] = []) {
+        super(value, theActions);
     }
 }
 
