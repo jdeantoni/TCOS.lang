@@ -91,7 +91,7 @@ open Assignment {
     --------------------------                                  executeAssignment
       <this,σ> ~> <expr,σ>
 
-          when <expr,σ> -> resRight                       
+          when <expr,σ> -> resRight:integer                       
     ----------------------------------------------------------- executeAssignment2
       <this,σ> ~> variable.currentValue := resRight; 
                   //variable.allReaders()->concurrent.foreach(r => r.updates)
@@ -127,11 +127,11 @@ open Conjunction { //parallel version
       <this,σ> ~> <lhs,σ>
                   <rhs,σ>   
  
-      when (<lhs,σ> -> true ^ <rhs,σ> -> res)
+      when (<lhs,σ> -> true ^ <rhs,σ> -> res:boolean)
     -------------------------------------------                 evaluateConjunction2
           <this,σ> ~> terminates[res]
 
-      when (<rhs,σ> -> true ^ <lhs,σ> -> res)
+      when (<rhs,σ> -> true ^ <lhs,σ> -> res:boolean)
     -------------------------------------------                 evaluateConjunction3
           <this,σ> ~> terminates[res]
 }
@@ -142,8 +142,8 @@ open Plus {
         <this,σ> ~> <right,σ>
                     <left,σ>
    
-      when (<right,σ> -> n2 ^ <left,σ> -> n1)
-    -------------------------------------------                 finishPlus
+      when (<right,σ> -> n2:integer ^ <left,σ> -> n1:integer)
+    ----------------------------------------------------------  finishPlus
         <this,σ> ~> terminates[(n1 + n2)]
 }
 

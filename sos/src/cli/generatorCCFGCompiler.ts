@@ -631,11 +631,11 @@ function visitValuedEventRef(valuedEventRef: ValuedEventRef | undefined): string
         let typeName = getCPPVariableTypeName(varType.$type)
         if(valuedEventRef.tempVar != undefined && valuedEventRef.$type == "ImplicitValuedEventRef"){
             //on the left of = it was getName(node.${(valuedEventRef.membercall as MemberCall).element?.$refText})
-            res = res + `\`${typeName}* \${getName(node)}${v.$cstNode?.offset} = \${getName(node.${(valuedEventRef.membercall as MemberCall).element?.$refText})}${"terminates"};//valuedEventRef ${valuedEventRef.tempVar.name}\``
+            res = res + `\`${typeName} \${getName(node)}${v.$cstNode?.offset} = \${getName(node.${(valuedEventRef.membercall as MemberCall).element?.$refText})}${"terminates"};//valuedEventRef ${valuedEventRef.tempVar.name}\``
         }
         if(valuedEventRef.tempVar != undefined && valuedEventRef.$type == "ExplicitValuedEventRef"){
             let prev = (valuedEventRef.membercall as MemberCall)?.previous
-            res = res + `\`${typeName}* \${getName(node)}${v.$cstNode?.offset} = \${getName(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRef.membercall as MemberCall).element?.$refText};//valuedEventRef ${valuedEventRef.tempVar.name}\``
+            res = res + `\`${typeName} \${getName(node)}${v.$cstNode?.offset} = \${getName(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRef.membercall as MemberCall).element?.$refText};//valuedEventRef ${valuedEventRef.tempVar.name}\``
         }
     }
     return res
@@ -700,8 +700,12 @@ function createVariableFromMemberCall(data: MemberCall, typeName: string): strin
     }
     if (elem?.$type == "VariableDeclaration") {
         res = res + `\`${typeName} \${getName(node)}${data.$cstNode?.offset} = *(${typeName} *) sigma["\${getName(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name}"];//${elem.name}}\``
-    } else {
+    } 
+    else if (elem?.$type == "TemporaryVariable") {
         res = res + `\`${typeName} \${getName(node)}${data.$cstNode?.offset} = \${getName(node)}${prev != undefined ? prev?.ref?.$cstNode?.offset : elem.$cstNode?.offset};\ //${elem.name}\``
+    }
+    else /*if (elem?.$type == "Assignment")*/ {
+        res = res + `\`${typeName} \${getName(node)}${data.$cstNode?.offset} = \${node.${data.$cstNode?.text}};\ //${elem.name}\``
     }
     return res
 }
@@ -729,14 +733,26 @@ function visitStateModifications(ruleCF: RuleControlFlow, actionsString: string)
          * TODO: fix this and avoid memory leak by deleting, constructing appropriately...
          */
         let rhsType = inferType(action.rhs, new Map())
-        let prev = ((action.rhs as MemberCall).previous as MemberCall)?.element
-        let elem = (action.rhs as MemberCall).element?.ref
-        if (elem == undefined) {
+        // let rhsPrev = ((action.rhs as MemberCall).previous as MemberCall)?.element
+        let rhsElem = (action.rhs as MemberCall).element?.ref
+        if (rhsElem == undefined) {
             return res
         }
-        res = res + sep + createVariableFromMemberCall(action.lhs as MemberCall, getCPPVariableTypeName(rhsType.$type))
+        // let lhsType = inferType(action.lhs, new Map())
+        let lhsPrev = ((action.lhs as MemberCall).previous as MemberCall)?.element
+        let lhsElem = (action.lhs as MemberCall).element?.ref
+        if (lhsElem == undefined) {
+            return res
+        }
+        res = res + sep + createVariableFromMemberCall(action.rhs as MemberCall, getCPPVariableTypeName(rhsType.$type))
         sep = ","
-        res = res + sep + `\`sigma[\"\${getName(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name}"] = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};//TODO: fix this and avoid memory leak by deleting, constructing appropriately..\``;
+        console.log("elem type: "+rhsElem.$type)
+        if(rhsElem.$type == "TemporaryVariable"){
+            res = res + sep + `\`*(sigma[\"\${getName(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"]) = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};//TODO: fix this and avoid memory leak by deleting, constructing appropriately..\``;
+        }else{
+            res = res + sep + `\`*(sigma[\"\${getName(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"]) = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};//TODO: fix this and avoid memory leak by deleting, constructing appropriately..\``;
+            
+        }
     }
     return res;
 }

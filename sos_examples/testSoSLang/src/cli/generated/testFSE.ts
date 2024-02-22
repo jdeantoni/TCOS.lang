@@ -214,7 +214,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = startsNode
     
-    previousNode.actions =[...previousNode.actions, ...[`void ${getName(node)}1369 = *(void *) sigma["${getName(node)}currentValue"];//currentValue}`,`sigma["${getName(node)}undefined"] = ${getName(node)}1385;//TODO: fix this and avoid memory leak by deleting, constructing appropriately..`]]
+    previousNode.actions =[...previousNode.actions, ...[`void ${getName(node)}1385 = ${node.initialValue}; //undefined`,`*(sigma["${getName(node)}currentValue"]) = ${getName(node)}1385;//TODO: fix this and avoid memory leak by deleting, constructing appropriately..`]]
     
         this.ccfg.addEdge(previousNode,terminatesNode)
         
@@ -354,11 +354,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         
     previousNode.actions =[...previousNode.actions, ...[]]
     
-        exprTerminatesNode.actions = [...exprTerminatesNode.actions, ...[`void* ${getName(node)}2363 = ${getName(node.expr)}terminates;//valuedEventRef resRight`]]
+        exprTerminatesNode.actions = [...exprTerminatesNode.actions, ...[`int ${getName(node)}2363 = ${getName(node.expr)}terminates;//valuedEventRef resRight`]]
         
         previousNode = exprTerminatesNode
     
-    previousNode.actions =[...previousNode.actions, ...[`void ${getName(node)}2496 = *(void *) sigma["${getName(node.variable)}currentValue"];//currentValue}`,`sigma["${getName(node)}resRight"] = ${getName(node)}2521;//TODO: fix this and avoid memory leak by deleting, constructing appropriately..`]]
+    previousNode.actions =[...previousNode.actions, ...[`int ${getName(node)}2529 = ${getName(node)}2363; //resRight`,`*(sigma["${getName(node.variable)}currentValue"]) = ${getName(node)}2529;//TODO: fix this and avoid memory leak by deleting, constructing appropriately..`]]
     
         this.ccfg.addEdge(previousNode,terminatesNode)
         
@@ -411,7 +411,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         this.ccfg.addEdge(lhsTerminatesNode,evaluateConjunction2AndJoinNode)
         this.ccfg.addEdge(rhsTerminatesNode,evaluateConjunction2AndJoinNode)
                 
-        evaluateConjunction2AndJoinNode.actions = [...evaluateConjunction2AndJoinNode.actions, ...[`void* ${getName(node)}3604 = ${getName(node.rhs)}terminates;//valuedEventRef res`]]
+        evaluateConjunction2AndJoinNode.actions = [...evaluateConjunction2AndJoinNode.actions, ...[`bool ${getName(node)}3612 = ${getName(node.rhs)}terminates;//valuedEventRef res`]]
                     
         let evaluateConjunction2ConditionNode: Node = new Choice("evaluateConjunction2ConditionNode")
         this.ccfg.addNode(evaluateConjunction2ConditionNode)
@@ -423,14 +423,14 @@ export class CCFGVisitor implements SimpleLVisitor {
     
         this.ccfg.addEdge(previousNode,joinNode)
         
-    previousNode.actions =[...previousNode.actions, ...[`void ${getName(node)}3727 = ${getName(node)}3604; //res`,`void ${getName(node)}terminates =  ${getName(node)}3727;`]]
+    previousNode.actions =[...previousNode.actions, ...[`bool ${getName(node)}3743 = ${getName(node)}3612; //res`,`bool ${getName(node)}terminates =  ${getName(node)}3743;`]]
     
         let evaluateConjunction3AndJoinNode: Node = new AndJoin("evaluateConjunction3AndJoinNode")
         this.ccfg.addNode(evaluateConjunction3AndJoinNode)
         this.ccfg.addEdge(rhsTerminatesNode,evaluateConjunction3AndJoinNode)
         this.ccfg.addEdge(lhsTerminatesNode,evaluateConjunction3AndJoinNode)
                 
-        evaluateConjunction3AndJoinNode.actions = [...evaluateConjunction3AndJoinNode.actions, ...[`void* ${getName(node)}3774 = ${getName(node.lhs)}terminates;//valuedEventRef res`]]
+        evaluateConjunction3AndJoinNode.actions = [...evaluateConjunction3AndJoinNode.actions, ...[`bool ${getName(node)}3790 = ${getName(node.lhs)}terminates;//valuedEventRef res`]]
                     
         let evaluateConjunction3ConditionNode: Node = new Choice("evaluateConjunction3ConditionNode")
         this.ccfg.addNode(evaluateConjunction3ConditionNode)
@@ -442,7 +442,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     
         this.ccfg.addEdge(previousNode,joinNode)
         
-    previousNode.actions =[...previousNode.actions, ...[`void ${getName(node)}3897 = ${getName(node)}3604; //res`,`void ${getName(node)}terminates =  ${getName(node)}3897;`]]
+    previousNode.actions =[...previousNode.actions, ...[`bool ${getName(node)}3921 = ${getName(node)}3612; //res`,`bool ${getName(node)}terminates =  ${getName(node)}3921;`]]
     
 
         return [startsNode,terminatesNode]
@@ -484,9 +484,9 @@ export class CCFGVisitor implements SimpleLVisitor {
         this.ccfg.addEdge(rightTerminatesNode,finishPlusAndJoinNode)
         this.ccfg.addEdge(leftTerminatesNode,finishPlusAndJoinNode)
                 
-        finishPlusAndJoinNode.actions = [...finishPlusAndJoinNode.actions, ...[`void* ${getName(node)}4109 = ${getName(node.right)}terminates;//valuedEventRef n2`]]
+        finishPlusAndJoinNode.actions = [...finishPlusAndJoinNode.actions, ...[`int ${getName(node)}4133 = ${getName(node.right)}terminates;//valuedEventRef n2`]]
                     
-        finishPlusAndJoinNode.actions = [...finishPlusAndJoinNode.actions, ...[`void* ${getName(node)}4126 = ${getName(node.left)}terminates;//valuedEventRef n1`]]
+        finishPlusAndJoinNode.actions = [...finishPlusAndJoinNode.actions, ...[`int ${getName(node)}4158 = ${getName(node.left)}terminates;//valuedEventRef n1`]]
                     
         previousNode = finishPlusAndJoinNode
     
@@ -494,7 +494,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     
         this.ccfg.addEdge(previousNode,terminatesNode)
         
-    previousNode.actions =[...previousNode.actions, ...[`void ${getName(node)}4237 = ${getName(node)}4126; //n1`,`void ${getName(node)}4242 = ${getName(node)}4109; //n2`,`int ${getName(node)}4236 = ${getName(node)}4242 + ${getName(node)}4242;`,`int ${getName(node)}terminates =  ${getName(node)}4236;`]]
+    previousNode.actions =[...previousNode.actions, ...[`int ${getName(node)}4277 = ${getName(node)}4158; //n1`,`int ${getName(node)}4282 = ${getName(node)}4133; //n2`,`int ${getName(node)}4276 = ${getName(node)}4282 + ${getName(node)}4282;`,`int ${getName(node)}terminates =  ${getName(node)}4276;`]]
     
 
         return [startsNode,terminatesNode]
@@ -517,7 +517,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     
         this.ccfg.addEdge(previousNode,terminatesNode)
         
-    previousNode.actions =[...previousNode.actions, ...[`void ${getName(node)}4415 = ${getName(node)}376; //undefined`,`void ${getName(node)}terminates =  ${getName(node)}4415;`]]
+    previousNode.actions =[...previousNode.actions, ...[`void ${getName(node)}4455 = ${node.value}; //undefined`,`void ${getName(node)}terminates =  ${getName(node)}4455;`]]
     
 
         return [startsNode,terminatesNode]
