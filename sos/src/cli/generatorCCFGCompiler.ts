@@ -9,7 +9,6 @@ import { inferType } from '../language-server/type-system/infer.js';
 
 
 
-
 export function generateStuffFromSoS(model: SoSSpec, grammar: Grammar[], filePath: string, destination: string | undefined): string {
     const data = extractDestinationAndName(filePath, destination);
     const generatedFilePath = `${path.join(data.destination, data.name)}.ts`;
@@ -55,7 +54,7 @@ export interface SimpleLVisitor {
 
     file.append(`
 export class CCFGVisitor implements SimpleLVisitor {
-    ccfg: Graph = new Graph();
+    ccfg: CCFG = new CCFG();
 
     visit(node: AstNode): [Node,Node] {`);
 
@@ -165,19 +164,30 @@ function checkIfMultipleTerminate(rulesCF: RuleControlFlow[]) {
  */
 function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode, rulesCF: RuleControlFlow[], previousNodeName: string, terminatesNodeName: string) {
     file.append(`
-        previousNode = ${getPreviousNodeName(ruleCF, rulesCF, previousNodeName, file)}
+        previousNode = ${handlePreviousPremise(ruleCF, rulesCF, previousNodeName, file)}
     `)
+    
+    let guardActions = ""
+    let isSimpleComparison = ruleCF.rule.premise.eventExpression.$type == "ExplicitValuedEventRefConstantComparison"
+    || ruleCF.rule.premise.eventExpression.$type == "ImplicitValuedEventRefConstantComparison";
+    if(isSimpleComparison){
+        guardActions = visitValuedEventRefComparison(ruleCF.rule.premise.eventExpression as ValuedEventRefConstantComparison)
+    }
+
     let actionsString = ""
     actionsString = visitStateModifications(ruleCF, actionsString);
     file.append(`
-    previousNode.actions =[...previousNode.actions, ...[${actionsString}]]
+    previousNode.actions =[...previousNode.actions, ...[${actionsString}]] //AA
     `);
     let isMultipleEmission = ruleCF.rule.conclusion.eventemissions.length > 1;
     if (isMultipleEmission) {
         file.append(`
         let ${ruleCF.rule.name}ForkNode: Node = new Fork("${ruleCF.rule.name}ForkNode")
         this.ccfg.addNode(${ruleCF.rule.name}ForkNode)
-        this.ccfg.addEdge(previousNode,${ruleCF.rule.name}ForkNode)
+        {let e = this.ccfg.addEdge(previousNode,${ruleCF.rule.name}ForkNode)
+        e.guards = [...e.guards, ...[${guardActions}]] //BB
+        }
+        // ${ruleCF.rule.name}ForkNode.actions = [...${ruleCF.rule.name}ForkNode.actions, ...[${guardActions}]] //BB
         `);
         let splittedConclusionParticipants = splitArrayByParticipants(ruleCF.conclusionParticipants);
         for (let emissionParticipant of splittedConclusionParticipants) {
@@ -193,20 +203,30 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
             let isConcurrent = (ruleCF.rule.conclusion.eventemissions[0] as CollectionRuleSync).order == "concurrent";
             if (isConcurrent) {
                 file.append(`
-        let forkNode: Node = new Fork("${ruleCF.rule.name}ForkNode")
-        this.ccfg.addNode(forkNode)
-        this.ccfg.addEdge(previousNode,forkNode)
+        let ${ruleCF.rule.name}ForkNode: Node = new Fork("${ruleCF.rule.name}ForkNode")
+        this.ccfg.addNode(${ruleCF.rule.name}ForkNode)
+        {let e = this.ccfg.addEdge(previousNode,${ruleCF.rule.name}ForkNode)
+        e.guards = [...e.guards, ...[${guardActions}]] //CC
+        }
+        // ${ruleCF.rule.name}ForkNode.actions = [...${ruleCF.rule.name}ForkNode.actions, ...[${guardActions}]] //CC
+
 
         let ${ruleCF.rule.name}FakeNode: Node = new AndJoin("${ruleCF.rule.name}FakeNode")    
         this.ccfg.addNode(${ruleCF.rule.name}FakeNode)    
         for (var child of node.${ruleCF.conclusionParticipants[0].name}) {
             let [childStartsNode,childTerminatesNode] = this.visit(child)
-            this.ccfg.addEdge(forkNode,childStartsNode)
+            this.ccfg.addEdge(${ruleCF.rule.name}ForkNode,childStartsNode)
             this.ccfg.addEdge(childTerminatesNode,${ruleCF.rule.name}FakeNode)
         }
         `);
             } else {
                 file.append(`
+        let ${ruleCF.rule.name}StepNode = new Step("${ruleCF.rule.name}StepNode")
+        this.ccfg.addNode(${ruleCF.rule.name}StepNode)
+        let e = this.ccfg.addEdge(previousNode,${ruleCF.rule.name}StepNode)
+        e.guards = [...e.guards, ...[${guardActions}]] //DD
+        // ${ruleCF.rule.name}StepNode.actions = [...${ruleCF.rule.name}StepNode.actions, ...[${guardActions}]] //DD
+        previousNode = ${ruleCF.rule.name}StepNode
         for (var child of node.${ruleCF.conclusionParticipants[0].name}) {
             let [childStartsNode,childTerminatesNode] = this.visit(child)
             this.ccfg.addEdge(previousNode,childStartsNode)
@@ -219,13 +239,19 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
         } else { //single emission, single event
             if (ruleCF.conclusionParticipants[ruleCF.conclusionParticipants.length - 1].name != undefined && ruleCF.conclusionParticipants[ruleCF.conclusionParticipants.length - 1].name == "terminates") {
                 file.append(`
-        this.ccfg.addEdge(previousNode,${terminatesNodeName})
+        {let e = this.ccfg.addEdge(previousNode,${terminatesNodeName})
+        e.guards = [...e.guards, ...[${guardActions}]] //EE
+        }
+        // ${terminatesNodeName}.actions = [...${terminatesNodeName}.actions, ...[${guardActions}]]    //EE
         `);
             } else {
                 let toVisitName = ruleCF.conclusionParticipants[0].name;
                 file.append(`
         let [${toVisitName}StartsNode,${toVisitName}TerminatesNode] = this.visit(node.${toVisitName})
-        this.ccfg.addEdge(previousNode,${toVisitName}StartsNode)
+        {let e = this.ccfg.addEdge(previousNode,${toVisitName}StartsNode)
+        e.guards = [...e.guards, ...[${guardActions}]] //FF
+        }
+        // ${toVisitName}StartsNode.actions = [...${toVisitName}StartsNode.actions, ...[${guardActions}]] //FF
         `);
 
             }
@@ -238,7 +264,7 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
         }
     }
     file.append(`
-    previousNode.actions =[...previousNode.actions, ...[${eventEmissionActions}]]
+    previousNode.actions =[...previousNode.actions, ...[${eventEmissionActions}]] //GG
     `);
 }
 
@@ -249,16 +275,12 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
  * @param previousNodeName 
  * @returns the previous node name
  */
-function getPreviousNodeName(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow[], previousNodeName: string, file: CompositeGeneratorNode): string {
+function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow[], previousNodeName: string, file: CompositeGeneratorNode): string {
     let isStartingRule = ruleCF.premiseParticipants[0].name == "starts";
     if (isStartingRule) {
         return previousNodeName
     }
 
-    /**
-     * TODO : handle the general case where the premise is a complex comparison, typically inside a conjunction or disjunction
-     * In this case, a choice node is required after the synchronization node. Somehow, the previous node mechanism should be recursive
-     */
     let isSimpleComparison = ruleCF.rule.premise.eventExpression.$type == "ExplicitValuedEventRefConstantComparison"
                             || ruleCF.rule.premise.eventExpression.$type == "ImplicitValuedEventRefConstantComparison";
 
@@ -274,6 +296,7 @@ function getPreviousNodeName(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow
             this.ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode,${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name})
         }
         `)
+
         return `${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name}`
     }
 
@@ -284,6 +307,8 @@ function getPreviousNodeName(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow
     if (isMultipleSynchronization) {
         const indexRight = ruleCF.premiseParticipants.findIndex(p => p.type == "event") + 1
         let multipleSynchroName: string = ""
+        let premiseActions: string = ""
+        let premiseGuards: string = ""
         switch (ruleCF.rule.premise.eventExpression.$type) {
             case "EventConjunction":
                 file.append(`
@@ -293,20 +318,9 @@ function getPreviousNodeName(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow
         this.ccfg.addEdge(${ruleCF.premiseParticipants[indexRight].name}TerminatesNode,${ruleCF.rule.name}AndJoinNode)
                 `)
                 multipleSynchroName=  `${ruleCF.rule.name}AndJoinNode`
-                let lhs = ruleCF.rule.premise.eventExpression.lhs
-                if(lhs.$type == "ExplicitValuedEventRef" || lhs.$type == "ImplicitValuedEventRef"){
-                    let leftActions: string = visitValuedEventRef(lhs as ValuedEventRef)
-                    file.append(`
-        ${multipleSynchroName}.actions = [...${multipleSynchroName}.actions, ...[${leftActions}]]
-                    `)
-                }
-                let rhs = ruleCF.rule.premise.eventExpression.rhs
-                if(rhs.$type == "ExplicitValuedEventRef" || rhs.$type == "ImplicitValuedEventRef"){
-                    let rightActions: string = visitValuedEventRef(rhs as ValuedEventRef)
-                    file.append(`
-        ${multipleSynchroName}.actions = [...${multipleSynchroName}.actions, ...[${rightActions}]]
-                    `)
-                }
+               let [a, g] = visitMultipleSynchroEventRef(ruleCF.rule.premise.eventExpression.lhs, ruleCF.rule.premise.eventExpression.rhs);
+               premiseActions = a
+               premiseGuards = g
                 break
             case "EventDisjunction":
                 file.append(`
@@ -316,6 +330,9 @@ function getPreviousNodeName(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow
         this.ccfg.addEdge(${ruleCF.premiseParticipants[indexRight].name}TerminatesNode,${ruleCF.rule.name}OrJoinNode)
                 `)
                 multipleSynchroName= `${ruleCF.rule.name}OrJoinNode`
+                let [a2, g2] = visitMultipleSynchroEventRef(ruleCF.rule.premise.eventExpression.lhs, ruleCF.rule.premise.eventExpression.rhs);
+                premiseActions = a2
+                premiseGuards = g2
                 break
             case "NaryEventExpression":
                 if (ruleCF.rule.premise.eventExpression.policy.operator == "lastOf") {
@@ -333,7 +350,10 @@ function getPreviousNodeName(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow
                     break
                 }
         }
+
+
         if (ruleCF.rule.premise.eventExpression.$type === "NaryEventExpression") {
+            //no premise actions ?
             return multipleSynchroName
         }
         let ownsACondition = chekIfOwnsACondition(ruleCF.rule.premise.eventExpression as EventCombination)
@@ -343,17 +363,58 @@ function getPreviousNodeName(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow
         this.ccfg.addNode(${ruleCF.rule.name}ConditionNode)
         this.ccfg.addEdge(${multipleSynchroName},${ruleCF.rule.name}ConditionNode)
             `)
-            return `${ruleCF.rule.name}ConditionNode`
-        }else{
-            return multipleSynchroName
+            multipleSynchroName= `${ruleCF.rule.name}ConditionNode`
         }
+
+        file.append(`
+        ${multipleSynchroName}.actions = [...${multipleSynchroName}.actions, ...[${premiseActions}]] //HH
+        `)
+        if(premiseGuards.length>0){
+            console.log("TODO !!! use premiseGuards",premiseGuards)
+        }
+        return multipleSynchroName
+        
     } else {
         let varActions: string = visitValuedEventRef(ruleCF.rule.premise.eventExpression as ValuedEventRef)
         file.append(`
-        ${ruleCF.premiseParticipants[0].name}TerminatesNode.actions = [...${ruleCF.premiseParticipants[0].name}TerminatesNode.actions, ...[${varActions}]]
+        ${ruleCF.premiseParticipants[0].name}TerminatesNode.actions = [...${ruleCF.premiseParticipants[0].name}TerminatesNode.actions, ...[${varActions}]] //II
         `)
         return `${ruleCF.premiseParticipants[0].name}TerminatesNode`
     }
+}
+
+function visitMultipleSynchroEventRef(lhs: EventExpression, rhs: EventExpression) :[string, string]{
+    let actions : string = ""
+    let guards : string = ""
+    if (lhs.$type == "ExplicitValuedEventRef" || lhs.$type == "ImplicitValuedEventRef") {
+        let leftActions: string = visitValuedEventRef(lhs as ValuedEventRef);
+        if(actions.length>0){
+            actions+=","      
+        }
+        actions+=leftActions 
+    }
+    if (rhs.$type == "ExplicitValuedEventRef" || rhs.$type == "ImplicitValuedEventRef") {
+        let rightActions: string = visitValuedEventRef(rhs as ValuedEventRef);
+        if(actions.length>0){
+            actions+=","       
+        }
+        actions+=rightActions
+    }
+    if (lhs.$type == "ExplicitValuedEventRefConstantComparison" || lhs.$type == "ImplicitValuedEventRefConstantComparison") {
+        let leftGuards: string = visitValuedEventRefComparison(lhs as ValuedEventRefConstantComparison);
+        if(actions.length>0){
+            actions+="," 
+        }
+        guards+=leftGuards      
+    }
+    if (rhs.$type == "ExplicitValuedEventRefConstantComparison" || rhs.$type == "ImplicitValuedEventRefConstantComparison") {
+        let rightGuards: string = visitValuedEventRefComparison(rhs as ValuedEventRefConstantComparison);
+        if(actions.length>0){
+            actions+="," 
+        }
+        guards+=rightGuards
+    }
+    return [actions,guards]
 }
 
 function chekIfOwnsACondition(comb: EventCombination): boolean {
@@ -387,7 +448,7 @@ function checkIfEventEmissionIsCollectionBased(ruleCF: RuleControlFlow) {
 function writePreambule(fileNode: CompositeGeneratorNode, data: FilePathData) {
     fileNode.append(`
 import { AstNode, Reference, isReference } from "langium";
-import { AndJoin, Choice, Fork, Graph, Node, OrJoin, Step } from "../../ccfg/ccfglib";`, NL)
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step } from "../../ccfg/ccfglib";`, NL)
 }
 
 
@@ -617,6 +678,33 @@ function splitArrayByParticipants(elements: TypedElement[]): TypedElement[][] {
 }
 
 
+/**
+ * for now in c++ like form but should be an interface to the target language
+ * @param runtimeState
+ * @returns
+ */
+function visitValuedEventRefComparison(valuedEventRefComparison: ValuedEventRefConstantComparison | undefined): string {
+    var res : string = ""
+    if (valuedEventRefComparison != undefined) {
+        let v = valuedEventRefComparison.literal
+        // let varType: TypeDescription
+
+        // if(typeof(valuedEventRefComparison.literal) == "string"){
+        //     varType = createStringType(undefined)
+        // }else{
+        //     varType = inferType(valuedEventRefComparison.literal, new Map())
+        // }
+        if(valuedEventRefComparison.$type == "ImplicitValuedEventRefConstantComparison"){
+            res = res + `\`(bool)\${getName(node.${(valuedEventRefComparison.membercall as MemberCall).element?.$refText})}${"terminates"} == ${(typeof(v) == "string")?v:v.$cstNode?.text}\``
+        }
+        if(valuedEventRefComparison.$type == "ExplicitValuedEventRefConstantComparison"){
+            let prev = (valuedEventRefComparison.membercall as MemberCall)?.previous
+            res = res + `\`(bool)\${getName(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRefComparison.membercall as MemberCall).element?.$refText} == ${(typeof(v) == "string")?v:v.$cstNode?.text}\``
+        }
+    }
+    return res
+}
+
 
 /**
  * for now in c++ like form but should be an interface to the target language
@@ -630,7 +718,6 @@ function visitValuedEventRef(valuedEventRef: ValuedEventRef | undefined): string
         let varType = inferType(v, new Map())
         let typeName = getCPPVariableTypeName(varType.$type)
         if(valuedEventRef.tempVar != undefined && valuedEventRef.$type == "ImplicitValuedEventRef"){
-            //on the left of = it was getName(node.${(valuedEventRef.membercall as MemberCall).element?.$refText})
             res = res + `\`${typeName} \${getName(node)}${v.$cstNode?.offset} = \${getName(node.${(valuedEventRef.membercall as MemberCall).element?.$refText})}${"terminates"};//valuedEventRef ${valuedEventRef.tempVar.name}\``
         }
         if(valuedEventRef.tempVar != undefined && valuedEventRef.$type == "ExplicitValuedEventRef"){
@@ -653,7 +740,7 @@ function visitVariableDeclaration(runtimeState: VariableDeclaration[] | undefine
     var res : string = ""
     if (runtimeState != undefined) {
         for(let vardDecl of runtimeState){
-            res = res + `\`sigma["\${getName(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}();\``
+            res = res + `\`sigma["\${getName(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?`\${node.${(vardDecl.value as MemberCall).element?.$refText}}`:""});\``
         }
     }
     return res
@@ -669,6 +756,7 @@ function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefine
     if (valuedEmission != undefined) {
         let varType = inferType(valuedEmission.data, new Map())
         let typeName = getCPPVariableTypeName(varType.$type)
+
         if(valuedEmission.data != undefined && valuedEmission.data.$type == "MemberCall"){
             res = createVariableFromMemberCall(valuedEmission.data as MemberCall, typeName)
         }
@@ -686,7 +774,10 @@ function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefine
             let applyOp = (valuedEmission.data as BinaryExpression).operator
             res = res + `\`${typeName} \${getName(node)}${valuedEmission.data.$cstNode?.offset} = \${getName(node)}${rhs.$cstNode?.offset} ${applyOp} \${getName(node)}${rhs.$cstNode?.offset};\``
         }
-        res = res + `,\`${typeName} \${getName(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  \${getName(node)}${valuedEmission.data.$cstNode?.offset};\``
+        if(res.length > 0){
+            res = res + ","
+        }
+        res = res + `\`${typeName} \${getName(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  \${getName(node)}${valuedEmission.data.$cstNode?.offset};\``
     }
     return res
 }
@@ -732,25 +823,30 @@ function visitStateModifications(ruleCF: RuleControlFlow, actionsString: string)
         /**
          * TODO: fix this and avoid memory leak by deleting, constructing appropriately...
          */
-        let rhsType = inferType(action.rhs, new Map())
+        let typeName = ""; 
+        let rhsType = inferType(action.rhs, new Map());
+        typeName = getCPPVariableTypeName(rhsType.$type);
+        if (typeName == "unknown") {
+            let lhsType = inferType(action.lhs, new Map())
+            typeName = getCPPVariableTypeName(lhsType.$type);
+        }
         // let rhsPrev = ((action.rhs as MemberCall).previous as MemberCall)?.element
         let rhsElem = (action.rhs as MemberCall).element?.ref
         if (rhsElem == undefined) {
             return res
         }
-        // let lhsType = inferType(action.lhs, new Map())
         let lhsPrev = ((action.lhs as MemberCall).previous as MemberCall)?.element
         let lhsElem = (action.lhs as MemberCall).element?.ref
         if (lhsElem == undefined) {
             return res
         }
-        res = res + sep + createVariableFromMemberCall(action.rhs as MemberCall, getCPPVariableTypeName(rhsType.$type))
+
+        res = res + sep + createVariableFromMemberCall(action.rhs as MemberCall, typeName)
         sep = ","
-        console.log("elem type: "+rhsElem.$type)
         if(rhsElem.$type == "TemporaryVariable"){
-            res = res + sep + `\`*(sigma[\"\${getName(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"]) = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};//TODO: fix this and avoid memory leak by deleting, constructing appropriately..\``;
+            res = res + sep + `\`*((${typeName}*)sigma[\"\${getName(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"]) = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};//TODO: fix this and avoid memory leak by deleting, constructing appropriately..\``;
         }else{
-            res = res + sep + `\`*(sigma[\"\${getName(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"]) = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};//TODO: fix this and avoid memory leak by deleting, constructing appropriately..\``;
+            res = res + sep + `\`*((${typeName}*)sigma[\"\${getName(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"]) = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};//TODO: fix this and avoid memory leak by deleting, constructing appropriately..\``;
             
         }
     }
@@ -768,7 +864,7 @@ function getCPPVariableTypeName(typeName: string): string {
         case "void":
             return "void";
         default:
-            return "void";
+            return "unknown";
     }
     return "void"
 }

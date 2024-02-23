@@ -1,6 +1,6 @@
 import { AstNode } from "langium";
 import { Assignment, Bloc, Conjunction, Disjunction, If, Model, ParallelBloc, Plus, Variable, VarRef, BooleanConst } from "../language-server/generated/ast";
-import { AndJoin, Choice, Fork, Graph, Node, OrJoin, Step } from "../ccfg/ccfglib";
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step } from "../ccfg/ccfglib";
 
 export interface SimpleLVisitor {
     visit(node: AstNode): [Node,Node];
@@ -20,7 +20,7 @@ export interface SimpleLVisitor {
 
 export class CCFGVisitor implements SimpleLVisitor {
    
-    ccfg: Graph = new Graph();
+    ccfg: CCFG = new CCFG();
 
 
     visit(node: AstNode): [Node,Node] {

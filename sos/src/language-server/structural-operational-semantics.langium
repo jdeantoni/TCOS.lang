@@ -247,7 +247,7 @@ UnaryExpression:
 
 NumberExpression: value=NUMBER;
 StringExpression: value=STRING;
-BooleanExpression: value?='true' | 'false';
+BooleanExpression: value = 'true' | 'false';
 NilExpression: value='nil';
 
 TypeReference: reference=[AbstractRule:ID]   

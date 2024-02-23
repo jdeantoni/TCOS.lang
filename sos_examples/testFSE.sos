@@ -127,13 +127,17 @@ open Conjunction { //parallel version
       <this,σ> ~> <lhs,σ>
                   <rhs,σ>   
  
-      when (<lhs,σ> -> true ^ <rhs,σ> -> res:boolean)
-    -------------------------------------------                 evaluateConjunction2
-          <this,σ> ~> terminates[res]
+              when <lhs,σ> -> false
+    -------------------------------------------------           evaluateConjunction2
+          <this,σ> ~> terminates[false]
 
-      when (<rhs,σ> -> true ^ <lhs,σ> -> res:boolean)
-    -------------------------------------------                 evaluateConjunction3
-          <this,σ> ~> terminates[res]
+              when <rhs,σ> -> false
+    -------------------------------------------------           evaluateConjunction3
+          <this,σ> ~> terminates[false]
+
+      when (<rhs,σ> -> true ^ <lhs,σ> -> true)
+    -------------------------------------------------           evaluateConjunction4
+          <this,σ> ~> terminates[true]
 }
 
 open Plus {
@@ -148,7 +152,10 @@ open Plus {
 }
 
 open BooleanConst{
+
+    var constantValue:boolean = value;
+
                     when starts
     -------------------------------------------                 evalBooleanConst
-          <this,σ> ~> terminates[value]
+          <this,σ> ~> terminates[constantValue]
 }

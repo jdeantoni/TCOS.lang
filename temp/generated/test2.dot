@@ -1,6 +1,8 @@
 digraph G {
-  "0" [label="var v1 = 0          //v1Decl
+  "0" [label="uid:0
+var v1 = 1          //v1Decl
 var v2 = 4          //v2Decl
+var v3 = 0          //v3Decl
      |               //parBloc1
      | v1 = (v1 + v1)//v1Assign1 - firstPlus -v1Ref1 - v1Ref2
      | v2 = (v2 + v2)  //v2Assign1 - secondPlus -v2Ref1 - v2Ref2
@@ -14,9 +16,11 @@ if (v1)             //if
 }
 
 
-(true && true) starts" shape="ellipse"];
-  "1" [label="var v1 = 0          //v1Decl
+v3 = (true && false) starts" shape="ellipse"];
+  "1" [label="uid:1
+var v1 = 1          //v1Decl
 var v2 = 4          //v2Decl
+var v3 = 0          //v3Decl
      |               //parBloc1
      | v1 = (v1 + v1)//v1Assign1 - firstPlus -v1Ref1 - v1Ref2
      | v2 = (v2 + v2)  //v2Assign1 - secondPlus -v2Ref1 - v2Ref2
@@ -30,188 +34,274 @@ if (v1)             //if
 }
 
 
-(true && true) terminates" shape="ellipse"];
-  "2" [label="var v1 = 0 starts" shape="ellipse"];
-  "3" [label="var v1 = 0 terminates" shape="ellipse"];
-  "4" [label="var v2 = 4 starts" shape="ellipse"];
-  "5" [label="var v2 = 4 terminates" shape="ellipse"];
-  "6" [label="|               //parBloc1
+v3 = (true && false) terminates" shape="ellipse"];
+  "2" [label="uid:2
+statementsInOrder1StepNode" shape="ellipse"];
+  "3" [label="uid:3
+var v1 = 1 starts" shape="ellipse"];
+  "4" [label="uid:4
+var v1 = 1 terminates" shape="ellipse"];
+  "5" [label="uid:5
+var v2 = 4 starts" shape="ellipse"];
+  "6" [label="uid:6
+var v2 = 4 terminates" shape="ellipse"];
+  "7" [label="uid:7
+var v3 = 0 starts" shape="ellipse"];
+  "8" [label="uid:8
+var v3 = 0 terminates" shape="ellipse"];
+  "9" [label="uid:9
+|               //parBloc1
      | v1 = (v1 + v1)//v1Assign1 - firstPlus -v1Ref1 - v1Ref2
      | v2 = (v2 + v2)  //v2Assign1 - secondPlus -v2Ref1 - v2Ref2
      | starts" shape="ellipse"];
-  "7" [label="|               //parBloc1
+  "10" [label="uid:10
+|               //parBloc1
      | v1 = (v1 + v1)//v1Assign1 - firstPlus -v1Ref1 - v1Ref2
      | v2 = (v2 + v2)  //v2Assign1 - secondPlus -v2Ref1 - v2Ref2
      | terminates" shape="ellipse"];
-  "8" [label="||" shape="triangle"];
-  "30" [label="&&" shape="invtriangle"];
-  "10" [label="v1 = (v1 + v1) starts" shape="ellipse"];
-  "11" [label="v1 = (v1 + v1) terminates" shape="ellipse"];
-  "12" [label="(v1 + v1) starts" shape="ellipse"];
-  "13" [label="(v1 + v1) terminates" shape="ellipse"];
-  "14" [label="||" shape="triangle"];
-  "15" [label="v1 starts" shape="ellipse"];
-  "16" [label="v1 terminates" shape="ellipse"];
-  "17" [label="v1 starts" shape="ellipse"];
-  "18" [label="v1 terminates" shape="ellipse"];
-  "19" [label="&&" shape="invtriangle"];
-  "20" [label="v2 = (v2 + v2) starts" shape="ellipse"];
-  "21" [label="v2 = (v2 + v2) terminates" shape="ellipse"];
-  "22" [label="(v2 + v2) starts" shape="ellipse"];
-  "23" [label="(v2 + v2) terminates" shape="ellipse"];
-  "24" [label="||" shape="triangle"];
-  "25" [label="v2 starts" shape="ellipse"];
-  "26" [label="v2 terminates" shape="ellipse"];
-  "27" [label="v2 starts" shape="ellipse"];
-  "28" [label="v2 terminates" shape="ellipse"];
-  "29" [label="&&" shape="invtriangle"];
-  "31" [label="if (v1)             //if
+  "11" [label="uid:11
+||" shape="triangle"];
+  "33" [label="uid:33
+&&" shape="invtriangle"];
+  "13" [label="uid:13
+v1 = (v1 + v1) starts" shape="ellipse"];
+  "14" [label="uid:14
+v1 = (v1 + v1) terminates" shape="ellipse"];
+  "15" [label="uid:15
+(v1 + v1) starts" shape="ellipse"];
+  "16" [label="uid:16
+(v1 + v1) terminates" shape="ellipse"];
+  "17" [label="uid:17
+||" shape="triangle"];
+  "18" [label="uid:18
+v1 starts" shape="ellipse"];
+  "19" [label="uid:19
+v1 terminates" shape="ellipse"];
+  "20" [label="uid:20
+v1 starts" shape="ellipse"];
+  "21" [label="uid:21
+v1 terminates" shape="ellipse"];
+  "22" [label="uid:22
+&&" shape="invtriangle"];
+  "23" [label="uid:23
+v2 = (v2 + v2) starts" shape="ellipse"];
+  "24" [label="uid:24
+v2 = (v2 + v2) terminates" shape="ellipse"];
+  "25" [label="uid:25
+(v2 + v2) starts" shape="ellipse"];
+  "26" [label="uid:26
+(v2 + v2) terminates" shape="ellipse"];
+  "27" [label="uid:27
+||" shape="triangle"];
+  "28" [label="uid:28
+v2 starts" shape="ellipse"];
+  "29" [label="uid:29
+v2 terminates" shape="ellipse"];
+  "30" [label="uid:30
+v2 starts" shape="ellipse"];
+  "31" [label="uid:31
+v2 terminates" shape="ellipse"];
+  "32" [label="uid:32
+&&" shape="invtriangle"];
+  "34" [label="uid:34
+if (v1)             //if
 {                   //bloc1
     v2 = v1         //v2Assign2 - v1Ref3
 }else               
 {                   //bloc2
     v1 = v2         //v1Assign2 - v2Ref3
 } starts" shape="ellipse"];
-  "32" [label="if (v1)             //if
+  "35" [label="uid:35
+if (v1)             //if
 {                   //bloc1
     v2 = v1         //v2Assign2 - v1Ref3
 }else               
 {                   //bloc2
     v1 = v2         //v1Assign2 - v2Ref3
 } terminates" shape="ellipse"];
-  "33" [label="v1 starts" shape="ellipse"];
-  "34" [label="v1 terminates" shape="ellipse"];
-  "35" [label="condChoiceNode" shape="diamond"];
-  "36" [label="{                   //bloc1
+  "36" [label="uid:36
+v1 starts" shape="ellipse"];
+  "37" [label="uid:37
+v1 terminates" shape="ellipse"];
+  "38" [label="uid:38
+condChoiceNode" shape="diamond"];
+  "39" [label="uid:39
+{                   //bloc1
     v2 = v1         //v2Assign2 - v1Ref3
 } starts" shape="ellipse"];
-  "37" [label="{                   //bloc1
+  "40" [label="uid:40
+{                   //bloc1
     v2 = v1         //v2Assign2 - v1Ref3
 } terminates" shape="ellipse"];
-  "38" [label="v2 = v1 starts" shape="ellipse"];
-  "39" [label="v2 = v1 terminates" shape="ellipse"];
-  "40" [label="v1 starts" shape="ellipse"];
-  "41" [label="v1 terminates" shape="ellipse"];
-  "42" [label="{                   //bloc2
+  "41" [label="uid:41
+startsBlocStepNode" shape="ellipse"];
+  "42" [label="uid:42
+v2 = v1 starts" shape="ellipse"];
+  "43" [label="uid:43
+v2 = v1 terminates" shape="ellipse"];
+  "44" [label="uid:44
+v1 starts" shape="ellipse"];
+  "45" [label="uid:45
+v1 terminates" shape="ellipse"];
+  "46" [label="uid:46
+{                   //bloc2
     v1 = v2         //v1Assign2 - v2Ref3
 } starts" shape="ellipse"];
-  "43" [label="{                   //bloc2
+  "47" [label="uid:47
+{                   //bloc2
     v1 = v2         //v1Assign2 - v2Ref3
 } terminates" shape="ellipse"];
-  "44" [label="v1 = v2 starts" shape="ellipse"];
-  "45" [label="v1 = v2 terminates" shape="ellipse"];
-  "46" [label="v2 starts" shape="ellipse"];
-  "47" [label="v2 terminates" shape="ellipse"];
-  "48" [label="or" shape="invtriangle"];
-  "49" [label="(true && true) starts" shape="ellipse"];
-  "50" [label="(true && true) terminates" shape="ellipse"];
-  "51" [label="or" shape="invtriangle"];
-  "52" [label="||" shape="triangle"];
-  "53" [label="true starts" shape="ellipse"];
-  "54" [label="true terminates" shape="ellipse"];
-  "55" [label="true starts" shape="ellipse"];
-  "56" [label="true terminates" shape="ellipse"];
-  "57" [label="&&" shape="invtriangle"];
-  "58" [label="evaluateConjunction2ConditionNode" shape="diamond"];
-  "59" [label="&&" shape="invtriangle"];
-  "60" [label="evaluateConjunction3ConditionNode" shape="diamond"];
-  "2" -> "3" [label="sigma[\"Variable0_0_0_10currentValue\"] = new int();
-void Variable0_0_0_101385 = 0; //undefined
-*(sigma[\"Variable0_0_0_10currentValue\"]) = Variable0_0_0_101385;//TODO: fix this and avoid memory leak by deleting, constructing appropriately.."];
+  "48" [label="uid:48
+startsBlocStepNode" shape="ellipse"];
+  "49" [label="uid:49
+v1 = v2 starts" shape="ellipse"];
+  "50" [label="uid:50
+v1 = v2 terminates" shape="ellipse"];
+  "51" [label="uid:51
+v2 starts" shape="ellipse"];
+  "52" [label="uid:52
+v2 terminates" shape="ellipse"];
+  "53" [label="uid:53
+or" shape="invtriangle"];
+  "54" [label="uid:54
+v3 = (true && false) starts" shape="ellipse"];
+  "55" [label="uid:55
+v3 = (true && false) terminates" shape="ellipse"];
+  "56" [label="uid:56
+(true && false) starts" shape="ellipse"];
+  "57" [label="uid:57
+(true && false) terminates" shape="ellipse"];
+  "58" [label="uid:58
+or" shape="invtriangle"];
+  "59" [label="uid:59
+||" shape="triangle"];
+  "60" [label="uid:60
+true starts" shape="ellipse"];
+  "61" [label="uid:61
+true terminates" shape="ellipse"];
+  "62" [label="uid:62
+false starts" shape="ellipse"];
+  "63" [label="uid:63
+false terminates" shape="ellipse"];
+  "64" [label="uid:64
+lhsChoiceNode" shape="diamond"];
+  "65" [label="uid:65
+rhsChoiceNode" shape="diamond"];
+  "66" [label="uid:66
+&&" shape="invtriangle"];
+  "67" [label="uid:67
+evaluateConjunction4ConditionNode" shape="diamond"];
   "0" -> "2" [label=""];
-  "4" -> "5" [label="sigma[\"Variable1_0_1_10currentValue\"] = new int();
-void Variable1_0_1_101385 = 4; //undefined
-*(sigma[\"Variable1_0_1_10currentValue\"]) = Variable1_0_1_101385;//TODO: fix this and avoid memory leak by deleting, constructing appropriately.."];
-  "3" -> "4" [label=""];
-  "6" -> "8" [label=""];
-  "12" -> "14" [label=""];
-  "15" -> "16" [label="int VarRef3_18_3_201588 = *(int *) sigma[\"Variable0_0_0_10currentValue\"];//currentValue}
-int VarRef3_18_3_20terminates =  VarRef3_18_3_201588;"];
-  "14" -> "15" [label=""];
-  "17" -> "18" [label="int VarRef3_13_3_151588 = *(int *) sigma[\"Variable0_0_0_10currentValue\"];//currentValue}
-int VarRef3_13_3_15terminates =  VarRef3_13_3_151588;"];
-  "14" -> "17" [label=""];
-  "16" -> "19" [label=""];
-  "18" -> "19" [label=""];
-  "19" -> "13" [label="int Plus3_12_3_214133 = VarRef3_18_3_20terminates;//valuedEventRef n2
-int Plus3_12_3_214158 = VarRef3_13_3_15terminates;//valuedEventRef n1
-int Plus3_12_3_214277 = Plus3_12_3_214158; //n1
-int Plus3_12_3_214282 = Plus3_12_3_214133; //n2
-int Plus3_12_3_214276 = Plus3_12_3_214282 + Plus3_12_3_214282;
-int Plus3_12_3_21terminates =  Plus3_12_3_214276;"];
-  "10" -> "12" [label=""];
-  "13" -> "11" [label="int Assignment3_7_3_212363 = Plus3_12_3_21terminates;//valuedEventRef resRight
-int Assignment3_7_3_212529 = Assignment3_7_3_212363; //resRight
-*(sigma[\"Variable0_0_0_10currentValue\"]) = Assignment3_7_3_212529;//TODO: fix this and avoid memory leak by deleting, constructing appropriately.."];
-  "8" -> "10" [label=""];
-  "11" -> "30" [label=""];
-  "22" -> "24" [label=""];
-  "25" -> "26" [label="int VarRef4_18_4_201588 = *(int *) sigma[\"Variable1_0_1_10currentValue\"];//currentValue}
+  "3" -> "4" [label="sigma[\"Variable0_0_0_10currentValue\"] = new int();
+int Variable0_0_0_101385 = 1; //undefined
+*((int*)sigma[\"Variable0_0_0_10currentValue\"]) = Variable0_0_0_101385;//TODO: fix this and avoid memory leak by deleting, constructing appropriately.."];
+  "2" -> "3" [label=""];
+  "5" -> "6" [label="sigma[\"Variable1_0_1_10currentValue\"] = new int();
+int Variable1_0_1_101385 = 4; //undefined
+*((int*)sigma[\"Variable1_0_1_10currentValue\"]) = Variable1_0_1_101385;//TODO: fix this and avoid memory leak by deleting, constructing appropriately.."];
+  "4" -> "5" [label=""];
+  "7" -> "8" [label="sigma[\"Variable2_0_2_10currentValue\"] = new int();
+int Variable2_0_2_101385 = 0; //undefined
+*((int*)sigma[\"Variable2_0_2_10currentValue\"]) = Variable2_0_2_101385;//TODO: fix this and avoid memory leak by deleting, constructing appropriately.."];
+  "6" -> "7" [label=""];
+  "9" -> "11" [label=""];
+  "15" -> "17" [label=""];
+  "18" -> "19" [label="int VarRef4_18_4_201588 = *(int *) sigma[\"Variable0_0_0_10currentValue\"];//currentValue}
 int VarRef4_18_4_20terminates =  VarRef4_18_4_201588;"];
-  "24" -> "25" [label=""];
-  "27" -> "28" [label="int VarRef4_13_4_151588 = *(int *) sigma[\"Variable1_0_1_10currentValue\"];//currentValue}
+  "17" -> "18" [label=""];
+  "20" -> "21" [label="int VarRef4_13_4_151588 = *(int *) sigma[\"Variable0_0_0_10currentValue\"];//currentValue}
 int VarRef4_13_4_15terminates =  VarRef4_13_4_151588;"];
-  "24" -> "27" [label=""];
-  "26" -> "29" [label=""];
-  "28" -> "29" [label=""];
-  "29" -> "23" [label="int Plus4_12_4_214133 = VarRef4_18_4_20terminates;//valuedEventRef n2
-int Plus4_12_4_214158 = VarRef4_13_4_15terminates;//valuedEventRef n1
-int Plus4_12_4_214277 = Plus4_12_4_214158; //n1
-int Plus4_12_4_214282 = Plus4_12_4_214133; //n2
-int Plus4_12_4_214276 = Plus4_12_4_214282 + Plus4_12_4_214282;
-int Plus4_12_4_21terminates =  Plus4_12_4_214276;"];
-  "20" -> "22" [label=""];
-  "23" -> "21" [label="int Assignment4_7_4_212363 = Plus4_12_4_21terminates;//valuedEventRef resRight
+  "17" -> "20" [label=""];
+  "19" -> "22" [label=""];
+  "21" -> "22" [label=""];
+  "22" -> "16" [label="int Plus4_12_4_214273 = VarRef4_18_4_20terminates;//valuedEventRef n2
+int Plus4_12_4_214298 = VarRef4_13_4_15terminates;//valuedEventRef n1
+int Plus4_12_4_214417 = Plus4_12_4_214298; //n1
+int Plus4_12_4_214422 = Plus4_12_4_214273; //n2
+int Plus4_12_4_214416 = Plus4_12_4_214422 + Plus4_12_4_214422;
+int Plus4_12_4_21terminates =  Plus4_12_4_214416;"];
+  "13" -> "15" [label=""];
+  "16" -> "14" [label="int Assignment4_7_4_212363 = Plus4_12_4_21terminates;//valuedEventRef resRight
 int Assignment4_7_4_212529 = Assignment4_7_4_212363; //resRight
-*(sigma[\"Variable1_0_1_10currentValue\"]) = Assignment4_7_4_212529;//TODO: fix this and avoid memory leak by deleting, constructing appropriately.."];
-  "8" -> "20" [label=""];
-  "21" -> "30" [label=""];
-  "30" -> "7" [label=""];
-  "5" -> "6" [label=""];
-  "33" -> "34" [label="int VarRef6_4_6_61588 = *(int *) sigma[\"Variable0_0_0_10currentValue\"];//currentValue}
-int VarRef6_4_6_6terminates =  VarRef6_4_6_61588;"];
-  "31" -> "33" [label=""];
-  "34" -> "35" [label=""];
-  "40" -> "41" [label="int VarRef8_9_8_111588 = *(int *) sigma[\"Variable0_0_0_10currentValue\"];//currentValue}
-int VarRef8_9_8_11terminates =  VarRef8_9_8_111588;"];
-  "38" -> "40" [label=""];
-  "41" -> "39" [label="int Assignment8_4_8_112363 = VarRef8_9_8_11terminates;//valuedEventRef resRight
-int Assignment8_4_8_112529 = Assignment8_4_8_112363; //resRight
-*(sigma[\"Variable1_0_1_10currentValue\"]) = Assignment8_4_8_112529;//TODO: fix this and avoid memory leak by deleting, constructing appropriately.."];
-  "36" -> "38" [label=""];
-  "39" -> "37" [label=""];
-  "35" -> "36" [label=""];
-  "46" -> "47" [label="int VarRef11_9_11_111588 = *(int *) sigma[\"Variable1_0_1_10currentValue\"];//currentValue}
-int VarRef11_9_11_11terminates =  VarRef11_9_11_111588;"];
-  "44" -> "46" [label=""];
-  "47" -> "45" [label="int Assignment11_4_11_112363 = VarRef11_9_11_11terminates;//valuedEventRef resRight
-int Assignment11_4_11_112529 = Assignment11_4_11_112363; //resRight
-*(sigma[\"Variable0_0_0_10currentValue\"]) = Assignment11_4_11_112529;//TODO: fix this and avoid memory leak by deleting, constructing appropriately.."];
+*((int*)sigma[\"Variable0_0_0_10currentValue\"]) = Assignment4_7_4_212529;//TODO: fix this and avoid memory leak by deleting, constructing appropriately.."];
+  "11" -> "13" [label=""];
+  "14" -> "33" [label=""];
+  "25" -> "27" [label=""];
+  "28" -> "29" [label="int VarRef5_18_5_201588 = *(int *) sigma[\"Variable1_0_1_10currentValue\"];//currentValue}
+int VarRef5_18_5_20terminates =  VarRef5_18_5_201588;"];
+  "27" -> "28" [label=""];
+  "30" -> "31" [label="int VarRef5_13_5_151588 = *(int *) sigma[\"Variable1_0_1_10currentValue\"];//currentValue}
+int VarRef5_13_5_15terminates =  VarRef5_13_5_151588;"];
+  "27" -> "30" [label=""];
+  "29" -> "32" [label=""];
+  "31" -> "32" [label=""];
+  "32" -> "26" [label="int Plus5_12_5_214273 = VarRef5_18_5_20terminates;//valuedEventRef n2
+int Plus5_12_5_214298 = VarRef5_13_5_15terminates;//valuedEventRef n1
+int Plus5_12_5_214417 = Plus5_12_5_214298; //n1
+int Plus5_12_5_214422 = Plus5_12_5_214273; //n2
+int Plus5_12_5_214416 = Plus5_12_5_214422 + Plus5_12_5_214422;
+int Plus5_12_5_21terminates =  Plus5_12_5_214416;"];
+  "23" -> "25" [label=""];
+  "26" -> "24" [label="int Assignment5_7_5_212363 = Plus5_12_5_21terminates;//valuedEventRef resRight
+int Assignment5_7_5_212529 = Assignment5_7_5_212363; //resRight
+*((int*)sigma[\"Variable1_0_1_10currentValue\"]) = Assignment5_7_5_212529;//TODO: fix this and avoid memory leak by deleting, constructing appropriately.."];
+  "11" -> "23" [label=""];
+  "24" -> "33" [label=""];
+  "33" -> "10" [label=""];
+  "8" -> "9" [label=""];
+  "36" -> "37" [label="int VarRef7_4_7_61588 = *(int *) sigma[\"Variable0_0_0_10currentValue\"];//currentValue}
+int VarRef7_4_7_6terminates =  VarRef7_4_7_61588;"];
+  "34" -> "36" [label=""];
+  "37" -> "38" [label=""];
+  "39" -> "41" [label="(bool)VarRef7_4_7_6terminates == true"];
+  "44" -> "45" [label="int VarRef9_9_9_111588 = *(int *) sigma[\"Variable0_0_0_10currentValue\"];//currentValue}
+int VarRef9_9_9_11terminates =  VarRef9_9_9_111588;"];
   "42" -> "44" [label=""];
-  "45" -> "43" [label=""];
-  "35" -> "42" [label=""];
-  "43" -> "48" [label=""];
-  "37" -> "48" [label=""];
-  "48" -> "32" [label=""];
-  "7" -> "31" [label=""];
-  "51" -> "50" [label=""];
-  "49" -> "52" [label=""];
-  "53" -> "54" [label="void BooleanConst15_1_15_54455 = true; //undefined
-void BooleanConst15_1_15_5terminates =  BooleanConst15_1_15_54455;"];
-  "52" -> "53" [label=""];
-  "55" -> "56" [label="void BooleanConst15_9_15_134455 = true; //undefined
-void BooleanConst15_9_15_13terminates =  BooleanConst15_9_15_134455;"];
-  "52" -> "55" [label=""];
-  "54" -> "57" [label=""];
-  "56" -> "57" [label=""];
-  "57" -> "58" [label="bool Conjunction15_0_15_143612 = BooleanConst15_9_15_13terminates;//valuedEventRef res"];
-  "58" -> "51" [label="bool Conjunction15_0_15_143743 = Conjunction15_0_15_143612; //res
-bool Conjunction15_0_15_14terminates =  Conjunction15_0_15_143743;"];
+  "45" -> "43" [label="int Assignment9_4_9_112363 = VarRef9_9_9_11terminates;//valuedEventRef resRight
+int Assignment9_4_9_112529 = Assignment9_4_9_112363; //resRight
+*((int*)sigma[\"Variable1_0_1_10currentValue\"]) = Assignment9_4_9_112529;//TODO: fix this and avoid memory leak by deleting, constructing appropriately.."];
+  "41" -> "42" [label=""];
+  "43" -> "40" [label=""];
+  "38" -> "39" [label=""];
+  "46" -> "48" [label="(bool)VarRef7_4_7_6terminates == false"];
+  "51" -> "52" [label="int VarRef12_9_12_111588 = *(int *) sigma[\"Variable1_0_1_10currentValue\"];//currentValue}
+int VarRef12_9_12_11terminates =  VarRef12_9_12_111588;"];
+  "49" -> "51" [label=""];
+  "52" -> "50" [label="int Assignment12_4_12_112363 = VarRef12_9_12_11terminates;//valuedEventRef resRight
+int Assignment12_4_12_112529 = Assignment12_4_12_112363; //resRight
+*((int*)sigma[\"Variable0_0_0_10currentValue\"]) = Assignment12_4_12_112529;//TODO: fix this and avoid memory leak by deleting, constructing appropriately.."];
+  "48" -> "49" [label=""];
+  "50" -> "47" [label=""];
+  "38" -> "46" [label=""];
+  "47" -> "53" [label=""];
+  "40" -> "53" [label=""];
+  "53" -> "35" [label=""];
+  "10" -> "34" [label=""];
+  "58" -> "57" [label="(bool)BooleanConst16_6_16_10terminates == false
+(bool)BooleanConst16_14_16_19terminates == false"];
   "56" -> "59" [label=""];
-  "54" -> "59" [label=""];
-  "59" -> "60" [label="bool Conjunction15_0_15_143790 = BooleanConst15_1_15_5terminates;//valuedEventRef res"];
-  "60" -> "51" [label="bool Conjunction15_0_15_143921 = Conjunction15_0_15_143612; //res
-bool Conjunction15_0_15_14terminates =  Conjunction15_0_15_143921;"];
-  "32" -> "49" [label=""];
-  "50" -> "1" [label=""];
+  "60" -> "61" [label="sigma[\"BooleanConst16_6_16_10constantValue\"] = new bool(true);
+bool BooleanConst16_6_16_104636 = *(bool *) sigma[\"BooleanConst16_6_16_10constantValue\"];//constantValue}
+bool BooleanConst16_6_16_10terminates =  BooleanConst16_6_16_104636;"];
+  "59" -> "60" [label=""];
+  "62" -> "63" [label="sigma[\"BooleanConst16_14_16_19constantValue\"] = new bool(false);
+bool BooleanConst16_14_16_194636 = *(bool *) sigma[\"BooleanConst16_14_16_19constantValue\"];//constantValue}
+bool BooleanConst16_14_16_19terminates =  BooleanConst16_14_16_194636;"];
+  "59" -> "62" [label=""];
+  "61" -> "64" [label=""];
+  "64" -> "58" [label="bool Conjunction16_5_16_20terminates =  Conjunction16_5_16_203725;"];
+  "63" -> "65" [label=""];
+  "65" -> "58" [label="bool Conjunction16_5_16_20terminates =  Conjunction16_5_16_203887;"];
+  "63" -> "66" [label=""];
+  "61" -> "66" [label=""];
+  "66" -> "67" [label=""];
+  "67" -> "58" [label="(bool)BooleanConst16_14_16_19terminates == true
+(bool)BooleanConst16_6_16_10terminates == true
+bool Conjunction16_5_16_20terminates =  Conjunction16_5_16_204060;"];
+  "54" -> "56" [label=""];
+  "57" -> "55" [label="int Assignment16_0_16_202363 = Conjunction16_5_16_20terminates;//valuedEventRef resRight
+int Assignment16_0_16_202529 = Assignment16_0_16_202363; //resRight
+*((int*)sigma[\"Variable2_0_2_10currentValue\"]) = Assignment16_0_16_202529;//TODO: fix this and avoid memory leak by deleting, constructing appropriately.."];
+  "35" -> "54" [label=""];
+  "55" -> "1" [label=""];
 }

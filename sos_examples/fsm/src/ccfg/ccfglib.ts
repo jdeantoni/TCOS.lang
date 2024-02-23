@@ -7,6 +7,8 @@ export abstract class Node {
     value:any;
     astNode: AstNode | undefined;
     actions: string[];
+    outputEdges: Edge[] = [];
+    inputEdges: Edge[] = [];
 
     constructor(value: any, theActions: string[] = []) {
         this.uid = Node.uidCounter++;
@@ -25,18 +27,21 @@ export class Edge {
     to: Node;
     label?: string;
     astNode: AstNode | undefined;
-
+    guards: string[];
     constructor(from: Node, to: Node, label?: string) {
         this.from = from;
         this.to = to;
         this.label = label;
+        this.guards = []
     }
 }
 
-export class Graph {
+export class CCFG {
     nodes: Node[];
     edges: Edge[];
     ;
+
+    initialState: Node | undefined;
 
     constructor() {
         this.nodes = [];
@@ -44,6 +49,10 @@ export class Graph {
     }
 
     addNode(node: Node): Node {
+        if(this.nodes.length == 0){
+            this.initialState = node;
+        }
+
         let res = this.nodes.find(n => n === node);
         if (res == undefined) {
             this.nodes.push(node);
@@ -56,6 +65,8 @@ export class Graph {
         if (res == undefined) {
             const edge = new Edge(from, to);
             this.edges.push(edge);
+            from.outputEdges.push(edge);
+            to.inputEdges.push(edge);
             return edge;
         }
         return res;
@@ -69,9 +80,11 @@ export class Graph {
         for (let edge of this.edges) {
             if (edge.from === oldNode) {
                 edge.from = newNode;
+                newNode.outputEdges.push(edge);
             }
             if (edge.to === oldNode) {
                 edge.to = newNode;
+                newNode.inputEdges.push(edge);
             }
         }
     }
@@ -101,15 +114,15 @@ export class Graph {
         //return node.value;
         switch(node.getType()){
             case "Step":
-                return node.value//uid.toString();
+                return "uid:"+node.uid+"\n"+node.value//uid.toString();
             case "Choice":
-                return node.value//uid.toString();
+                return "uid:"+node.uid+"\n"+node.value//uid.toString();
             case "OrJoin":
-                return "or";
+                return "uid:"+node.uid+"\n"+"or";
             case "AndJoin":
-                return "&&";
+                return "uid:"+node.uid+"\n"+"&&";
             case "Fork":
-                return "||";
+                return "uid:"+node.uid+"\n"+"||";
             default:
                 return "???"+node.uid.toString();
         }

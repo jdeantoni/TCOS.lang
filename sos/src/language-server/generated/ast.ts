@@ -201,7 +201,7 @@ export function isBinaryExpression(item: unknown): item is BinaryExpression {
 export interface BooleanExpression extends AstNode {
     readonly $container: BinaryExpression | CollectionRuleSync | ExplicitEventRef | ExplicitValuedEventRef | ExplicitValuedEventRefConstantComparison | FunctionCallExpr | ImplicitValuedEventRef | ImplicitValuedEventRefConstantComparison | MemberCall | NaryEventExpression | Premise | SimpleEventEmission | SingleRuleSync | StateModification | UnaryExpression | UnaryMinus | ValuedEventEmission | VariableDeclaration;
     readonly $type: 'BooleanExpression';
-    value: boolean
+    value?: 'true'
 }
 
 export const BooleanExpression = 'BooleanExpression';
@@ -1373,14 +1373,6 @@ export class StructuralOperationalSemanticsAstReflection extends AbstractAstRefl
 
     getTypeMetaData(type: string): TypeMetaData {
         switch (type) {
-            case 'BooleanExpression': {
-                return {
-                    name: 'BooleanExpression',
-                    mandatory: [
-                        { name: 'value', type: 'boolean' }
-                    ]
-                };
-            }
             case 'Conclusion': {
                 return {
                     name: 'Conclusion',

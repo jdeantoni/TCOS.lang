@@ -2750,7 +2750,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           {
             "$type": "Assignment",
             "feature": "value",
-            "operator": "?=",
+            "operator": "=",
             "terminal": {
               "$type": "Keyword",
               "value": "true"
