@@ -6,7 +6,9 @@ export abstract class Node {
     uid: integer;
     value:any;
     astNode: AstNode | undefined;
-    actions: string[];
+    functionsDefs: string[];
+    functionsNames: string[];
+    returnType: string;
     outputEdges: Edge[] = [];
     inputEdges: Edge[] = [];
     finishNodeUID: integer | undefined;
@@ -16,7 +18,9 @@ export abstract class Node {
     constructor(value: any, theActions: string[] = []) {
         this.uid = Node.uidCounter++;
         this.value = value;
-        this.actions = theActions;
+        this.functionsDefs = theActions;
+        this.functionsNames = [];
+        this.returnType = "void";
     }
 
     getType(): string {
@@ -81,7 +85,7 @@ export class CCFG {
             this.nodes[index] = newNode;
             newNode.uid = oldNode.uid;
             newNode.finishNodeUID = oldNode.finishNodeUID;
-            newNode.actions = oldNode.actions;
+            newNode.functionsDefs = oldNode.functionsDefs;
             newNode.value = oldNode.value;
         }
         for (let edge of this.edges) {
@@ -122,7 +126,7 @@ export class CCFG {
     }
 
     getEdgeLabel(edge: Edge): string {
-        return edge.from.actions.map(
+        return edge.from.functionsDefs.map(
             a => 
             /* a.replaceAll("\"","\\\"")).join("\n")+"\n~~~"+*/
             edge.guards.map(a => a.replaceAll("\"","\\\""))).join("\n")
@@ -133,19 +137,19 @@ export class CCFG {
         //return node.value;
         switch(node.getType()){
             case "Step":
-                return "from:"+node.uid+" to "+node.finishNodeUID+"\n"+node.actions.map(
+                return "from:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
                     a => a.replaceAll("\"","\\\"")).join("\n")//uid.toString();
             case "Choice":
-                return "from:"+node.uid+" to "+node.finishNodeUID+"\n"+node.actions.map(
+                return "from:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
                     a => a.replaceAll("\"","\\\"")).join("\n")
             case "OrJoin":
-                return "OR\nfrom:"+node.uid+" to "+node.finishNodeUID+"\n"+node.actions.map(
+                return "OR\nfrom:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
                     a => a.replaceAll("\"","\\\"")).join("\n")
             case "AndJoin":
-                return "AND\nfrom:"+node.uid+" to "+node.finishNodeUID+"\n"+node.actions.map(
+                return "AND\nfrom:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
                     a => a.replaceAll("\"","\\\"")).join("\n")
             case "Fork":
-                return "from:"+node.uid+" to "+node.finishNodeUID+"\n"+node.actions.map(
+                return "from:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
                     a => a.replaceAll("\"","\\\"")).join("\n");
             default:
                 return "???"+node.uid.toString();

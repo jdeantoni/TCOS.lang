@@ -163,15 +163,19 @@ function checkIfMultipleTerminate(rulesCF: RuleControlFlow[]) {
  * @param terminatesNodeName 
  */
 function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode, rulesCF: RuleControlFlow[], previousNodeName: string, terminatesNodeName: string) {
+
+    
     let [previousNode, guardActions] = handlePreviousPremise(ruleCF, rulesCF, previousNodeName, file)
     file.append(`
         previousNode = ${previousNode}
     `)
 
+
     let actionsString = ""
     actionsString = visitStateModifications(ruleCF, actionsString);
     file.append(`
-    previousNode.actions =[...previousNode.actions, ...[${actionsString}]] //AA
+    previousNode.functionsNames = [...previousNode.functionsNames, ...[\`function\${previousNode.uid}${ruleCF.rule.name}\`]] 
+    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[${actionsString}]] //AA
     `);
     let isMultipleEmission = ruleCF.rule.conclusion.eventemissions.length > 1;
     if (isMultipleEmission) {
@@ -249,14 +253,19 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
         }
     }
     let eventEmissionActions = ""
+    let functionType = "void"
     for(let emission of ruleCF.rule.conclusion.eventemissions){
         if(emission.$type == "ValuedEventEmission"){
-            eventEmissionActions = eventEmissionActions + visitValuedEventEmission(emission as ValuedEventEmission)
+            let [visitedEmission, returnType] =  visitValuedEventEmission(emission as ValuedEventEmission)
+            functionType = returnType
+            eventEmissionActions = eventEmissionActions + visitedEmission
         }
     }
     file.append(`
-        previousNode.actions =[...previousNode.actions, ...[${eventEmissionActions}]] //GG
+        previousNode.returnType = "${functionType}"
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[${eventEmissionActions}]] //GG
     `);
+    
 
     file.append(`
     previousNode.finishNodeUID = ${terminatesNodeName}.uid
@@ -362,7 +371,7 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
         }
 
         file.append(`
-        ${multipleSynchroName}.actions = [...${multipleSynchroName}.actions, ...[${premiseActions}]] //HH
+        ${multipleSynchroName}.functionsDefs = [...${multipleSynchroName}.functionsDefs, ...[${premiseActions}]] //HH
         `)
         
         return [multipleSynchroName,premiseGuards]
@@ -370,7 +379,7 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
     } else {
         let varActions: string = visitValuedEventRef(ruleCF.rule.premise.eventExpression as ValuedEventRef)
         file.append(`
-        ${ruleCF.premiseParticipants[0].name}TerminatesNode.actions = [...${ruleCF.premiseParticipants[0].name}TerminatesNode.actions, ...[${varActions}]] //II
+        ${ruleCF.premiseParticipants[0].name}TerminatesNode.functionsDefs = [...${ruleCF.premiseParticipants[0].name}TerminatesNode.functionsDefs, ...[${varActions}]] //II
         `)
         return [`${ruleCF.premiseParticipants[0].name}TerminatesNode`, ""]
     }
@@ -744,7 +753,7 @@ function visitVariableDeclaration(runtimeState: VariableDeclaration[] | undefine
  * @param runtimeState 
  * @returns 
  */
-function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefined): string {
+function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefined): [string, string] {
     var res : string = ""
     if (valuedEmission != undefined) {
         let varType = inferType(valuedEmission.data, new Map())
@@ -768,14 +777,18 @@ function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefine
             res = res + `\`${typeName} \${getName(node)}${valuedEmission.data.$cstNode?.offset} = \${getName(node)}${rhs.$cstNode?.offset} ${applyOp} \${getName(node)}${rhs.$cstNode?.offset};\``
         }
         if(valuedEmission.data != undefined && valuedEmission.data.$type == "BooleanExpression" || valuedEmission.data.$type == "NumberExpression" || valuedEmission.data.$type == "StringExpression"){
-            return `\`${typeName} \${getName(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  ${valuedEmission.data.$cstNode?.text};\``
+            res = `\`${typeName} \${getName(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  ${valuedEmission.data.$cstNode?.text};\``
+            res = res + "," +`\`return \${getName(node)}${(valuedEmission.event as MemberCall).element?.ref?.name};\``
+            return [res, typeName]
         }
         if(res.length > 0){
             res = res + ","
         }
         res = res + `\`${typeName} \${getName(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  \${getName(node)}${valuedEmission.data.$cstNode?.offset};\``
+        res = res + "," +`\`return \${getName(node)}${(valuedEmission.event as MemberCall).element?.ref?.name};\``
+        return [res, typeName]
     }
-    return res
+    return [res, "void"]
 }
 
 function createVariableFromMemberCall(data: MemberCall, typeName: string): string {
@@ -813,8 +826,10 @@ function createVariableFromMemberCall(data: MemberCall, typeName: string): strin
  * @returns 
  */
 function visitStateModifications(ruleCF: RuleControlFlow, actionsString: string) {
-    let res : string = ""
     let sep = ""
+    if(actionsString.length > 0){
+        sep = ","
+    }
     for (let action of ruleCF.rule.conclusion.statemodifications) {
         /**
          * TODO: fix this and avoid memory leak by deleting, constructing appropriately...
@@ -829,24 +844,24 @@ function visitStateModifications(ruleCF: RuleControlFlow, actionsString: string)
         // let rhsPrev = ((action.rhs as MemberCall).previous as MemberCall)?.element
         let rhsElem = (action.rhs as MemberCall).element?.ref
         if (rhsElem == undefined) {
-            return res
+            return actionsString
         }
         let lhsPrev = ((action.lhs as MemberCall).previous as MemberCall)?.element
         let lhsElem = (action.lhs as MemberCall).element?.ref
         if (lhsElem == undefined) {
-            return res
+            return actionsString
         }
 
-        res = res + sep + createVariableFromMemberCall(action.rhs as MemberCall, typeName)
+        actionsString = actionsString + sep + createVariableFromMemberCall(action.rhs as MemberCall, typeName)
         sep = ","
         if(rhsElem.$type == "TemporaryVariable"){
-            res = res + sep + `\`*((${typeName}*)sigma[\"\${getName(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"]) = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};//TODO: fix this and avoid memory leak by deleting, constructing appropriately..\``;
+            actionsString = actionsString + sep + `\`*((${typeName}*)sigma[\"\${getName(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"]) = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};//TODO: fix this and avoid memory leak by deleting, constructing appropriately..\``;
         }else{
-            res = res + sep + `\`*((${typeName}*)sigma[\"\${getName(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"]) = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};//TODO: fix this and avoid memory leak by deleting, constructing appropriately..\``;
+            actionsString = actionsString + sep + `\`*((${typeName}*)sigma[\"\${getName(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"]) = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};//TODO: fix this and avoid memory leak by deleting, constructing appropriately..\``;
             
         }
     }
-    return res;
+    return actionsString;
 }
 
 function getCPPVariableTypeName(typeName: string): string {

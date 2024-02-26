@@ -48,6 +48,9 @@ function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model): CCFG {
 }
 
 function doGenerateCPP(codeFile: CompositeGeneratorNode, ccfg: CCFG): void {
+    
+    
+    
     let initNode = ccfg.initialState;
     if (initNode == undefined) {
         console.log("No initial state found");
@@ -60,11 +63,24 @@ function doGenerateCPP(codeFile: CompositeGeneratorNode, ccfg: CCFG): void {
     #include <iostream>
     
     std::unordered_map<std::string, void*> sigma;
-    int main(){
-        `);
+  `);
+
+    let functionsDefs = ""
+    for(let node of ccfg.nodes){
+        for(let fname of node.functionsNames){
+            functionsDefs += node.returnType+" "+fname+"(){\n\t";
+            functionsDefs += node.functionsDefs.map(a => a).join("\n\t")+"\n";
+            functionsDefs += "}\n";
+        }
+    }
+    
+    codeFile.append(functionsDefs);
+    codeFile.append(`
+    int main() {
+    `);
 
     let currentNode = initNode;
-    currentNode = visitAllNodes(ccfg, currentNode, -1, codeFile, true);
+    currentNode = visitAllNodes(ccfg, currentNode, /*-1,*/ codeFile, true);
 
     codeFile.append(`
     //WARNING !! temporary code to test
@@ -94,10 +110,10 @@ function getCurrentUID(node: Node): number {
 
 let fifoThreadUid : number[]= [];
 
-function visitAllNodes(ccfg:CCFG, currentNode: Node, untilUID: number | undefined, codeFile: CompositeGeneratorNode, visitIsStarting: boolean = false): Node {
+function visitAllNodes(ccfg:CCFG, currentNode: Node, /*untilUID: number | undefined,*/ codeFile: CompositeGeneratorNode, visitIsStarting: boolean = false): Node {
     let currentUID = getCurrentUID(currentNode);
 
-    if (currentNode.outputEdges.length == 0 || currentUID == untilUID) {
+    if (currentNode.outputEdges.length == 0 /*|| currentUID == untilUID*/) {
         return currentNode;
     }
 
@@ -106,40 +122,31 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, untilUID: number | undefine
         return currentNode;
     }   
 
-    console.log(currentNode.getType()+"   uid: "+currentNode.uid);
-        
-    codeFile.append(`
-        /**    ${currentNode.uid} : ${currentNode.getType()} **/
-    `);
-    currentNode.actions.forEach(a => {
-        codeFile.append(`${a}\n`);
-    })
+    console.log(currentNode.getType()+"   uid: "+currentUID);
         
     switch(currentNode.getType()){
     case "Step":
         {
+        addCorrespondingCode(codeFile, currentNode);
         if(currentNode.outputEdges.length > 1){
-            // let nexUntilUID = currentNode.outputEdges[0].to.finishNodeUID
-            // if(nexUntilUID == undefined){
-            //     throw new Error("finishNodeUID is undefined in current node "+currentNode.uid);
-            // }
+
             let edgeToVisit: Edge[] = currentNode.outputEdges;
             for(let edge of edgeToVisit){
-                visitAllNodes(ccfg, edge.to, untilUID, codeFile);
+                visitAllNodes(ccfg, edge.to, /*untilUID,*/ codeFile);
             }
         }else{
             let edge = currentNode.outputEdges[0];
-            visitAllNodes(ccfg,edge.to, untilUID, codeFile);
+            visitAllNodes(ccfg,edge.to, /*untilUID,*/ codeFile);
         }
         
         break;
         }
     case "Fork":
         {
-        let nextUntilUID = currentNode.inputEdges[0].from.finishNodeUID
-        if(nextUntilUID == undefined){
-            throw new Error("finishNodeUID is undefined in current node "+currentNode.uid);
-        }
+        // let tempFinishNodeUID = currentNode.inputEdges[0].from.finishNodeUID
+        // if(tempFinishNodeUID == undefined){
+        //     throw new Error("finishNodeUID is undefined in current node "+currentNode.uid);
+        // }
         // let tempFinishNode = ccfg.getNodeByUID(tempFinishNodeUID);
         // let nextUntilUID = tempFinishNode.inputEdges[0].from.uid;
         
@@ -150,13 +157,13 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, untilUID: number | undefine
             codeFile.append(`
             //std::thread thread${edge.to.uid}([&](){\n`
             );
-            visitAllNodes(ccfg, edge.to, nextUntilUID, codeFile);
+            visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ codeFile);
             codeFile.append(`
             // });
             `);
         }
-        let nextNode = ccfg.getNodeByUID(nextUntilUID)
-        visitAllNodes(ccfg,nextNode, nextNode.finishNodeUID, codeFile);
+        // let nextNode = ccfg.getNodeByUID(nextUntilUID)
+        // visitAllNodes(ccfg,nextNode, nextNode.finishNodeUID, codeFile);
         break;
         }
     case "AndJoin":
@@ -164,43 +171,55 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, untilUID: number | undefine
         let edgeToVisit: Edge[] = currentNode.inputEdges;
         for(let edge of edgeToVisit){
             let threadUid = fifoThreadUid.pop();
-            codeFile.append(` //edge${edge.from.uid}.join();
+            codeFile.append(`//unused edge ${edge.to.uid}
             // thread${threadUid}.join();
             `);
+            addCorrespondingCode(codeFile, currentNode);
         }
         let nextNode = currentNode.outputEdges[0].to
-        visitAllNodes(ccfg,nextNode, untilUID, codeFile);
+        visitAllNodes(ccfg,nextNode, /*untilUID,*/ codeFile);
         break;
         }
     case "OrJoin":
         {
             codeFile.append(` //or join node`);
             let nextNode = currentNode.outputEdges[0].to
-            visitAllNodes(ccfg,nextNode, untilUID, codeFile);
+            visitAllNodes(ccfg,nextNode, /*untilUID,*/ codeFile);
             break;
         }
     case "Choice":
         {   
-        let nextUntilUID = currentNode.finishNodeUID
-        if(nextUntilUID == undefined){
-            throw new Error("finishNodeUID is undefined in current node "+currentNode.uid);
-        }
+        // let nextUntilUID = currentNode.finishNodeUID
+        // if(nextUntilUID == undefined){
+        //     throw new Error("finishNodeUID is undefined in current node "+currentNode.uid);
+        // }
         let edgeToVisit: Edge[] = currentNode.outputEdges;
         for(let edge of edgeToVisit){
+        addCorrespondingCode(codeFile, currentNode);
+
             codeFile.append(`
         if(${edge.guards.join(" && ")}){`
             );
-            visitAllNodes(ccfg, edge.to, nextUntilUID, codeFile);                
+            visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ codeFile);                
             codeFile.append(`
         }
         `);
         }
-        let nextNode = ccfg.getNodeByUID(nextUntilUID);
-        visitAllNodes(ccfg,nextNode, untilUID, codeFile);
+        // let nextNode = ccfg.getNodeByUID(nextUntilUID);
+        // visitAllNodes(ccfg,nextNode, untilUID, codeFile);
         break;
         }
     }  
         
     return currentNode;
+}
+
+function addCorrespondingCode(codeFile: CompositeGeneratorNode, currentNode: Node) {
+    codeFile.append(`
+            /**    ${currentNode.uid} : ${currentNode.getType()} **/
+            `);
+    currentNode.functionsNames.forEach(f => {
+        codeFile.append(`${f}();\n`);
+    });
 }
 
