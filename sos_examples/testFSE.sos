@@ -135,7 +135,7 @@ open Conjunction { //parallel version
     -------------------------------------------------           evaluateConjunction3
           <this,σ> ~> terminates[false]
 
-      when (<rhs,σ> -> true ^ <lhs,σ> -> true)
+      when (<lhs,σ> -> true ^ <rhs,σ> -> true)
     -------------------------------------------------           evaluateConjunction4
           <this,σ> ~> terminates[true]
 }

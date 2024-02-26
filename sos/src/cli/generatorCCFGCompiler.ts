@@ -112,7 +112,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
 
         file.append(`
-
+        startsNode.finishNodeUID = terminatesNode.uid
         return [startsNode,terminatesNode]
     }`, NL);
     }
@@ -163,16 +163,10 @@ function checkIfMultipleTerminate(rulesCF: RuleControlFlow[]) {
  * @param terminatesNodeName 
  */
 function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode, rulesCF: RuleControlFlow[], previousNodeName: string, terminatesNodeName: string) {
+    let [previousNode, guardActions] = handlePreviousPremise(ruleCF, rulesCF, previousNodeName, file)
     file.append(`
-        previousNode = ${handlePreviousPremise(ruleCF, rulesCF, previousNodeName, file)}
+        previousNode = ${previousNode}
     `)
-    
-    let guardActions = ""
-    let isSimpleComparison = ruleCF.rule.premise.eventExpression.$type == "ExplicitValuedEventRefConstantComparison"
-    || ruleCF.rule.premise.eventExpression.$type == "ImplicitValuedEventRefConstantComparison";
-    if(isSimpleComparison){
-        guardActions = visitValuedEventRefComparison(ruleCF.rule.premise.eventExpression as ValuedEventRefConstantComparison)
-    }
 
     let actionsString = ""
     actionsString = visitStateModifications(ruleCF, actionsString);
@@ -187,7 +181,6 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
         {let e = this.ccfg.addEdge(previousNode,${ruleCF.rule.name}ForkNode)
         e.guards = [...e.guards, ...[${guardActions}]] //BB
         }
-        // ${ruleCF.rule.name}ForkNode.actions = [...${ruleCF.rule.name}ForkNode.actions, ...[${guardActions}]] //BB
         `);
         let splittedConclusionParticipants = splitArrayByParticipants(ruleCF.conclusionParticipants);
         for (let emissionParticipant of splittedConclusionParticipants) {
@@ -208,8 +201,6 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
         {let e = this.ccfg.addEdge(previousNode,${ruleCF.rule.name}ForkNode)
         e.guards = [...e.guards, ...[${guardActions}]] //CC
         }
-        // ${ruleCF.rule.name}ForkNode.actions = [...${ruleCF.rule.name}ForkNode.actions, ...[${guardActions}]] //CC
-
 
         let ${ruleCF.rule.name}FakeNode: Node = new AndJoin("${ruleCF.rule.name}FakeNode")    
         this.ccfg.addNode(${ruleCF.rule.name}FakeNode)    
@@ -218,6 +209,8 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
             this.ccfg.addEdge(${ruleCF.rule.name}ForkNode,childStartsNode)
             this.ccfg.addEdge(childTerminatesNode,${ruleCF.rule.name}FakeNode)
         }
+
+        ${ruleCF.rule.name}ForkNode.finishNodeUID = ${ruleCF.rule.name}FakeNode.uid
         `);
             } else {
                 file.append(`
@@ -225,7 +218,7 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
         this.ccfg.addNode(${ruleCF.rule.name}StepNode)
         let e = this.ccfg.addEdge(previousNode,${ruleCF.rule.name}StepNode)
         e.guards = [...e.guards, ...[${guardActions}]] //DD
-        // ${ruleCF.rule.name}StepNode.actions = [...${ruleCF.rule.name}StepNode.actions, ...[${guardActions}]] //DD
+
         previousNode = ${ruleCF.rule.name}StepNode
         for (var child of node.${ruleCF.conclusionParticipants[0].name}) {
             let [childStartsNode,childTerminatesNode] = this.visit(child)
@@ -242,7 +235,6 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
         {let e = this.ccfg.addEdge(previousNode,${terminatesNodeName})
         e.guards = [...e.guards, ...[${guardActions}]] //EE
         }
-        // ${terminatesNodeName}.actions = [...${terminatesNodeName}.actions, ...[${guardActions}]]    //EE
         `);
             } else {
                 let toVisitName = ruleCF.conclusionParticipants[0].name;
@@ -251,7 +243,6 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
         {let e = this.ccfg.addEdge(previousNode,${toVisitName}StartsNode)
         e.guards = [...e.guards, ...[${guardActions}]] //FF
         }
-        // ${toVisitName}StartsNode.actions = [...${toVisitName}StartsNode.actions, ...[${guardActions}]] //FF
         `);
 
             }
@@ -264,8 +255,12 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
         }
     }
     file.append(`
-    previousNode.actions =[...previousNode.actions, ...[${eventEmissionActions}]] //GG
+        previousNode.actions =[...previousNode.actions, ...[${eventEmissionActions}]] //GG
     `);
+
+    file.append(`
+    previousNode.finishNodeUID = ${terminatesNodeName}.uid
+    `)
 }
 
 
@@ -275,10 +270,10 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
  * @param previousNodeName 
  * @returns the previous node name
  */
-function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow[], previousNodeName: string, file: CompositeGeneratorNode): string {
+function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow[], previousNodeName: string, file: CompositeGeneratorNode): [string,string] {
     let isStartingRule = ruleCF.premiseParticipants[0].name == "starts";
     if (isStartingRule) {
-        return previousNodeName
+        return [previousNodeName, ""]
     }
 
     let isSimpleComparison = ruleCF.rule.premise.eventExpression.$type == "ExplicitValuedEventRefConstantComparison"
@@ -296,8 +291,8 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
             this.ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode,${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name})
         }
         `)
-
-        return `${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name}`
+        let guards: string = visitValuedEventRefComparison(ruleCF.rule.premise.eventExpression as ValuedEventRefConstantComparison);
+        return [`${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name}`, guards]
     }
 
     let isMultipleSynchronization = ruleCF.rule.premise.eventExpression.$type == "EventConjunction"
@@ -354,7 +349,7 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
 
         if (ruleCF.rule.premise.eventExpression.$type === "NaryEventExpression") {
             //no premise actions ?
-            return multipleSynchroName
+            return [multipleSynchroName,premiseGuards]
         }
         let ownsACondition = chekIfOwnsACondition(ruleCF.rule.premise.eventExpression as EventCombination)
         if(ownsACondition){
@@ -369,17 +364,15 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
         file.append(`
         ${multipleSynchroName}.actions = [...${multipleSynchroName}.actions, ...[${premiseActions}]] //HH
         `)
-        if(premiseGuards.length>0){
-            console.log("TODO !!! use premiseGuards",premiseGuards)
-        }
-        return multipleSynchroName
+        
+        return [multipleSynchroName,premiseGuards]
         
     } else {
         let varActions: string = visitValuedEventRef(ruleCF.rule.premise.eventExpression as ValuedEventRef)
         file.append(`
         ${ruleCF.premiseParticipants[0].name}TerminatesNode.actions = [...${ruleCF.premiseParticipants[0].name}TerminatesNode.actions, ...[${varActions}]] //II
         `)
-        return `${ruleCF.premiseParticipants[0].name}TerminatesNode`
+        return [`${ruleCF.premiseParticipants[0].name}TerminatesNode`, ""]
     }
 }
 
@@ -402,15 +395,15 @@ function visitMultipleSynchroEventRef(lhs: EventExpression, rhs: EventExpression
     }
     if (lhs.$type == "ExplicitValuedEventRefConstantComparison" || lhs.$type == "ImplicitValuedEventRefConstantComparison") {
         let leftGuards: string = visitValuedEventRefComparison(lhs as ValuedEventRefConstantComparison);
-        if(actions.length>0){
-            actions+="," 
+        if(guards.length>0){
+            guards+="," 
         }
         guards+=leftGuards      
     }
     if (rhs.$type == "ExplicitValuedEventRefConstantComparison" || rhs.$type == "ImplicitValuedEventRefConstantComparison") {
         let rightGuards: string = visitValuedEventRefComparison(rhs as ValuedEventRefConstantComparison);
-        if(actions.length>0){
-            actions+="," 
+        if(guards.length>0){
+            guards+="," 
         }
         guards+=rightGuards
     }
@@ -773,6 +766,9 @@ function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefine
             res = res + rightRes+","
             let applyOp = (valuedEmission.data as BinaryExpression).operator
             res = res + `\`${typeName} \${getName(node)}${valuedEmission.data.$cstNode?.offset} = \${getName(node)}${rhs.$cstNode?.offset} ${applyOp} \${getName(node)}${rhs.$cstNode?.offset};\``
+        }
+        if(valuedEmission.data != undefined && valuedEmission.data.$type == "BooleanExpression" || valuedEmission.data.$type == "NumberExpression" || valuedEmission.data.$type == "StringExpression"){
+            return `\`${typeName} \${getName(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  ${valuedEmission.data.$cstNode?.text};\``
         }
         if(res.length > 0){
             res = res + ","
