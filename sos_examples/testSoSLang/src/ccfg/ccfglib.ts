@@ -29,17 +29,58 @@ export abstract class Node {
 
 }
 
+export class ContainerNode extends Node {
+
+    internalccfg: CCFG;
+
+    constructor(value: any, theActions: string[] = []) {
+        super(value, theActions);
+        this.internalccfg = new CCFG();
+    }
+
+    addNode(node: Node): Node {
+        return this.internalccfg.addNode(node);
+    }
+
+    addEdge(from: Node, to: Node, label:string=""): Edge {
+        return this.internalccfg.addEdge(from, to, label);
+    }
+
+    toDot(): string {
+        return this.internalccfg.toDot();
+    }
+
+    getNodeFromName(name: string): Node | undefined {
+        return this.internalccfg.getNodeFromName(name);
+    }
+
+    getNodeByUID(uid: integer): Node  {
+        return this.internalccfg.getNodeByUID(uid);
+    }
+
+    replaceNode(oldNode: Node, newNode: Node): void {
+        this.internalccfg.replaceNode(oldNode, newNode);
+    }
+
+
+}
+
+
 export class Edge {
+    static edgeUIDCounter: integer = 0;
+
     from: Node;
     to: Node;
     label?: string;
     astNode: AstNode | undefined;
     guards: string[];
+    uid: integer;
     constructor(from: Node, to: Node, label?: string) {
         this.from = from;
         this.to = to;
         this.label = label;
         this.guards = []
+        this.uid = Edge.edgeUIDCounter++;
     }
 }
 
@@ -112,45 +153,76 @@ export class CCFG {
 
 
     toDot(): string {
-        let dot = 'digraph G {\n';
+        let wholeDot = 'digraph G {\n';
+        let [s, d] = this.getCCFGNodes()
+        d = d + this.getCCFGEdges();
+        wholeDot += s;
+        wholeDot += d;
+        wholeDot += '}';
+        return wholeDot;
+    }
+
+    private getCCFGEdges() : string{
+        let edgeDot = ""
         for (let node of this.nodes) {
-            let shape:string = this.getNodeShape(node); 
-            let label:string = this.getNodeLabel(node);
-            dot += `  "${node.uid}" [label="${label}" shape="${shape}"];\n`;
+            if (node.getType() == "ContainerNode") {
+                edgeDot += (node as ContainerNode).internalccfg.getCCFGEdges();
+            }
         }
         for (let edge of this.edges) {
-            dot += `  "${edge.from.uid}" -> "${edge.to.uid}" [label="${this.getEdgeLabel(edge)}"];\n`;
+            edgeDot += `  "${edge.from.uid}" -> "${edge.to.uid}" [label="${this.getEdgeLabel(edge)}"];\n`;
         }
-        dot += '}';
-        return dot;
+        return edgeDot;
+    }
+
+    private getCCFGNodes() :[string, string]{
+        let subG = ""
+        let nodeDot = ""
+        for (let node of this.nodes) {
+            if (node.getType() == "ContainerNode") {
+               subG += `subgraph cluster_${node.uid} {\n`;
+               subG += `label = "${node.value}";\n`;
+                let [s, d ] = (node as ContainerNode).internalccfg.getCCFGNodes()
+                subG += d;
+                subG += s;
+                subG += `}\n`;
+            } else {
+                let shape: string = this.getNodeShape(node);
+                let label: string = this.getNodeLabel(node);
+                nodeDot += `  "${node.uid}" [label="${label}" shape="${shape}"];\n`;
+            }
+
+        }
+        return [subG, nodeDot];
     }
 
     getEdgeLabel(edge: Edge): string {
-        return edge.from.functionsDefs.map(
-            a => 
-            /* a.replaceAll("\"","\\\"")).join("\n")+"\n~~~"+*/
-            edge.guards.map(a => a.replaceAll("\"","\\\""))).join("\n")
-            /*+"~~~\n";*/
+        return edge.uid.toString();
+        // return edge.from.functionsDefs.map(
+        //     a => 
+        //     /* a.replaceAll("\"","\\\"")).join("\n")+"\n~~~"+*/
+        //     edge.guards.map(a => a.replaceAll("\"","\\\""))).join("\n")
+        //     /*+"~~~\n";*/
     }
 
     getNodeLabel(node: Node): string {
         //return node.value;
         switch(node.getType()){
             case "Step":
-                return "from:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
-                    a => a.replaceAll("\"","\\\"")).join("\n")//uid.toString();
+                return "from:"+node.uid+" to "+node.finishNodeUID//+"\n"+node.functionsDefs.map(
+                   // a => a.replaceAll("\"","\\\"")).join("\n")//uid.toString();
             case "Choice":
-                return "from:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
-                    a => a.replaceAll("\"","\\\"")).join("\n")
+                return "from:"+node.uid+" to "+node.finishNodeUID//+"\n"+node.functionsDefs.map(
+                  //  a => a.replaceAll("\"","\\\"")).join("\n")
             case "OrJoin":
-                return "OR\nfrom:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
-                    a => a.replaceAll("\"","\\\"")).join("\n")
+                return "OR\nfrom:"+node.uid+" to "+node.finishNodeUID//+"\n"+node.functionsDefs.map(
+                 //   a => a.replaceAll("\"","\\\"")).join("\n")
             case "AndJoin":
-                return "AND\nfrom:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
-                    a => a.replaceAll("\"","\\\"")).join("\n")
+                return "AND\nfrom:"+node.uid+" to "+node.finishNodeUID+"\n"//+node.functionsDefs.map(
+                   // a => a.replaceAll("\"","\\\"")).join("\n")
             case "Fork":
-                return "from:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
-                    a => a.replaceAll("\"","\\\"")).join("\n");
+                return "from:"+node.uid+" to "+node.finishNodeUID+"\n"//+node.functionsDefs.map(
+                   // a => a.replaceAll("\"","\\\"")).join("\n");
             default:
                 return "???"+node.uid.toString();
         }

@@ -44,11 +44,11 @@ export function generateStuffFromSoS(model: SoSSpec, grammar: Grammar[], filePat
     file.append(`import { ${conceptNames.join(',')} } from "../../language-server/generated/ast";`, NL)
     file.append(`
 export interface SimpleLVisitor {
-    visit(node: AstNode): [Node,Node];
+    visit(node: AstNode): [Node,Node,Node];
     
 `, NL)
     for (let name of conceptNames) {
-        file.append(`     visit${name}(node: ${name}): [Node,Node];`, NL)
+        file.append(`     visit${name}(node: ${name}): [Node, Node,Node];`, NL)
     }
     file.append(`}`, NL)
 
@@ -56,7 +56,7 @@ export interface SimpleLVisitor {
 export class CCFGVisitor implements SimpleLVisitor {
     ccfg: CCFG = new CCFG();
 
-    visit(node: AstNode): [Node,Node] {`);
+    visit(node: AstNode): [Node,Node,Node] {`);
 
     for (let name of conceptNames) {
         file.append(`
@@ -77,11 +77,13 @@ export class CCFGVisitor implements SimpleLVisitor {
             name = openedRule.onRule.ref.name
         }
         file.append(`
-    visit${name}(node: ${name}): [Node,Node] {
+    visit${name}(node: ${name}): [Node,Node,Node] {
+        let ccfg: ContainerNode = new ContainerNode(node.$cstNode?.text+" starts")
+
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[${visitVariableDeclaration(openedRule.runtimeState as VariableDeclaration[])}])
-        this.ccfg.addNode(startsNode)
+        ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
-        this.ccfg.addNode(terminatesNode)
+        ccfg.addNode(terminatesNode)
         `);
         let previousNodeName = "startsNode"
         let terminatesNodeName = "terminatesNode"
@@ -96,8 +98,8 @@ export class CCFGVisitor implements SimpleLVisitor {
 
             file.append(`
         let joinNode: Node = new OrJoin(node.$cstNode?.text+" or join")
-        this.ccfg.addNode(joinNode)
-        this.ccfg.addEdge(joinNode,terminatesNode)
+        ccfg.addNode(joinNode)
+        ccfg.addEdge(joinNode,terminatesNode)
         `)
             terminatesNodeName = "joinNode"
         }
@@ -113,7 +115,7 @@ export class CCFGVisitor implements SimpleLVisitor {
 
         file.append(`
         startsNode.finishNodeUID = terminatesNode.uid
-        return [startsNode,terminatesNode]
+        return [ccfg,startsNode,terminatesNode]
     }`, NL);
     }
 
@@ -181,8 +183,8 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
     if (isMultipleEmission) {
         file.append(`
         let ${ruleCF.rule.name}ForkNode: Node = new Fork("${ruleCF.rule.name}ForkNode")
-        this.ccfg.addNode(${ruleCF.rule.name}ForkNode)
-        {let e = this.ccfg.addEdge(previousNode,${ruleCF.rule.name}ForkNode)
+        ccfg.addNode(${ruleCF.rule.name}ForkNode)
+        {let e = ccfg.addEdge(previousNode,${ruleCF.rule.name}ForkNode)
         e.guards = [...e.guards, ...[${guardActions}]] //BB
         }
         `);
@@ -190,8 +192,9 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
         for (let emissionParticipant of splittedConclusionParticipants) {
             const participantName = emissionParticipant[0].name;
             file.append(`
-        let [${participantName}StartNode,${participantName}TerminatesNode] = this.visit(node.${participantName})
-        this.ccfg.addEdge(${ruleCF.rule.name}ForkNode,${participantName}StartNode)
+        let [${participantName}CCFG, ${participantName}StartNode,${participantName}TerminatesNode] = this.visit(node.${participantName})
+        ccfg.addNode(${participantName}CCFG)
+        ccfg.addEdge(${ruleCF.rule.name}ForkNode,${participantName}StartNode)
         `)
         }
     } else { //single emission
@@ -201,17 +204,18 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
             if (isConcurrent) {
                 file.append(`
         let ${ruleCF.rule.name}ForkNode: Node = new Fork("${ruleCF.rule.name}ForkNode")
-        this.ccfg.addNode(${ruleCF.rule.name}ForkNode)
-        {let e = this.ccfg.addEdge(previousNode,${ruleCF.rule.name}ForkNode)
+        ccfg.addNode(${ruleCF.rule.name}ForkNode)
+        {let e = ccfg.addEdge(previousNode,${ruleCF.rule.name}ForkNode)
         e.guards = [...e.guards, ...[${guardActions}]] //CC
         }
 
         let ${ruleCF.rule.name}FakeNode: Node = new AndJoin("${ruleCF.rule.name}FakeNode")    
-        this.ccfg.addNode(${ruleCF.rule.name}FakeNode)    
+        ccfg.addNode(${ruleCF.rule.name}FakeNode)    
         for (var child of node.${ruleCF.conclusionParticipants[0].name}) {
-            let [childStartsNode,childTerminatesNode] = this.visit(child)
-            this.ccfg.addEdge(${ruleCF.rule.name}ForkNode,childStartsNode)
-            this.ccfg.addEdge(childTerminatesNode,${ruleCF.rule.name}FakeNode)
+            let [childCCFG,childStartsNode,childTerminatesNode] = this.visit(child)
+            ccfg.addNode(childCCFG)
+            ccfg.addEdge(${ruleCF.rule.name}ForkNode,childStartsNode)
+            ccfg.addEdge(childTerminatesNode,${ruleCF.rule.name}FakeNode)
         }
 
         ${ruleCF.rule.name}ForkNode.finishNodeUID = ${ruleCF.rule.name}FakeNode.uid
@@ -219,14 +223,15 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
             } else {
                 file.append(`
         let ${ruleCF.rule.name}StepNode = new Step("${ruleCF.rule.name}StepNode")
-        this.ccfg.addNode(${ruleCF.rule.name}StepNode)
-        let e = this.ccfg.addEdge(previousNode,${ruleCF.rule.name}StepNode)
+        ccfg.addNode(${ruleCF.rule.name}StepNode)
+        let e = ccfg.addEdge(previousNode,${ruleCF.rule.name}StepNode)
         e.guards = [...e.guards, ...[${guardActions}]] //DD
 
         previousNode = ${ruleCF.rule.name}StepNode
         for (var child of node.${ruleCF.conclusionParticipants[0].name}) {
-            let [childStartsNode,childTerminatesNode] = this.visit(child)
-            this.ccfg.addEdge(previousNode,childStartsNode)
+            let [childCCFG,childStartsNode,childTerminatesNode] = this.visit(child)
+            ccfg.addNode(childCCFG)
+            ccfg.addEdge(previousNode,childStartsNode)
             previousNode = childTerminatesNode
         }
         let ${ruleCF.conclusionParticipants[0].name}TerminatesNode = previousNode
@@ -236,15 +241,16 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
         } else { //single emission, single event
             if (ruleCF.conclusionParticipants[ruleCF.conclusionParticipants.length - 1].name != undefined && ruleCF.conclusionParticipants[ruleCF.conclusionParticipants.length - 1].name == "terminates") {
                 file.append(`
-        {let e = this.ccfg.addEdge(previousNode,${terminatesNodeName})
+        {let e = ccfg.addEdge(previousNode,${terminatesNodeName})
         e.guards = [...e.guards, ...[${guardActions}]] //EE
         }
         `);
             } else {
                 let toVisitName = ruleCF.conclusionParticipants[0].name;
                 file.append(`
-        let [${toVisitName}StartsNode,${toVisitName}TerminatesNode] = this.visit(node.${toVisitName})
-        {let e = this.ccfg.addEdge(previousNode,${toVisitName}StartsNode)
+        let [${toVisitName}CCFG, ${toVisitName}StartsNode,${toVisitName}TerminatesNode] = this.visit(node.${toVisitName})
+        ccfg.addNode(${toVisitName}CCFG)
+        {let e = ccfg.addEdge(previousNode,${toVisitName}StartsNode)
         e.guards = [...e.guards, ...[${guardActions}]] //FF
         }
         `);
@@ -290,14 +296,14 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
 
     if (isSimpleComparison) {
         file.append(`
-        let ${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name} = this.ccfg.getNodeFromName("${ruleCF.premiseParticipants[0].name}ChoiceNode")
+        let ${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name} = ccfg.getNodeFromName("${ruleCF.premiseParticipants[0].name}ChoiceNode")
         if (${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name} == undefined) {
             let ${ruleCF.premiseParticipants[0].name}ChoiceNode = new Choice("${ruleCF.premiseParticipants[0].name}ChoiceNode")
-            this.ccfg.addNode(${ruleCF.premiseParticipants[0].name}ChoiceNode)
-            this.ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode,${ruleCF.premiseParticipants[0].name}ChoiceNode)
+            ccfg.addNode(${ruleCF.premiseParticipants[0].name}ChoiceNode)
+            ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode,${ruleCF.premiseParticipants[0].name}ChoiceNode)
             ${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name} = ${ruleCF.premiseParticipants[0].name}ChoiceNode
         }else{
-            this.ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode,${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name})
+            ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode,${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name})
         }
         `)
         let guards: string = visitValuedEventRefComparison(ruleCF.rule.premise.eventExpression as ValuedEventRefConstantComparison);
@@ -317,9 +323,9 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
             case "EventConjunction":
                 file.append(`
         let ${ruleCF.rule.name}AndJoinNode: Node = new AndJoin("${ruleCF.rule.name}AndJoinNode")
-        this.ccfg.addNode(${ruleCF.rule.name}AndJoinNode)
-        this.ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode,${ruleCF.rule.name}AndJoinNode)
-        this.ccfg.addEdge(${ruleCF.premiseParticipants[indexRight].name}TerminatesNode,${ruleCF.rule.name}AndJoinNode)
+        ccfg.addNode(${ruleCF.rule.name}AndJoinNode)
+        ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode,${ruleCF.rule.name}AndJoinNode)
+        ccfg.addEdge(${ruleCF.premiseParticipants[indexRight].name}TerminatesNode,${ruleCF.rule.name}AndJoinNode)
                 `)
                 multipleSynchroName=  `${ruleCF.rule.name}AndJoinNode`
                let [a, g] = visitMultipleSynchroEventRef(ruleCF.rule.premise.eventExpression.lhs, ruleCF.rule.premise.eventExpression.rhs);
@@ -329,9 +335,9 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
             case "EventDisjunction":
                 file.append(`
         let ${ruleCF.rule.name}OrJoinNode: Node = new OrJoin("${ruleCF.rule.name}OrJoinNode")
-        this.ccfg.addNode(${ruleCF.rule.name}OrJoinNode)
-        this.ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode,${ruleCF.rule.name}OrJoinNode)
-        this.ccfg.addEdge(${ruleCF.premiseParticipants[indexRight].name}TerminatesNode,${ruleCF.rule.name}OrJoinNode)
+        ccfg.addNode(${ruleCF.rule.name}OrJoinNode)
+        ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode,${ruleCF.rule.name}OrJoinNode)
+        ccfg.addEdge(${ruleCF.premiseParticipants[indexRight].name}TerminatesNode,${ruleCF.rule.name}OrJoinNode)
                 `)
                 multipleSynchroName= `${ruleCF.rule.name}OrJoinNode`
                 let [a2, g2] = visitMultipleSynchroEventRef(ruleCF.rule.premise.eventExpression.lhs, ruleCF.rule.premise.eventExpression.rhs);
@@ -342,13 +348,13 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
                 if (ruleCF.rule.premise.eventExpression.policy.operator == "lastOf") {
                     file.append(`
         let ${ruleCF.rule.name}LastOfNode: Node = new AndJoin("${ruleCF.rule.name}LastOfNode")
-        this.ccfg.replaceNode(${getEmittingRuleName(ruleCF,allRulesCF)}FakeNode,${ruleCF.rule.name}LastOfNode)                    
+        ccfg.replaceNode(${getEmittingRuleName(ruleCF,allRulesCF)}FakeNode,${ruleCF.rule.name}LastOfNode)                    
                     `)
                     multipleSynchroName= `${ruleCF.rule.name}LastOfNode`
                 } else {
                     file.append(`
         let ${ruleCF.rule.name}FirstOfNode: Node = new OrJoin("${ruleCF.rule.name}FirstOfNode")
-        this.ccfg.replaceNode(${getEmittingRuleName(ruleCF,allRulesCF)}FakeNode,${ruleCF.rule.name}FirstOfNode)
+        ccfg.replaceNode(${getEmittingRuleName(ruleCF,allRulesCF)}FakeNode,${ruleCF.rule.name}FirstOfNode)
                     `)
                     multipleSynchroName= `${ruleCF.rule.name}FirstOfNode`
                     break
@@ -364,8 +370,8 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
         if(ownsACondition){
             file.append(`
         let ${ruleCF.rule.name}ConditionNode: Node = new Choice("${ruleCF.rule.name}ConditionNode")
-        this.ccfg.addNode(${ruleCF.rule.name}ConditionNode)
-        this.ccfg.addEdge(${multipleSynchroName},${ruleCF.rule.name}ConditionNode)
+        ccfg.addNode(${ruleCF.rule.name}ConditionNode)
+        ccfg.addEdge(${multipleSynchroName},${ruleCF.rule.name}ConditionNode)
             `)
             multipleSynchroName= `${ruleCF.rule.name}ConditionNode`
         }
@@ -450,7 +456,7 @@ function checkIfEventEmissionIsCollectionBased(ruleCF: RuleControlFlow) {
 function writePreambule(fileNode: CompositeGeneratorNode, data: FilePathData) {
     fileNode.append(`
 import { AstNode, Reference, isReference } from "langium";
-import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step } from "../../ccfg/ccfglib";`, NL)
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, ContainerNode } from "../../ccfg/ccfglib";`, NL)
 }
 
 

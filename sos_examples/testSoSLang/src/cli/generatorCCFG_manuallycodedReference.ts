@@ -4,7 +4,7 @@ import path from 'path';
 import { Model } from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
 import { CCFGVisitor } from './generated/testFSE';
-import { CCFG, Edge, Node } from '../ccfg/ccfglib';
+import { CCFG, ContainerNode, Edge, Node } from '../ccfg/ccfglib';
 
 
 export function generateCCFG(model: Model, filePath: string, destination: string | undefined): string {
@@ -41,8 +41,9 @@ export function generateCCFG(model: Model, filePath: string, destination: string
 
 function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model): CCFG {
     var visitor = new CCFGVisitor();
-    visitor.visit(model);
-    var ccfg = visitor.ccfg;
+    let [res] = visitor.visit(model);
+
+    var ccfg = (res as ContainerNode).internalccfg;
     codeFile.append(ccfg.toDot());
     return ccfg;
 }
