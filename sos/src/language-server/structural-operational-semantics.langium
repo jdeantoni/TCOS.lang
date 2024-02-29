@@ -58,8 +58,8 @@ Premise:
 
 
 Conclusion:
-	'<''this'',''σ''>' '~>' ((eventemissions+=EventEmission)|
-                         	(statemodifications+=StateModification))+ 
+	'<''this'',''σ''>' '~>' (statemodifications+=StateModification)*
+							(eventemissions+=EventEmission)* 
 	;
 
 EventRef:
@@ -127,16 +127,16 @@ Constant:
 	;
 
 SimpleEventEmission:
-	('emits')? event=MemberCall (";")?
+	('emits')? event=MemberCall
 	;
 
 StateModification:
-	lhs=MemberCall ':=' rhs=ClassicalExpression (';')?
+	lhs=MemberCall ':=' rhs=ClassicalExpression ';'
 	;
 
 ValuedEventEmission:
-	('emits')? event=MemberCall
-		'[' data=ClassicalExpression']' (";")?;
+	('emits')? event=MemberCall '[' data=ClassicalExpression']'
+	;
 
 UnaryMinus:
 	'-' expression=Expression
@@ -247,7 +247,7 @@ UnaryExpression:
 
 NumberExpression: value=NUMBER;
 StringExpression: value=STRING;
-BooleanExpression: value?='true' | 'false';
+BooleanExpression: value = 'true' | 'false';
 NilExpression: value='nil';
 
 TypeReference: reference=[AbstractRule:ID]   
@@ -255,7 +255,7 @@ TypeReference: reference=[AbstractRule:ID]
 ;
 
 SoSPrimitiveType:
-    name=("string" | "number" | "boolean" | "void" | "event"); 
+    name=("string" | "integer" | "boolean" | "void" | "event"); 
 
 
 type NamedElement = /*Parameter | FunctionDeclaration |*/ MethodMember |VariableDeclaration | RuleOpening | TemporaryVariable | SoSPrimitiveType | RWRule  ;  

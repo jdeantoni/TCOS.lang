@@ -1,10 +1,11 @@
 import fs from 'fs';
 import {CompositeGeneratorNode, Grammar, NL, streamAst, toString } from 'langium';
-import {  RWRule, RuleOpening, SoSSpec, TemporaryVariable, isRWRule, isRuleOpening, isTemporaryVariable, isValuedEventEmission, isVariableDeclaration } from '../language-server/generated/ast'; //VariableDeclaration
-import { extractDestinationAndName, FilePathData } from './cli-util';
+import {  RWRule, RuleOpening, SoSSpec, TemporaryVariable, isRWRule, isRuleOpening, isTemporaryVariable, isValuedEventEmission, isVariableDeclaration } from '../language-server/generated/ast.js'; //VariableDeclaration
+import { extractDestinationAndName, FilePathData } from './cli-util.js';
 // import { print } from '../utils/sos-utils';
-import { inferType } from '../language-server/type-system/infer';
+import { inferType } from '../language-server/type-system/infer.js';
 import path from 'path';
+import { EventEmission } from '../language-server/generated/ast.js';
 
 
 
@@ -12,7 +13,7 @@ import path from 'path';
 
 
 
-export function generateStuffFromSoS(model: SoSSpec, grammar: Grammar[], filePath: string, destination: string | undefined): string {
+export function generateSigma(model: SoSSpec, grammar: Grammar[], filePath: string, destination: string | undefined): string {
     const data = extractDestinationAndName(filePath, destination);
     const generatedFilePath = `${path.join(data.destination, data.name)}.ts`;
     const fileNode = new CompositeGeneratorNode();
@@ -23,7 +24,7 @@ export function generateStuffFromSoS(model: SoSSpec, grammar: Grammar[], filePat
     for(var openedRule of model.rtdAndRules){
         if(openedRule.rules.filter(r => isRWRule(r)).length > 0){
             fileNode.append(`
-                    if (is${openedRule.onRule.ref?.name}(node)){`)
+                    if (is${openedRule.onRule?.ref?.name}(node)){`)
             for(var rwr of openedRule.rules){
                 if (isRWRule(rwr)){
                     const rwrRuleType:string = getRwrRuleType(rwr);
@@ -187,7 +188,7 @@ function getRwrRuleType(rwr: RWRule) {
             return "bool"
         }
     }
-    if (rwr.conclusion.eventemissions.some(em => isValuedEventEmission(em))) {
+    if (rwr.conclusion.eventemissions.some((em : EventEmission) => isValuedEventEmission(em))) {
         return "void"
     }
     return "error in type inference for rule "+rwr.name+" in rule opened on "+(rwr.$container as RuleOpening).onRule
@@ -279,10 +280,10 @@ function generateThegenerateCCSLFunction(fileNode: CompositeGeneratorNode, model
             }
     `);
     for(var openedRule of model.rtdAndRules){
-        if(openedRule.rules.filter(r => isRWRule(r)).length > 1){
+        if(openedRule.rules.filter((r:RWRule) => isRWRule(r)).length > 1){
             fileNode.append(`
-            if (is${openedRule.onRule.ref?.name}(node)) {`);
-            for(let rwr of openedRule.rules.filter(r => isRWRule(r))){
+            if (is${openedRule.onRule?.ref?.name}(node)) {`);
+            for(let rwr of openedRule.rules.filter((r:RWRule) => isRWRule(r))){
                 fileNode.append(`
                 allClocks.push(getName(node) + "_${(rwr as RWRule).name}");`)
             }
@@ -305,7 +306,7 @@ function generateThegenerateCCSLFunction(fileNode: CompositeGeneratorNode, model
     for(let node of streamAst(model)){
         if(isRuleOpening(node)){
             fileNode.append(`
-            if(is${node.onRule.$refText}(node)){
+            if(is${(node as RuleOpening).onRule?.$refText}(node)){
             `)
             
             // if(node.isNonAtomic){

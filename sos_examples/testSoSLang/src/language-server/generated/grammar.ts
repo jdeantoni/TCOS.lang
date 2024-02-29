@@ -605,7 +605,7 @@ export const SimpleLGrammar = (): Grammar => loadedSimpleLGrammar ?? (loadedSimp
       "name": "VarRef",
       "definition": {
         "$type": "Assignment",
-        "feature": "ref",
+        "feature": "theVar",
         "operator": "=",
         "terminal": {
           "$type": "CrossReference",

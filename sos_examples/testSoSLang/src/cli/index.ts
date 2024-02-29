@@ -11,7 +11,7 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
     const services = createSimpleLServices(NodeFileSystem).SimpleL;
     const model = await extractAstNode<Model>(fileName, services);
     const generatedFilePath = generateCCFG(model, fileName, opts.destination);
-    console.log(chalk.green(`JavaScript code generated successfully: ${generatedFilePath}`));
+    console.log(chalk.green(`CCFG and C++ Code generated successfully: ${generatedFilePath}`));
 };
 
 export type GenerateOptions = {

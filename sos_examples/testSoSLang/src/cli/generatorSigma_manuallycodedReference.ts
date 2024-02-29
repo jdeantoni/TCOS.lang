@@ -44,7 +44,7 @@ function generateCode(codeFile: CompositeGeneratorNode, headerFile: CompositeGen
 #include<stdbool.h>  `, NL, NL);
     
     var allRtdPositions: Map<AstNode,number> = new Map<AstNode, number>();
-    var allRtdValues: Map<AstNode,number> = new Map<AstNode, number>();
+    var allRtdValues: Map<AstNode,any> = new Map<AstNode, any>();
 
     for (var node of streamAllContents(model)) {
         if(isVariable(node)){
@@ -54,8 +54,7 @@ function generateCode(codeFile: CompositeGeneratorNode, headerFile: CompositeGen
     }
 
     codeFile.append(`
-    int varList[${globalVariableCounter}] = {${Array.from(allRtdValues.values()).join(",")}};
-    `,NL)
+    void* sigma[${globalVariableCounter}] = {${Array.from(allRtdValues.values()).map(element => {"nullptr"}).join(",")};`,NL)
 
     for (var node of streamAllContents(model)) {
 
@@ -70,7 +69,7 @@ function generateCode(codeFile: CompositeGeneratorNode, headerFile: CompositeGen
                         headerFile.append(`int ${getName(node)}_evaluate();`,NL)
                         codeFile.append(`
                         inline int ${getName(node)}_evaluate(){
-                            int value = ${getName(node.ref)}_evaluate();
+                            int value = ${getName(node.theVar)}_evaluate();
                             return value;    
                         }`,NL)
                     }

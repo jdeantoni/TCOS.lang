@@ -1,5 +1,6 @@
-var v1 = 0          //v1Decl
+var v1 = 1          //v1Decl
 var v2 = 4          //v2Decl
+var v3 = 0          //v3Decl
      |               //parBloc1
      | v1 = (v1 + v1)//v1Assign1 - firstPlus -v1Ref1 - v1Ref2
      | v2 = (v2 + v2)  //v2Assign1 - secondPlus -v2Ref1 - v2Ref2
@@ -13,5 +14,5 @@ if (v1)             //if
 }
 
 
-(true && true)
+v3 = (true && false)
 

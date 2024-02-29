@@ -43,7 +43,7 @@ Plus:
 Assignment:
     variable=[Variable:ID] '=' expr=Expr;
 VarRef:
-    ref=[Variable:ID];
+    theVar=[Variable:ID];
 
 
 

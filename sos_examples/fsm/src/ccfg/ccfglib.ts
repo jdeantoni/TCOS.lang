@@ -197,32 +197,32 @@ export class CCFG {
     }
 
     getEdgeLabel(edge: Edge): string {
-      
-        return edge.from.functionsDefs.map(
-            a => 
-            /* a.replaceAll("\"","\\\"")).join("\n")+"\n~~~"+*/
-            edge.guards.map(a => a.replaceAll("\"","\\\""))).join("\n")
-            /*+"~~~\n";*/
+        return edge.uid.toString();
+        // return edge.from.functionsDefs.map(
+        //     a => 
+        //     /* a.replaceAll("\"","\\\"")).join("\n")+"\n~~~"+*/
+        //     edge.guards.map(a => a.replaceAll("\"","\\\""))).join("\n")
+        //     /*+"~~~\n";*/
     }
 
     getNodeLabel(node: Node): string {
         //return node.value;
         switch(node.getType()){
             case "Step":
-                return "from:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
-                    a => a.replaceAll("\"","\\\"")).join("\n")//uid.toString();
+                return "from:"+node.uid+" to "+node.finishNodeUID//+"\n"+node.functionsDefs.map(
+                   // a => a.replaceAll("\"","\\\"")).join("\n")//uid.toString();
             case "Choice":
-                return "from:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
-                    a => a.replaceAll("\"","\\\"")).join("\n")
+                return "from:"+node.uid+" to "+node.finishNodeUID//+"\n"+node.functionsDefs.map(
+                  //  a => a.replaceAll("\"","\\\"")).join("\n")
             case "OrJoin":
-                return "OR\nfrom:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
-                    a => a.replaceAll("\"","\\\"")).join("\n")
+                return "OR\nfrom:"+node.uid+" to "+node.finishNodeUID//+"\n"+node.functionsDefs.map(
+                 //   a => a.replaceAll("\"","\\\"")).join("\n")
             case "AndJoin":
-                return "AND\nfrom:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
-                    a => a.replaceAll("\"","\\\"")).join("\n")
+                return "AND\nfrom:"+node.uid+" to "+node.finishNodeUID+"\n"//+node.functionsDefs.map(
+                   // a => a.replaceAll("\"","\\\"")).join("\n")
             case "Fork":
-                return "from:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
-                    a => a.replaceAll("\"","\\\"")).join("\n");
+                return "from:"+node.uid+" to "+node.finishNodeUID+"\n"//+node.functionsDefs.map(
+                   // a => a.replaceAll("\"","\\\"")).join("\n");
             default:
                 return "???"+node.uid.toString();
         }

@@ -21,6 +21,7 @@ export function isEvent(item: unknown): item is Event {
 export interface FSM extends AstNode {
     readonly $container: FSMModel;
     readonly $type: 'FSM';
+    initialState: Reference<State>
     name: string
     states: Array<State>
     transitions: Array<Transition>
@@ -101,6 +102,11 @@ export class FiniteStateMachineAstReflection extends AbstractAstReflection {
     getReferenceType(refInfo: ReferenceInfo): string {
         const referenceId = `${refInfo.container.$type}:${refInfo.property}`;
         switch (referenceId) {
+            case 'FSM:initialState':
+            case 'Transition:source':
+            case 'Transition:target': {
+                return State;
+            }
             case 'State:inTransitions':
             case 'State:outTransitions': {
                 return Transition;
@@ -108,10 +114,6 @@ export class FiniteStateMachineAstReflection extends AbstractAstReflection {
             case 'Transition:guardEvent':
             case 'Transition:sentEvent': {
                 return Event;
-            }
-            case 'Transition:source':
-            case 'Transition:target': {
-                return State;
             }
             default: {
                 throw new Error(`${referenceId} is not a valid reference id.`);

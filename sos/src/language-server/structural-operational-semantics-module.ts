@@ -2,14 +2,14 @@ import {
     createDefaultModule, createDefaultSharedModule, createLangiumGrammarServices, DefaultSharedModuleContext, inject,
     LangiumServices, LangiumSharedServices, Module, PartialLangiumServices
 } from 'langium';
-import { registerValidationChecks } from 'langium/lib/grammar/validation/validator';
+import { registerValidationChecks } from '../../node_modules/langium/lib/grammar/validation/validator.js';
 
-import { StructuralOperationalSemanticsGeneratedModule, StructuralOperationalSemanticsGeneratedSharedModule } from './generated/module';
-import { StructuralOperationalSemanticsValidator, registerSoSValidationChecks } from './structural-operational-semantics-validator';
-import { SoSScopeProvider } from './sos-scope';
+import { StructuralOperationalSemanticsGeneratedModule, StructuralOperationalSemanticsGeneratedSharedModule } from './generated/module.js';
+import { StructuralOperationalSemanticsValidator, registerSoSValidationChecks } from './structural-operational-semantics-validator.js';
+import { SoSScopeProvider } from './sos-scope.js';
 // import { LangiumGrammarDocument } from 'langium/lib/grammar/workspace/documents';
-import { registerTypeValidationChecks } from 'langium/lib/grammar/validation/types-validator';
-import { SoSSemanticTokenProvider } from './structural-operational-semantics-semantic-token';
+import { registerTypeValidationChecks } from '../../node_modules/langium/lib/grammar/validation/types-validator.js';
+import { SoSSemanticTokenProvider } from './structural-operational-semantics-semantic-token.js';
 
 
 //import {LangiumGrammarGeneratedModule /*, LangiumGrammarGeneratedSharedModule*/ } from 'langium/src/grammar/generated/module';

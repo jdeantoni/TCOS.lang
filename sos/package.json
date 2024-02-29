@@ -10,17 +10,26 @@
         "Programming Languages"
     ],
     "contributes": {
-        "languages": [{
-            "id": "structural-operational-semantics",
-            "aliases": ["StructuralOperationalSemantics", "structural-operational-semantics"],
-            "extensions": [".sos"],
-            "configuration": "./language-configuration.json"
-        }],
-        "grammars": [{
-            "language": "structural-operational-semantics",
-            "scopeName": "source.structural-operational-semantics",
-            "path": "./syntaxes/structural-operational-semantics.tmLanguage.json"
-        }]
+        "languages": [
+            {
+                "id": "structural-operational-semantics",
+                "aliases": [
+                    "StructuralOperationalSemantics",
+                    "structural-operational-semantics"
+                ],
+                "extensions": [
+                    ".sos"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "structural-operational-semantics",
+                "scopeName": "source.structural-operational-semantics",
+                "path": "./syntaxes/structural-operational-semantics.tmLanguage.json"
+            }
+        ]
     },
     "activationEvents": [
         "onLanguage:structural-operational-semantics"
@@ -31,34 +40,36 @@
         "src"
     ],
     "bin": {
-        "structural-operational-semantics-cli": "./bin/cli"
+        "structural-operational-semantics-cli": "./bin/cli.js"
     },
-    "main": "./out/extension.js",
+    "main": "./out/extension.cjs",
     "scripts": {
         "vscode:prepublish": "npm run build && npm run lint",
-        "build": "tsc -b tsconfig.json",
+        "build": "tsc -b tsconfig.json && node esbuild.mjs",
         "watch": "tsc -b tsconfig.json --watch",
         "lint": "eslint src --ext ts",
         "langium:generate": "langium generate",
         "langium:watch": "langium generate --watch"
     },
     "dependencies": {
-        "chevrotain": "^10.4.1",
-        "chalk": "^4.1.2",
-        "commander": "^8.0.0",
-        "langium": "~1.0.0",
-        "langium-sprotty": "2.1.0",
-        "vscode-languageclient": "^8.0.2",
-        "vscode-languageserver": "^8.0.2",
-        "vscode-uri": "^3.0.2"
+        "chalk": "^5.3.0",
+        "chevrotain": "^11.0.3",
+        "commander": "^12.0.0",
+        "langium": "~2.1.3",
+        "langium-sprotty": "~2.1.0",
+        "vscode-languageclient": "^9.0.1",
+        "vscode-languageserver": "^9.0.1",
+        "vscode-uri": "^3.0.8"
     },
     "devDependencies": {
-        "@types/node": "^14.17.3",
+        "@types/node": "^20.11.19",
         "@types/vscode": "^1.56.0",
-        "@typescript-eslint/eslint-plugin": "^5.28.0",
-        "@typescript-eslint/parser": "^5.28.0",
-        "eslint": "^8.17.0",
-        "langium-cli": "~1.0.0",
-        "typescript": "^4.9.4"
-    }
+        "@typescript-eslint/eslint-plugin": "^7.0.1",
+        "@typescript-eslint/parser": "^7.0.1",
+        "esbuild": "^0.20.1",
+        "eslint": "^8.56.0",
+        "langium-cli": "~2.1.0",
+        "typescript": "^5.3.3"
+    },
+    "type": "module"
 }

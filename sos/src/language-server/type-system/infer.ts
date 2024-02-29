@@ -1,6 +1,6 @@
 import { AstNode } from "langium";
-import { BinaryExpression, /*RuleOpening, */isBinaryExpression, isBooleanExpression, isFieldMember, isMemberCall,  isNilExpression, isNumberExpression, isStringExpression, isTypeReference, isUnaryExpression, isVariableDeclaration, MemberCall, TypeReference, isRuleOpening, RuleOpening, isAssignment, ParserRule, isRuleCall, isTemporaryVariable, isCrossReference } from "../generated/ast";
-import { createBooleanType, createRuleOpeningType as createRuleOpeningType, createErrorType, createNilType, createNumberType, createStringType, createVoidType, isFunctionType, isStringType, TypeDescription, createParserRuleType } from "./descriptions";
+import { BinaryExpression, /*RuleOpening, */isBinaryExpression, isBooleanExpression, isFieldMember, isMemberCall,  isNilExpression, isNumberExpression, isStringExpression, isTypeReference, isUnaryExpression, isVariableDeclaration, MemberCall, TypeReference, isRuleOpening, RuleOpening, isAssignment, ParserRule, isRuleCall, isTemporaryVariable, isCrossReference } from "../generated/ast.js";
+import { createBooleanType, createRuleOpeningType as createRuleOpeningType, createErrorType, createNilType, createNumberType, createStringType, createVoidType, isFunctionType, isStringType, TypeDescription, createParserRuleType } from "./descriptions.js";
 
 export function inferType(node: AstNode | undefined, cache: Map<AstNode, TypeDescription>): TypeDescription {
     let type: TypeDescription | undefined;
@@ -99,7 +99,7 @@ export function inferType(node: AstNode | undefined, cache: Map<AstNode, TypeDes
 
 function inferTypeRef(node: TypeReference, cache: Map<AstNode, TypeDescription>): TypeDescription {
     if (node.primitive) {
-        if (node.primitive.name === 'number') {
+        if (node.primitive.name === 'integer') {
             return createNumberType();
         } else if (node.primitive.name === 'string') {
             return createStringType();
@@ -134,7 +134,7 @@ function inferMemberCall(node: MemberCall, cache: Map<AstNode, TypeDescription>)
         }
         return createErrorType('Cannot call operation on non-function type', node);
     }
-    return createErrorType('Could not infer type for element ' + node.element?.$refText ?? 'undefined', node);
+    return createErrorType('Could not infer type for element ' + node.element?.$refText, node);
 }
 
 function inferBinaryExpression(expr: BinaryExpression, cache: Map<AstNode, TypeDescription>): TypeDescription {

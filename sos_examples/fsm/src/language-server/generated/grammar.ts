@@ -73,6 +73,25 @@ export const FiniteStateMachineGrammar = (): Grammar => loadedFiniteStateMachine
             "value": ":"
           },
           {
+            "$type": "Assignment",
+            "feature": "initialState",
+            "operator": "=",
+            "terminal": {
+              "$type": "CrossReference",
+              "type": {
+                "$ref": "#/rules@3"
+              },
+              "terminal": {
+                "$type": "RuleCall",
+                "rule": {
+                  "$ref": "#/rules@6"
+                },
+                "arguments": []
+              },
+              "deprecatedSyntax": false
+            }
+          },
+          {
             "$type": "Alternatives",
             "elements": [
               {

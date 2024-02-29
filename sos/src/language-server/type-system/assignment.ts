@@ -1,4 +1,4 @@
-import { isRuleOpeningType, isFunctionType, isNilType, TypeDescription } from "./descriptions";
+import { isRuleOpeningType, isFunctionType, isNilType, TypeDescription } from "./descriptions.js";
 // import { getClassChain } from "./infer";
 
 export function isAssignable(from: TypeDescription, to: TypeDescription): boolean {
