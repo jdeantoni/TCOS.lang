@@ -4,52 +4,52 @@
     #include <iostream>
     
     std::unordered_map<std::string, void*> sigma;
-  void function0statementsInOrder1(){
+  void function1statementsInOrder1(){
 	
-}
-void function3initializeVar(){
-	sigma["Variable0_0_0_10currentValue"] = new int();
-	int Variable0_0_0_101385 = 1; //undefined
-	*((int*)sigma["Variable0_0_0_10currentValue"]) = Variable0_0_0_101385;//TODO: fix this and avoid memory leak by deleting, constructing appropriately..
 }
 void function5initializeVar(){
+	sigma["Variable0_0_0_10currentValue"] = new int();
+	int Variable0_0_0_101385 = 1; //undefined
+	*((int*)sigma["Variable0_0_0_10currentValue"]) = Variable0_0_0_101385;
+}
+void function8initializeVar(){
 	sigma["Variable1_0_1_10currentValue"] = new int();
 	int Variable1_0_1_101385 = 4; //undefined
-	*((int*)sigma["Variable1_0_1_10currentValue"]) = Variable1_0_1_101385;//TODO: fix this and avoid memory leak by deleting, constructing appropriately..
+	*((int*)sigma["Variable1_0_1_10currentValue"]) = Variable1_0_1_101385;
 }
-void function7initializeVar(){
+void function11initializeVar(){
 	sigma["Variable2_0_2_10currentValue"] = new int();
 	int Variable2_0_2_101385 = 0; //undefined
-	*((int*)sigma["Variable2_0_2_10currentValue"]) = Variable2_0_2_101385;//TODO: fix this and avoid memory leak by deleting, constructing appropriately..
+	*((int*)sigma["Variable2_0_2_10currentValue"]) = Variable2_0_2_101385;
 }
-void function9startsParallelBloc(){
+void function14startsParallelBloc(){
 	
 }
-void function12finishParallelBloc(){
+void function17finishParallelBloc(){
 	
 }
-void function13executeAssignment(){
+void function19executeAssignment(){
 	
 }
-void function15startPlus(){
+void function22startPlus(){
 	
 }
-void function16executeAssignment2(){
+void function23executeAssignment2(){
 	int Assignment4_7_4_212363 = Plus4_12_4_21terminates;//valuedEventRef resRight
 	int Assignment4_7_4_212529 = Assignment4_7_4_212363; //resRight
-	*((int*)sigma["Variable0_0_0_10currentValue"]) = Assignment4_7_4_212529;//TODO: fix this and avoid memory leak by deleting, constructing appropriately..
+	*((int*)sigma["Variable0_0_0_10currentValue"]) = Assignment4_7_4_212529;
 }
-int function18accessVarRef(){
+int function26accessVarRef(){
 	int VarRef4_18_4_201588 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
 	int VarRef4_18_4_20terminates =  VarRef4_18_4_201588;
 	return VarRef4_18_4_20terminates;
 }
-int function20accessVarRef(){
+int function29accessVarRef(){
 	int VarRef4_13_4_151588 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
 	int VarRef4_13_4_15terminates =  VarRef4_13_4_151588;
 	return VarRef4_13_4_15terminates;
 }
-int function22finishPlus(){
+int function31finishPlus(){
 	int Plus4_12_4_214273 = VarRef4_18_4_20terminates;//valuedEventRef n2
 	int Plus4_12_4_214298 = VarRef4_13_4_15terminates;//valuedEventRef n1
 	int Plus4_12_4_214417 = Plus4_12_4_214298; //n1
@@ -58,28 +58,28 @@ int function22finishPlus(){
 	int Plus4_12_4_21terminates =  Plus4_12_4_214416;
 	return Plus4_12_4_21terminates;
 }
-void function23executeAssignment(){
+void function33executeAssignment(){
 	
 }
-void function25startPlus(){
+void function36startPlus(){
 	
 }
-void function26executeAssignment2(){
+void function37executeAssignment2(){
 	int Assignment5_7_5_212363 = Plus5_12_5_21terminates;//valuedEventRef resRight
 	int Assignment5_7_5_212529 = Assignment5_7_5_212363; //resRight
-	*((int*)sigma["Variable1_0_1_10currentValue"]) = Assignment5_7_5_212529;//TODO: fix this and avoid memory leak by deleting, constructing appropriately..
+	*((int*)sigma["Variable1_0_1_10currentValue"]) = Assignment5_7_5_212529;
 }
-int function28accessVarRef(){
+int function40accessVarRef(){
 	int VarRef5_18_5_201588 = *(int *) sigma["Variable1_0_1_10currentValue"];//currentValue}
 	int VarRef5_18_5_20terminates =  VarRef5_18_5_201588;
 	return VarRef5_18_5_20terminates;
 }
-int function30accessVarRef(){
+int function43accessVarRef(){
 	int VarRef5_13_5_151588 = *(int *) sigma["Variable1_0_1_10currentValue"];//currentValue}
 	int VarRef5_13_5_15terminates =  VarRef5_13_5_151588;
 	return VarRef5_13_5_15terminates;
 }
-int function32finishPlus(){
+int function45finishPlus(){
 	int Plus5_12_5_214273 = VarRef5_18_5_20terminates;//valuedEventRef n2
 	int Plus5_12_5_214298 = VarRef5_13_5_15terminates;//valuedEventRef n1
 	int Plus5_12_5_214417 = Plus5_12_5_214298; //n1
@@ -88,330 +88,330 @@ int function32finishPlus(){
 	int Plus5_12_5_21terminates =  Plus5_12_5_214416;
 	return Plus5_12_5_21terminates;
 }
-void function34condStart(){
+void function48condStart(){
 	
 }
-int function36accessVarRef(){
+int function51accessVarRef(){
 	int VarRef7_4_7_61588 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
 	int VarRef7_4_7_6terminates =  VarRef7_4_7_61588;
 	return VarRef7_4_7_6terminates;
 }
-void function38condTrueStart(){
+void function53condTrueStart(){
 	
 }
-void function38condFalseStart(){
+void function53condFalseStart(){
 	
 }
-void function39startsBloc(){
+void function55startsBloc(){
 	
 }
-void function42executeAssignment(){
+void function59executeAssignment(){
 	
 }
-void function43finishBloc(){
+void function60finishBloc(){
 	
 }
-int function44accessVarRef(){
+int function62accessVarRef(){
 	int VarRef9_9_9_111588 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
 	int VarRef9_9_9_11terminates =  VarRef9_9_9_111588;
 	return VarRef9_9_9_11terminates;
 }
-void function45executeAssignment2(){
+void function63executeAssignment2(){
 	int Assignment9_4_9_112363 = VarRef9_9_9_11terminates;//valuedEventRef resRight
 	int Assignment9_4_9_112529 = Assignment9_4_9_112363; //resRight
-	*((int*)sigma["Variable1_0_1_10currentValue"]) = Assignment9_4_9_112529;//TODO: fix this and avoid memory leak by deleting, constructing appropriately..
+	*((int*)sigma["Variable1_0_1_10currentValue"]) = Assignment9_4_9_112529;
 }
-void function46startsBloc(){
+void function65startsBloc(){
 	
 }
-void function49executeAssignment(){
+void function69executeAssignment(){
 	
 }
-void function50finishBloc(){
+void function70finishBloc(){
 	
 }
-int function51accessVarRef(){
+int function72accessVarRef(){
 	int VarRef12_9_12_111588 = *(int *) sigma["Variable1_0_1_10currentValue"];//currentValue}
 	int VarRef12_9_12_11terminates =  VarRef12_9_12_111588;
 	return VarRef12_9_12_11terminates;
 }
-void function52executeAssignment2(){
+void function73executeAssignment2(){
 	int Assignment12_4_12_112363 = VarRef12_9_12_11terminates;//valuedEventRef resRight
 	int Assignment12_4_12_112529 = Assignment12_4_12_112363; //resRight
-	*((int*)sigma["Variable0_0_0_10currentValue"]) = Assignment12_4_12_112529;//TODO: fix this and avoid memory leak by deleting, constructing appropriately..
+	*((int*)sigma["Variable0_0_0_10currentValue"]) = Assignment12_4_12_112529;
 }
-void function53condStop(){
+void function74condStop(){
 	
 }
-void function54executeAssignment(){
+void function76executeAssignment(){
 	
 }
-void function55finishModel(){
+void function77finishModel(){
 	
 }
-void function56evaluateConjunction(){
+void function79evaluateConjunction(){
 	
 }
-void function57executeAssignment2(){
+void function80executeAssignment2(){
 	int Assignment16_0_16_202363 = Conjunction16_5_16_20terminates;//valuedEventRef resRight
 	int Assignment16_0_16_202529 = Assignment16_0_16_202363; //resRight
-	*((int*)sigma["Variable2_0_2_10currentValue"]) = Assignment16_0_16_202529;//TODO: fix this and avoid memory leak by deleting, constructing appropriately..
+	*((int*)sigma["Variable2_0_2_10currentValue"]) = Assignment16_0_16_202529;
 }
-bool function60evalBooleanConst(){
+bool function84evalBooleanConst(){
 	sigma["BooleanConst16_6_16_10constantValue"] = new bool(true);
 	bool BooleanConst16_6_16_104636 = *(bool *) sigma["BooleanConst16_6_16_10constantValue"];//constantValue}
 	bool BooleanConst16_6_16_10terminates =  BooleanConst16_6_16_104636;
 	return BooleanConst16_6_16_10terminates;
 }
-bool function62evalBooleanConst(){
+bool function87evalBooleanConst(){
 	sigma["BooleanConst16_14_16_19constantValue"] = new bool(false);
 	bool BooleanConst16_14_16_194636 = *(bool *) sigma["BooleanConst16_14_16_19constantValue"];//constantValue}
 	bool BooleanConst16_14_16_19terminates =  BooleanConst16_14_16_194636;
 	return BooleanConst16_14_16_19terminates;
 }
-bool function64evaluateConjunction2(){
+bool function89evaluateConjunction2(){
 	bool Conjunction16_5_16_20terminates =  false;
 	return Conjunction16_5_16_20terminates;
 }
-bool function65evaluateConjunction3(){
+bool function90evaluateConjunction3(){
 	bool Conjunction16_5_16_20terminates =  false;
 	return Conjunction16_5_16_20terminates;
 }
-bool function67evaluateConjunction4(){
+bool function92evaluateConjunction4(){
 	bool Conjunction16_5_16_20terminates =  true;
 	return Conjunction16_5_16_20terminates;
 }
 
     int main() {
     
-            /**    0 : Step **/
-            function0statementsInOrder1();
+            /**    1 : Step **/
+            function1statementsInOrder1();
 
-            /**    2 : Step **/
-            
             /**    3 : Step **/
-            function3initializeVar();
-
-            /**    4 : Step **/
             
             /**    5 : Step **/
             function5initializeVar();
 
             /**    6 : Step **/
             
-            /**    7 : Step **/
-            function7initializeVar();
-
             /**    8 : Step **/
-            
+            function8initializeVar();
+
             /**    9 : Step **/
-            function9startsParallelBloc();
+            
+            /**    11 : Step **/
+            function11initializeVar();
 
-            //std::thread thread13([&](){
+            /**    12 : Step **/
+            
+            /**    14 : Step **/
+            function14startsParallelBloc();
 
-            /**    13 : Step **/
-            function13executeAssignment();
-
-            /**    15 : Step **/
-            function15startPlus();
-
-            //std::thread thread18([&](){
-
-            /**    18 : Step **/
-            function18accessVarRef();
+            //std::thread thread19([&](){
 
             /**    19 : Step **/
-            
-            // });
-            
-            //std::thread thread20([&](){
+            function19executeAssignment();
 
-            /**    20 : Step **/
-            function20accessVarRef();
+            /**    22 : Step **/
+            function22startPlus();
 
-            /**    21 : Step **/
-            //unused edge 22
-            // thread20.join();
-            
-            /**    22 : AndJoin **/
-            function22finishPlus();
-//unused edge 22
-            // thread18.join();
-            
-            /**    22 : AndJoin **/
-            function22finishPlus();
-
-            /**    16 : Step **/
-            function16executeAssignment2();
-
-            /**    14 : Step **/
-            
-            // });
-            
-            // });
-            
-            //std::thread thread23([&](){
-
-            /**    23 : Step **/
-            function23executeAssignment();
-
-            /**    25 : Step **/
-            function25startPlus();
-
-            //std::thread thread28([&](){
-
-            /**    28 : Step **/
-            function28accessVarRef();
-
-            /**    29 : Step **/
-            
-            // });
-            
-            //std::thread thread30([&](){
-
-            /**    30 : Step **/
-            function30accessVarRef();
-
-            /**    31 : Step **/
-            //unused edge 32
-            // thread30.join();
-            
-            /**    32 : AndJoin **/
-            function32finishPlus();
-//unused edge 32
-            // thread28.join();
-            
-            /**    32 : AndJoin **/
-            function32finishPlus();
+            //std::thread thread26([&](){
 
             /**    26 : Step **/
-            function26executeAssignment2();
+            function26accessVarRef();
 
-            /**    24 : Step **/
-            //unused edge 12
-            // thread23.join();
+            /**    27 : Step **/
             
-            /**    12 : AndJoin **/
-            function12finishParallelBloc();
-//unused edge 12
-            // thread13.join();
+            // });
             
-            /**    12 : AndJoin **/
-            function12finishParallelBloc();
+            //std::thread thread29([&](){
 
-            /**    10 : Step **/
+            /**    29 : Step **/
+            function29accessVarRef();
+
+            /**    30 : Step **/
+            //unused edge 31
+            // thread29.join();
             
-            /**    34 : Step **/
-            function34condStart();
+            /**    31 : AndJoin **/
+            function31finishPlus();
+//unused edge 31
+            // thread26.join();
+            
+            /**    31 : AndJoin **/
+            function31finishPlus();
+
+            /**    23 : Step **/
+            function23executeAssignment2();
+
+            /**    20 : Step **/
+            
+            // });
+            
+            // });
+            
+            //std::thread thread33([&](){
+
+            /**    33 : Step **/
+            function33executeAssignment();
 
             /**    36 : Step **/
-            function36accessVarRef();
+            function36startPlus();
 
-            /**    37 : Step **/
-            
-            /**    38 : Choice **/
-            function38condTrueStart();
-function38condFalseStart();
+            //std::thread thread40([&](){
 
-        if((bool)VarRef7_4_7_6terminates == true){
-            /**    39 : Step **/
-            function39startsBloc();
+            /**    40 : Step **/
+            function40accessVarRef();
 
             /**    41 : Step **/
             
-            /**    42 : Step **/
-            function42executeAssignment();
-
-            /**    44 : Step **/
-            function44accessVarRef();
-
-            /**    45 : Step **/
-            function45executeAssignment2();
+            // });
+            
+            //std::thread thread43([&](){
 
             /**    43 : Step **/
-            function43finishBloc();
+            function43accessVarRef();
 
-            /**    40 : Step **/
+            /**    44 : Step **/
+            //unused edge 45
+            // thread43.join();
             
-        }
-        
-            /**    38 : Choice **/
-            function38condTrueStart();
-function38condFalseStart();
+            /**    45 : AndJoin **/
+            function45finishPlus();
+//unused edge 45
+            // thread40.join();
+            
+            /**    45 : AndJoin **/
+            function45finishPlus();
 
-        if((bool)VarRef7_4_7_6terminates == false){
-            /**    46 : Step **/
-            function46startsBloc();
+            /**    37 : Step **/
+            function37executeAssignment2();
 
+            /**    34 : Step **/
+            //unused edge 17
+            // thread33.join();
+            
+            /**    17 : AndJoin **/
+            function17finishParallelBloc();
+//unused edge 17
+            // thread19.join();
+            
+            /**    17 : AndJoin **/
+            function17finishParallelBloc();
+
+            /**    15 : Step **/
+            
             /**    48 : Step **/
-            
-            /**    49 : Step **/
-            function49executeAssignment();
+            function48condStart();
 
             /**    51 : Step **/
             function51accessVarRef();
 
             /**    52 : Step **/
-            function52executeAssignment2();
-
-            /**    50 : Step **/
-            function50finishBloc();
-
-            /**    47 : Step **/
-             //or join node
-            /**    35 : Step **/
             
-            /**    54 : Step **/
-            function54executeAssignment();
+            /**    53 : Choice **/
+            function53condTrueStart();
+function53condFalseStart();
 
-            /**    56 : Step **/
-            function56evaluateConjunction();
+        if((bool)VarRef7_4_7_6terminates == true){
+            /**    55 : Step **/
+            function55startsBloc();
 
-            //std::thread thread60([&](){
+            /**    57 : Step **/
+            
+            /**    59 : Step **/
+            function59executeAssignment();
+
+            /**    62 : Step **/
+            function62accessVarRef();
+
+            /**    63 : Step **/
+            function63executeAssignment2();
 
             /**    60 : Step **/
-            function60evalBooleanConst();
+            function60finishBloc();
 
-            /**    61 : Step **/
+            /**    56 : Step **/
             
-            /**    64 : Choice **/
-            function64evaluateConjunction2();
+        }
+        
+            /**    53 : Choice **/
+            function53condTrueStart();
+function53condFalseStart();
+
+        if((bool)VarRef7_4_7_6terminates == false){
+            /**    65 : Step **/
+            function65startsBloc();
+
+            /**    67 : Step **/
+            
+            /**    69 : Step **/
+            function69executeAssignment();
+
+            /**    72 : Step **/
+            function72accessVarRef();
+
+            /**    73 : Step **/
+            function73executeAssignment2();
+
+            /**    70 : Step **/
+            function70finishBloc();
+
+            /**    66 : Step **/
+             //or join node
+            /**    49 : Step **/
+            
+            /**    76 : Step **/
+            function76executeAssignment();
+
+            /**    79 : Step **/
+            function79evaluateConjunction();
+
+            //std::thread thread84([&](){
+
+            /**    84 : Step **/
+            function84evalBooleanConst();
+
+            /**    85 : Step **/
+            
+            /**    89 : Choice **/
+            function89evaluateConjunction2();
 
         if((bool)BooleanConst16_6_16_10terminates == false){
         }
         
             // });
             
-            //std::thread thread62([&](){
+            //std::thread thread87([&](){
 
-            /**    62 : Step **/
-            function62evalBooleanConst();
+            /**    87 : Step **/
+            function87evalBooleanConst();
 
-            /**    63 : Step **/
+            /**    88 : Step **/
             
-            /**    65 : Choice **/
-            function65evaluateConjunction3();
+            /**    90 : Choice **/
+            function90evaluateConjunction3();
 
         if((bool)BooleanConst16_14_16_19terminates == false){
         }
-        //unused edge 66
-            // thread62.join();
+        //unused edge 91
+            // thread87.join();
             
-            /**    66 : AndJoin **/
-            //unused edge 66
-            // thread60.join();
+            /**    91 : AndJoin **/
+            //unused edge 91
+            // thread84.join();
             
-            /**    66 : AndJoin **/
+            /**    91 : AndJoin **/
             
-            /**    67 : Choice **/
-            function67evaluateConjunction4();
+            /**    92 : Choice **/
+            function92evaluateConjunction4();
 
         if((bool)BooleanConst16_6_16_10terminates == true && (bool)BooleanConst16_14_16_19terminates == true){ //or join node
-            /**    57 : Step **/
-            function57executeAssignment2();
+            /**    80 : Step **/
+            function80executeAssignment2();
 
-            /**    55 : Step **/
-            function55finishModel();
+            /**    77 : Step **/
+            function77finishModel();
 
         }
         

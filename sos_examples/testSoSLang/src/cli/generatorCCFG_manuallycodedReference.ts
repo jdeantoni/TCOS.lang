@@ -67,13 +67,7 @@ function doGenerateCPP(codeFile: CompositeGeneratorNode, ccfg: CCFG): void {
   `);
 
     let functionsDefs = ""
-    for(let node of ccfg.nodes){
-        for(let fname of node.functionsNames){
-            functionsDefs += node.returnType+" "+fname+"(){\n\t";
-            functionsDefs += node.functionsDefs.map(a => a).join("\n\t")+"\n";
-            functionsDefs += "}\n";
-        }
-    }
+    functionsDefs = compileFunctionDefs(ccfg);
     
     codeFile.append(functionsDefs);
     codeFile.append(`
@@ -92,6 +86,23 @@ function doGenerateCPP(codeFile: CompositeGeneratorNode, ccfg: CCFG): void {
 
 }
 
+
+function compileFunctionDefs(ccfg: CCFG) : string {
+    let functionsDefs = "";
+    for (let node of ccfg.nodes) {
+        if(node.getType() == "ContainerNode"){
+            functionsDefs += compileFunctionDefs((node as ContainerNode).internalccfg);
+        }else{
+            for (let fname of node.functionsNames) {
+            functionsDefs += node.returnType + " " + fname + "(){\n\t";
+            functionsDefs += node.functionsDefs.map(a => a).join("\n\t") + "\n";
+            functionsDefs += "}\n";
+        
+            }
+        }
+    }
+    return functionsDefs;
+}
 
 function getCurrentUID(node: Node): number {
     switch(node.getType()){

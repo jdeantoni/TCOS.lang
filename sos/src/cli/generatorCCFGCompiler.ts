@@ -80,6 +80,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     visit${name}(node: ${name}): [Node,Node,Node] {
         let ccfg: ContainerNode = new ContainerNode(node.$cstNode?.text+" starts")
 
+
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[${visitVariableDeclaration(openedRule.runtimeState as VariableDeclaration[])}])
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
