@@ -115,7 +115,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
 
         file.append(`
-        startsNode.finishNodeUID = terminatesNode.uid
         return [ccfg,startsNode,terminatesNode]
     }`, NL);
     }
@@ -231,7 +230,6 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
             ccfg.addEdge(childTerminatesNode,${ruleCF.rule.name}FakeNode)
         }
 
-        ${ruleCF.rule.name}ForkNode.finishNodeUID = ${ruleCF.rule.name}FakeNode.uid
         `);
             } else {
                 file.append(`
@@ -284,11 +282,7 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
         previousNode.returnType = "${functionType}"
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[${eventEmissionActions}]] //GG
     `);
-    
 
-    file.append(`
-    previousNode.finishNodeUID = ${terminatesNodeName}.uid
-    `)
 }
 
 
@@ -332,6 +326,7 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
         let multipleSynchroName: string = ""
         let premiseActions: string = ""
         let premiseGuards: string = ""
+        let params: TypedElement[] = []
         switch (ruleCF.rule.premise.eventExpression.$type) {
             case "EventConjunction":
                 file.append(`
@@ -341,9 +336,10 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
         ccfg.addEdge(${ruleCF.premiseParticipants[indexRight].name}TerminatesNode,${ruleCF.rule.name}AndJoinNode)
                 `)
                 multipleSynchroName=  `${ruleCF.rule.name}AndJoinNode`
-               let [a, g] = visitMultipleSynchroEventRef(ruleCF.rule.premise.eventExpression.lhs, ruleCF.rule.premise.eventExpression.rhs);
-               premiseActions = a
-               premiseGuards = g
+                let [a, g, p] = visitMultipleSynchroEventRef(ruleCF.rule.premise.eventExpression.lhs, ruleCF.rule.premise.eventExpression.rhs);
+                premiseActions = a
+                premiseGuards = g
+                params = p
                 break
             case "EventDisjunction":
                 file.append(`
@@ -353,9 +349,10 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
         ccfg.addEdge(${ruleCF.premiseParticipants[indexRight].name}TerminatesNode,${ruleCF.rule.name}OrJoinNode)
                 `)
                 multipleSynchroName= `${ruleCF.rule.name}OrJoinNode`
-                let [a2, g2] = visitMultipleSynchroEventRef(ruleCF.rule.premise.eventExpression.lhs, ruleCF.rule.premise.eventExpression.rhs);
+                let [a2, g2,p2] = visitMultipleSynchroEventRef(ruleCF.rule.premise.eventExpression.lhs, ruleCF.rule.premise.eventExpression.rhs);
                 premiseActions = a2
                 premiseGuards = g2
+                params = p2
                 break
             case "NaryEventExpression":
                 if (ruleCF.rule.premise.eventExpression.policy.operator == "lastOf") {
@@ -390,32 +387,43 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
         }
 
         file.append(`
+        ${multipleSynchroName}.params = [...${multipleSynchroName}.params, ...[${params.map(p => "Object.assign( new TypedElement(), JSON.parse(`"+p.toJSON()+"`))").join(",")}]]
         ${multipleSynchroName}.functionsDefs = [...${multipleSynchroName}.functionsDefs, ...[${premiseActions}]] //HH
         `)
         
         return [multipleSynchroName,premiseGuards]
         
     } else {
-        let varActions: string = visitValuedEventRef(ruleCF.rule.premise.eventExpression as ValuedEventRef)
-        file.append(`
+        let [varActions,param] = visitValuedEventRef(ruleCF.rule.premise.eventExpression as ValuedEventRef)
+        if(varActions.length>0){
+            file.append(`
         ${ruleCF.premiseParticipants[0].name}TerminatesNode.functionsDefs = [...${ruleCF.premiseParticipants[0].name}TerminatesNode.functionsDefs, ...[${varActions}]] //II
         `)
+        }
+        if(param.name != "NULL"){
+            file.append(`
+        ${ruleCF.premiseParticipants[0].name}TerminatesNode.params = [...${ruleCF.premiseParticipants[0].name}TerminatesNode.params, ...[Object.assign( new TypedElement(), JSON.parse(\`${param.toJSON()}\`))]]
+        `)
+        }
         return [`${ruleCF.premiseParticipants[0].name}TerminatesNode`, ""]
     }
 }
 
-function visitMultipleSynchroEventRef(lhs: EventExpression, rhs: EventExpression) :[string, string]{
+function visitMultipleSynchroEventRef(lhs: EventExpression, rhs: EventExpression) :[string, string, TypedElement[]]{
     let actions : string = ""
     let guards : string = ""
+    let params : TypedElement[] = []
     if (lhs.$type == "ExplicitValuedEventRef" || lhs.$type == "ImplicitValuedEventRef") {
-        let leftActions: string = visitValuedEventRef(lhs as ValuedEventRef);
+        let [leftActions, p] = visitValuedEventRef(lhs as ValuedEventRef);
+        params.push(p)
         if(actions.length>0){
             actions+=","      
         }
         actions+=leftActions 
     }
     if (rhs.$type == "ExplicitValuedEventRef" || rhs.$type == "ImplicitValuedEventRef") {
-        let rightActions: string = visitValuedEventRef(rhs as ValuedEventRef);
+        let [rightActions, p] = visitValuedEventRef(rhs as ValuedEventRef);
+        params.push(p)
         if(actions.length>0){
             actions+=","       
         }
@@ -435,7 +443,7 @@ function visitMultipleSynchroEventRef(lhs: EventExpression, rhs: EventExpression
         }
         guards+=rightGuards
     }
-    return [actions,guards]
+    return [actions,guards,params]
 }
 
 function chekIfOwnsACondition(comb: EventCombination): boolean {
@@ -469,7 +477,7 @@ function checkIfEventEmissionIsCollectionBased(ruleCF: RuleControlFlow) {
 function writePreambule(fileNode: CompositeGeneratorNode, data: FilePathData) {
     fileNode.append(`
 import { AstNode, Reference, isReference } from "langium";
-import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, ContainerNode } from "../../ccfg/ccfglib";`, NL)
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, ContainerNode, TypedElement } from "../../ccfg/ccfglib";`, NL)
 }
 
 
@@ -507,6 +515,9 @@ class RuleControlFlow {
 }
 
 class TypedElement {
+    toJSON() {
+        return `{ "name": "${this.name}", "type": "${this.type}"}`
+    }
     name: (string | undefined)
     type: (string | undefined)
     isCollection: boolean
@@ -706,6 +717,7 @@ function splitArrayByParticipants(elements: TypedElement[]): TypedElement[][] {
  */
 function visitValuedEventRefComparison(valuedEventRefComparison: ValuedEventRefConstantComparison | undefined): string {
     var res : string = ""
+    
     if (valuedEventRefComparison != undefined) {
         let v = valuedEventRefComparison.literal
         // let varType: TypeDescription
@@ -732,21 +744,26 @@ function visitValuedEventRefComparison(valuedEventRefComparison: ValuedEventRefC
  * @param runtimeState
  * @returns
  */
-function visitValuedEventRef(valuedEventRef: ValuedEventRef | undefined): string {
+function visitValuedEventRef(valuedEventRef: ValuedEventRef | undefined): [string, TypedElement] {
     var res : string = ""
     if (valuedEventRef != undefined) {
         let v = valuedEventRef.tempVar
         let varType = inferType(v, new Map())
         let typeName = getCPPVariableTypeName(varType.$type)
-        if(valuedEventRef.tempVar != undefined && valuedEventRef.$type == "ImplicitValuedEventRef"){
-            res = res + `\`${typeName} \${getName(node)}${v.$cstNode?.offset} = \${getName(node.${(valuedEventRef.membercall as MemberCall).element?.$refText})}${"terminates"};//valuedEventRef ${valuedEventRef.tempVar.name}\``
+        if(v != undefined && valuedEventRef.$type == "ImplicitValuedEventRef"){
+            res = res + `\`${typeName} \${getName(node)}${v.$cstNode?.offset} = ${v.name};\``//valuedEventRef  \${getName(node.${(valuedEventRef.membercall as MemberCall).element?.$refText})}${"terminates"}\``
+            let param:TypedElement = new TypedElement(v.name, typeName)
+            return [res, param]
         }
-        if(valuedEventRef.tempVar != undefined && valuedEventRef.$type == "ExplicitValuedEventRef"){
-            let prev = (valuedEventRef.membercall as MemberCall)?.previous
-            res = res + `\`${typeName} \${getName(node)}${v.$cstNode?.offset} = \${getName(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRef.membercall as MemberCall).element?.$refText};//valuedEventRef ${valuedEventRef.tempVar.name}\``
+        if(v != undefined && valuedEventRef.$type == "ExplicitValuedEventRef"){
+            // let prev = (valuedEventRef.membercall as MemberCall)?.previous
+            res = res + `\`${typeName} \${getName(node)}${v.$cstNode?.offset} = ${v.name};\`` //valuedEventRef \${getName(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRef.membercall as MemberCall).element?.$refText};\``
+            let param:TypedElement = new TypedElement(v.name, typeName)
+            return [res, param]
         }
+    
     }
-    return res
+    return ["", new TypedElement("NULL", undefined)]
 }
 
 

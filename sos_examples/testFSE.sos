@@ -128,19 +128,20 @@ open Conjunction { //parallel version
                   <rhs,σ>   
  
               when <lhs,σ> -> false
-    -------------------------------------------------           evaluateConjunction2
+    --------------------------------------------                evaluateConjunction2
           <this,σ> ~> terminates[false]
 
               when <rhs,σ> -> false
-    -------------------------------------------------           evaluateConjunction3
+    --------------------------------------------                evaluateConjunction3
           <this,σ> ~> terminates[false]
 
       when (<lhs,σ> -> true ^ <rhs,σ> -> true)
-    -------------------------------------------------           evaluateConjunction4
+    --------------------------------------------                evaluateConjunction4
           <this,σ> ~> terminates[true]
 }
 
 open Plus {
+  
                   when starts
     -------------------------------------------                 startPlus
         <this,σ> ~> <right,σ>

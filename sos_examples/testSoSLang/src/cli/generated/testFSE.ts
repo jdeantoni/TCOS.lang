@@ -1,6 +1,6 @@
 
 import { AstNode, Reference, isReference } from "langium";
-import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, ContainerNode } from "../../ccfg/ccfglib";
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, ContainerNode, TypedElement } from "../../ccfg/ccfglib";
 
     import { Range, integer } from "vscode-languageserver";
 
@@ -108,10 +108,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.returnType = "void"
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
-    previousNode.finishNodeUID = terminatesNode.uid
-    
-        statementsTerminatesNode.functionsDefs = [...statementsTerminatesNode.functionsDefs, ...[]] //II
-        
         previousNode = statementsTerminatesNode
     
         {let e = ccfg.addEdge(previousNode,terminatesNode)
@@ -121,9 +117,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.returnType = "void"
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
-    previousNode.finishNodeUID = terminatesNode.uid
-    
-        startsNode.finishNodeUID = terminatesNode.uid
         return [ccfg,startsNode,terminatesNode]
     }
 
@@ -163,10 +156,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.returnType = "void"
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
-    previousNode.finishNodeUID = terminatesNode.uid
-    
-        statementsTerminatesNode.functionsDefs = [...statementsTerminatesNode.functionsDefs, ...[]] //II
-        
         previousNode = statementsTerminatesNode
     
         {let e = ccfg.addEdge(previousNode,terminatesNode)
@@ -176,9 +165,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.returnType = "void"
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
-    previousNode.finishNodeUID = terminatesNode.uid
-    
-        startsNode.finishNodeUID = terminatesNode.uid
         return [ccfg,startsNode,terminatesNode]
     }
 
@@ -216,12 +202,9 @@ export class CCFGVisitor implements SimpleLVisitor {
             ccfg.addEdge(childTerminatesNode,startsParallelBlocFakeNode)
         }
 
-        startsParallelBlocForkNode.finishNodeUID = startsParallelBlocFakeNode.uid
         
         previousNode.returnType = "void"
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-    previousNode.finishNodeUID = terminatesNode.uid
     
         let finishParallelBlocLastOfNode: Node = new AndJoin("finishParallelBlocLastOfNode")
         ccfg.replaceNode(startsParallelBlocFakeNode,finishParallelBlocLastOfNode)                    
@@ -235,9 +218,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.returnType = "void"
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
-    previousNode.finishNodeUID = terminatesNode.uid
-    
-        startsNode.finishNodeUID = terminatesNode.uid
         return [ccfg,startsNode,terminatesNode]
     }
 
@@ -274,9 +254,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.returnType = "void"
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
-    previousNode.finishNodeUID = terminatesNode.uid
-    
-        startsNode.finishNodeUID = terminatesNode.uid
         return [ccfg,startsNode,terminatesNode]
     }
 
@@ -303,9 +280,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.returnType = "int"
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}1588 = *(int *) sigma["${getName(node.theVar)}currentValue"];//currentValue}`,`int ${getName(node)}terminates =  ${getName(node)}1588;`,`return ${getName(node)}terminates;`]] //GG
     
-    previousNode.finishNodeUID = terminatesNode.uid
-    
-        startsNode.finishNodeUID = terminatesNode.uid
         return [ccfg,startsNode,terminatesNode]
     }
 
@@ -343,8 +317,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.returnType = "void"
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
-    previousNode.finishNodeUID = terminatesNode.uid
-    
         let condChoiceNodecondTrueStart = ccfg.getNodeFromName("condChoiceNode")
         if (condChoiceNodecondTrueStart == undefined) {
             let condChoiceNode = new Choice("condChoiceNode")
@@ -365,8 +337,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "void"
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-    previousNode.finishNodeUID = terminatesNode.uid
     
         let condChoiceNodecondFalseStart = ccfg.getNodeFromName("condChoiceNode")
         if (condChoiceNodecondFalseStart == undefined) {
@@ -389,13 +359,12 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.returnType = "void"
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
-    previousNode.finishNodeUID = terminatesNode.uid
-    
         let condStopOrJoinNode: Node = new OrJoin("condStopOrJoinNode")
         ccfg.addNode(condStopOrJoinNode)
         ccfg.addEdge(elseTerminatesNode,condStopOrJoinNode)
         ccfg.addEdge(thenTerminatesNode,condStopOrJoinNode)
                 
+        condStopOrJoinNode.params = [...condStopOrJoinNode.params, ...[]]
         condStopOrJoinNode.functionsDefs = [...condStopOrJoinNode.functionsDefs, ...[]] //HH
         
         previousNode = condStopOrJoinNode
@@ -407,9 +376,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.returnType = "void"
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
-    previousNode.finishNodeUID = terminatesNode.uid
-    
-        startsNode.finishNodeUID = terminatesNode.uid
         return [ccfg,startsNode,terminatesNode]
     }
 
@@ -441,9 +407,9 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.returnType = "void"
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
-    previousNode.finishNodeUID = terminatesNode.uid
-    
-        exprTerminatesNode.functionsDefs = [...exprTerminatesNode.functionsDefs, ...[`int ${getName(node)}2363 = ${getName(node.expr)}terminates;//valuedEventRef resRight`]] //II
+        exprTerminatesNode.functionsDefs = [...exprTerminatesNode.functionsDefs, ...[`int ${getName(node)}2363 = resRight;`]] //II
+        
+        exprTerminatesNode.params = [...exprTerminatesNode.params, ...[Object.assign( new TypedElement(), JSON.parse(`{ "name": "resRight", "type": "int"}`))]]
         
         previousNode = exprTerminatesNode
     
@@ -464,9 +430,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.returnType = "void"
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
-    previousNode.finishNodeUID = terminatesNode.uid
-    
-        startsNode.finishNodeUID = terminatesNode.uid
         return [ccfg,startsNode,terminatesNode]
     }
 
@@ -517,8 +480,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.returnType = "void"
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
-    previousNode.finishNodeUID = joinNode.uid
-    
         let lhsChoiceNodeevaluateConjunction2 = ccfg.getNodeFromName("lhsChoiceNode")
         if (lhsChoiceNodeevaluateConjunction2 == undefined) {
             let lhsChoiceNode = new Choice("lhsChoiceNode")
@@ -537,8 +498,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "bool"
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`bool ${getName(node)}terminates =  false;`,`return ${getName(node)}terminates;`]] //GG
-    
-    previousNode.finishNodeUID = joinNode.uid
     
         let rhsChoiceNodeevaluateConjunction3 = ccfg.getNodeFromName("rhsChoiceNode")
         if (rhsChoiceNodeevaluateConjunction3 == undefined) {
@@ -559,8 +518,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.returnType = "bool"
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`bool ${getName(node)}terminates =  false;`,`return ${getName(node)}terminates;`]] //GG
     
-    previousNode.finishNodeUID = joinNode.uid
-    
         let evaluateConjunction4AndJoinNode: Node = new AndJoin("evaluateConjunction4AndJoinNode")
         ccfg.addNode(evaluateConjunction4AndJoinNode)
         ccfg.addEdge(lhsTerminatesNode,evaluateConjunction4AndJoinNode)
@@ -570,6 +527,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         ccfg.addNode(evaluateConjunction4ConditionNode)
         ccfg.addEdge(evaluateConjunction4AndJoinNode,evaluateConjunction4ConditionNode)
             
+        evaluateConjunction4ConditionNode.params = [...evaluateConjunction4ConditionNode.params, ...[]]
         evaluateConjunction4ConditionNode.functionsDefs = [...evaluateConjunction4ConditionNode.functionsDefs, ...[]] //HH
         
         previousNode = evaluateConjunction4ConditionNode
@@ -581,9 +539,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.returnType = "bool"
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`bool ${getName(node)}terminates =  true;`,`return ${getName(node)}terminates;`]] //GG
     
-    previousNode.finishNodeUID = joinNode.uid
-    
-        startsNode.finishNodeUID = terminatesNode.uid
         return [ccfg,startsNode,terminatesNode]
     }
 
@@ -624,14 +579,13 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.returnType = "void"
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
-    previousNode.finishNodeUID = terminatesNode.uid
-    
         let finishPlusAndJoinNode: Node = new AndJoin("finishPlusAndJoinNode")
         ccfg.addNode(finishPlusAndJoinNode)
         ccfg.addEdge(rightTerminatesNode,finishPlusAndJoinNode)
         ccfg.addEdge(leftTerminatesNode,finishPlusAndJoinNode)
                 
-        finishPlusAndJoinNode.functionsDefs = [...finishPlusAndJoinNode.functionsDefs, ...[`int ${getName(node)}4276 = ${getName(node.right)}terminates;//valuedEventRef n2`,`int ${getName(node)}4301 = ${getName(node.left)}terminates;//valuedEventRef n1`]] //HH
+        finishPlusAndJoinNode.params = [...finishPlusAndJoinNode.params, ...[Object.assign( new TypedElement(), JSON.parse(`{ "name": "n2", "type": "int"}`)),Object.assign( new TypedElement(), JSON.parse(`{ "name": "n1", "type": "int"}`))]]
+        finishPlusAndJoinNode.functionsDefs = [...finishPlusAndJoinNode.functionsDefs, ...[`int ${getName(node)}4276 = n2;`,`int ${getName(node)}4301 = n1;`]] //HH
         
         previousNode = finishPlusAndJoinNode
     
@@ -642,9 +596,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.returnType = "int"
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}4420 = ${getName(node)}4301; //n1`,`int ${getName(node)}4425 = ${getName(node)}4276; //n2`,`int ${getName(node)}4419 = ${getName(node)}4425 + ${getName(node)}4425;`,`int ${getName(node)}terminates =  ${getName(node)}4419;`,`return ${getName(node)}terminates;`]] //GG
     
-    previousNode.finishNodeUID = terminatesNode.uid
-    
-        startsNode.finishNodeUID = terminatesNode.uid
         return [ccfg,startsNode,terminatesNode]
     }
 
@@ -671,9 +622,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.returnType = "bool"
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`bool ${getName(node)}4639 = *(bool *) sigma["${getName(node)}constantValue"];//constantValue}`,`bool ${getName(node)}terminates =  ${getName(node)}4639;`,`return ${getName(node)}terminates;`]] //GG
     
-    previousNode.finishNodeUID = terminatesNode.uid
-    
-        startsNode.finishNodeUID = terminatesNode.uid
         return [ccfg,startsNode,terminatesNode]
     }
 
