@@ -176,10 +176,22 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
 
     let actionsString = ""
     actionsString = visitStateModifications(ruleCF, actionsString);
-    file.append(`
+    if(actionsString.length>0){
+        file.append(`
+    {let ${ruleCF.rule.name}StateModificationNode: Node = new Step("${ruleCF.rule.name}StateModificationNode")
+    ccfg.addNode(${ruleCF.rule.name}StateModificationNode)
+    let e = ccfg.addEdge(previousNode,${ruleCF.rule.name}StateModificationNode)
+    e.guards = [...e.guards, ...[${guardActions}]] //AA
+    previousNode = ${ruleCF.rule.name}StateModificationNode
+    }`)
+    guardActions = ""
+    
+        file.append(`
     previousNode.functionsNames = [...previousNode.functionsNames, ...[\`function\${previousNode.uid}${ruleCF.rule.name}\`]] 
     previousNode.functionsDefs =[...previousNode.functionsDefs, ...[${actionsString}]] //AA
     `);
+    }
+    
     let isMultipleEmission = ruleCF.rule.conclusion.eventemissions.length > 1;
     if (isMultipleEmission) {
         file.append(`
@@ -861,10 +873,11 @@ function visitStateModifications(ruleCF: RuleControlFlow, actionsString: string)
 
         actionsString = actionsString + sep + createVariableFromMemberCall(action.rhs as MemberCall, typeName)
         sep = ","
+        
         if(rhsElem.$type == "TemporaryVariable"){
-            actionsString = actionsString + sep + `\`*((${typeName}*)sigma[\"\${getName(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"]) = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};//TODO: fix this and avoid memory leak by deleting, constructing appropriately..\``;
+            actionsString = actionsString + sep + `\`//TODO: fix this and avoid memory leak by deleting, constructing appropriately\n*((${typeName}*)sigma[\"\${getName(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"]) = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};\``;
         }else{
-            actionsString = actionsString + sep + `\`*((${typeName}*)sigma[\"\${getName(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"]) = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};//TODO: fix this and avoid memory leak by deleting, constructing appropriately..\``;
+            actionsString = actionsString + sep + `\`//TODO: fix this and avoid memory leak by deleting, constructing appropriately\n*((${typeName}*)sigma[\"\${getName(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"]) = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};\``;
             
         }
     }

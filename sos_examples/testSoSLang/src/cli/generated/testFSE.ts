@@ -75,6 +75,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     visitModel(node: Model): [Node,Node,Node] {
         let ccfg: ContainerNode = new ContainerNode(node.$cstNode?.text+" starts")
 
+
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
@@ -89,9 +90,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         let previousNode =undefined
         
         previousNode = startsNode
-    
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}statementsInOrder1`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //AA
     
         let statementsInOrder1StepNode = new Step("statementsInOrder1StepNode")
         ccfg.addNode(statementsInOrder1StepNode)
@@ -116,9 +114,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = statementsTerminatesNode
     
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}finishModel`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //AA
-    
         {let e = ccfg.addEdge(previousNode,terminatesNode)
         e.guards = [...e.guards, ...[]] //EE
         }
@@ -135,6 +130,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     visitBloc(node: Bloc): [Node,Node,Node] {
         let ccfg: ContainerNode = new ContainerNode(node.$cstNode?.text+" starts")
 
+
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
@@ -149,9 +145,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         let previousNode =undefined
         
         previousNode = startsNode
-    
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}startsBloc`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //AA
     
         let startsBlocStepNode = new Step("startsBlocStepNode")
         ccfg.addNode(startsBlocStepNode)
@@ -176,9 +169,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = statementsTerminatesNode
     
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}finishBloc`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //AA
-    
         {let e = ccfg.addEdge(previousNode,terminatesNode)
         e.guards = [...e.guards, ...[]] //EE
         }
@@ -195,6 +185,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     visitParallelBloc(node: ParallelBloc): [Node,Node,Node] {
         let ccfg: ContainerNode = new ContainerNode(node.$cstNode?.text+" starts")
 
+
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
@@ -209,9 +200,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         let previousNode =undefined
         
         previousNode = startsNode
-    
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}startsParallelBloc`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //AA
     
         let startsParallelBlocForkNode: Node = new Fork("startsParallelBlocForkNode")
         ccfg.addNode(startsParallelBlocForkNode)
@@ -240,9 +228,6 @@ export class CCFGVisitor implements SimpleLVisitor {
                     
         previousNode = finishParallelBlocLastOfNode
     
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}finishParallelBloc`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //AA
-    
         {let e = ccfg.addEdge(previousNode,terminatesNode)
         e.guards = [...e.guards, ...[]] //EE
         }
@@ -259,6 +244,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     visitVariable(node: Variable): [Node,Node,Node] {
         let ccfg: ContainerNode = new ContainerNode(node.$cstNode?.text+" starts")
 
+
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[`sigma["${getName(node)}currentValue"] = new int();`])
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
@@ -271,8 +257,15 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = startsNode
     
+    {let initializeVarStateModificationNode: Node = new Step("initializeVarStateModificationNode")
+    ccfg.addNode(initializeVarStateModificationNode)
+    let e = ccfg.addEdge(previousNode,initializeVarStateModificationNode)
+    e.guards = [...e.guards, ...[]] //AA
+    previousNode = initializeVarStateModificationNode
+    }
     previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}initializeVar`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}1385 = ${node.initialValue}; //undefined`,`*((int*)sigma["${getName(node)}currentValue"]) = ${getName(node)}1385;//TODO: fix this and avoid memory leak by deleting, constructing appropriately..`]] //AA
+    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}1385 = ${node.initialValue}; //undefined`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
+*((int*)sigma["${getName(node)}currentValue"]) = ${getName(node)}1385;`]] //AA
     
         {let e = ccfg.addEdge(previousNode,terminatesNode)
         e.guards = [...e.guards, ...[]] //EE
@@ -290,6 +283,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     visitVarRef(node: VarRef): [Node,Node,Node] {
         let ccfg: ContainerNode = new ContainerNode(node.$cstNode?.text+" starts")
 
+
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
@@ -301,9 +295,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         let previousNode =undefined
         
         previousNode = startsNode
-    
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}accessVarRef`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //AA
     
         {let e = ccfg.addEdge(previousNode,terminatesNode)
         e.guards = [...e.guards, ...[]] //EE
@@ -320,6 +311,7 @@ export class CCFGVisitor implements SimpleLVisitor {
 
     visitIf(node: If): [Node,Node,Node] {
         let ccfg: ContainerNode = new ContainerNode(node.$cstNode?.text+" starts")
+
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
         ccfg.addNode(startsNode)
@@ -341,9 +333,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         let previousNode =undefined
         
         previousNode = startsNode
-    
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}condStart`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //AA
     
         let [condCCFG, condStartsNode,condTerminatesNode] = this.visit(node.cond)
         ccfg.addNode(condCCFG)
@@ -368,9 +357,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = condChoiceNodecondTrueStart
     
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}condTrueStart`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //AA
-    
         let [thenCCFG, thenStartsNode,thenTerminatesNode] = this.visit(node.then)
         ccfg.addNode(thenCCFG)
         {let e = ccfg.addEdge(previousNode,thenStartsNode)
@@ -394,9 +380,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = condChoiceNodecondFalseStart
     
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}condFalseStart`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //AA
-    
         let [elseCCFG, elseStartsNode,elseTerminatesNode] = this.visit(node.else)
         ccfg.addNode(elseCCFG)
         {let e = ccfg.addEdge(previousNode,elseStartsNode)
@@ -417,9 +400,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = condStopOrJoinNode
     
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}condStop`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //AA
-    
         {let e = ccfg.addEdge(previousNode,terminatesNode)
         e.guards = [...e.guards, ...[]] //EE
         }
@@ -436,6 +416,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     visitAssignment(node: Assignment): [Node,Node,Node] {
         let ccfg: ContainerNode = new ContainerNode(node.$cstNode?.text+" starts")
 
+
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
@@ -450,9 +431,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         let previousNode =undefined
         
         previousNode = startsNode
-    
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}executeAssignment`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //AA
     
         let [exprCCFG, exprStartsNode,exprTerminatesNode] = this.visit(node.expr)
         ccfg.addNode(exprCCFG)
@@ -469,8 +447,15 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = exprTerminatesNode
     
+    {let executeAssignment2StateModificationNode: Node = new Step("executeAssignment2StateModificationNode")
+    ccfg.addNode(executeAssignment2StateModificationNode)
+    let e = ccfg.addEdge(previousNode,executeAssignment2StateModificationNode)
+    e.guards = [...e.guards, ...[]] //AA
+    previousNode = executeAssignment2StateModificationNode
+    }
     previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}executeAssignment2`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}2529 = ${getName(node)}2363; //resRight`,`*((int*)sigma["${getName(node.variable)}currentValue"]) = ${getName(node)}2529;//TODO: fix this and avoid memory leak by deleting, constructing appropriately..`]] //AA
+    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}2529 = ${getName(node)}2363; //resRight`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
+*((int*)sigma["${getName(node.variable)}currentValue"]) = ${getName(node)}2529;`]] //AA
     
         {let e = ccfg.addEdge(previousNode,terminatesNode)
         e.guards = [...e.guards, ...[]] //EE
@@ -487,6 +472,7 @@ export class CCFGVisitor implements SimpleLVisitor {
 
     visitConjunction(node: Conjunction): [Node,Node,Node] {
         let ccfg: ContainerNode = new ContainerNode(node.$cstNode?.text+" starts")
+
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
         ccfg.addNode(startsNode)
@@ -513,9 +499,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         let previousNode =undefined
         
         previousNode = startsNode
-    
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}evaluateConjunction`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //AA
     
         let evaluateConjunctionForkNode: Node = new Fork("evaluateConjunctionForkNode")
         ccfg.addNode(evaluateConjunctionForkNode)
@@ -548,9 +531,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = lhsChoiceNodeevaluateConjunction2
     
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}evaluateConjunction2`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //AA
-    
         {let e = ccfg.addEdge(previousNode,joinNode)
         e.guards = [...e.guards, ...[`(bool)${getName(node.lhs)}terminates == false`]] //EE
         }
@@ -571,9 +551,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         
         previousNode = rhsChoiceNodeevaluateConjunction3
-    
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}evaluateConjunction3`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //AA
     
         {let e = ccfg.addEdge(previousNode,joinNode)
         e.guards = [...e.guards, ...[`(bool)${getName(node.rhs)}terminates == false`]] //EE
@@ -597,9 +574,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = evaluateConjunction4ConditionNode
     
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}evaluateConjunction4`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //AA
-    
         {let e = ccfg.addEdge(previousNode,joinNode)
         e.guards = [...e.guards, ...[`(bool)${getName(node.lhs)}terminates == true`,`(bool)${getName(node.rhs)}terminates == true`]] //EE
         }
@@ -616,6 +590,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     visitPlus(node: Plus): [Node,Node,Node] {
         let ccfg: ContainerNode = new ContainerNode(node.$cstNode?.text+" starts")
 
+
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
@@ -631,9 +606,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         let previousNode =undefined
         
         previousNode = startsNode
-    
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}startPlus`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //AA
     
         let startPlusForkNode: Node = new Fork("startPlusForkNode")
         ccfg.addNode(startPlusForkNode)
@@ -659,19 +631,16 @@ export class CCFGVisitor implements SimpleLVisitor {
         ccfg.addEdge(rightTerminatesNode,finishPlusAndJoinNode)
         ccfg.addEdge(leftTerminatesNode,finishPlusAndJoinNode)
                 
-        finishPlusAndJoinNode.functionsDefs = [...finishPlusAndJoinNode.functionsDefs, ...[`int ${getName(node)}4273 = ${getName(node.right)}terminates;//valuedEventRef n2`,`int ${getName(node)}4298 = ${getName(node.left)}terminates;//valuedEventRef n1`]] //HH
+        finishPlusAndJoinNode.functionsDefs = [...finishPlusAndJoinNode.functionsDefs, ...[`int ${getName(node)}4276 = ${getName(node.right)}terminates;//valuedEventRef n2`,`int ${getName(node)}4301 = ${getName(node.left)}terminates;//valuedEventRef n1`]] //HH
         
         previousNode = finishPlusAndJoinNode
-    
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}finishPlus`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //AA
     
         {let e = ccfg.addEdge(previousNode,terminatesNode)
         e.guards = [...e.guards, ...[]] //EE
         }
         
         previousNode.returnType = "int"
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}4417 = ${getName(node)}4298; //n1`,`int ${getName(node)}4422 = ${getName(node)}4273; //n2`,`int ${getName(node)}4416 = ${getName(node)}4422 + ${getName(node)}4422;`,`int ${getName(node)}terminates =  ${getName(node)}4416;`,`return ${getName(node)}terminates;`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}4420 = ${getName(node)}4301; //n1`,`int ${getName(node)}4425 = ${getName(node)}4276; //n2`,`int ${getName(node)}4419 = ${getName(node)}4425 + ${getName(node)}4425;`,`int ${getName(node)}terminates =  ${getName(node)}4419;`,`return ${getName(node)}terminates;`]] //GG
     
     previousNode.finishNodeUID = terminatesNode.uid
     
@@ -681,6 +650,7 @@ export class CCFGVisitor implements SimpleLVisitor {
 
     visitBooleanConst(node: BooleanConst): [Node,Node,Node] {
         let ccfg: ContainerNode = new ContainerNode(node.$cstNode?.text+" starts")
+
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[`sigma["${getName(node)}constantValue"] = new bool(${node.value});`])
         ccfg.addNode(startsNode)
@@ -694,15 +664,12 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = startsNode
     
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}evalBooleanConst`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //AA
-    
         {let e = ccfg.addEdge(previousNode,terminatesNode)
         e.guards = [...e.guards, ...[]] //EE
         }
         
         previousNode.returnType = "bool"
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`bool ${getName(node)}4636 = *(bool *) sigma["${getName(node)}constantValue"];//constantValue}`,`bool ${getName(node)}terminates =  ${getName(node)}4636;`,`return ${getName(node)}terminates;`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`bool ${getName(node)}4639 = *(bool *) sigma["${getName(node)}constantValue"];//constantValue}`,`bool ${getName(node)}terminates =  ${getName(node)}4639;`,`return ${getName(node)}terminates;`]] //GG
     
     previousNode.finishNodeUID = terminatesNode.uid
     
