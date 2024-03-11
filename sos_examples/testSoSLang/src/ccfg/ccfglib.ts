@@ -1,17 +1,35 @@
 import { AstNode } from "langium";
 import { integer } from "vscode-languageclient";
 
+export class TypedElement {
+    name: string = ""
+    type: (string | undefined) = undefined
+    
+    // constructor(name: string, type: (string | undefined) = undefined){
+    //     this.name = name;
+    //     this.type = type;
+    // }
+    
+    toString(): string {
+        // console.log("here")
+        return (this.type == undefined ? "undefined" : this.type)+" "+ this.name
+    }
+}
+
 export abstract class Node {
     static uidCounter: integer = 0;
     uid: integer;
     value:any;
     astNode: AstNode | undefined;
-    functionsDefs: string[];
-    functionsNames: string[];
-    returnType: string;
+   
     outputEdges: Edge[] = [];
     inputEdges: Edge[] = [];
-    finishNodeUID: integer | undefined;
+
+    functionsNames: string[] = [];
+    params: TypedElement[] = []
+    functionsDefs: string[];
+    returnType: string;
+
 
     numberOfVisits: integer = 0
 
@@ -19,7 +37,6 @@ export abstract class Node {
         this.uid = Node.uidCounter++;
         this.value = value;
         this.functionsDefs = theActions;
-        this.functionsNames = [];
         this.returnType = "void";
     }
 
@@ -125,7 +142,6 @@ export class CCFG {
         if (index != -1) {
             this.nodes[index] = newNode;
             newNode.uid = oldNode.uid;
-            newNode.finishNodeUID = oldNode.finishNodeUID;
             newNode.functionsDefs = oldNode.functionsDefs;
             newNode.value = oldNode.value;
         }
@@ -198,34 +214,39 @@ export class CCFG {
 
     getEdgeLabel(edge: Edge): string {
       
-        return edge.from.functionsDefs.map(
-            a => 
+        return edge.guards.map(
+            g => 
             /* a.replaceAll("\"","\\\"")).join("\n")+"\n~~~"+*/
-            edge.guards.map(a => a.replaceAll("\"","\\\""))).join("\n")
+            g.replaceAll("\"","\\\"")).join("\n")
             /*+"~~~\n";*/
     }
 
     getNodeLabel(node: Node): string {
-        //return node.value;
-        switch(node.getType()){
-            case "Step":
-                return "from:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
-                    a => a.replaceAll("\"","\\\"")).join("\n")//uid.toString();
-            case "Choice":
-                return "from:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
-                    a => a.replaceAll("\"","\\\"")).join("\n")
-            case "OrJoin":
-                return "OR\nfrom:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
-                    a => a.replaceAll("\"","\\\"")).join("\n")
-            case "AndJoin":
-                return "AND\nfrom:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
-                    a => a.replaceAll("\"","\\\"")).join("\n")
-            case "Fork":
-                return "from:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
-                    a => a.replaceAll("\"","\\\"")).join("\n");
-            default:
-                return "???"+node.uid.toString();
+        if(node.functionsDefs.length == 0){
+            return node.uid.toString();
         }
+        return node.uid+":\n"+node.returnType+" function"+node.functionsNames+"("+node.params.map(p => (p as TypedElement).toString()).join(", ")+"){\n"+node.functionsDefs.map(
+            a => a.replaceAll("\"","\\\"")).join("\n")+"\n}";
+        //return node.value;
+        // switch(node.getType()){
+        //     case "Step":
+        //         return node.returnType+" function"+node.functionsNames+"("+node.params+")"+node.functionsDefs.map(
+        //             a => a.replaceAll("\"","\\\"")).join("\n")//uid.toString();
+        //     case "Choice":
+        //         return "from:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
+        //             a => a.replaceAll("\"","\\\"")).join("\n")
+        //     case "OrJoin":
+        //         return "OR\nfrom:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
+        //             a => a.replaceAll("\"","\\\"")).join("\n")
+        //     case "AndJoin":
+        //         return "AND\nfrom:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
+        //             a => a.replaceAll("\"","\\\"")).join("\n")
+        //     case "Fork":
+        //         return "from:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
+        //             a => a.replaceAll("\"","\\\"")).join("\n");
+        //     default:
+        //         return "???"+node.uid.toString();
+        // }
     }
 
     getNodeShape(node: Node): string {

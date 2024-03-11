@@ -4,7 +4,7 @@ import path from 'path';
 import { Model } from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
 import { CCFGVisitor } from './generated/testFSE';
-import { CCFG, ContainerNode, Edge, Node } from '../ccfg/ccfglib';
+import { CCFG, ContainerNode, Edge, Node, TypedElement } from '../ccfg/ccfglib';
 
 
 export function generateCCFG(model: Model, filePath: string, destination: string | undefined): string {
@@ -15,6 +15,13 @@ export function generateCCFG(model: Model, filePath: string, destination: string
 
     const generatedCodeFilePath = `${path.join(data.destination, data.name)}.cpp`;
     const cppFile = new CompositeGeneratorNode();
+
+    //TODO split the code generation in order to do function generation after the main generation
+    // const semanticFunctionsHeaderFilePath = `${path.join(data.destination, data.name)}SemanticFunctions.hpp`;
+    // const semanticFunctionsHeaderFile = new CompositeGeneratorNode();
+    
+    // const semanticFunctionsCodeFilePath = `${path.join(data.destination, data.name)}SemanticFunctions.cpp`;
+    // const semanticFunctionsCodeFile = new CompositeGeneratorNode();
 
     let ccfg = doGenerateCCFG(dotFile, model);
 
@@ -75,7 +82,7 @@ function doGenerateCPP(codeFile: CompositeGeneratorNode, ccfg: CCFG): void {
     `);
 
     let currentNode = initNode;
-    currentNode = visitAllNodes(ccfg, currentNode, /*-1,*/ codeFile, true);
+    visitAllNodes(ccfg, currentNode, /*-1,*/ codeFile, true);
 
     codeFile.append(`
     //WARNING !! temporary code to test
@@ -94,7 +101,8 @@ function compileFunctionDefs(ccfg: CCFG) : string {
             functionsDefs += compileFunctionDefs((node as ContainerNode).internalccfg);
         }else{
             for (let fname of node.functionsNames) {
-            functionsDefs += node.returnType + " " + fname + "(){\n\t";
+                // console.log("function name: "+fname);
+            functionsDefs += node.returnType + " function" + fname + `(${node.params.map(p => (p as TypedElement).toString()).join(", ")}){\n\t`;
             functionsDefs += node.functionsDefs.map(a => a).join("\n\t") + "\n";
             functionsDefs += "}\n";
         
@@ -121,30 +129,55 @@ function getCurrentUID(node: Node): number {
 }
 
 let fifoThreadUid : number[]= [];
-
-function visitAllNodes(ccfg:CCFG, currentNode: Node, /*untilUID: number | undefined,*/ codeFile: CompositeGeneratorNode, visitIsStarting: boolean = false): Node {
+let continuations: Node[] = []
+let visitedUID: number[] = []
+function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGeneratorNode, visitIsStarting: boolean = false): void {
     let currentUID = getCurrentUID(currentNode);
 
     if (currentNode.outputEdges.length == 0 /*|| currentUID == untilUID*/) {
-        return currentNode;
+        return
     }
 
-    currentNode.numberOfVisits = currentNode.numberOfVisits + 1;
-    if (visitIsStarting == false && currentNode.numberOfVisits != currentNode.inputEdges.length) {
-        return currentNode;
-    }   
 
-    console.log(currentNode.getType()+"   uid: "+currentUID);
+
+    currentNode.numberOfVisits = currentNode.numberOfVisits + 1;
+    // console.log(currentNode.getType()+"  pre  uid: "+currentUID+" visit#:"+currentNode.numberOfVisits);
+
+    if(currentNode.inputEdges.length > 1){
+        if (visitIsStarting == false && currentNode.numberOfVisits < currentNode.inputEdges.length) {
+            return
+        }
+        if (currentNode.numberOfVisits == currentNode.inputEdges.length){
+            if(! continuations.includes(currentNode)){
+                continuations.push(currentNode);
+            }
+            return
+        }
+    }  
+    
+    if (visitedUID.includes(currentUID)){
+        return
+    }
+    visitedUID.push(currentUID);
+    console.log(currentNode.getType()+"  OK  uid: "+currentUID);
         
     switch(currentNode.getType()){
     case "Step":
         {
+        codeFile.append(`//Step node`);
         addCorrespondingCode(codeFile, currentNode);
         if(currentNode.outputEdges.length > 1){
 
             let edgeToVisit: Edge[] = currentNode.outputEdges;
             for(let edge of edgeToVisit){
                 visitAllNodes(ccfg, edge.to, /*untilUID,*/ codeFile);
+            }
+            if(continuations.length > 0){
+                let toVisit = continuations.pop();
+                if(toVisit != undefined){
+                    visitAllNodes(ccfg, toVisit, /*nextUntilUID,*/ codeFile);
+                }
+                
             }
         }else{
             let edge = currentNode.outputEdges[0];
@@ -155,13 +188,6 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, /*untilUID: number | undefi
         }
     case "Fork":
         {
-        // let tempFinishNodeUID = currentNode.inputEdges[0].from.finishNodeUID
-        // if(tempFinishNodeUID == undefined){
-        //     throw new Error("finishNodeUID is undefined in current node "+currentNode.uid);
-        // }
-        // let tempFinishNode = ccfg.getNodeByUID(tempFinishNodeUID);
-        // let nextUntilUID = tempFinishNode.inputEdges[0].from.uid;
-        
         let edgeToVisit: Edge[] = currentNode.outputEdges;
         
         for(let edge of edgeToVisit){
@@ -174,20 +200,29 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, /*untilUID: number | undefi
             // });
             `);
         }
-        // let nextNode = ccfg.getNodeByUID(nextUntilUID)
-        // visitAllNodes(ccfg,nextNode, nextNode.finishNodeUID, codeFile);
+        if(continuations.length > 0){
+            let toVisit = continuations.pop();
+            if(toVisit != undefined){
+                visitAllNodes(ccfg, toVisit, /*nextUntilUID,*/ codeFile);
+            }
+            
+        }
         break;
         }
     case "AndJoin":
         {
         let edgeToVisit: Edge[] = currentNode.inputEdges;
+        codeFile.append(`
+        //start of and join node`);
         for(let edge of edgeToVisit){
             let threadUid = fifoThreadUid.pop();
             codeFile.append(`//unused edge ${edge.to.uid}
             // thread${threadUid}.join();
             `);
-            addCorrespondingCode(codeFile, currentNode);
         }
+        addCorrespondingCode(codeFile, currentNode);
+        codeFile.append(`
+        //end of and join node`);
         let nextNode = currentNode.outputEdges[0].to
         visitAllNodes(ccfg,nextNode, /*untilUID,*/ codeFile);
         break;
@@ -201,37 +236,80 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, /*untilUID: number | undefi
         }
     case "Choice":
         {   
-        // let nextUntilUID = currentNode.finishNodeUID
-        // if(nextUntilUID == undefined){
-        //     throw new Error("finishNodeUID is undefined in current node "+currentNode.uid);
-        // }
+        addComparisonVariableDeclaration(codeFile, currentNode);
         let edgeToVisit: Edge[] = currentNode.outputEdges;
         for(let edge of edgeToVisit){
-        addCorrespondingCode(codeFile, currentNode);
-
-            codeFile.append(`
+            codeFile.append(`//Choice node`);
+            addCorrespondingCode(codeFile, currentNode);
+                codeFile.append(`
         if(${edge.guards.join(" && ")}){`
-            );
-            visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ codeFile);                
-            codeFile.append(`
+                );
+                visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ codeFile);                
+                codeFile.append(`
+            //END IF ${edge.guards.join(" && ")}
         }
-        `);
+            `);
         }
-        // let nextNode = ccfg.getNodeByUID(nextUntilUID);
-        // visitAllNodes(ccfg,nextNode, untilUID, codeFile);
+        if(continuations.length > 0){
+            let toVisit = continuations.pop();
+            if(toVisit != undefined){
+                visitAllNodes(ccfg, toVisit, /*nextUntilUID,*/ codeFile);
+            }
+            
+        }
         break;
         }
-    }  
-        
-    return currentNode;
+    } 
+    
+    return;
 }
 
 function addCorrespondingCode(codeFile: CompositeGeneratorNode, currentNode: Node) {
     codeFile.append(`
-            /**    ${currentNode.uid} : ${currentNode.getType()} **/
+            std::cout << "${currentNode.uid} : ${currentNode.getType()}" <<std::endl;
             `);
+
     currentNode.functionsNames.forEach(f => {
-        codeFile.append(`${f}();\n`);
+        if(currentNode.returnType != "void"){
+            codeFile.append(`${currentNode.returnType} result${f} = `);
+        }
+        codeFile.append(`function${f}(`)
+        if(currentNode.params.length > 0){
+            let sep = ""
+            for(let ie of currentNode.inputEdges){
+                let ptn: Node = getPreviousTypedNode(ie)
+                codeFile.append(sep)
+                codeFile.append(`result${ptn.functionsNames[0]}`);
+                sep=","
+            }
+        }
+        codeFile.append(`);\n`);
     });
+}
+
+function getPreviousTypedNode(ie: Edge): Node {
+    let ptn: Node = ie.from
+    if (ptn.returnType != "void"){
+        return ptn
+    }else{
+        for(let e of ptn.inputEdges){
+            return getPreviousTypedNode(e)
+        }
+    }
+    return ptn;
+}
+
+function addComparisonVariableDeclaration(codeFile: CompositeGeneratorNode, currentNode: Node) {
+    for(let ie of currentNode.inputEdges){
+        let ptn: Node = getPreviousTypedNode(ie)
+        if(ptn.returnType != "void"){
+            let lastDefStatement = ptn.functionsDefs[ptn.functionsDefs.length-1];
+            let lastDefStatementSplit = lastDefStatement.split(" ");
+            let returnedVariableName = lastDefStatementSplit[lastDefStatementSplit.length-1];
+            returnedVariableName = returnedVariableName.substring(0, returnedVariableName.length-1); //remove semicolumn
+
+            codeFile.append(`${ptn.returnType} ${returnedVariableName} = result${ptn.functionsNames[0]};`);
+        }
+    }
 }
 
