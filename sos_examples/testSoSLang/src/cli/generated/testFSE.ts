@@ -77,6 +77,7 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
+        startsNode.functionsNames = [`init${startsNode.uid}Model`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         ccfg.addNode(terminatesNode)
@@ -106,6 +107,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         let statementsTerminatesNode = previousNode
         
         previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}statementsInOrder1`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
         previousNode = statementsTerminatesNode
@@ -115,6 +117,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         
         previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}finishModel`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
         return [ccfg,startsNode,terminatesNode]
@@ -125,6 +128,7 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
+        startsNode.functionsNames = [`init${startsNode.uid}Bloc`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         ccfg.addNode(terminatesNode)
@@ -154,6 +158,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         let statementsTerminatesNode = previousNode
         
         previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}startsBloc`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
         previousNode = statementsTerminatesNode
@@ -163,6 +168,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         
         previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}finishBloc`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
         return [ccfg,startsNode,terminatesNode]
@@ -173,6 +179,7 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
+        startsNode.functionsNames = [`init${startsNode.uid}ParallelBloc`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         ccfg.addNode(terminatesNode)
@@ -204,6 +211,7 @@ export class CCFGVisitor implements SimpleLVisitor {
 
         
         previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}startsParallelBloc`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
         let finishParallelBlocLastOfNode: Node = new AndJoin("finishParallelBlocLastOfNode")
@@ -216,6 +224,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         
         previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}finishParallelBloc`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
         return [ccfg,startsNode,terminatesNode]
@@ -226,6 +235,7 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[`sigma["${getName(node)}currentValue"] = new int();`])
+        startsNode.functionsNames = [`init${startsNode.uid}Variable`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         ccfg.addNode(terminatesNode)
@@ -240,18 +250,19 @@ export class CCFGVisitor implements SimpleLVisitor {
     {let initializeVarStateModificationNode: Node = new Step("initializeVarStateModificationNode")
     ccfg.addNode(initializeVarStateModificationNode)
     let e = ccfg.addEdge(previousNode,initializeVarStateModificationNode)
-    e.guards = [...e.guards, ...[]] //AA
+    e.guards = [...e.guards, ...[]]
     previousNode = initializeVarStateModificationNode
     }
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}initializeVar`]] 
+    previousNode.functionsNames = [...previousNode.functionsNames, ...[`${previousNode.uid}initializeVar`]] 
     previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}1385 = ${node.initialValue}; //undefined`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-*((int*)sigma["${getName(node)}currentValue"]) = ${getName(node)}1385;`]] //AA
+	(*((int*)sigma["${getName(node)}currentValue"])) = ${getName(node)}1385;`]] //AA
     
         {let e = ccfg.addEdge(previousNode,terminatesNode)
         e.guards = [...e.guards, ...[]] //EE
         }
         
         previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}initializeVar`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
         return [ccfg,startsNode,terminatesNode]
@@ -262,6 +273,7 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
+        startsNode.functionsNames = [`init${startsNode.uid}VarRef`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         ccfg.addNode(terminatesNode)
@@ -278,6 +290,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         
         previousNode.returnType = "int"
+        previousNode.functionsNames = [`${previousNode.uid}accessVarRef`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}1588 = *(int *) sigma["${getName(node.theVar)}currentValue"];//currentValue}`,`int ${getName(node)}terminates =  ${getName(node)}1588;`,`return ${getName(node)}terminates;`]] //GG
     
         return [ccfg,startsNode,terminatesNode]
@@ -288,6 +301,7 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
+        startsNode.functionsNames = [`init${startsNode.uid}If`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         ccfg.addNode(terminatesNode)
@@ -315,6 +329,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         
         previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}condStart`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
         let condChoiceNodecondTrueStart = ccfg.getNodeFromName("condChoiceNode")
@@ -336,6 +351,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         
         previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}condTrueStart`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
         let condChoiceNodecondFalseStart = ccfg.getNodeFromName("condChoiceNode")
@@ -357,6 +373,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         
         previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}condFalseStart`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
         let condStopOrJoinNode: Node = new OrJoin("condStopOrJoinNode")
@@ -374,6 +391,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         
         previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}condStop`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
         return [ccfg,startsNode,terminatesNode]
@@ -384,6 +402,7 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
+        startsNode.functionsNames = [`init${startsNode.uid}Assignment`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         ccfg.addNode(terminatesNode)
@@ -405,29 +424,29 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         
         previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}executeAssignment`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
-        exprTerminatesNode.functionsDefs = [...exprTerminatesNode.functionsDefs, ...[`int ${getName(node)}2363 = resRight;`]] //II
-        
-        exprTerminatesNode.params = [...exprTerminatesNode.params, ...[Object.assign( new TypedElement(), JSON.parse(`{ "name": "resRight", "type": "int"}`))]]
-        
         previousNode = exprTerminatesNode
     
     {let executeAssignment2StateModificationNode: Node = new Step("executeAssignment2StateModificationNode")
     ccfg.addNode(executeAssignment2StateModificationNode)
     let e = ccfg.addEdge(previousNode,executeAssignment2StateModificationNode)
-    e.guards = [...e.guards, ...[]] //AA
+    e.guards = [...e.guards, ...[]]
+    executeAssignment2StateModificationNode.params = [...executeAssignment2StateModificationNode.params, ...[Object.assign( new TypedElement(), JSON.parse(`{ "name": "resRight", "type": "int"}`))]]
+    
     previousNode = executeAssignment2StateModificationNode
     }
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`function${previousNode.uid}executeAssignment2`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}2529 = ${getName(node)}2363; //resRight`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-*((int*)sigma["${getName(node.variable)}currentValue"]) = ${getName(node)}2529;`]] //AA
+    previousNode.functionsNames = [...previousNode.functionsNames, ...[`${previousNode.uid}executeAssignment2`]] 
+    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}2529 = resRight; // was ${getName(node)}2363; but using the parameter name now`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
+	(*((int*)sigma["${getName(node.variable)}currentValue"])) = ${getName(node)}2529;`]] //AA
     
         {let e = ccfg.addEdge(previousNode,terminatesNode)
         e.guards = [...e.guards, ...[]] //EE
         }
         
         previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}executeAssignment2`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
         return [ccfg,startsNode,terminatesNode]
@@ -438,6 +457,7 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
+        startsNode.functionsNames = [`init${startsNode.uid}Conjunction`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         ccfg.addNode(terminatesNode)
@@ -478,6 +498,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         ccfg.addEdge(evaluateConjunctionForkNode,rhsStartNode)
         
         previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}evaluateConjunction`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
         let lhsChoiceNodeevaluateConjunction2 = ccfg.getNodeFromName("lhsChoiceNode")
@@ -497,6 +518,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         
         previousNode.returnType = "bool"
+        previousNode.functionsNames = [`${previousNode.uid}evaluateConjunction2`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`bool ${getName(node)}terminates =  false;`,`return ${getName(node)}terminates;`]] //GG
     
         let rhsChoiceNodeevaluateConjunction3 = ccfg.getNodeFromName("rhsChoiceNode")
@@ -516,6 +538,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         
         previousNode.returnType = "bool"
+        previousNode.functionsNames = [`${previousNode.uid}evaluateConjunction3`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`bool ${getName(node)}terminates =  false;`,`return ${getName(node)}terminates;`]] //GG
     
         let evaluateConjunction4AndJoinNode: Node = new AndJoin("evaluateConjunction4AndJoinNode")
@@ -537,6 +560,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         
         previousNode.returnType = "bool"
+        previousNode.functionsNames = [`${previousNode.uid}evaluateConjunction4`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`bool ${getName(node)}terminates =  true;`,`return ${getName(node)}terminates;`]] //GG
     
         return [ccfg,startsNode,terminatesNode]
@@ -547,6 +571,7 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
+        startsNode.functionsNames = [`init${startsNode.uid}Plus`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         ccfg.addNode(terminatesNode)
@@ -577,6 +602,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         ccfg.addEdge(startPlusForkNode,leftStartNode)
         
         previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}startPlus`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
         let finishPlusAndJoinNode: Node = new AndJoin("finishPlusAndJoinNode")
@@ -594,7 +620,8 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         
         previousNode.returnType = "int"
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}4420 = ${getName(node)}4301; //n1`,`int ${getName(node)}4425 = ${getName(node)}4276; //n2`,`int ${getName(node)}4419 = ${getName(node)}4425 + ${getName(node)}4425;`,`int ${getName(node)}terminates =  ${getName(node)}4419;`,`return ${getName(node)}terminates;`]] //GG
+        previousNode.functionsNames = [`${previousNode.uid}finishPlus`] //overwrite existing name
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}4420 = n1; // was ${getName(node)}4301; but using the parameter name now`,`int ${getName(node)}4425 = n2; // was ${getName(node)}4276; but using the parameter name now`,`int ${getName(node)}4419 = ${getName(node)}4425 + ${getName(node)}4425;`,`int ${getName(node)}terminates =  ${getName(node)}4419;`,`return ${getName(node)}terminates;`]] //GG
     
         return [ccfg,startsNode,terminatesNode]
     }
@@ -604,6 +631,7 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[`sigma["${getName(node)}constantValue"] = new bool(${node.value});`])
+        startsNode.functionsNames = [`init${startsNode.uid}BooleanConst`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         ccfg.addNode(terminatesNode)
@@ -620,6 +648,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         
         previousNode.returnType = "bool"
+        previousNode.functionsNames = [`${previousNode.uid}evalBooleanConst`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`bool ${getName(node)}4639 = *(bool *) sigma["${getName(node)}constantValue"];//constantValue}`,`bool ${getName(node)}terminates =  ${getName(node)}4639;`,`return ${getName(node)}terminates;`]] //GG
     
         return [ccfg,startsNode,terminatesNode]

@@ -11,7 +11,7 @@ export class TypedElement {
     // }
     
     toString(): string {
-        console.log("here")
+        // console.log("here")
         return (this.type == undefined ? "undefined" : this.type)+" "+ this.name
     }
 }

@@ -82,6 +82,7 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[${visitVariableDeclaration(openedRule.runtimeState as VariableDeclaration[])}])
+        startsNode.functionsNames = [\`init\${startsNode.uid}${name}\`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
         ccfg.addNode(terminatesNode)
@@ -167,7 +168,7 @@ function checkIfMultipleTerminate(rulesCF: RuleControlFlow[]) {
 function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode, rulesCF: RuleControlFlow[], previousNodeName: string, terminatesNodeName: string) {
 
     
-    let [previousNode, guardActions] = handlePreviousPremise(ruleCF, rulesCF, previousNodeName, file)
+    let [previousNode, guardActions, param] = handlePreviousPremise(ruleCF, rulesCF, previousNodeName, file)
     file.append(`
         previousNode = ${previousNode}
     `)
@@ -180,13 +181,21 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
     {let ${ruleCF.rule.name}StateModificationNode: Node = new Step("${ruleCF.rule.name}StateModificationNode")
     ccfg.addNode(${ruleCF.rule.name}StateModificationNode)
     let e = ccfg.addEdge(previousNode,${ruleCF.rule.name}StateModificationNode)
-    e.guards = [...e.guards, ...[${guardActions}]] //AA
+    e.guards = [...e.guards, ...[${guardActions}]]`)
+    
+    if(param != undefined){
+        file.append(`
+    ${ruleCF.rule.name}StateModificationNode.params = [...${ruleCF.rule.name}StateModificationNode.params, ...[Object.assign( new TypedElement(), JSON.parse(\`${param.toJSON()}\`))]]
+    `)
+    }
+
+    file.append(`
     previousNode = ${ruleCF.rule.name}StateModificationNode
     }`)
     guardActions = ""
     
         file.append(`
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[\`function\${previousNode.uid}${ruleCF.rule.name}\`]] 
+    previousNode.functionsNames = [...previousNode.functionsNames, ...[\`\${previousNode.uid}${ruleCF.rule.name}\`]] 
     previousNode.functionsDefs =[...previousNode.functionsDefs, ...[${actionsString}]] //AA
     `);
     }
@@ -280,6 +289,7 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
     }
     file.append(`
         previousNode.returnType = "${functionType}"
+        previousNode.functionsNames = [\`\${previousNode.uid}${ruleCF.rule.name}\`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[${eventEmissionActions}]] //GG
     `);
 
@@ -290,12 +300,12 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
  * returns the previous node name. May imply the creation of new nodes in case of multiple synchronizations that may require a decision or join node
  * @param ruleCF 
  * @param previousNodeName 
- * @returns the previous node name
+ * @returns [the previous node name, the guards, the parameter typed element in json format]
  */
-function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow[], previousNodeName: string, file: CompositeGeneratorNode): [string,string] {
+function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow[], previousNodeName: string, file: CompositeGeneratorNode): [string,string, TypedElement|undefined] { 
     let isStartingRule = ruleCF.premiseParticipants[0].name == "starts";
     if (isStartingRule) {
-        return [previousNodeName, ""]
+        return [previousNodeName, "", undefined]
     }
 
     let isSimpleComparison = ruleCF.rule.premise.eventExpression.$type == "ExplicitValuedEventRefConstantComparison"
@@ -314,7 +324,7 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
         }
         `)
         let guards: string = visitValuedEventRefComparison(ruleCF.rule.premise.eventExpression as ValuedEventRefConstantComparison);
-        return [`${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name}`, guards]
+        return [`${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name}`, guards, undefined]
     }
 
     let isMultipleSynchronization = ruleCF.rule.premise.eventExpression.$type == "EventConjunction"
@@ -374,7 +384,7 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
 
         if (ruleCF.rule.premise.eventExpression.$type === "NaryEventExpression") {
             //no premise actions ?
-            return [multipleSynchroName,premiseGuards]
+            return [multipleSynchroName,premiseGuards, undefined]
         }
         let ownsACondition = chekIfOwnsACondition(ruleCF.rule.premise.eventExpression as EventCombination)
         if(ownsACondition){
@@ -391,21 +401,24 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
         ${multipleSynchroName}.functionsDefs = [...${multipleSynchroName}.functionsDefs, ...[${premiseActions}]] //HH
         `)
         
-        return [multipleSynchroName,premiseGuards]
+        return [multipleSynchroName,premiseGuards, undefined]
         
     } else {
         let [varActions,param] = visitValuedEventRef(ruleCF.rule.premise.eventExpression as ValuedEventRef)
         if(varActions.length>0){
-            file.append(`
-        ${ruleCF.premiseParticipants[0].name}TerminatesNode.functionsDefs = [...${ruleCF.premiseParticipants[0].name}TerminatesNode.functionsDefs, ...[${varActions}]] //II
-        `)
+            console.log("varActions removed: ",varActions)
+        //     file.append(`
+        // ${ruleCF.premiseParticipants[0].name}TerminatesNode.functionsDefs = [...${ruleCF.premiseParticipants[0].name}TerminatesNode.functionsDefs, ...[${varActions}]] //II
+        // `)
         }
+        //warning here we are assigning the params to the wrong node
         if(param.name != "NULL"){
-            file.append(`
-        ${ruleCF.premiseParticipants[0].name}TerminatesNode.params = [...${ruleCF.premiseParticipants[0].name}TerminatesNode.params, ...[Object.assign( new TypedElement(), JSON.parse(\`${param.toJSON()}\`))]]
-        `)
+            return [`${ruleCF.premiseParticipants[0].name}TerminatesNode`, "", param]
+        //     file.append(`
+        // ${ruleCF.premiseParticipants[0].name}TerminatesNode.params = [...${ruleCF.premiseParticipants[0].name}TerminatesNode.params, ...[Object.assign( new TypedElement(), JSON.parse(\`${param.toJSON()}\`))]]
+        // `)
         }
-        return [`${ruleCF.premiseParticipants[0].name}TerminatesNode`, ""]
+        return [`${ruleCF.premiseParticipants[0].name}TerminatesNode`, "", undefined]
     }
 }
 
@@ -838,7 +851,7 @@ function createVariableFromMemberCall(data: MemberCall, typeName: string): strin
         res = res + `\`${typeName} \${getName(node)}${data.$cstNode?.offset} = *(${typeName} *) sigma["\${getName(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name}"];//${elem.name}}\``
     } 
     else if (elem?.$type == "TemporaryVariable") {
-        res = res + `\`${typeName} \${getName(node)}${data.$cstNode?.offset} = \${getName(node)}${prev != undefined ? prev?.ref?.$cstNode?.offset : elem.$cstNode?.offset};\ //${elem.name}\``
+        res = res + `\`${typeName} \${getName(node)}${data.$cstNode?.offset} = ${elem.name}; // was \${getName(node)}${prev != undefined ? prev?.ref?.$cstNode?.offset : elem.$cstNode?.offset}; but using the parameter name now\``
     }
     else /*if (elem?.$type == "Assignment")*/ {
         res = res + `\`${typeName} \${getName(node)}${data.$cstNode?.offset} = \${node.${data.$cstNode?.text}};\ //${elem.name}\``
@@ -892,9 +905,9 @@ function visitStateModifications(ruleCF: RuleControlFlow, actionsString: string)
         sep = ","
         
         if(rhsElem.$type == "TemporaryVariable"){
-            actionsString = actionsString + sep + `\`//TODO: fix this and avoid memory leak by deleting, constructing appropriately\n*((${typeName}*)sigma[\"\${getName(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"]) = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};\``;
+            actionsString = actionsString + sep + `\`//TODO: fix this and avoid memory leak by deleting, constructing appropriately\n\t(*((${typeName}*)sigma[\"\${getName(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"])) = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};\``;
         }else{
-            actionsString = actionsString + sep + `\`//TODO: fix this and avoid memory leak by deleting, constructing appropriately\n*((${typeName}*)sigma[\"\${getName(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"]) = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};\``;
+            actionsString = actionsString + sep + `\`//TODO: fix this and avoid memory leak by deleting, constructing appropriately\n\t(*((${typeName}*)sigma[\"\${getName(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"])) = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};\``;
             
         }
     }

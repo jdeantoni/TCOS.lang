@@ -2,43 +2,43 @@ digraph G {
 subgraph cluster_4 {
 label = "var v1 = 1 starts";
   "5" [label="5:
-void function(){
+void functioninit5Variable(){
 sigma[\"Variable0_0_0_10currentValue\"] = new int();
 }" shape="ellipse"];
   "6" [label="6" shape="ellipse"];
   "7" [label="7:
-void functionfunction7initializeVar(){
+void function7initializeVar(){
 int Variable0_0_0_101385 = 1; //undefined
 //TODO: fix this and avoid memory leak by deleting, constructing appropriately
-*((int*)sigma[\"Variable0_0_0_10currentValue\"]) = Variable0_0_0_101385;
+	(*((int*)sigma[\"Variable0_0_0_10currentValue\"])) = Variable0_0_0_101385;
 }" shape="ellipse"];
 }
 subgraph cluster_8 {
 label = "var v2 = 4 starts";
   "9" [label="9:
-void function(){
+void functioninit9Variable(){
 sigma[\"Variable1_0_1_10currentValue\"] = new int();
 }" shape="ellipse"];
   "10" [label="10" shape="ellipse"];
   "11" [label="11:
-void functionfunction11initializeVar(){
+void function11initializeVar(){
 int Variable1_0_1_101385 = 4; //undefined
 //TODO: fix this and avoid memory leak by deleting, constructing appropriately
-*((int*)sigma[\"Variable1_0_1_10currentValue\"]) = Variable1_0_1_101385;
+	(*((int*)sigma[\"Variable1_0_1_10currentValue\"])) = Variable1_0_1_101385;
 }" shape="ellipse"];
 }
 subgraph cluster_12 {
 label = "var v3 = 0 starts";
   "13" [label="13:
-void function(){
+void functioninit13Variable(){
 sigma[\"Variable2_0_2_10currentValue\"] = new int();
 }" shape="ellipse"];
   "14" [label="14" shape="ellipse"];
   "15" [label="15:
-void functionfunction15initializeVar(){
+void function15initializeVar(){
 int Variable2_0_2_101385 = 0; //undefined
 //TODO: fix this and avoid memory leak by deleting, constructing appropriately
-*((int*)sigma[\"Variable2_0_2_10currentValue\"]) = Variable2_0_2_101385;
+	(*((int*)sigma[\"Variable2_0_2_10currentValue\"])) = Variable2_0_2_101385;
 }" shape="ellipse"];
 }
 subgraph cluster_16 {
@@ -55,25 +55,22 @@ label = "v1 = (v1 + v1) starts";
   "22" [label="22" shape="ellipse"];
   "23" [label="23" shape="ellipse"];
   "35" [label="35:
-void functionfunction35executeAssignment2(){
-int Assignment4_7_4_212529 = Assignment4_7_4_212363; //resRight
+void function35executeAssignment2(int resRight){
+int Assignment4_7_4_212529 = resRight; // was Assignment4_7_4_212363; but using the parameter name now
 //TODO: fix this and avoid memory leak by deleting, constructing appropriately
-*((int*)sigma[\"Variable0_0_0_10currentValue\"]) = Assignment4_7_4_212529;
+	(*((int*)sigma[\"Variable0_0_0_10currentValue\"])) = Assignment4_7_4_212529;
 }" shape="ellipse"];
 subgraph cluster_24 {
 label = "(v1 + v1) starts";
   "25" [label="25" shape="ellipse"];
-  "26" [label="26:
-void function(int resRight){
-int Assignment4_7_4_212363 = resRight;
-}" shape="ellipse"];
+  "26" [label="26" shape="ellipse"];
   "27" [label="27" shape="triangle"];
   "34" [label="34:
-int function(int n2, int n1){
+int function34finishPlus(int n2, int n1){
 int Plus4_12_4_214276 = n2;
 int Plus4_12_4_214301 = n1;
-int Plus4_12_4_214420 = Plus4_12_4_214301; //n1
-int Plus4_12_4_214425 = Plus4_12_4_214276; //n2
+int Plus4_12_4_214420 = n1; // was Plus4_12_4_214301; but using the parameter name now
+int Plus4_12_4_214425 = n2; // was Plus4_12_4_214276; but using the parameter name now
 int Plus4_12_4_214419 = Plus4_12_4_214425 + Plus4_12_4_214425;
 int Plus4_12_4_21terminates =  Plus4_12_4_214419;
 return Plus4_12_4_21terminates;
@@ -81,7 +78,7 @@ return Plus4_12_4_21terminates;
 subgraph cluster_28 {
 label = "v1 starts";
   "29" [label="29:
-int function(){
+int function29accessVarRef(){
 int VarRef4_18_4_201588 = *(int *) sigma[\"Variable0_0_0_10currentValue\"];//currentValue}
 int VarRef4_18_4_20terminates =  VarRef4_18_4_201588;
 return VarRef4_18_4_20terminates;
@@ -91,7 +88,7 @@ return VarRef4_18_4_20terminates;
 subgraph cluster_31 {
 label = "v1 starts";
   "32" [label="32:
-int function(){
+int function32accessVarRef(){
 int VarRef4_13_4_151588 = *(int *) sigma[\"Variable0_0_0_10currentValue\"];//currentValue}
 int VarRef4_13_4_15terminates =  VarRef4_13_4_151588;
 return VarRef4_13_4_15terminates;
@@ -105,25 +102,22 @@ label = "v2 = (v2 + v2) starts";
   "37" [label="37" shape="ellipse"];
   "38" [label="38" shape="ellipse"];
   "50" [label="50:
-void functionfunction50executeAssignment2(){
-int Assignment5_7_5_212529 = Assignment5_7_5_212363; //resRight
+void function50executeAssignment2(int resRight){
+int Assignment5_7_5_212529 = resRight; // was Assignment5_7_5_212363; but using the parameter name now
 //TODO: fix this and avoid memory leak by deleting, constructing appropriately
-*((int*)sigma[\"Variable1_0_1_10currentValue\"]) = Assignment5_7_5_212529;
+	(*((int*)sigma[\"Variable1_0_1_10currentValue\"])) = Assignment5_7_5_212529;
 }" shape="ellipse"];
 subgraph cluster_39 {
 label = "(v2 + v2) starts";
   "40" [label="40" shape="ellipse"];
-  "41" [label="41:
-void function(int resRight){
-int Assignment5_7_5_212363 = resRight;
-}" shape="ellipse"];
+  "41" [label="41" shape="ellipse"];
   "42" [label="42" shape="triangle"];
   "49" [label="49:
-int function(int n2, int n1){
+int function49finishPlus(int n2, int n1){
 int Plus5_12_5_214276 = n2;
 int Plus5_12_5_214301 = n1;
-int Plus5_12_5_214420 = Plus5_12_5_214301; //n1
-int Plus5_12_5_214425 = Plus5_12_5_214276; //n2
+int Plus5_12_5_214420 = n1; // was Plus5_12_5_214301; but using the parameter name now
+int Plus5_12_5_214425 = n2; // was Plus5_12_5_214276; but using the parameter name now
 int Plus5_12_5_214419 = Plus5_12_5_214425 + Plus5_12_5_214425;
 int Plus5_12_5_21terminates =  Plus5_12_5_214419;
 return Plus5_12_5_21terminates;
@@ -131,7 +125,7 @@ return Plus5_12_5_21terminates;
 subgraph cluster_43 {
 label = "v2 starts";
   "44" [label="44:
-int function(){
+int function44accessVarRef(){
 int VarRef5_18_5_201588 = *(int *) sigma[\"Variable1_0_1_10currentValue\"];//currentValue}
 int VarRef5_18_5_20terminates =  VarRef5_18_5_201588;
 return VarRef5_18_5_20terminates;
@@ -141,7 +135,7 @@ return VarRef5_18_5_20terminates;
 subgraph cluster_46 {
 label = "v2 starts";
   "47" [label="47:
-int function(){
+int function47accessVarRef(){
 int VarRef5_13_5_151588 = *(int *) sigma[\"Variable1_0_1_10currentValue\"];//currentValue}
 int VarRef5_13_5_15terminates =  VarRef5_13_5_151588;
 return VarRef5_13_5_15terminates;
@@ -166,7 +160,7 @@ label = "if (v1)             //if
 subgraph cluster_55 {
 label = "v1 starts";
   "56" [label="56:
-int function(){
+int function56accessVarRef(){
 int VarRef7_4_7_61588 = *(int *) sigma[\"Variable0_0_0_10currentValue\"];//currentValue}
 int VarRef7_4_7_6terminates =  VarRef7_4_7_61588;
 return VarRef7_4_7_6terminates;
@@ -185,23 +179,20 @@ label = "v2 = v1 starts";
   "64" [label="64" shape="ellipse"];
   "65" [label="65" shape="ellipse"];
   "69" [label="69:
-void functionfunction69executeAssignment2(){
-int Assignment9_4_9_112529 = Assignment9_4_9_112363; //resRight
+void function69executeAssignment2(int resRight){
+int Assignment9_4_9_112529 = resRight; // was Assignment9_4_9_112363; but using the parameter name now
 //TODO: fix this and avoid memory leak by deleting, constructing appropriately
-*((int*)sigma[\"Variable1_0_1_10currentValue\"]) = Assignment9_4_9_112529;
+	(*((int*)sigma[\"Variable1_0_1_10currentValue\"])) = Assignment9_4_9_112529;
 }" shape="ellipse"];
 subgraph cluster_66 {
 label = "v1 starts";
   "67" [label="67:
-int function(){
+int function67accessVarRef(){
 int VarRef9_9_9_111588 = *(int *) sigma[\"Variable0_0_0_10currentValue\"];//currentValue}
 int VarRef9_9_9_11terminates =  VarRef9_9_9_111588;
 return VarRef9_9_9_11terminates;
 }" shape="ellipse"];
-  "68" [label="68:
-void function(int resRight){
-int Assignment9_4_9_112363 = resRight;
-}" shape="ellipse"];
+  "68" [label="68" shape="ellipse"];
 }
 }
 }
@@ -217,23 +208,20 @@ label = "v1 = v2 starts";
   "75" [label="75" shape="ellipse"];
   "76" [label="76" shape="ellipse"];
   "80" [label="80:
-void functionfunction80executeAssignment2(){
-int Assignment12_4_12_112529 = Assignment12_4_12_112363; //resRight
+void function80executeAssignment2(int resRight){
+int Assignment12_4_12_112529 = resRight; // was Assignment12_4_12_112363; but using the parameter name now
 //TODO: fix this and avoid memory leak by deleting, constructing appropriately
-*((int*)sigma[\"Variable0_0_0_10currentValue\"]) = Assignment12_4_12_112529;
+	(*((int*)sigma[\"Variable0_0_0_10currentValue\"])) = Assignment12_4_12_112529;
 }" shape="ellipse"];
 subgraph cluster_77 {
 label = "v2 starts";
   "78" [label="78:
-int function(){
+int function78accessVarRef(){
 int VarRef12_9_12_111588 = *(int *) sigma[\"Variable1_0_1_10currentValue\"];//currentValue}
 int VarRef12_9_12_11terminates =  VarRef12_9_12_111588;
 return VarRef12_9_12_11terminates;
 }" shape="ellipse"];
-  "79" [label="79:
-void function(int resRight){
-int Assignment12_4_12_112363 = resRight;
-}" shape="ellipse"];
+  "79" [label="79" shape="ellipse"];
 }
 }
 }
@@ -243,40 +231,37 @@ label = "v3 = (true && false) starts";
   "83" [label="83" shape="ellipse"];
   "84" [label="84" shape="ellipse"];
   "100" [label="100:
-void functionfunction100executeAssignment2(){
-int Assignment16_0_16_202529 = Assignment16_0_16_202363; //resRight
+void function100executeAssignment2(int resRight){
+int Assignment16_0_16_202529 = resRight; // was Assignment16_0_16_202363; but using the parameter name now
 //TODO: fix this and avoid memory leak by deleting, constructing appropriately
-*((int*)sigma[\"Variable2_0_2_10currentValue\"]) = Assignment16_0_16_202529;
+	(*((int*)sigma[\"Variable2_0_2_10currentValue\"])) = Assignment16_0_16_202529;
 }" shape="ellipse"];
 subgraph cluster_85 {
 label = "(true && false) starts";
   "86" [label="86" shape="ellipse"];
-  "87" [label="87:
-void function(int resRight){
-int Assignment16_0_16_202363 = resRight;
-}" shape="ellipse"];
+  "87" [label="87" shape="ellipse"];
   "88" [label="88" shape="invtriangle"];
   "89" [label="89" shape="triangle"];
   "96" [label="96:
-bool function(){
+bool function96evaluateConjunction2(){
 bool Conjunction16_5_16_20terminates =  false;
 return Conjunction16_5_16_20terminates;
 }" shape="diamond"];
   "97" [label="97:
-bool function(){
+bool function97evaluateConjunction3(){
 bool Conjunction16_5_16_20terminates =  false;
 return Conjunction16_5_16_20terminates;
 }" shape="diamond"];
   "98" [label="98" shape="invtriangle"];
   "99" [label="99:
-bool function(){
+bool function99evaluateConjunction4(){
 bool Conjunction16_5_16_20terminates =  true;
 return Conjunction16_5_16_20terminates;
 }" shape="diamond"];
 subgraph cluster_90 {
 label = "true starts";
   "91" [label="91:
-bool function(){
+bool function91evalBooleanConst(){
 sigma[\"BooleanConst16_6_16_10constantValue\"] = new bool(true);
 bool BooleanConst16_6_16_104639 = *(bool *) sigma[\"BooleanConst16_6_16_10constantValue\"];//constantValue}
 bool BooleanConst16_6_16_10terminates =  BooleanConst16_6_16_104639;
@@ -287,7 +272,7 @@ return BooleanConst16_6_16_10terminates;
 subgraph cluster_93 {
 label = "false starts";
   "94" [label="94:
-bool function(){
+bool function94evalBooleanConst(){
 sigma[\"BooleanConst16_14_16_19constantValue\"] = new bool(false);
 bool BooleanConst16_14_16_194639 = *(bool *) sigma[\"BooleanConst16_14_16_19constantValue\"];//constantValue}
 bool BooleanConst16_14_16_19terminates =  BooleanConst16_14_16_194639;

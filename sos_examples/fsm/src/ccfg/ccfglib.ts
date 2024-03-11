@@ -225,7 +225,7 @@ export class CCFG {
         if(node.functionsDefs.length == 0){
             return node.uid.toString();
         }
-        return node.uid+":\n"+node.returnType+" function"+node.functionsNames+"("+node.params.map(p => (p as TypedElement).toString()).join(", ")+"){\n"+node.functionsDefs.map(
+        return node.uid+":\n"+node.returnType+" "+node.functionsNames+"("+node.params.map(p => (p as TypedElement).toString()).join(", ")+"){\n"+node.functionsDefs.map(
             a => a.replaceAll("\"","\\\"")).join("\n")+"\n}";
         //return node.value;
         // switch(node.getType()){
