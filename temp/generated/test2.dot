@@ -148,7 +148,7 @@ return VarRef5_13_5_15terminates;
 subgraph cluster_52 {
 label = "if (v1)             //if
 {                   //bloc1
-    v2 = v1         //v2Assign2 - v1Ref3
+    v2 =(v1 + v1)         //v2Assign2 - v1Ref3
 }else               
 {                   //bloc2
     v1 = v2         //v1Assign2 - v2Ref3
@@ -156,7 +156,7 @@ label = "if (v1)             //if
   "53" [label="53" shape="ellipse"];
   "54" [label="54" shape="ellipse"];
   "58" [label="58" shape="diamond"];
-  "81" [label="81" shape="invtriangle"];
+  "89" [label="89" shape="invtriangle"];
 subgraph cluster_55 {
 label = "v1 starts";
   "56" [label="56:
@@ -169,116 +169,142 @@ return VarRef7_4_7_6terminates;
 }
 subgraph cluster_59 {
 label = "{                   //bloc1
-    v2 = v1         //v2Assign2 - v1Ref3
+    v2 =(v1 + v1)         //v2Assign2 - v1Ref3
 } starts";
   "60" [label="60" shape="ellipse"];
   "61" [label="61" shape="ellipse"];
   "62" [label="62" shape="ellipse"];
 subgraph cluster_63 {
-label = "v2 = v1 starts";
+label = "v2 =(v1 + v1) starts";
   "64" [label="64" shape="ellipse"];
   "65" [label="65" shape="ellipse"];
-  "69" [label="69:
-void function69executeAssignment2(int resRight){
-int Assignment9_4_9_112529 = resRight; // was Assignment9_4_9_112363; but using the parameter name now
+  "77" [label="77:
+void function77executeAssignment2(int resRight){
+int Assignment9_4_9_172529 = resRight; // was Assignment9_4_9_172363; but using the parameter name now
 //TODO: fix this and avoid memory leak by deleting, constructing appropriately
-	(*((int*)sigma[\"Variable1_0_1_10currentValue\"])) = Assignment9_4_9_112529;
+	(*((int*)sigma[\"Variable1_0_1_10currentValue\"])) = Assignment9_4_9_172529;
 }" shape="ellipse"];
 subgraph cluster_66 {
+label = "(v1 + v1) starts";
+  "67" [label="67" shape="ellipse"];
+  "68" [label="68" shape="ellipse"];
+  "69" [label="69" shape="triangle"];
+  "76" [label="76:
+int function76finishPlus(int n2, int n1){
+int Plus9_8_9_174276 = n2;
+int Plus9_8_9_174301 = n1;
+int Plus9_8_9_174420 = n1; // was Plus9_8_9_174301; but using the parameter name now
+int Plus9_8_9_174425 = n2; // was Plus9_8_9_174276; but using the parameter name now
+int Plus9_8_9_174419 = Plus9_8_9_174425 + Plus9_8_9_174425;
+int Plus9_8_9_17terminates =  Plus9_8_9_174419;
+return Plus9_8_9_17terminates;
+}" shape="invtriangle"];
+subgraph cluster_70 {
 label = "v1 starts";
-  "67" [label="67:
-int function67accessVarRef(){
+  "71" [label="71:
+int function71accessVarRef(){
+int VarRef9_14_9_161588 = *(int *) sigma[\"Variable0_0_0_10currentValue\"];//currentValue}
+int VarRef9_14_9_16terminates =  VarRef9_14_9_161588;
+return VarRef9_14_9_16terminates;
+}" shape="ellipse"];
+  "72" [label="72" shape="ellipse"];
+}
+subgraph cluster_73 {
+label = "v1 starts";
+  "74" [label="74:
+int function74accessVarRef(){
 int VarRef9_9_9_111588 = *(int *) sigma[\"Variable0_0_0_10currentValue\"];//currentValue}
 int VarRef9_9_9_11terminates =  VarRef9_9_9_111588;
 return VarRef9_9_9_11terminates;
 }" shape="ellipse"];
-  "68" [label="68" shape="ellipse"];
+  "75" [label="75" shape="ellipse"];
 }
 }
 }
-subgraph cluster_70 {
+}
+subgraph cluster_78 {
 label = "{                   //bloc2
     v1 = v2         //v1Assign2 - v2Ref3
 } starts";
-  "71" [label="71" shape="ellipse"];
-  "72" [label="72" shape="ellipse"];
-  "73" [label="73" shape="ellipse"];
-subgraph cluster_74 {
+  "79" [label="79" shape="ellipse"];
+  "80" [label="80" shape="ellipse"];
+  "81" [label="81" shape="ellipse"];
+subgraph cluster_82 {
 label = "v1 = v2 starts";
-  "75" [label="75" shape="ellipse"];
-  "76" [label="76" shape="ellipse"];
-  "80" [label="80:
-void function80executeAssignment2(int resRight){
+  "83" [label="83" shape="ellipse"];
+  "84" [label="84" shape="ellipse"];
+  "88" [label="88:
+void function88executeAssignment2(int resRight){
 int Assignment12_4_12_112529 = resRight; // was Assignment12_4_12_112363; but using the parameter name now
 //TODO: fix this and avoid memory leak by deleting, constructing appropriately
 	(*((int*)sigma[\"Variable0_0_0_10currentValue\"])) = Assignment12_4_12_112529;
 }" shape="ellipse"];
-subgraph cluster_77 {
+subgraph cluster_85 {
 label = "v2 starts";
-  "78" [label="78:
-int function78accessVarRef(){
+  "86" [label="86:
+int function86accessVarRef(){
 int VarRef12_9_12_111588 = *(int *) sigma[\"Variable1_0_1_10currentValue\"];//currentValue}
 int VarRef12_9_12_11terminates =  VarRef12_9_12_111588;
 return VarRef12_9_12_11terminates;
 }" shape="ellipse"];
-  "79" [label="79" shape="ellipse"];
-}
-}
-}
-}
-subgraph cluster_82 {
-label = "v3 = (true && false) starts";
-  "83" [label="83" shape="ellipse"];
-  "84" [label="84" shape="ellipse"];
-  "100" [label="100:
-void function100executeAssignment2(int resRight){
-int Assignment16_0_16_202529 = resRight; // was Assignment16_0_16_202363; but using the parameter name now
-//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-	(*((int*)sigma[\"Variable2_0_2_10currentValue\"])) = Assignment16_0_16_202529;
-}" shape="ellipse"];
-subgraph cluster_85 {
-label = "(true && false) starts";
-  "86" [label="86" shape="ellipse"];
   "87" [label="87" shape="ellipse"];
-  "88" [label="88" shape="invtriangle"];
-  "89" [label="89" shape="triangle"];
-  "96" [label="96:
-bool function96evaluateConjunction2(){
-bool Conjunction16_5_16_20terminates =  false;
-return Conjunction16_5_16_20terminates;
-}" shape="diamond"];
-  "97" [label="97:
-bool function97evaluateConjunction3(){
-bool Conjunction16_5_16_20terminates =  false;
-return Conjunction16_5_16_20terminates;
-}" shape="diamond"];
-  "98" [label="98" shape="invtriangle"];
-  "99" [label="99:
-bool function99evaluateConjunction4(){
-bool Conjunction16_5_16_20terminates =  true;
-return Conjunction16_5_16_20terminates;
-}" shape="diamond"];
+}
+}
+}
+}
 subgraph cluster_90 {
+label = "v3 = (true && true) starts";
+  "91" [label="91" shape="ellipse"];
+  "92" [label="92" shape="ellipse"];
+  "108" [label="108:
+void function108executeAssignment2(int resRight){
+int Assignment16_0_16_192529 = resRight; // was Assignment16_0_16_192363; but using the parameter name now
+//TODO: fix this and avoid memory leak by deleting, constructing appropriately
+	(*((int*)sigma[\"Variable2_0_2_10currentValue\"])) = Assignment16_0_16_192529;
+}" shape="ellipse"];
+subgraph cluster_93 {
+label = "(true && true) starts";
+  "94" [label="94" shape="ellipse"];
+  "95" [label="95" shape="ellipse"];
+  "96" [label="96" shape="invtriangle"];
+  "97" [label="97" shape="triangle"];
+  "104" [label="104:
+bool function104evaluateConjunction2(){
+bool Conjunction16_5_16_19terminates =  false;
+return Conjunction16_5_16_19terminates;
+}" shape="diamond"];
+  "105" [label="105:
+bool function105evaluateConjunction3(){
+bool Conjunction16_5_16_19terminates =  false;
+return Conjunction16_5_16_19terminates;
+}" shape="diamond"];
+  "106" [label="106" shape="invtriangle"];
+  "107" [label="107:
+bool function107evaluateConjunction4(){
+bool Conjunction16_5_16_19terminates =  true;
+return Conjunction16_5_16_19terminates;
+}" shape="diamond"];
+subgraph cluster_98 {
 label = "true starts";
-  "91" [label="91:
-bool function91evalBooleanConst(){
+  "99" [label="99:
+bool function99evalBooleanConst(){
 sigma[\"BooleanConst16_6_16_10constantValue\"] = new bool(true);
 bool BooleanConst16_6_16_104639 = *(bool *) sigma[\"BooleanConst16_6_16_10constantValue\"];//constantValue}
 bool BooleanConst16_6_16_10terminates =  BooleanConst16_6_16_104639;
 return BooleanConst16_6_16_10terminates;
 }" shape="ellipse"];
-  "92" [label="92" shape="ellipse"];
+  "100" [label="100" shape="ellipse"];
 }
-subgraph cluster_93 {
-label = "false starts";
-  "94" [label="94:
-bool function94evalBooleanConst(){
-sigma[\"BooleanConst16_14_16_19constantValue\"] = new bool(false);
-bool BooleanConst16_14_16_194639 = *(bool *) sigma[\"BooleanConst16_14_16_19constantValue\"];//constantValue}
-bool BooleanConst16_14_16_19terminates =  BooleanConst16_14_16_194639;
-return BooleanConst16_14_16_19terminates;
+subgraph cluster_101 {
+label = "true starts";
+  "102" [label="102:
+bool function102evalBooleanConst(){
+sigma[\"BooleanConst16_14_16_18constantValue\"] = new bool(true);
+bool BooleanConst16_14_16_184639 = *(bool *) sigma[\"BooleanConst16_14_16_18constantValue\"];//constantValue}
+bool BooleanConst16_14_16_18terminates =  BooleanConst16_14_16_184639;
+return BooleanConst16_14_16_18terminates;
 }" shape="ellipse"];
-  "95" [label="95" shape="ellipse"];
+  "103" [label="103" shape="ellipse"];
 }
 }
 }
@@ -299,6 +325,7 @@ return BooleanConst16_14_16_19terminates;
   "30" -> "34" [label=""];
   "33" -> "34" [label=""];
   "34" -> "26" [label=""];
+  "34" -> "27" [style="dotted", penwidth = 2, label=""];
   "22" -> "25" [label=""];
   "26" -> "35" [label=""];
   "35" -> "23" [label=""];
@@ -310,6 +337,7 @@ return BooleanConst16_14_16_19terminates;
   "45" -> "49" [label=""];
   "48" -> "49" [label=""];
   "49" -> "41" [label=""];
+  "49" -> "42" [style="dotted", penwidth = 2, label=""];
   "37" -> "40" [label=""];
   "41" -> "50" [label=""];
   "50" -> "38" [label=""];
@@ -319,52 +347,64 @@ return BooleanConst16_14_16_19terminates;
   "19" -> "37" [label=""];
   "38" -> "20" [label=""];
   "20" -> "18" [label=""];
+  "20" -> "19" [style="dotted", penwidth = 2, label=""];
   "56" -> "57" [label=""];
-  "67" -> "68" [label=""];
+  "71" -> "72" [label=""];
+  "74" -> "75" [label=""];
+  "67" -> "69" [label=""];
+  "69" -> "71" [label=""];
+  "69" -> "74" [label=""];
+  "72" -> "76" [label=""];
+  "75" -> "76" [label=""];
+  "76" -> "68" [label=""];
+  "76" -> "69" [style="dotted", penwidth = 2, label=""];
   "64" -> "67" [label=""];
-  "68" -> "69" [label=""];
-  "69" -> "65" [label=""];
+  "68" -> "77" [label=""];
+  "77" -> "65" [label=""];
   "60" -> "62" [label=""];
   "62" -> "64" [label=""];
   "65" -> "61" [label=""];
-  "78" -> "79" [label=""];
-  "75" -> "78" [label=""];
-  "79" -> "80" [label=""];
-  "80" -> "76" [label=""];
-  "71" -> "73" [label=""];
-  "73" -> "75" [label=""];
-  "76" -> "72" [label=""];
+  "86" -> "87" [label=""];
+  "83" -> "86" [label=""];
+  "87" -> "88" [label=""];
+  "88" -> "84" [label=""];
+  "79" -> "81" [label=""];
+  "81" -> "83" [label=""];
+  "84" -> "80" [label=""];
   "53" -> "56" [label=""];
   "57" -> "58" [label=""];
   "58" -> "60" [label="(bool)VarRef7_4_7_6terminates == true"];
-  "58" -> "71" [label="(bool)VarRef7_4_7_6terminates == false"];
-  "72" -> "81" [label=""];
-  "61" -> "81" [label=""];
-  "81" -> "54" [label=""];
-  "91" -> "92" [label=""];
-  "94" -> "95" [label=""];
-  "88" -> "87" [label=""];
-  "86" -> "89" [label=""];
-  "89" -> "91" [label=""];
-  "89" -> "94" [label=""];
-  "92" -> "96" [label=""];
-  "96" -> "88" [label="(bool)BooleanConst16_6_16_10terminates == false"];
-  "95" -> "97" [label=""];
-  "97" -> "88" [label="(bool)BooleanConst16_14_16_19terminates == false"];
-  "92" -> "98" [label=""];
-  "95" -> "98" [label=""];
-  "98" -> "99" [label=""];
-  "99" -> "88" [label="(bool)BooleanConst16_6_16_10terminates == true
-(bool)BooleanConst16_14_16_19terminates == true"];
-  "83" -> "86" [label=""];
-  "87" -> "100" [label=""];
-  "100" -> "84" [label=""];
+  "58" -> "79" [label="(bool)VarRef7_4_7_6terminates == false"];
+  "80" -> "89" [label=""];
+  "61" -> "89" [label=""];
+  "89" -> "54" [label=""];
+  "89" -> "58" [style="dotted", penwidth = 2, label=""];
+  "99" -> "100" [label=""];
+  "102" -> "103" [label=""];
+  "96" -> "95" [label=""];
+  "94" -> "97" [label=""];
+  "97" -> "99" [label=""];
+  "97" -> "102" [label=""];
+  "100" -> "104" [label=""];
+  "104" -> "96" [label="(bool)BooleanConst16_6_16_10terminates == false"];
+  "103" -> "105" [label=""];
+  "105" -> "96" [label="(bool)BooleanConst16_14_16_18terminates == false"];
+  "100" -> "106" [label=""];
+  "103" -> "106" [label=""];
+  "106" -> "107" [label=""];
+  "107" -> "96" [label="(bool)BooleanConst16_6_16_10terminates == true
+(bool)BooleanConst16_14_16_18terminates == true"];
+  "96" -> "97" [style="dotted", penwidth = 2, label=""];
+  "106" -> "97" [style="dotted", penwidth = 2, label=""];
+  "91" -> "94" [label=""];
+  "95" -> "108" [label=""];
+  "108" -> "92" [label=""];
   "1" -> "3" [label=""];
   "3" -> "5" [label=""];
   "6" -> "9" [label=""];
   "10" -> "13" [label=""];
   "14" -> "17" [label=""];
   "18" -> "53" [label=""];
-  "54" -> "83" [label=""];
-  "84" -> "2" [label=""];
+  "54" -> "91" [label=""];
+  "92" -> "2" [label=""];
 }

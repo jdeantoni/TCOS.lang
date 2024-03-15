@@ -82,6 +82,9 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[${visitVariableDeclaration(openedRule.runtimeState as VariableDeclaration[])}])
+        if(startsNode.functionsDefs.length>0){
+            startsNode.returnType = "void"
+        }
         startsNode.functionsNames = [\`init\${startsNode.uid}${name}\`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
@@ -96,8 +99,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         let hasMultipleTerminate = checkIfMultipleTerminate(rulesCF);
 
         if (hasMultipleTerminate) {
-            //TODO: handle multiple terminate in case the rules premise are comparisons, in which cases a choice node is required
-
             file.append(`
         let joinNode: Node = new OrJoin(node.$cstNode?.text+" or join")
         ccfg.addNode(joinNode)

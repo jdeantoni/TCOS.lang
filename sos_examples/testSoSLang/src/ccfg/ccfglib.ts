@@ -5,30 +5,28 @@ export class TypedElement {
     name: string = ""
     type: (string | undefined) = undefined
     
-    // constructor(name: string, type: (string | undefined) = undefined){
-    //     this.name = name;
-    //     this.type = type;
-    // }
-    
     toString(): string {
-        // console.log("here")
         return (this.type == undefined ? "undefined" : this.type)+" "+ this.name
     }
 }
 
 export abstract class Node {
+ 
     static uidCounter: integer = 0;
     uid: integer;
-    value:any;
-    astNode: AstNode | undefined;
+    owningCCFG: CCFG | undefined = undefined;
+
+    value:any;  //unused so far
+    astNode: AstNode | undefined; //unnused so far
    
     outputEdges: Edge[] = [];
     inputEdges: Edge[] = [];
 
+    syncNodeIds: integer[] = [];
     functionsNames: string[] = [];
     params: TypedElement[] = []
     functionsDefs: string[];
-    returnType: string;
+    returnType: string|undefined = undefined;
 
 
     numberOfVisits: integer = 0
@@ -37,12 +35,28 @@ export abstract class Node {
         this.uid = Node.uidCounter++;
         this.value = value;
         this.functionsDefs = theActions;
-        this.returnType = "void";
     }
 
     getType(): string {
         return this.constructor.name;
     }
+
+    isBefore(n2: Node): boolean {
+        if (this.outputEdges.length == 0){
+            return false;
+        }
+        for (let e of this.outputEdges) {
+            if (e.to === n2){
+                return true;
+            }
+        }
+        for(let e of this.outputEdges){
+            return e.to.isBefore(n2);
+        }
+
+        return false
+    }
+    
 
 }
 
@@ -71,7 +85,7 @@ export class ContainerNode extends Node {
         return this.internalccfg.getNodeFromName(name);
     }
 
-    getNodeByUID(uid: integer): Node  {
+    getNodeByUID(uid: integer): Node | undefined {
         return this.internalccfg.getNodeByUID(uid);
     }
 
@@ -104,6 +118,7 @@ export class Edge {
 export class CCFG {
     nodes: Node[];
     edges: Edge[];
+    syncEdges: SyncEdge[] = []
     ;
 
     initialState: Node | undefined;
@@ -121,6 +136,7 @@ export class CCFG {
         let res = this.nodes.find(n => n === node);
         if (res == undefined) {
             this.nodes.push(node);
+            node.owningCCFG = this;
         }
         return node;
     }
@@ -144,6 +160,10 @@ export class CCFG {
             newNode.uid = oldNode.uid;
             newNode.functionsDefs = oldNode.functionsDefs;
             newNode.value = oldNode.value;
+            newNode.returnType = oldNode.returnType;
+            newNode.params = oldNode.params;
+            newNode.functionsNames = oldNode.functionsNames;
+            newNode.owningCCFG = oldNode.owningCCFG;
         }
         for (let edge of this.edges) {
             if (edge.from === oldNode) {
@@ -157,12 +177,19 @@ export class CCFG {
         }
     }
 
-    getNodeByUID(uid: integer): Node  {
-        let res = this.nodes.find(n => n.uid === uid);
-        if(res == undefined){
-            throw new Error("Node with uid "+uid+" not found");
+    getNodeByUID(uid: integer): Node | undefined  {
+        for(let n of this.nodes){
+            if(n.uid === uid){
+                return n;
+            }
+            if(n.getType() == "ContainerNode"){
+                let res = (n as ContainerNode).internalccfg.getNodeByUID(uid);
+                if(res != undefined){
+                    return res;
+                }
+            }
         }
-        return res;
+        return undefined
     }
 
   
@@ -170,41 +197,52 @@ export class CCFG {
 
     toDot(): string {
         let wholeDot = 'digraph G {\n';
-        let [s, d] = this.getCCFGNodes()
-        d = d + this.getCCFGEdges();
+        let [s, d] = this.dotGetCCFGNodes()
+        d = d + this.dotGetCCFGEdges();
         wholeDot += s;
         wholeDot += d;
         wholeDot += '}';
         return wholeDot;
     }
 
-    private getCCFGEdges() : string{
+    /**
+     * 
+     * @returns the edges in dot format
+     */
+    private dotGetCCFGEdges() : string{
         let edgeDot = ""
         for (let node of this.nodes) {
             if (node.getType() == "ContainerNode") {
-                edgeDot += (node as ContainerNode).internalccfg.getCCFGEdges();
+                edgeDot += (node as ContainerNode).internalccfg.dotGetCCFGEdges();
             }
         }
         for (let edge of this.edges) {
-            edgeDot += `  "${edge.from.uid}" -> "${edge.to.uid}" [label="${this.getEdgeLabel(edge)}"];\n`;
+            edgeDot += `  "${edge.from.uid}" -> "${edge.to.uid}" [label="${this.dotGetEdgeLabel(edge)}"];\n`;
+        }
+        for (let edge of this.syncEdges) {
+            edgeDot += `  "${edge.from.uid}" -> "${edge.to.uid}" [style="dotted", penwidth = 2, label="${this.dotGetEdgeLabel(edge)}"];\n`;
         }
         return edgeDot;
     }
 
-    private getCCFGNodes() :[string, string]{
+    /**
+     * 
+     * @returns a tuple with the first element being the subgraph and the second the nodes
+     */
+    private dotGetCCFGNodes() :[string, string]{
         let subG = ""
         let nodeDot = ""
         for (let node of this.nodes) {
             if (node.getType() == "ContainerNode") {
                subG += `subgraph cluster_${node.uid} {\n`;
                subG += `label = "${node.value}";\n`;
-                let [s, d ] = (node as ContainerNode).internalccfg.getCCFGNodes()
+                let [s, d ] = (node as ContainerNode).internalccfg.dotGetCCFGNodes()
                 subG += d;
                 subG += s;
                 subG += `}\n`;
             } else {
-                let shape: string = this.getNodeShape(node);
-                let label: string = this.getNodeLabel(node);
+                let shape: string = this.dotGetNodeShape(node);
+                let label: string = this.dotGetNodeLabel(node);
                 nodeDot += `  "${node.uid}" [label="${label}" shape="${shape}"];\n`;
             }
 
@@ -212,7 +250,7 @@ export class CCFG {
         return [subG, nodeDot];
     }
 
-    getEdgeLabel(edge: Edge): string {
+    dotGetEdgeLabel(edge: Edge): string {
       
         return edge.guards.map(
             g => 
@@ -221,35 +259,15 @@ export class CCFG {
             /*+"~~~\n";*/
     }
 
-    getNodeLabel(node: Node): string {
+    dotGetNodeLabel(node: Node): string {
         if(node.functionsDefs.length == 0){
             return node.uid.toString();
         }
         return node.uid+":\n"+node.returnType+" function"+node.functionsNames+"("+node.params.map(p => (p as TypedElement).toString()).join(", ")+"){\n"+node.functionsDefs.map(
             a => a.replaceAll("\"","\\\"")).join("\n")+"\n}";
-        //return node.value;
-        // switch(node.getType()){
-        //     case "Step":
-        //         return node.returnType+" function"+node.functionsNames+"("+node.params+")"+node.functionsDefs.map(
-        //             a => a.replaceAll("\"","\\\"")).join("\n")//uid.toString();
-        //     case "Choice":
-        //         return "from:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
-        //             a => a.replaceAll("\"","\\\"")).join("\n")
-        //     case "OrJoin":
-        //         return "OR\nfrom:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
-        //             a => a.replaceAll("\"","\\\"")).join("\n")
-        //     case "AndJoin":
-        //         return "AND\nfrom:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
-        //             a => a.replaceAll("\"","\\\"")).join("\n")
-        //     case "Fork":
-        //         return "from:"+node.uid+" to "+node.finishNodeUID+"\n"+node.functionsDefs.map(
-        //             a => a.replaceAll("\"","\\\"")).join("\n");
-        //     default:
-        //         return "???"+node.uid.toString();
-        // }
     }
 
-    getNodeShape(node: Node): string {
+    dotGetNodeShape(node: Node): string {
         switch(node.getType()){
             case "Step":
                 return "ellipse";
@@ -270,6 +288,36 @@ export class CCFG {
         return this.nodes.find(n => n.value === name);
     }
 
+    addSyncEdge(): void{
+        for(let n of this.nodes){
+            if(n.getType() == "OrJoin" || n.getType() == "AndJoin"){
+                for(let n2 of this.nodes){
+                    if((n2.getType() == "Fork" || n2.getType() == "Choice")
+                        &&
+                        n2.outputEdges.length > 1){
+                        if(n2.isBefore(n)){
+                            n2.syncNodeIds.push(n.uid);
+                            n.syncNodeIds.push(n2.uid);
+                            this.syncEdges.push(new SyncEdge(n, n2, "sync"));
+                        }
+                    }
+                }
+            }
+            if(n.getType() == "ContainerNode"){
+                (n as ContainerNode).internalccfg.addSyncEdge();
+            }
+        }
+
+    }
+
+
+
+}
+
+export class SyncEdge extends Edge {
+    constructor(from: Node, to: Node, label?: string) {
+        super(from, to, label);
+    }
 }
 
 export class Step extends Node {
@@ -309,52 +357,3 @@ export class AndJoin extends Join {
     }
 }
 
-
-
-// // Create a new graph
-// let graph = new Graph();
-
-// // Add nodes to the graph
-// let stepNode1 = new Step("Step Node");
-// let stepNode2 = new Step("Step Node");
-// let stepNode3 = new Step("Step Node");
-// let stepNode4 = new Step("Step Node");
-// let stepNode5 = new Step("Step Node");
-// let stepNode6 = new Step("Step Node");
-// let stepNode7 = new Step("Step Node");
-
-// let choiceNode = new Choice("Choice Node");
-// let orJoinNode = new OrJoin("Or Join Node");
-// let andJoinNode = new AndJoin("And Join Node");
-
-// let forkNode = new Fork("Fork Node");
-
-// graph.addNode(stepNode1);
-// graph.addNode(stepNode2);
-// graph.addNode(stepNode3);
-// graph.addNode(stepNode4);
-// graph.addNode(stepNode5);
-// graph.addNode(stepNode6);
-// graph.addNode(stepNode7);
-// graph.addNode(choiceNode);
-// graph.addNode(orJoinNode);
-// graph.addNode(andJoinNode);
-// graph.addNode(forkNode);
-
-// // Add edges to the graph
-// graph.addEdge(stepNode1, choiceNode);
-// graph.addEdge(choiceNode, stepNode2);
-// graph.addEdge(choiceNode, stepNode3);
-// graph.addEdge(stepNode3, orJoinNode);
-// graph.addEdge(stepNode2, orJoinNode);
-// graph.addEdge(orJoinNode, stepNode4);
-// graph.addEdge(stepNode4, forkNode);
-// graph.addEdge(forkNode, stepNode5);
-// graph.addEdge(forkNode, stepNode6);
-// graph.addEdge(stepNode5, andJoinNode);
-// graph.addEdge(stepNode6, andJoinNode);
-// graph.addEdge(andJoinNode, stepNode7);
-
-// // Export the graph to the Graphviz DOT format
-// let dot = graph.toDot();
-// console.log(dot);

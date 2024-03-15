@@ -11,7 +11,7 @@ export class TypedElement {
     // }
     
     toString(): string {
-        console.log("here")
+        // console.log("here")
         return (this.type == undefined ? "undefined" : this.type)+" "+ this.name
     }
 }
@@ -19,12 +19,14 @@ export class TypedElement {
 export abstract class Node {
     static uidCounter: integer = 0;
     uid: integer;
-    value:any;
-    astNode: AstNode | undefined;
+
+    value:any;  //unused so far
+    astNode: AstNode | undefined; //unnused so far
    
     outputEdges: Edge[] = [];
     inputEdges: Edge[] = [];
 
+    queueIds: integer[] = [];
     functionsNames: string[] = [];
     params: TypedElement[] = []
     functionsDefs: string[];
@@ -225,7 +227,7 @@ export class CCFG {
         if(node.functionsDefs.length == 0){
             return node.uid.toString();
         }
-        return node.uid+":\n"+node.returnType+" "+node.functionsNames+"("+node.params.map(p => (p as TypedElement).toString()).join(", ")+"){\n"+node.functionsDefs.map(
+        return node.uid+":\n"+node.returnType+" function"+node.functionsNames+"("+node.params.map(p => (p as TypedElement).toString()).join(", ")+"){\n"+node.functionsDefs.map(
             a => a.replaceAll("\"","\\\"")).join("\n")+"\n}";
         //return node.value;
         // switch(node.getType()){

@@ -77,6 +77,9 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
+        if(startsNode.functionsDefs.length>0){
+            startsNode.returnType = "void"
+        }
         startsNode.functionsNames = [`init${startsNode.uid}Model`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
@@ -128,6 +131,9 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
+        if(startsNode.functionsDefs.length>0){
+            startsNode.returnType = "void"
+        }
         startsNode.functionsNames = [`init${startsNode.uid}Bloc`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
@@ -179,6 +185,9 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
+        if(startsNode.functionsDefs.length>0){
+            startsNode.returnType = "void"
+        }
         startsNode.functionsNames = [`init${startsNode.uid}ParallelBloc`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
@@ -235,6 +244,9 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[`sigma["${getName(node)}currentValue"] = new int();`])
+        if(startsNode.functionsDefs.length>0){
+            startsNode.returnType = "void"
+        }
         startsNode.functionsNames = [`init${startsNode.uid}Variable`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
@@ -273,6 +285,9 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
+        if(startsNode.functionsDefs.length>0){
+            startsNode.returnType = "void"
+        }
         startsNode.functionsNames = [`init${startsNode.uid}VarRef`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
@@ -301,6 +316,9 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
+        if(startsNode.functionsDefs.length>0){
+            startsNode.returnType = "void"
+        }
         startsNode.functionsNames = [`init${startsNode.uid}If`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
@@ -402,6 +420,9 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
+        if(startsNode.functionsDefs.length>0){
+            startsNode.returnType = "void"
+        }
         startsNode.functionsNames = [`init${startsNode.uid}Assignment`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
@@ -457,6 +478,9 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
+        if(startsNode.functionsDefs.length>0){
+            startsNode.returnType = "void"
+        }
         startsNode.functionsNames = [`init${startsNode.uid}Conjunction`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
@@ -571,6 +595,9 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[])
+        if(startsNode.functionsDefs.length>0){
+            startsNode.returnType = "void"
+        }
         startsNode.functionsNames = [`init${startsNode.uid}Plus`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
@@ -631,6 +658,9 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[`sigma["${getName(node)}constantValue"] = new bool(${node.value});`])
+        if(startsNode.functionsDefs.length>0){
+            startsNode.returnType = "void"
+        }
         startsNode.functionsNames = [`init${startsNode.uid}BooleanConst`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
