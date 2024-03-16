@@ -58,6 +58,12 @@
         "__node_handle": "cpp",
         "__split_buffer": "cpp",
         "__verbose_abort": "cpp",
-        "ios": "cpp"
+        "ios": "cpp",
+        "cwctype": "cpp",
+        "chrono": "cpp",
+        "stop_token": "cpp",
+        "thread": "cpp",
+        "__threading_support": "cpp",
+        "condition_variable": "cpp"
     }
 }

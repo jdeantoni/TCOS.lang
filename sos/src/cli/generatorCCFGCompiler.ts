@@ -82,6 +82,9 @@ export class CCFGVisitor implements SimpleLVisitor {
 
 
         let startsNode: Node = new Step(node.$cstNode?.text+" starts",[${visitVariableDeclaration(openedRule.runtimeState as VariableDeclaration[])}])
+        if(startsNode.functionsDefs.length>0){
+            startsNode.returnType = "void"
+        }
         startsNode.functionsNames = [\`init\${startsNode.uid}${name}\`]
         ccfg.addNode(startsNode)
         let terminatesNode: Node = new Step(node.$cstNode?.text+" terminates")
@@ -96,8 +99,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         let hasMultipleTerminate = checkIfMultipleTerminate(rulesCF);
 
         if (hasMultipleTerminate) {
-            //TODO: handle multiple terminate in case the rules premise are comparisons, in which cases a choice node is required
-
             file.append(`
         let joinNode: Node = new OrJoin(node.$cstNode?.text+" or join")
         ccfg.addNode(joinNode)
@@ -790,6 +791,7 @@ function visitValuedEventRef(valuedEventRef: ValuedEventRef | undefined): [strin
 function visitVariableDeclaration(runtimeState: VariableDeclaration[] | undefined): string {
     var res : string = ""
     if (runtimeState != undefined) {
+       // res = res + `\`const std::lock_guard<std::mutex> lock(sigma_mutex);\`,`
         for(let vardDecl of runtimeState){
             res = res + `\`sigma["\${getName(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?`\${node.${(vardDecl.value as MemberCall).element?.$refText}}`:""});\``
         }
@@ -848,6 +850,7 @@ function createVariableFromMemberCall(data: MemberCall, typeName: string): strin
         return res
     }
     if (elem?.$type == "VariableDeclaration") {
+        res = res +`\`const std::lock_guard<std::mutex> lock(sigma_mutex);\`,`
         res = res + `\`${typeName} \${getName(node)}${data.$cstNode?.offset} = *(${typeName} *) sigma["\${getName(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name}"];//${elem.name}}\``
     } 
     else if (elem?.$type == "TemporaryVariable") {
@@ -905,9 +908,13 @@ function visitStateModifications(ruleCF: RuleControlFlow, actionsString: string)
         sep = ","
         
         if(rhsElem.$type == "TemporaryVariable"){
-            actionsString = actionsString + sep + `\`//TODO: fix this and avoid memory leak by deleting, constructing appropriately\n\t(*((${typeName}*)sigma[\"\${getName(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"])) = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};\``;
+            actionsString = actionsString + sep + `\`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
+                const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
+                (*((${typeName}*)sigma[\"\${getName(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"])) = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};\``;
         }else{
-            actionsString = actionsString + sep + `\`//TODO: fix this and avoid memory leak by deleting, constructing appropriately\n\t(*((${typeName}*)sigma[\"\${getName(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"])) = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};\``;
+            actionsString = actionsString + sep + `\`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
+                const std::lock_guard<std::mutex> lock(sigma_mutex);
+                (*((${typeName}*)sigma[\"\${getName(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"])) = \${getName(node)}${(action.rhs as MemberCall).$cstNode?.offset};\``;
             
         }
     }

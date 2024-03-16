@@ -14,5 +14,5 @@ if (v1)             //if
 }
 
 
-v3 = (true && false)
+v3 = (true && true)
 
