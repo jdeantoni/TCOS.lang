@@ -267,7 +267,8 @@ export class CCFGVisitor implements SimpleLVisitor {
     }
     previousNode.functionsNames = [...previousNode.functionsNames, ...[`${previousNode.uid}initializeVar`]] 
     previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}1385 = ${node.initialValue}; //undefined`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-	(*((int*)sigma["${getName(node)}currentValue"])) = ${getName(node)}1385;`]] //AA
+                const std::lock_guard<std::mutex> lock(sigma_mutex);
+                (*((int*)sigma["${getName(node)}currentValue"])) = ${getName(node)}1385;`]] //AA
     
         {let e = ccfg.addEdge(previousNode,terminatesNode)
         e.guards = [...e.guards, ...[]] //EE
@@ -306,7 +307,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "int"
         previousNode.functionsNames = [`${previousNode.uid}accessVarRef`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}1588 = *(int *) sigma["${getName(node.theVar)}currentValue"];//currentValue}`,`int ${getName(node)}terminates =  ${getName(node)}1588;`,`return ${getName(node)}terminates;`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`const std::lock_guard<std::mutex> lock(sigma_mutex);`,`int ${getName(node)}1588 = *(int *) sigma["${getName(node.theVar)}currentValue"];//currentValue}`,`int ${getName(node)}terminates =  ${getName(node)}1588;`,`return ${getName(node)}terminates;`]] //GG
     
         return [ccfg,startsNode,terminatesNode]
     }
@@ -460,7 +461,8 @@ export class CCFGVisitor implements SimpleLVisitor {
     }
     previousNode.functionsNames = [...previousNode.functionsNames, ...[`${previousNode.uid}executeAssignment2`]] 
     previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}2529 = resRight; // was ${getName(node)}2363; but using the parameter name now`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-	(*((int*)sigma["${getName(node.variable)}currentValue"])) = ${getName(node)}2529;`]] //AA
+                const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
+                (*((int*)sigma["${getName(node.variable)}currentValue"])) = ${getName(node)}2529;`]] //AA
     
         {let e = ccfg.addEdge(previousNode,terminatesNode)
         e.guards = [...e.guards, ...[]] //EE
@@ -488,15 +490,14 @@ export class CCFGVisitor implements SimpleLVisitor {
         // rule evaluateConjunction
    //premise: starts:event
    //conclusion: lhs:BooleanExpression,starts:event
-   //conclusion: lhs:BooleanExpression,starts:event,rhs:BooleanExpression,starts:event
 // rule evaluateConjunction2
    //premise: lhs:BooleanExpression,terminates:event
-   //conclusion: terminates:event
+   //conclusion: rhs:BooleanExpression,starts:event
 // rule evaluateConjunction3
-   //premise: rhs:BooleanExpression,terminates:event
+   //premise: lhs:BooleanExpression,terminates:event
    //conclusion: terminates:event
 // rule evaluateConjunction4
-   //premise: lhs:BooleanExpression,terminates:event,rhs:BooleanExpression,terminates:event
+   //premise: rhs:BooleanExpression,terminates:event
    //conclusion: terminates:event
 
         let joinNode: Node = new OrJoin(node.$cstNode?.text+" or join")
@@ -507,19 +508,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = startsNode
     
-        let evaluateConjunctionForkNode: Node = new Fork("evaluateConjunctionForkNode")
-        ccfg.addNode(evaluateConjunctionForkNode)
-        {let e = ccfg.addEdge(previousNode,evaluateConjunctionForkNode)
-        e.guards = [...e.guards, ...[]] //BB
-        }
-        
-        let [lhsCCFG, lhsStartNode,lhsTerminatesNode] = this.visit(node.lhs)
+        let [lhsCCFG, lhsStartsNode,lhsTerminatesNode] = this.visit(node.lhs)
         ccfg.addNode(lhsCCFG)
-        ccfg.addEdge(evaluateConjunctionForkNode,lhsStartNode)
-        
-        let [rhsCCFG, rhsStartNode,rhsTerminatesNode] = this.visit(node.rhs)
-        ccfg.addNode(rhsCCFG)
-        ccfg.addEdge(evaluateConjunctionForkNode,rhsStartNode)
+        {let e = ccfg.addEdge(previousNode,lhsStartsNode)
+        e.guards = [...e.guards, ...[]] //FF
+        }
         
         previousNode.returnType = "void"
         previousNode.functionsNames = [`${previousNode.uid}evaluateConjunction`] //overwrite existing name
@@ -537,55 +530,45 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode = lhsChoiceNodeevaluateConjunction2
     
+        let [rhsCCFG, rhsStartsNode,rhsTerminatesNode] = this.visit(node.rhs)
+        ccfg.addNode(rhsCCFG)
+        {let e = ccfg.addEdge(previousNode,rhsStartsNode)
+        e.guards = [...e.guards, ...[`(bool)${getName(node.lhs)}terminates == true`]] //FF
+        }
+        
+        previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}evaluateConjunction2`] //overwrite existing name
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
+    
+        let lhsChoiceNodeevaluateConjunction3 = ccfg.getNodeFromName("lhsChoiceNode")
+        if (lhsChoiceNodeevaluateConjunction3 == undefined) {
+            let lhsChoiceNode = new Choice("lhsChoiceNode")
+            ccfg.addNode(lhsChoiceNode)
+            ccfg.addEdge(lhsTerminatesNode,lhsChoiceNode)
+            lhsChoiceNodeevaluateConjunction3 = lhsChoiceNode
+        }else{
+            ccfg.addEdge(lhsTerminatesNode,lhsChoiceNodeevaluateConjunction3)
+        }
+        
+        previousNode = lhsChoiceNodeevaluateConjunction3
+    
         {let e = ccfg.addEdge(previousNode,joinNode)
         e.guards = [...e.guards, ...[`(bool)${getName(node.lhs)}terminates == false`]] //EE
         }
         
-        previousNode.returnType = "bool"
-        previousNode.functionsNames = [`${previousNode.uid}evaluateConjunction2`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`bool ${getName(node)}terminates =  false;`,`return ${getName(node)}terminates;`]] //GG
-    
-        let rhsChoiceNodeevaluateConjunction3 = ccfg.getNodeFromName("rhsChoiceNode")
-        if (rhsChoiceNodeevaluateConjunction3 == undefined) {
-            let rhsChoiceNode = new Choice("rhsChoiceNode")
-            ccfg.addNode(rhsChoiceNode)
-            ccfg.addEdge(rhsTerminatesNode,rhsChoiceNode)
-            rhsChoiceNodeevaluateConjunction3 = rhsChoiceNode
-        }else{
-            ccfg.addEdge(rhsTerminatesNode,rhsChoiceNodeevaluateConjunction3)
-        }
-        
-        previousNode = rhsChoiceNodeevaluateConjunction3
-    
-        {let e = ccfg.addEdge(previousNode,joinNode)
-        e.guards = [...e.guards, ...[`(bool)${getName(node.rhs)}terminates == false`]] //EE
-        }
-        
-        previousNode.returnType = "bool"
+        previousNode.returnType = "void"
         previousNode.functionsNames = [`${previousNode.uid}evaluateConjunction3`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`bool ${getName(node)}terminates =  false;`,`return ${getName(node)}terminates;`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
-        let evaluateConjunction4AndJoinNode: Node = new AndJoin("evaluateConjunction4AndJoinNode")
-        ccfg.addNode(evaluateConjunction4AndJoinNode)
-        ccfg.addEdge(lhsTerminatesNode,evaluateConjunction4AndJoinNode)
-        ccfg.addEdge(rhsTerminatesNode,evaluateConjunction4AndJoinNode)
-                
-        let evaluateConjunction4ConditionNode: Node = new Choice("evaluateConjunction4ConditionNode")
-        ccfg.addNode(evaluateConjunction4ConditionNode)
-        ccfg.addEdge(evaluateConjunction4AndJoinNode,evaluateConjunction4ConditionNode)
-            
-        evaluateConjunction4ConditionNode.params = [...evaluateConjunction4ConditionNode.params, ...[]]
-        evaluateConjunction4ConditionNode.functionsDefs = [...evaluateConjunction4ConditionNode.functionsDefs, ...[]] //HH
-        
-        previousNode = evaluateConjunction4ConditionNode
+        previousNode = rhsTerminatesNode
     
         {let e = ccfg.addEdge(previousNode,joinNode)
-        e.guards = [...e.guards, ...[`(bool)${getName(node.lhs)}terminates == true`,`(bool)${getName(node.rhs)}terminates == true`]] //EE
+        e.guards = [...e.guards, ...[]] //EE
         }
         
-        previousNode.returnType = "bool"
+        previousNode.returnType = "void"
         previousNode.functionsNames = [`${previousNode.uid}evaluateConjunction4`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`bool ${getName(node)}terminates =  true;`,`return ${getName(node)}terminates;`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
         return [ccfg,startsNode,terminatesNode]
     }
@@ -638,7 +621,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         ccfg.addEdge(leftTerminatesNode,finishPlusAndJoinNode)
                 
         finishPlusAndJoinNode.params = [...finishPlusAndJoinNode.params, ...[Object.assign( new TypedElement(), JSON.parse(`{ "name": "n2", "type": "int"}`)),Object.assign( new TypedElement(), JSON.parse(`{ "name": "n1", "type": "int"}`))]]
-        finishPlusAndJoinNode.functionsDefs = [...finishPlusAndJoinNode.functionsDefs, ...[`int ${getName(node)}4276 = n2;`,`int ${getName(node)}4301 = n1;`]] //HH
+        finishPlusAndJoinNode.functionsDefs = [...finishPlusAndJoinNode.functionsDefs, ...[`int ${getName(node)}4279 = n2;`,`int ${getName(node)}4304 = n1;`]] //HH
         
         previousNode = finishPlusAndJoinNode
     
@@ -648,7 +631,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "int"
         previousNode.functionsNames = [`${previousNode.uid}finishPlus`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}4420 = n1; // was ${getName(node)}4301; but using the parameter name now`,`int ${getName(node)}4425 = n2; // was ${getName(node)}4276; but using the parameter name now`,`int ${getName(node)}4419 = ${getName(node)}4425 + ${getName(node)}4425;`,`int ${getName(node)}terminates =  ${getName(node)}4419;`,`return ${getName(node)}terminates;`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}4423 = n1; // was ${getName(node)}4304; but using the parameter name now`,`int ${getName(node)}4428 = n2; // was ${getName(node)}4279; but using the parameter name now`,`int ${getName(node)}4422 = ${getName(node)}4428 + ${getName(node)}4428;`,`int ${getName(node)}terminates =  ${getName(node)}4422;`,`return ${getName(node)}terminates;`]] //GG
     
         return [ccfg,startsNode,terminatesNode]
     }
@@ -679,7 +662,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "bool"
         previousNode.functionsNames = [`${previousNode.uid}evalBooleanConst`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`bool ${getName(node)}4639 = *(bool *) sigma["${getName(node)}constantValue"];//constantValue}`,`bool ${getName(node)}terminates =  ${getName(node)}4639;`,`return ${getName(node)}terminates;`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`const std::lock_guard<std::mutex> lock(sigma_mutex);`,`bool ${getName(node)}4642 = *(bool *) sigma["${getName(node)}constantValue"];//constantValue}`,`bool ${getName(node)}terminates =  ${getName(node)}4642;`,`return ${getName(node)}terminates;`]] //GG
     
         return [ccfg,startsNode,terminatesNode]
     }

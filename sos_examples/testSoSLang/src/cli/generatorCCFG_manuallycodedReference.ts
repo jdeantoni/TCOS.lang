@@ -72,13 +72,17 @@ function doGenerateCPP(codeFile: CompositeGeneratorNode, ccfg: CCFG): void {
 #include <string>
 #include <unordered_map>
 #include <thread>
+#include <mutex>
 #include <iostream>
 #include "../utils/LockingQueue.hpp"
+
+#define DEBUG 0
     
 class Void{
 };
-std::unordered_map<std::string, void*> sigma;
 
+std::unordered_map<std::string, void*> sigma;
+std::mutex sigma_mutex;  // protects sigma
 
 `);
 
@@ -96,7 +100,7 @@ std::unordered_map<std::string, void*> sigma;
     codeFile.append(`
     //WARNING !! temporary code to test
     for(auto entry : sigma){
-        std::cout << entry.first << " : " << entry.second << std::endl;
+        std::cout << entry.first << " : " << *((int*)entry.second) << std::endl;
     }
 }
     `);
@@ -141,8 +145,11 @@ function getCurrentUID(node: Node): number {
 
 let fifoThreadUid : MultiMap<number,number> = new MultiMap();
 let continuations: Node[] = []
+let continuationsRecursLevel: number[] = []
 let visitedUID: number[] = []
+let recursLevel = 0;
 function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGeneratorNode, visitIsStarting: boolean = false): void {
+    recursLevel = recursLevel + 1;
     let currentUID = getCurrentUID(currentNode);
 
     if (currentNode.outputEdges.length == 0 /*|| currentUID == untilUID*/) {
@@ -180,19 +187,14 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
 
             let edgeToVisit: Edge[] = currentNode.outputEdges;
             for(let edge of edgeToVisit){
+                continuationsRecursLevel.push(recursLevel-1);
                 codeFile.append(`
                 {`)
                 visitAllNodes(ccfg, edge.to, /*untilUID,*/ codeFile);
                 codeFile.append(`
                 }
                 `);
-            }
-            if(continuations.length > 0){
-                let toVisit = continuations.pop();
-                if(toVisit != undefined){
-                    visitAllNodes(ccfg, toVisit, /*nextUntilUID,*/ codeFile);
-                }
-                
+
             }
         }else{
             let edge = currentNode.outputEdges[0];
@@ -226,6 +228,8 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
             }
         }
 
+        continuationsRecursLevel.push(recursLevel);
+
         for(let edge of edgeToVisit){
             fifoThreadUid.add(currentNode.uid,edge.to.uid);
             codeFile.append(`
@@ -237,13 +241,13 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
         thread${edge.to.uid}.detach();
             `);
         }
-        if(continuations.length > 0){
-            let toVisit = continuations.pop();
-            if(toVisit != undefined){
-                visitAllNodes(ccfg, toVisit, /*nextUntilUID,*/ codeFile);
-            }
+        // if(continuations.length > 0){
+        //     let toVisit = continuations.pop();
+        //     if(toVisit != undefined){
+        //         visitAllNodes(ccfg, toVisit, /*nextUntilUID,*/ codeFile);
+        //     }
             
-        }
+        // }
         break;
         }
     case "AndJoin":
@@ -334,6 +338,9 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
         `);
             }
         }
+
+        continuationsRecursLevel.push(recursLevel);
+
         addComparisonVariableDeclaration(codeFile, currentNode);
         let edgeToVisit: Edge[] = currentNode.outputEdges;
         for(let edge of edgeToVisit){
@@ -343,22 +350,35 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
                 );
                 addCorrespondingCode(codeFile, currentNode,ccfg);
                 visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ codeFile);                
+                
+                //special case for choice node when directly linked to join node
+                if(edge.to.getType() == "AndJoin" || edge.to.getType() == "OrJoin"){
+                    let ptns: Node[] = getPreviousTypedNodes(currentNode.inputEdges[0]);
+                    if(ptns.length > 1){
+                        throw new Error("multiple previous typed nodes not handled here")
+                    }
+                    let ptn = ptns[0]
+                    addQueuePushCode(edge.to.uid, ptn, ccfg, codeFile, ptn.functionsNames[0]);
+                }
                 codeFile.append(`
             //END IF ${edge.guards.join(" && ")}
         }
             `);
         }
-        if(continuations.length > 0){
-            let toVisit = continuations.pop();
-            if(toVisit != undefined){
-                visitAllNodes(ccfg, toVisit, /*nextUntilUID,*/ codeFile);
-            }
-            
-        }
+
         break;
         }
     } 
     
+    if(continuations.length > 0){
+        if (recursLevel == continuationsRecursLevel.at(-1)){
+            let toVisit = continuations.pop();
+            if(toVisit != undefined){
+                visitAllNodes(ccfg, toVisit, /*nextUntilUID,*/ codeFile);
+            }
+        }   
+    }
+    recursLevel = recursLevel - 1;
     return;
 }
 
@@ -382,7 +402,7 @@ function queueUidToPushIn(n: Node): number|undefined {
         if (e.to.getType() == "AndJoin" || e.to.getType() == "OrJoin"){
             return e.to.uid
         }
-        if(e.to.functionsDefs.length == 0){
+        if(e.to.functionsDefs.length == 0 && !(e.to.getType() == "Fork" || e.to.getType() == "Choice")){
             let uid = queueUidToPushIn(e.to)
             if(uid != undefined){
                 return uid
@@ -395,8 +415,11 @@ function queueUidToPushIn(n: Node): number|undefined {
 
 function addCorrespondingCode(codeFile: CompositeGeneratorNode, currentNode: Node, ccfg: CCFG) {
     codeFile.append(`
-            std::cout << "${currentNode.uid} : ${currentNode.getType()}" <<std::endl;
-            `);
+#if DEBUG
+    std::cout<<"${currentNode.uid} : ${currentNode.getType()}" <<std::endl;
+#endif
+    `);
+
     if(currentNode.returnType == undefined){
         return
     }
@@ -418,29 +441,33 @@ function addCorrespondingCode(codeFile: CompositeGeneratorNode, currentNode: Nod
         }
 
         let queueUID = queueUidToPushIn(currentNode)
-        if(queueUID != undefined){
-            if(currentNode.returnType == undefined || currentNode.returnType == "void"){
-                //create a fake parameter to push in the queue
-                let syncNode = ccfg.getNodeByUID(queueUID)
-                if(syncNode == undefined){
-                    throw new Error("syncNode is undefined uid = "+queueUID)
-                }
-                let ptns = getPreviousTypedNodes(syncNode.inputEdges[0]);
-                if(ptns.length > 1){
-                    throw new Error("multiple previous typed nodes not handled here")
-                }
-                let ptn = ptns[0];
-                codeFile.append(`
-            ${(ptn.returnType!="void")?ptn.returnType: "Void"} fakeParam${queueUID};
+        addQueuePushCode(queueUID, currentNode, ccfg, codeFile, f);
+    });
+}
+
+function addQueuePushCode(queueUID: number | undefined, currentNode: Node, ccfg: CCFG, codeFile: CompositeGeneratorNode, f: string) {
+    if (queueUID != undefined) {
+        if (currentNode.returnType == undefined || currentNode.returnType == "void") {
+            //create a fake parameter to push in the queue
+            let syncNode = ccfg.getNodeByUID(queueUID);
+            if (syncNode == undefined) {
+                throw new Error("syncNode is undefined uid = " + queueUID);
+            }
+            let ptns = getPreviousTypedNodes(syncNode.inputEdges[0]);
+            if (ptns.length > 1) {
+                throw new Error("multiple previous typed nodes not handled here");
+            }
+            let ptn = ptns[0];
+            codeFile.append(`
+            ${(ptn.returnType != "void") ? ptn.returnType : "Void"} fakeParam${queueUID};
             queue${queueUID}.push(fakeParam${queueUID});
                 `);
-            }else{
-                codeFile.append(`
+        } else {
+            codeFile.append(`
             queue${queueUID}.push(result${f});
                 `);
-            }
         }
-    });
+    }
 }
 
 function getParameterNames(currentNode: Node): string[] {
@@ -498,8 +525,6 @@ function getPreviousTypedNodes(ie: Edge, stopAlsoOnNoCodeJoinNode = false): Node
 
 function addComparisonVariableDeclaration(codeFile: CompositeGeneratorNode, currentNode: Node) {
     for(let ie of currentNode.inputEdges){
-        // let zaza
-        // (zaza as unknown as string).toString()
         let ptnsWithJoin = getPreviousTypedNodes(ie, true);
         let realPtns = getPreviousTypedNodes(ie, false);
         for (let i = 0; i < realPtns.length; i++) {

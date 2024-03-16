@@ -219,9 +219,9 @@ export class CCFG {
         for (let edge of this.edges) {
             edgeDot += `  "${edge.from.uid}" -> "${edge.to.uid}" [label="${this.dotGetEdgeLabel(edge)}"];\n`;
         }
-        for (let edge of this.syncEdges) {
-            edgeDot += `  "${edge.from.uid}" -> "${edge.to.uid}" [style="dotted", penwidth = 2, label="${this.dotGetEdgeLabel(edge)}"];\n`;
-        }
+        // for (let edge of this.syncEdges) {
+        //     edgeDot += `  "${edge.from.uid}" -> "${edge.to.uid}" [style="dotted", penwidth = 2, label="${this.dotGetEdgeLabel(edge)}"];\n`;
+        // }
         return edgeDot;
     }
 

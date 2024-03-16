@@ -2,13 +2,17 @@
 #include <string>
 #include <unordered_map>
 #include <thread>
+#include <mutex>
 #include <iostream>
 #include "../utils/LockingQueue.hpp"
+
+#define DEBUG 0
     
 class Void{
 };
-std::unordered_map<std::string, void*> sigma;
 
+std::unordered_map<std::string, void*> sigma;
+std::mutex sigma_mutex;  // protects sigma
 
 void functioninit5Variable(){
 	sigma["Variable0_0_0_10currentValue"] = new int();
@@ -16,7 +20,8 @@ void functioninit5Variable(){
 void function7initializeVar(){
 	int Variable0_0_0_101385 = 1; //undefined
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-	(*((int*)sigma["Variable0_0_0_10currentValue"])) = Variable0_0_0_101385;
+                const std::lock_guard<std::mutex> lock(sigma_mutex);
+                (*((int*)sigma["Variable0_0_0_10currentValue"])) = Variable0_0_0_101385;
 }
 void functioninit9Variable(){
 	sigma["Variable1_0_1_10currentValue"] = new int();
@@ -24,7 +29,8 @@ void functioninit9Variable(){
 void function11initializeVar(){
 	int Variable1_0_1_101385 = 4; //undefined
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-	(*((int*)sigma["Variable1_0_1_10currentValue"])) = Variable1_0_1_101385;
+                const std::lock_guard<std::mutex> lock(sigma_mutex);
+                (*((int*)sigma["Variable1_0_1_10currentValue"])) = Variable1_0_1_101385;
 }
 void functioninit13Variable(){
 	sigma["Variable2_0_2_10currentValue"] = new int();
@@ -32,7 +38,8 @@ void functioninit13Variable(){
 void function15initializeVar(){
 	int Variable2_0_2_101385 = 0; //undefined
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-	(*((int*)sigma["Variable2_0_2_10currentValue"])) = Variable2_0_2_101385;
+                const std::lock_guard<std::mutex> lock(sigma_mutex);
+                (*((int*)sigma["Variable2_0_2_10currentValue"])) = Variable2_0_2_101385;
 }
 void function17startsParallelBloc(){
 	
@@ -47,28 +54,31 @@ void function25startPlus(){
 	
 }
 int function29accessVarRef(){
+	const std::lock_guard<std::mutex> lock(sigma_mutex);
 	int VarRef4_18_4_201588 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
 	int VarRef4_18_4_20terminates =  VarRef4_18_4_201588;
 	return VarRef4_18_4_20terminates;
 }
 int function32accessVarRef(){
+	const std::lock_guard<std::mutex> lock(sigma_mutex);
 	int VarRef4_13_4_151588 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
 	int VarRef4_13_4_15terminates =  VarRef4_13_4_151588;
 	return VarRef4_13_4_15terminates;
 }
 int function34finishPlus(int n2, int n1){
-	int Plus4_12_4_214276 = n2;
-	int Plus4_12_4_214301 = n1;
-	int Plus4_12_4_214420 = n1; // was Plus4_12_4_214301; but using the parameter name now
-	int Plus4_12_4_214425 = n2; // was Plus4_12_4_214276; but using the parameter name now
-	int Plus4_12_4_214419 = Plus4_12_4_214425 + Plus4_12_4_214425;
-	int Plus4_12_4_21terminates =  Plus4_12_4_214419;
+	int Plus4_12_4_214279 = n2;
+	int Plus4_12_4_214304 = n1;
+	int Plus4_12_4_214423 = n1; // was Plus4_12_4_214304; but using the parameter name now
+	int Plus4_12_4_214428 = n2; // was Plus4_12_4_214279; but using the parameter name now
+	int Plus4_12_4_214422 = Plus4_12_4_214428 + Plus4_12_4_214428;
+	int Plus4_12_4_21terminates =  Plus4_12_4_214422;
 	return Plus4_12_4_21terminates;
 }
 void function35executeAssignment2(int resRight){
 	int Assignment4_7_4_212529 = resRight; // was Assignment4_7_4_212363; but using the parameter name now
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-	(*((int*)sigma["Variable0_0_0_10currentValue"])) = Assignment4_7_4_212529;
+                const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
+                (*((int*)sigma["Variable0_0_0_10currentValue"])) = Assignment4_7_4_212529;
 }
 void function37executeAssignment(){
 	
@@ -77,33 +87,37 @@ void function40startPlus(){
 	
 }
 int function44accessVarRef(){
+	const std::lock_guard<std::mutex> lock(sigma_mutex);
 	int VarRef5_18_5_201588 = *(int *) sigma["Variable1_0_1_10currentValue"];//currentValue}
 	int VarRef5_18_5_20terminates =  VarRef5_18_5_201588;
 	return VarRef5_18_5_20terminates;
 }
 int function47accessVarRef(){
+	const std::lock_guard<std::mutex> lock(sigma_mutex);
 	int VarRef5_13_5_151588 = *(int *) sigma["Variable1_0_1_10currentValue"];//currentValue}
 	int VarRef5_13_5_15terminates =  VarRef5_13_5_151588;
 	return VarRef5_13_5_15terminates;
 }
 int function49finishPlus(int n2, int n1){
-	int Plus5_12_5_214276 = n2;
-	int Plus5_12_5_214301 = n1;
-	int Plus5_12_5_214420 = n1; // was Plus5_12_5_214301; but using the parameter name now
-	int Plus5_12_5_214425 = n2; // was Plus5_12_5_214276; but using the parameter name now
-	int Plus5_12_5_214419 = Plus5_12_5_214425 + Plus5_12_5_214425;
-	int Plus5_12_5_21terminates =  Plus5_12_5_214419;
+	int Plus5_12_5_214279 = n2;
+	int Plus5_12_5_214304 = n1;
+	int Plus5_12_5_214423 = n1; // was Plus5_12_5_214304; but using the parameter name now
+	int Plus5_12_5_214428 = n2; // was Plus5_12_5_214279; but using the parameter name now
+	int Plus5_12_5_214422 = Plus5_12_5_214428 + Plus5_12_5_214428;
+	int Plus5_12_5_21terminates =  Plus5_12_5_214422;
 	return Plus5_12_5_21terminates;
 }
 void function50executeAssignment2(int resRight){
 	int Assignment5_7_5_212529 = resRight; // was Assignment5_7_5_212363; but using the parameter name now
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-	(*((int*)sigma["Variable1_0_1_10currentValue"])) = Assignment5_7_5_212529;
+                const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
+                (*((int*)sigma["Variable1_0_1_10currentValue"])) = Assignment5_7_5_212529;
 }
 void function53condStart(){
 	
 }
 int function56accessVarRef(){
+	const std::lock_guard<std::mutex> lock(sigma_mutex);
 	int VarRef7_4_7_61588 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
 	int VarRef7_4_7_6terminates =  VarRef7_4_7_61588;
 	return VarRef7_4_7_6terminates;
@@ -117,155 +131,175 @@ void function64executeAssignment(){
 void function65finishBloc(){
 	
 }
-void function67startPlus(){
-	
-}
-int function71accessVarRef(){
-	int VarRef9_14_9_161588 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
-	int VarRef9_14_9_16terminates =  VarRef9_14_9_161588;
-	return VarRef9_14_9_16terminates;
-}
-int function74accessVarRef(){
+int function67accessVarRef(){
+	const std::lock_guard<std::mutex> lock(sigma_mutex);
 	int VarRef9_9_9_111588 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
 	int VarRef9_9_9_11terminates =  VarRef9_9_9_111588;
 	return VarRef9_9_9_11terminates;
 }
-int function76finishPlus(int n2, int n1){
-	int Plus9_8_9_174276 = n2;
-	int Plus9_8_9_174301 = n1;
-	int Plus9_8_9_174420 = n1; // was Plus9_8_9_174301; but using the parameter name now
-	int Plus9_8_9_174425 = n2; // was Plus9_8_9_174276; but using the parameter name now
-	int Plus9_8_9_174419 = Plus9_8_9_174425 + Plus9_8_9_174425;
-	int Plus9_8_9_17terminates =  Plus9_8_9_174419;
-	return Plus9_8_9_17terminates;
-}
-void function77executeAssignment2(int resRight){
-	int Assignment9_4_9_172529 = resRight; // was Assignment9_4_9_172363; but using the parameter name now
+void function69executeAssignment2(int resRight){
+	int Assignment9_4_9_112529 = resRight; // was Assignment9_4_9_112363; but using the parameter name now
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-	(*((int*)sigma["Variable1_0_1_10currentValue"])) = Assignment9_4_9_172529;
+                const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
+                (*((int*)sigma["Variable1_0_1_10currentValue"])) = Assignment9_4_9_112529;
 }
-void function83executeAssignment(){
+void function75executeAssignment(){
 	
 }
-void function84finishBloc(){
+void function76finishBloc(){
 	
 }
-int function86accessVarRef(){
+int function78accessVarRef(){
+	const std::lock_guard<std::mutex> lock(sigma_mutex);
 	int VarRef12_9_12_111588 = *(int *) sigma["Variable1_0_1_10currentValue"];//currentValue}
 	int VarRef12_9_12_11terminates =  VarRef12_9_12_111588;
 	return VarRef12_9_12_11terminates;
 }
-void function88executeAssignment2(int resRight){
+void function80executeAssignment2(int resRight){
 	int Assignment12_4_12_112529 = resRight; // was Assignment12_4_12_112363; but using the parameter name now
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-	(*((int*)sigma["Variable0_0_0_10currentValue"])) = Assignment12_4_12_112529;
+                const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
+                (*((int*)sigma["Variable0_0_0_10currentValue"])) = Assignment12_4_12_112529;
 }
-void function89condStop(){
+void function81condStop(){
 	
 }
-void function91executeAssignment(){
+void function83executeAssignment(){
 	
 }
-void function92finishModel(){
+void function84finishModel(){
 	
 }
-void function94evaluateConjunction(){
+void function86evaluateConjunction(){
 	
 }
-bool function99evalBooleanConst(){
+bool function90evalBooleanConst(){
 	sigma["BooleanConst16_6_16_10constantValue"] = new bool(true);
-	bool BooleanConst16_6_16_104639 = *(bool *) sigma["BooleanConst16_6_16_10constantValue"];//constantValue}
-	bool BooleanConst16_6_16_10terminates =  BooleanConst16_6_16_104639;
+	const std::lock_guard<std::mutex> lock(sigma_mutex);
+	bool BooleanConst16_6_16_104642 = *(bool *) sigma["BooleanConst16_6_16_10constantValue"];//constantValue}
+	bool BooleanConst16_6_16_10terminates =  BooleanConst16_6_16_104642;
 	return BooleanConst16_6_16_10terminates;
 }
-bool function102evalBooleanConst(){
+void function92evaluateConjunction3(){
+	
+}
+bool function94evalBooleanConst(){
 	sigma["BooleanConst16_14_16_18constantValue"] = new bool(true);
-	bool BooleanConst16_14_16_184639 = *(bool *) sigma["BooleanConst16_14_16_18constantValue"];//constantValue}
-	bool BooleanConst16_14_16_18terminates =  BooleanConst16_14_16_184639;
+	const std::lock_guard<std::mutex> lock(sigma_mutex);
+	bool BooleanConst16_14_16_184642 = *(bool *) sigma["BooleanConst16_14_16_18constantValue"];//constantValue}
+	bool BooleanConst16_14_16_18terminates =  BooleanConst16_14_16_184642;
 	return BooleanConst16_14_16_18terminates;
 }
-bool function104evaluateConjunction2(){
-	bool Conjunction16_5_16_19terminates =  false;
-	return Conjunction16_5_16_19terminates;
+void function95evaluateConjunction4(){
+	
 }
-bool function105evaluateConjunction3(){
-	bool Conjunction16_5_16_19terminates =  false;
-	return Conjunction16_5_16_19terminates;
-}
-bool function107evaluateConjunction4(){
-	bool Conjunction16_5_16_19terminates =  true;
-	return Conjunction16_5_16_19terminates;
-}
-void function108executeAssignment2(int resRight){
+void function96executeAssignment2(int resRight){
 	int Assignment16_0_16_192529 = resRight; // was Assignment16_0_16_192363; but using the parameter name now
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-	(*((int*)sigma["Variable2_0_2_10currentValue"])) = Assignment16_0_16_192529;
+                const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
+                (*((int*)sigma["Variable2_0_2_10currentValue"])) = Assignment16_0_16_192529;
 }
 
     int main() {
     
-            std::cout << "1 : Step" <<std::endl;
-            
-            std::cout << "3 : Step" <<std::endl;
-            
-            std::cout << "5 : Step" <<std::endl;
-            functioninit5Variable();
+#if DEBUG
+    std::cout<<"1 : Step" <<std::endl;
+#endif
+    
+#if DEBUG
+    std::cout<<"3 : Step" <<std::endl;
+#endif
+    
+#if DEBUG
+    std::cout<<"5 : Step" <<std::endl;
+#endif
+    functioninit5Variable();
 
-            std::cout << "7 : Step" <<std::endl;
-            function7initializeVar();
+#if DEBUG
+    std::cout<<"7 : Step" <<std::endl;
+#endif
+    function7initializeVar();
 
-            std::cout << "6 : Step" <<std::endl;
-            
-            std::cout << "9 : Step" <<std::endl;
-            functioninit9Variable();
+#if DEBUG
+    std::cout<<"6 : Step" <<std::endl;
+#endif
+    
+#if DEBUG
+    std::cout<<"9 : Step" <<std::endl;
+#endif
+    functioninit9Variable();
 
-            std::cout << "11 : Step" <<std::endl;
-            function11initializeVar();
+#if DEBUG
+    std::cout<<"11 : Step" <<std::endl;
+#endif
+    function11initializeVar();
 
-            std::cout << "10 : Step" <<std::endl;
-            
-            std::cout << "13 : Step" <<std::endl;
-            functioninit13Variable();
+#if DEBUG
+    std::cout<<"10 : Step" <<std::endl;
+#endif
+    
+#if DEBUG
+    std::cout<<"13 : Step" <<std::endl;
+#endif
+    functioninit13Variable();
 
-            std::cout << "15 : Step" <<std::endl;
-            function15initializeVar();
+#if DEBUG
+    std::cout<<"15 : Step" <<std::endl;
+#endif
+    function15initializeVar();
 
-            std::cout << "14 : Step" <<std::endl;
-            
-            std::cout << "17 : Step" <<std::endl;
-            function17startsParallelBloc();
+#if DEBUG
+    std::cout<<"14 : Step" <<std::endl;
+#endif
+    
+#if DEBUG
+    std::cout<<"17 : Step" <<std::endl;
+#endif
+    function17startsParallelBloc();
          
         LockingQueue<Void> queue20;
         std::thread thread22([&](){
 
-            std::cout << "22 : Step" <<std::endl;
-            function22executeAssignment();
+#if DEBUG
+    std::cout<<"22 : Step" <<std::endl;
+#endif
+    function22executeAssignment();
 
-            std::cout << "25 : Step" <<std::endl;
-            function25startPlus();
+#if DEBUG
+    std::cout<<"25 : Step" <<std::endl;
+#endif
+    function25startPlus();
 
         LockingQueue<int> queue34;
         std::thread thread29([&](){
 
-            std::cout << "29 : Step" <<std::endl;
-            int result29accessVarRef = function29accessVarRef();
+#if DEBUG
+    std::cout<<"29 : Step" <<std::endl;
+#endif
+    int result29accessVarRef = function29accessVarRef();
 
             queue34.push(result29accessVarRef);
                 
-            std::cout << "30 : Step" <<std::endl;
-            
+#if DEBUG
+    std::cout<<"30 : Step" <<std::endl;
+#endif
+    
         });
         thread29.detach();
             
         std::thread thread32([&](){
 
-            std::cout << "32 : Step" <<std::endl;
-            int result32accessVarRef = function32accessVarRef();
+#if DEBUG
+    std::cout<<"32 : Step" <<std::endl;
+#endif
+    int result32accessVarRef = function32accessVarRef();
 
             queue34.push(result32accessVarRef);
                 
-            std::cout << "33 : Step" <<std::endl;
-            
+#if DEBUG
+    std::cout<<"33 : Step" <<std::endl;
+#endif
+    
         });
         thread32.detach();
             
@@ -277,54 +311,74 @@ void function108executeAssignment2(int resRight){
         int AndJoinPopped_34_1;
         queue34.waitAndPop(AndJoinPopped_34_1);
             
-            std::cout << "34 : AndJoin" <<std::endl;
-            int result34finishPlus = function34finishPlus(AndJoinPopped_34_0, AndJoinPopped_34_1);
+#if DEBUG
+    std::cout<<"34 : AndJoin" <<std::endl;
+#endif
+    int result34finishPlus = function34finishPlus(AndJoinPopped_34_0, AndJoinPopped_34_1);
 
         //end of and join node
         
-            std::cout << "26 : Step" <<std::endl;
-            
-            std::cout << "35 : Step" <<std::endl;
-            function35executeAssignment2(result34finishPlus);
+#if DEBUG
+    std::cout<<"26 : Step" <<std::endl;
+#endif
+    
+#if DEBUG
+    std::cout<<"35 : Step" <<std::endl;
+#endif
+    function35executeAssignment2(result34finishPlus);
 
             Void fakeParam20;
             queue20.push(fakeParam20);
                 
-            std::cout << "23 : Step" <<std::endl;
-            
+#if DEBUG
+    std::cout<<"23 : Step" <<std::endl;
+#endif
+    
         });
         thread22.detach();
             
         std::thread thread37([&](){
 
-            std::cout << "37 : Step" <<std::endl;
-            function37executeAssignment();
+#if DEBUG
+    std::cout<<"37 : Step" <<std::endl;
+#endif
+    function37executeAssignment();
 
-            std::cout << "40 : Step" <<std::endl;
-            function40startPlus();
+#if DEBUG
+    std::cout<<"40 : Step" <<std::endl;
+#endif
+    function40startPlus();
 
         LockingQueue<int> queue49;
         std::thread thread44([&](){
 
-            std::cout << "44 : Step" <<std::endl;
-            int result44accessVarRef = function44accessVarRef();
+#if DEBUG
+    std::cout<<"44 : Step" <<std::endl;
+#endif
+    int result44accessVarRef = function44accessVarRef();
 
             queue49.push(result44accessVarRef);
                 
-            std::cout << "45 : Step" <<std::endl;
-            
+#if DEBUG
+    std::cout<<"45 : Step" <<std::endl;
+#endif
+    
         });
         thread44.detach();
             
         std::thread thread47([&](){
 
-            std::cout << "47 : Step" <<std::endl;
-            int result47accessVarRef = function47accessVarRef();
+#if DEBUG
+    std::cout<<"47 : Step" <<std::endl;
+#endif
+    int result47accessVarRef = function47accessVarRef();
 
             queue49.push(result47accessVarRef);
                 
-            std::cout << "48 : Step" <<std::endl;
-            
+#if DEBUG
+    std::cout<<"48 : Step" <<std::endl;
+#endif
+    
         });
         thread47.detach();
             
@@ -336,21 +390,29 @@ void function108executeAssignment2(int resRight){
         int AndJoinPopped_49_1;
         queue49.waitAndPop(AndJoinPopped_49_1);
             
-            std::cout << "49 : AndJoin" <<std::endl;
-            int result49finishPlus = function49finishPlus(AndJoinPopped_49_0, AndJoinPopped_49_1);
+#if DEBUG
+    std::cout<<"49 : AndJoin" <<std::endl;
+#endif
+    int result49finishPlus = function49finishPlus(AndJoinPopped_49_0, AndJoinPopped_49_1);
 
         //end of and join node
         
-            std::cout << "41 : Step" <<std::endl;
-            
-            std::cout << "50 : Step" <<std::endl;
-            function50executeAssignment2(result49finishPlus);
+#if DEBUG
+    std::cout<<"41 : Step" <<std::endl;
+#endif
+    
+#if DEBUG
+    std::cout<<"50 : Step" <<std::endl;
+#endif
+    function50executeAssignment2(result49finishPlus);
 
             Void fakeParam20;
             queue20.push(fakeParam20);
                 
-            std::cout << "38 : Step" <<std::endl;
-            
+#if DEBUG
+    std::cout<<"38 : Step" <<std::endl;
+#endif
+    
         });
         thread37.detach();
             
@@ -362,225 +424,208 @@ void function108executeAssignment2(int resRight){
         Void AndJoinPopped_20_1;
         queue20.waitAndPop(AndJoinPopped_20_1);
             
-            std::cout << "20 : AndJoin" <<std::endl;
-            function20finishParallelBloc();
+#if DEBUG
+    std::cout<<"20 : AndJoin" <<std::endl;
+#endif
+    function20finishParallelBloc();
 
         //end of and join node
         
-            std::cout << "18 : Step" <<std::endl;
-            
-            std::cout << "53 : Step" <<std::endl;
-            function53condStart();
+#if DEBUG
+    std::cout<<"18 : Step" <<std::endl;
+#endif
+    
+#if DEBUG
+    std::cout<<"53 : Step" <<std::endl;
+#endif
+    function53condStart();
 
-            std::cout << "56 : Step" <<std::endl;
-            int result56accessVarRef = function56accessVarRef();
+#if DEBUG
+    std::cout<<"56 : Step" <<std::endl;
+#endif
+    int result56accessVarRef = function56accessVarRef();
 
-            std::cout << "57 : Step" <<std::endl;
-            
-        LockingQueue<Void> queue89;
+#if DEBUG
+    std::cout<<"57 : Step" <<std::endl;
+#endif
+    
+        LockingQueue<Void> queue81;
         
         int VarRef7_4_7_6terminates = result56accessVarRef;//Choice node
         if((bool)VarRef7_4_7_6terminates == true){
-            std::cout << "58 : Choice" <<std::endl;
-            function58condFalseStart();
+#if DEBUG
+    std::cout<<"58 : Choice" <<std::endl;
+#endif
+    function58condFalseStart();
 
-            std::cout << "60 : Step" <<std::endl;
-            
-            std::cout << "62 : Step" <<std::endl;
-            
-            std::cout << "64 : Step" <<std::endl;
-            function64executeAssignment();
+#if DEBUG
+    std::cout<<"60 : Step" <<std::endl;
+#endif
+    
+#if DEBUG
+    std::cout<<"62 : Step" <<std::endl;
+#endif
+    
+#if DEBUG
+    std::cout<<"64 : Step" <<std::endl;
+#endif
+    function64executeAssignment();
 
-            std::cout << "67 : Step" <<std::endl;
-            function67startPlus();
+#if DEBUG
+    std::cout<<"67 : Step" <<std::endl;
+#endif
+    int result67accessVarRef = function67accessVarRef();
 
-        LockingQueue<int> queue76;
-        std::thread thread71([&](){
+#if DEBUG
+    std::cout<<"68 : Step" <<std::endl;
+#endif
+    
+#if DEBUG
+    std::cout<<"69 : Step" <<std::endl;
+#endif
+    function69executeAssignment2(result67accessVarRef);
 
-            std::cout << "71 : Step" <<std::endl;
-            int result71accessVarRef = function71accessVarRef();
-
-            queue76.push(result71accessVarRef);
+            Void fakeParam81;
+            queue81.push(fakeParam81);
                 
-            std::cout << "72 : Step" <<std::endl;
-            
-        });
-        thread71.detach();
-            
-        std::thread thread74([&](){
+#if DEBUG
+    std::cout<<"65 : Step" <<std::endl;
+#endif
+    function65finishBloc();
 
-            std::cout << "74 : Step" <<std::endl;
-            int result74accessVarRef = function74accessVarRef();
-
-            queue76.push(result74accessVarRef);
-                
-            std::cout << "75 : Step" <<std::endl;
-            
-        });
-        thread74.detach();
-            
-        //start of and join node
-        
-        int AndJoinPopped_76_0;
-        queue76.waitAndPop(AndJoinPopped_76_0);
-            
-        int AndJoinPopped_76_1;
-        queue76.waitAndPop(AndJoinPopped_76_1);
-            
-            std::cout << "76 : AndJoin" <<std::endl;
-            int result76finishPlus = function76finishPlus(AndJoinPopped_76_0, AndJoinPopped_76_1);
-
-        //end of and join node
-        
-            std::cout << "68 : Step" <<std::endl;
-            
-            std::cout << "77 : Step" <<std::endl;
-            function77executeAssignment2(result76finishPlus);
-
-            Void fakeParam89;
-            queue89.push(fakeParam89);
-                
-            std::cout << "65 : Step" <<std::endl;
-            function65finishBloc();
-
-            std::cout << "61 : Step" <<std::endl;
-            
+#if DEBUG
+    std::cout<<"61 : Step" <<std::endl;
+#endif
+    
             //END IF (bool)VarRef7_4_7_6terminates == true
         }
             //Choice node
         if((bool)VarRef7_4_7_6terminates == false){
-            std::cout << "58 : Choice" <<std::endl;
-            function58condFalseStart();
+#if DEBUG
+    std::cout<<"58 : Choice" <<std::endl;
+#endif
+    function58condFalseStart();
 
-            std::cout << "79 : Step" <<std::endl;
-            
-            std::cout << "81 : Step" <<std::endl;
-            
-            std::cout << "83 : Step" <<std::endl;
-            function83executeAssignment();
+#if DEBUG
+    std::cout<<"71 : Step" <<std::endl;
+#endif
+    
+#if DEBUG
+    std::cout<<"73 : Step" <<std::endl;
+#endif
+    
+#if DEBUG
+    std::cout<<"75 : Step" <<std::endl;
+#endif
+    function75executeAssignment();
 
-            std::cout << "86 : Step" <<std::endl;
-            int result86accessVarRef = function86accessVarRef();
+#if DEBUG
+    std::cout<<"78 : Step" <<std::endl;
+#endif
+    int result78accessVarRef = function78accessVarRef();
 
-            std::cout << "87 : Step" <<std::endl;
-            
-            std::cout << "88 : Step" <<std::endl;
-            function88executeAssignment2(result86accessVarRef);
+#if DEBUG
+    std::cout<<"79 : Step" <<std::endl;
+#endif
+    
+#if DEBUG
+    std::cout<<"80 : Step" <<std::endl;
+#endif
+    function80executeAssignment2(result78accessVarRef);
 
-            Void fakeParam89;
-            queue89.push(fakeParam89);
+            Void fakeParam81;
+            queue81.push(fakeParam81);
                 
-            std::cout << "84 : Step" <<std::endl;
-            function84finishBloc();
+#if DEBUG
+    std::cout<<"76 : Step" <<std::endl;
+#endif
+    function76finishBloc();
 
-            std::cout << "80 : Step" <<std::endl;
-            
+#if DEBUG
+    std::cout<<"72 : Step" <<std::endl;
+#endif
+    
             //END IF (bool)VarRef7_4_7_6terminates == false
         }
              //or join node
-        Void OrJoinPopped_89;
-        queue89.waitAndPop(OrJoinPopped_89);
+        Void OrJoinPopped_81;
+        queue81.waitAndPop(OrJoinPopped_81);
         
-            std::cout << "54 : Step" <<std::endl;
-            
-            std::cout << "91 : Step" <<std::endl;
-            function91executeAssignment();
+#if DEBUG
+    std::cout<<"54 : Step" <<std::endl;
+#endif
+    
+#if DEBUG
+    std::cout<<"83 : Step" <<std::endl;
+#endif
+    function83executeAssignment();
 
-            std::cout << "94 : Step" <<std::endl;
-            function94evaluateConjunction();
+#if DEBUG
+    std::cout<<"86 : Step" <<std::endl;
+#endif
+    function86evaluateConjunction();
 
-        LockingQueue<bool> queue96;
-        LockingQueue<bool> queue106;
-        std::thread thread99([&](){
+#if DEBUG
+    std::cout<<"90 : Step" <<std::endl;
+#endif
+    bool result90evalBooleanConst = function90evalBooleanConst();
 
-            std::cout << "99 : Step" <<std::endl;
-            bool result99evalBooleanConst = function99evalBooleanConst();
+#if DEBUG
+    std::cout<<"91 : Step" <<std::endl;
+#endif
+    
+        LockingQueue<bool> queue88;
+        
+        bool BooleanConst16_6_16_10terminates = result90evalBooleanConst;//Choice node
+        if((bool)BooleanConst16_6_16_10terminates == true){
+#if DEBUG
+    std::cout<<"92 : Choice" <<std::endl;
+#endif
+    function92evaluateConjunction3();
 
-            queue106.push(result99evalBooleanConst);
+#if DEBUG
+    std::cout<<"94 : Step" <<std::endl;
+#endif
+    bool result94evalBooleanConst = function94evalBooleanConst();
+
+            queue88.push(result94evalBooleanConst);
                 
-            std::cout << "100 : Step" <<std::endl;
-            
-                {
-        bool BooleanConst16_6_16_10terminates = result99evalBooleanConst;//Choice node
-        if((bool)BooleanConst16_6_16_10terminates == false){
-            std::cout << "104 : Choice" <<std::endl;
-            bool result104evaluateConjunction2 = function104evaluateConjunction2();
+#if DEBUG
+    std::cout<<"95 : Step" <<std::endl;
+#endif
+    function95evaluateConjunction4();
 
-            queue96.push(result104evaluateConjunction2);
+            //END IF (bool)BooleanConst16_6_16_10terminates == true
+        }
+            //Choice node
+        if((bool)BooleanConst16_6_16_10terminates == false){
+#if DEBUG
+    std::cout<<"92 : Choice" <<std::endl;
+#endif
+    function92evaluateConjunction3();
+
+            queue88.push(result90evalBooleanConst);
                 
             //END IF (bool)BooleanConst16_6_16_10terminates == false
         }
-            
-                }
-                
-                {
-                }
-                
-        });
-        thread99.detach();
-            
-        std::thread thread102([&](){
-
-            std::cout << "102 : Step" <<std::endl;
-            bool result102evalBooleanConst = function102evalBooleanConst();
-
-            queue106.push(result102evalBooleanConst);
-                
-            std::cout << "103 : Step" <<std::endl;
-            
-                {
-        bool BooleanConst16_14_16_18terminates = result102evalBooleanConst;//Choice node
-        if((bool)BooleanConst16_14_16_18terminates == false){
-            std::cout << "105 : Choice" <<std::endl;
-            bool result105evaluateConjunction3 = function105evaluateConjunction3();
-
-            queue96.push(result105evaluateConjunction3);
-                
-            //END IF (bool)BooleanConst16_14_16_18terminates == false
-        }
-            
-                }
-                
-                {
-                }
-                
-        //start of and join node
-        
-        bool AndJoinPopped_106_0;
-        queue106.waitAndPop(AndJoinPopped_106_0);
-            
-        bool AndJoinPopped_106_1;
-        queue106.waitAndPop(AndJoinPopped_106_1);
-            
-            std::cout << "106 : AndJoin" <<std::endl;
-            
-        //end of and join node
-        
-        bool BooleanConst16_6_16_10terminates = AndJoinPopped_106_0;
-        bool BooleanConst16_14_16_18terminates = AndJoinPopped_106_1;//Choice node
-        if((bool)BooleanConst16_6_16_10terminates == true && (bool)BooleanConst16_14_16_18terminates == true){
-            std::cout << "107 : Choice" <<std::endl;
-            bool result107evaluateConjunction4 = function107evaluateConjunction4();
-
-            queue96.push(result107evaluateConjunction4);
-                
-            //END IF (bool)BooleanConst16_6_16_10terminates == true && (bool)BooleanConst16_14_16_18terminates == true
-        }
              //or join node
-        bool OrJoinPopped_96;
-        queue96.waitAndPop(OrJoinPopped_96);
+        bool OrJoinPopped_88;
+        queue88.waitAndPop(OrJoinPopped_88);
         
-            std::cout << "95 : Step" <<std::endl;
-            
-            std::cout << "108 : Step" <<std::endl;
-            function108executeAssignment2(OrJoinPopped_96);
+#if DEBUG
+    std::cout<<"87 : Step" <<std::endl;
+#endif
+    
+#if DEBUG
+    std::cout<<"96 : Step" <<std::endl;
+#endif
+    function96executeAssignment2(OrJoinPopped_88);
 
-            std::cout << "92 : Step" <<std::endl;
-            function92finishModel();
+#if DEBUG
+    std::cout<<"84 : Step" <<std::endl;
+#endif
+    function84finishModel();
 
-        });
-        thread102.detach();
-            
     //WARNING !! temporary code to test
     for(auto entry : sigma){
         std::cout << entry.first << " : " << *((int*)entry.second) << std::endl;
