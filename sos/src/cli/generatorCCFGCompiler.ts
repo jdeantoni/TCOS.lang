@@ -292,7 +292,7 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
             } else {
                 let toVisitName = ruleCF.conclusionParticipants[0].name;
                 file.append(`
-        let ${toVisitName}CCFG${ruleCF.rule.name} = ccfg.getNodeFromName(getASTNodeUID(node.${toVisitName})+"ContainerNode")
+        let ${toVisitName}CCFG${ruleCF.rule.name} = ccfg.getNodeFromName(getASTNodeUID(node.${toVisitName}))
         let ${toVisitName}StartsNode${ruleCF.rule.name} = ccfg.getNodeFromName("starts"+getASTNodeUID(node.${toVisitName}))
         let ${toVisitName}TerminatesNode${ruleCF.rule.name} = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.${toVisitName}))
         if (${toVisitName}CCFG${ruleCF.rule.name} == undefined) {
@@ -301,6 +301,13 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
             ${toVisitName}CCFG${ruleCF.rule.name} = ${toVisitName}CCFG
             ${toVisitName}StartsNode${ruleCF.rule.name} = ${toVisitName}StartsNode
             ${toVisitName}TerminatesNode${ruleCF.rule.name} = ${toVisitName}TerminatesNode
+            if(${toVisitName}TerminatesNode${ruleCF.rule.name} == undefined || ${toVisitName}StartsNode${ruleCF.rule.name} == undefined || ${toVisitName}CCFG${ruleCF.rule.name} == undefined){
+                throw new Error("impossible to be there ${toVisitName}TerminatesNode${ruleCF.rule.name} ${toVisitName}StartsNode${ruleCF.rule.name} ${toVisitName}CCFG${ruleCF.rule.name}")
+            }
+            {
+            let e = ccfg.addEdge(previousNode,${toVisitName}StartsNode${ruleCF.rule.name})
+            e.guards = [...e.guards, ...[${guardActions}]] //FF
+            }
         }else{
             let ${toVisitName}OrJoinNode = new OrJoin("orJoinNode"+getASTNodeUID(node.${toVisitName}))
             ccfg.addNode(${toVisitName}OrJoinNode)
@@ -317,14 +324,7 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
                 ccfg.addEdge(${toVisitName}OrJoinNode,${toVisitName}StartsNode)
             }
         }
-    
-        if(${toVisitName}TerminatesNode${ruleCF.rule.name} == undefined || ${toVisitName}StartsNode${ruleCF.rule.name} == undefined || ${toVisitName}CCFG${ruleCF.rule.name} == undefined){
-            throw new Error("impossible to be there ${toVisitName}TerminatesNode${ruleCF.rule.name} ${toVisitName}StartsNode${ruleCF.rule.name} ${toVisitName}CCFG${ruleCF.rule.name}")
-        }
-        {
-        let e = ccfg.addEdge(previousNode,${toVisitName}StartsNode${ruleCF.rule.name})
-        e.guards = [...e.guards, ...[${guardActions}]] //FF
-        }
+
         `);
 
             }
