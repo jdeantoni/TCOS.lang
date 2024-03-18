@@ -1055,7 +1055,8 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode = startsnodewhileStart
     }
     
-        let condCCFGwhileStart = ccfg.getNodeFromName(getASTNodeUID(node.cond)+"ContainerNode")
+
+        let condCCFGwhileStart = ccfg.getNodeFromName(getASTNodeUID(node.cond))
         let condStartsNodewhileStart = ccfg.getNodeFromName("starts"+getASTNodeUID(node.cond))
         let condTerminatesNodewhileStart = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.cond))
         if (condCCFGwhileStart == undefined) {
@@ -1116,7 +1117,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode = choiceNodenode_condwhileBodyStart
     }
     
-        let bodyCCFGwhileBodyStart = ccfg.getNodeFromName(getASTNodeUID(node.body)+"ContainerNode")
+        let bodyCCFGwhileBodyStart = ccfg.getNodeFromName(getASTNodeUID(node.body))
         let bodyStartsNodewhileBodyStart = ccfg.getNodeFromName("starts"+getASTNodeUID(node.body))
         let bodyTerminatesNodewhileBodyStart = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.body))
         if (bodyCCFGwhileBodyStart == undefined) {
@@ -1163,7 +1164,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode = terminatesnode_bodywhileBodyEnd
     }
     
-        let condCCFGwhileBodyEnd = ccfg.getNodeFromName(getASTNodeUID(node.cond)+"ContainerNode")
+        let condCCFGwhileBodyEnd = ccfg.getNodeFromName(getASTNodeUID(node.cond))
         let condStartsNodewhileBodyEnd = ccfg.getNodeFromName("starts"+getASTNodeUID(node.cond))
         let condTerminatesNodewhileBodyEnd = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.cond))
         if (condCCFGwhileBodyEnd == undefined) {
@@ -1192,10 +1193,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         if(condTerminatesNodewhileBodyEnd == undefined || condStartsNodewhileBodyEnd == undefined || condCCFGwhileBodyEnd == undefined){
             throw new Error("impossible to be there condTerminatesNodewhileBodyEnd condStartsNodewhileBodyEnd condCCFGwhileBodyEnd")
         }
-        {
-        let e = ccfg.addEdge(previousNode,condStartsNodewhileBodyEnd)
-        e.guards = [...e.guards, ...[]] //FF
-        }
+
+        // {
+        // let e = ccfg.addEdge(previousNode,condStartsNodewhileBodyEnd)
+        // e.guards = [...e.guards, ...[]] //FF
+        // }
         
         previousNode.returnType = "void"
         previousNode.functionsNames = [`${previousNode.uid}whileBodyEnd`] //overwrite existing name

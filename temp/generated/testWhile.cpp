@@ -17,9 +17,12 @@ std::mutex sigma_mutex;  // protects sigma
 void functioninit5Variable(){
 	sigma["Variable0_0_0_10currentValue"] = new int();
 }
+<<<<<<< HEAD
 void function6finishModel(){
 	
 }
+=======
+>>>>>>> 0bf961d (correct various funny bugs :))
 void function7initializeVar(){
 	int Variable0_0_0_101385 = 1; //undefined
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
@@ -50,10 +53,20 @@ int function16accessVarRef(){
 void function18whileEnd(){
 	
 }
+<<<<<<< HEAD
 void function24executeAssignment(){
 	
 }
 void function25finishBloc(){
+=======
+void function21whileBodyEnd(){
+	
+}
+void function24executeAssignment(){
+	
+}
+void function25startsBloc(){
+>>>>>>> 0bf961d (correct various funny bugs :))
 	
 }
 int function27accessVarRef(){
@@ -68,11 +81,19 @@ void function29executeAssignment2(int resRight){
                 const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
                 (*((int*)sigma["Variable0_0_0_10currentValue"])) = Assignment5_4_5_112529;
 }
+<<<<<<< HEAD
 int function31accessVarRef(){
 	const std::lock_guard<std::mutex> lock(sigma_mutex);
 	int VarRef3_7_3_91588 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
 	int VarRef3_7_3_9terminates =  VarRef3_7_3_91588;
 	return VarRef3_7_3_9terminates;
+=======
+void function30finishBloc(){
+	
+}
+void function32finishModel(){
+	
+>>>>>>> 0bf961d (correct various funny bugs :))
 }
 
     int main() {
@@ -98,9 +119,13 @@ int function31accessVarRef(){
 #if DEBUG
     std::cout<<"6 : Step" <<std::endl;
 #endif
+<<<<<<< HEAD
     function6finishModel();
 
                 {
+=======
+    
+>>>>>>> 0bf961d (correct various funny bugs :))
 #if DEBUG
     std::cout<<"9 : Step" <<std::endl;
 #endif
@@ -111,6 +136,12 @@ int function31accessVarRef(){
 #endif
     function11initializeVar();
 
+<<<<<<< HEAD
+=======
+            Void fakeParam31;
+            queue31.push(fakeParam31);
+                
+>>>>>>> 0bf961d (correct various funny bugs :))
 #if DEBUG
     std::cout<<"10 : Step" <<std::endl;
 #endif
@@ -119,6 +150,7 @@ int function31accessVarRef(){
     std::cout<<"13 : Step" <<std::endl;
 #endif
     function13whileStart();
+<<<<<<< HEAD
 
 #if DEBUG
     std::cout<<"16 : Step" <<std::endl;
@@ -195,6 +227,12 @@ int function31accessVarRef(){
                 {
                 }
                 
+=======
+ //or join node
+        Void OrJoinPopped_31;
+        queue31.waitAndPop(OrJoinPopped_31);
+        
+>>>>>>> 0bf961d (correct various funny bugs :))
     //WARNING !! temporary code to test
     for(auto entry : sigma){
         std::cout << entry.first << " : " << *((int*)entry.second) << std::endl;
