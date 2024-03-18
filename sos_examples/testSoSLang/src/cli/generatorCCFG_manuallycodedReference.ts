@@ -5,6 +5,7 @@ import { Model } from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
 import { CCFGVisitor } from './generated/testFSE';
 import { CCFG, ContainerNode, Edge, Node, TypedElement } from '../ccfg/ccfglib';
+import chalk from 'chalk';
 
 
 export function generateCCFG(model: Model, filePath: string, destination: string | undefined): string {
@@ -352,13 +353,18 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
                 visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ codeFile);                
                 
                 //special case for choice node when directly linked to join node
-                if(edge.to.getType() == "AndJoin" || edge.to.getType() == "OrJoin"){
-                    let ptns: Node[] = getPreviousTypedNodes(currentNode.inputEdges[0]);
-                    if(ptns.length > 1){
-                        throw new Error("multiple previous typed nodes not handled here")
+                if((edge.to.getType() == "AndJoin" || edge.to.getType() == "OrJoin") && currentNode.functionsDefs.length == 0){
+                    if(currentNode.returnType == undefined){
+                        let ptns: Node[] = getPreviousTypedNodes(currentNode.inputEdges[0]);
+                        if(ptns.length > 1){
+                            console.log(chalk.red(currentNode.uid+" : multiple previous typed nodes not handled here"))
+                        }
+                        let ptn = ptns[0]
+                        addQueuePushCode(edge.to.uid, ptn, ccfg, codeFile, ptn.functionsNames[0]);
+                    }else{
+                        addQueuePushCode(edge.to.uid, currentNode, ccfg, codeFile, currentNode.functionsNames[0]);
+                    
                     }
-                    let ptn = ptns[0]
-                    addQueuePushCode(edge.to.uid, ptn, ccfg, codeFile, ptn.functionsNames[0]);
                 }
                 codeFile.append(`
             //END IF ${edge.guards.join(" && ")}
@@ -371,8 +377,9 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
     } 
     
     if(continuations.length > 0){
-        if (recursLevel == continuationsRecursLevel.at(-1)){
+        while (recursLevel == continuationsRecursLevel.at(-1)){
             let toVisit = continuations.pop();
+            continuationsRecursLevel.pop();
             if(toVisit != undefined){
                 visitAllNodes(ccfg, toVisit, /*nextUntilUID,*/ codeFile);
             }

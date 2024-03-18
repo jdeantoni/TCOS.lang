@@ -86,6 +86,9 @@ export class ContainerNode extends Node {
     }
 
     getNodeByUID(uid: integer): Node | undefined {
+        if(this.owningCCFG != undefined){
+            return this.owningCCFG.getNodeByUID(uid);
+        }
         return this.internalccfg.getNodeByUID(uid);
     }
 
@@ -159,7 +162,7 @@ export class CCFG {
             this.nodes[index] = newNode;
             newNode.uid = oldNode.uid;
             newNode.functionsDefs = oldNode.functionsDefs;
-            newNode.value = oldNode.value;
+            // newNode.value = oldNode.value;
             newNode.returnType = oldNode.returnType;
             newNode.params = oldNode.params;
             newNode.functionsNames = oldNode.functionsNames;
@@ -174,6 +177,11 @@ export class CCFG {
                 edge.to = newNode;
                 newNode.inputEdges.push(edge);
             }
+        }
+        let owningCCFGOldNode = oldNode.owningCCFG;
+        if (owningCCFGOldNode != undefined){
+            owningCCFGOldNode.nodes = owningCCFGOldNode.nodes.filter(n => n.uid !== oldNode.uid);
+            owningCCFGOldNode.nodes.push(newNode);
         }
     }
 
@@ -261,9 +269,9 @@ export class CCFG {
 
     dotGetNodeLabel(node: Node): string {
         if(node.functionsDefs.length == 0){
-            return node.uid.toString();
+            return node.uid.toString()+":"+node.value;
         }
-        return node.uid+":\n"+node.returnType+" function"+node.functionsNames+"("+node.params.map(p => (p as TypedElement).toString()).join(", ")+"){\n"+node.functionsDefs.map(
+        return node.uid.toString()+":"+node.value+":\n"+node.returnType+" function"+node.functionsNames+"("+node.params.map(p => (p as TypedElement).toString()).join(", ")+"){\n"+node.functionsDefs.map(
             a => a.replaceAll("\"","\\\"")).join("\n")+"\n}";
     }
 
@@ -285,7 +293,18 @@ export class CCFG {
     }
 
     getNodeFromName(name: string): Node | undefined {
-        return this.nodes.find(n => n.value === name);
+        for(let n of this.nodes){
+            if(n.value === name){
+                return n;
+            }
+            if(n.getType() == "ContainerNode"){
+                let res = (n as ContainerNode).internalccfg.getNodeFromName(name);
+                if(res != undefined){
+                    return res;
+                }
+            }
+        }
+        return undefined
     }
 
     addSyncEdge(): void{

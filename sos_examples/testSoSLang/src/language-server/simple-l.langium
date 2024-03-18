@@ -14,7 +14,7 @@ ParallelBloc:
     '|';
 
 Statement:
-    Variable | Expr | Assignment | Bloc | ParallelBloc;
+    Variable | Expr | Assignment | Bloc | ParallelBloc | While;
 
 Expr:
     VarRef|Plus|If|BooleanExpression;
@@ -30,6 +30,11 @@ Conjunction:
 
 Disjunction:
     '('lhs=BooleanExpression '||' rhs=BooleanExpression')';
+
+
+While:
+    'while' '('cond=VarRef ')'
+    body=Bloc;
 
 If:
     'if' '('cond=VarRef ')'
