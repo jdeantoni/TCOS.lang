@@ -4,6 +4,7 @@ import { Assignment, BinaryExpression, CollectionRuleSync, EventCombination, Eve
 import { extractDestinationAndName, FilePathData } from './cli-util.js';
 import path from 'path';
 import { inferType } from '../language-server/type-system/infer.js';
+import chalk from 'chalk';
 
 
 
@@ -181,12 +182,10 @@ function checkIfMultipleTerminate(rulesCF: RuleControlFlow[]) {
  */
 function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode, rulesCF: RuleControlFlow[], previousNodeName: string, terminatesNodeName: string) {
 
-    
     let [previousNodePrefix, previousNodeParticipant, guardActions, param] = handlePreviousPremise(ruleCF, rulesCF, previousNodeName, file)
     let nodeNameFromPreviousNode = (previousNodePrefix+previousNodeParticipant+ruleCF.rule.name).replace(/\./g,"_")
     file.append(`
     {
-
         let ${nodeNameFromPreviousNode} = ccfg.getNodeFromName("${previousNodePrefix}"+getASTNodeUID(${previousNodeParticipant}))
         if(${nodeNameFromPreviousNode} == undefined){
             throw new Error("impossible to be there ${nodeNameFromPreviousNode}")
@@ -194,7 +193,6 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
         previousNode = ${nodeNameFromPreviousNode}
     }
     `)
-
 
     let actionsString = ""
     actionsString = visitStateModifications(ruleCF, actionsString);
@@ -361,140 +359,152 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
     }
 
     let isSimpleComparison = ruleCF.rule.premise.eventExpression.$type == "ExplicitValuedEventRefConstantComparison"
-                            || ruleCF.rule.premise.eventExpression.$type == "ImplicitValuedEventRefConstantComparison";
-
+                             || ruleCF.rule.premise.eventExpression.$type == "ImplicitValuedEventRefConstantComparison";
     if (isSimpleComparison) {
-        file.append(`
-        let ${ruleCF.premiseParticipants[0].name}TerminatesNode${ruleCF.rule.name} = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.${ruleCF.premiseParticipants[0].name}))
-            if(${ruleCF.premiseParticipants[0].name}TerminatesNode${ruleCF.rule.name} == undefined){
-                throw new Error("impossible to be there ${ruleCF.premiseParticipants[0].name}TerminatesNode${ruleCF.rule.name}")
-            }
-        let ${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name} = ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.${ruleCF.premiseParticipants[0].name}))
-        if (${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name} == undefined) {
-            let ${ruleCF.premiseParticipants[0].name}ChoiceNode = new Choice("choiceNode"+getASTNodeUID(node.${ruleCF.premiseParticipants[0].name}))
-            ccfg.addNode(${ruleCF.premiseParticipants[0].name}ChoiceNode)
-            ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode${ruleCF.rule.name},${ruleCF.premiseParticipants[0].name}ChoiceNode)
-            ${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name} = ${ruleCF.premiseParticipants[0].name}ChoiceNode
-        }else{
-            ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode${ruleCF.rule.name},${ruleCF.premiseParticipants[0].name}ChoiceNode${ruleCF.rule.name})
-        }
-        `)
-        let guards: string = visitValuedEventRefComparison(ruleCF.rule.premise.eventExpression as ValuedEventRefConstantComparison);
-        return [`choiceNode`,`node.${ruleCF.premiseParticipants[0].name}`, guards, undefined]
+        return handlePremiseSimpleComparison(file, ruleCF);
     }
 
     let isMultipleSynchronization = ruleCF.rule.premise.eventExpression.$type == "EventConjunction"
-        || ruleCF.rule.premise.eventExpression.$type == "EventDisjunction"
-        || ruleCF.rule.premise.eventExpression.$type == "NaryEventExpression";
-
+                                    || ruleCF.rule.premise.eventExpression.$type == "EventDisjunction"
+                                    || ruleCF.rule.premise.eventExpression.$type == "NaryEventExpression";
     if (isMultipleSynchronization) {
-        const indexRight = ruleCF.premiseParticipants.findIndex(p => p.type == "event") + 1
-        let multipleSynchroPrefix: string = ""
-        let multipleSynchroParticipant: string = ""
-        let premiseActions: string = ""
-        let premiseGuards: string = ""
-        let params: TypedElement[] = []
-        switch (ruleCF.rule.premise.eventExpression.$type) {
-            case "EventConjunction":
-                file.append(`
-        let ${ruleCF.rule.name}AndJoinNode: Node = new AndJoin("andJoinNode"+getASTNodeUID(node.${ruleCF.premiseParticipants[0].name}))
-        ccfg.addNode(${ruleCF.rule.name}AndJoinNode)
-        let ${ruleCF.premiseParticipants[0].name}TerminatesNode${ruleCF.rule.name} = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.${ruleCF.premiseParticipants[0].name}))
-        let ${ruleCF.premiseParticipants[indexRight].name}TerminatesNode${ruleCF.rule.name} = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.${ruleCF.premiseParticipants[indexRight].name}))
-        if(${ruleCF.premiseParticipants[0].name}TerminatesNode${ruleCF.rule.name} == undefined || ${ruleCF.premiseParticipants[indexRight].name}TerminatesNode${ruleCF.rule.name} == undefined){
-            throw new Error("impossible to be there ${ruleCF.premiseParticipants[0].name}TerminatesNode${ruleCF.rule.name} ${ruleCF.premiseParticipants[indexRight].name}TerminatesNode${ruleCF.rule.name}")
-        }
-        ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode${ruleCF.rule.name},${ruleCF.rule.name}AndJoinNode)
-        ccfg.addEdge(${ruleCF.premiseParticipants[indexRight].name}TerminatesNode${ruleCF.rule.name},${ruleCF.rule.name}AndJoinNode)
-                `)
-                multipleSynchroPrefix=  "andJoinNode"
-                multipleSynchroParticipant = `node.${ruleCF.premiseParticipants[0].name}`
-                let [a, g, p] = visitMultipleSynchroEventRef(ruleCF.rule.premise.eventExpression.lhs, ruleCF.rule.premise.eventExpression.rhs);
-                premiseActions = a
-                premiseGuards = g
-                params = p
-                break
-            case "EventDisjunction":
-                file.append(`
-        let ${ruleCF.rule.name}OrJoinNode: Node = new OrJoin("orJoinNode"+getASTNodeUID(node.${ruleCF.premiseParticipants[0].name}))
-        ccfg.addNode(${ruleCF.rule.name}OrJoinNode)
-        let ${ruleCF.premiseParticipants[0].name}TerminatesNode${ruleCF.rule.name} = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.${ruleCF.premiseParticipants[0].name}))
-        let ${ruleCF.premiseParticipants[indexRight].name}TerminatesNode${ruleCF.rule.name} = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.${ruleCF.premiseParticipants[indexRight].name}))
-        if(${ruleCF.premiseParticipants[0].name}TerminatesNode${ruleCF.rule.name} == undefined || ${ruleCF.premiseParticipants[indexRight].name}TerminatesNode${ruleCF.rule.name} == undefined){
-            throw new Error("impossible to be there ${ruleCF.premiseParticipants[0].name}TerminatesNode${ruleCF.rule.name} ${ruleCF.premiseParticipants[indexRight].name}TerminatesNode${ruleCF.rule.name}")
-        }
-        ccfg.addEdge(${ruleCF.premiseParticipants[0].name}TerminatesNode${ruleCF.rule.name},${ruleCF.rule.name}OrJoinNode)
-        ccfg.addEdge(${ruleCF.premiseParticipants[indexRight].name}TerminatesNode${ruleCF.rule.name},${ruleCF.rule.name}OrJoinNode)
-                `)
-                multipleSynchroPrefix= "orJoinNode"
-                multipleSynchroParticipant = `node.${ruleCF.premiseParticipants[0].name}`
-                let [a2, g2,p2] = visitMultipleSynchroEventRef(ruleCF.rule.premise.eventExpression.lhs, ruleCF.rule.premise.eventExpression.rhs);
-                premiseActions = a2
-                premiseGuards = g2
-                params = p2
-                break
-            case "NaryEventExpression":
-                if (ruleCF.rule.premise.eventExpression.policy.operator == "lastOf") {
-                    file.append(`
-        let ${ruleCF.rule.name}LastOfNode: Node = new AndJoin("lastOfNode"+getASTNodeUID(node.${ruleCF.premiseParticipants[0].name}))
-        ccfg.replaceNode(${getEmittingRuleName(ruleCF,allRulesCF)}FakeNode,${ruleCF.rule.name}LastOfNode)                    
-                    `)
-                    multipleSynchroPrefix= "lastOfNode"
-                    multipleSynchroParticipant = `node.${ruleCF.premiseParticipants[0].name}`
-                } else {
-                    file.append(`
-        let ${ruleCF.rule.name}FirstOfNode: Node = new OrJoin("firstOfNode"+getASTNodeUID(node.${ruleCF.premiseParticipants[0].name}))
-        ccfg.replaceNode(${getEmittingRuleName(ruleCF,allRulesCF)}FakeNode,${ruleCF.rule.name}FirstOfNode)
-                    `)
-                    multipleSynchroPrefix= "lastOfNode"
-                    multipleSynchroParticipant = `node.${ruleCF.premiseParticipants[0].name}`
-                    break
-                }
-        }
+        return handlePremiseMultipleSynchronization(file, ruleCF, allRulesCF);
+    } 
 
+    //simple event synchro 
+    let [varActions,param] = visitValuedEventRef(ruleCF.rule.premise.eventExpression as ValuedEventRef)
+    if(varActions.length>0){
+        console.warn(chalk.gray(`in the context of ${ruleCF.rule.name}, these varActions have been disregarded: ${varActions}`))
+    }
+    if(param.name != "NULL"){
+        return [`terminates`, `node.${ruleCF.premiseParticipants[0].name}`, "", param]
+    }
+    return [`terminates`, `node.${ruleCF.premiseParticipants[0].name}`, "", undefined]
+    
+}
 
-        if (ruleCF.rule.premise.eventExpression.$type === "NaryEventExpression") {
-            //no premise actions ?
-            return [multipleSynchroPrefix,multipleSynchroParticipant,premiseGuards, undefined]
-        }
-        let ownsACondition = chekIfOwnsACondition(ruleCF.rule.premise.eventExpression as EventCombination)
-        if(ownsACondition){
+function handlePremiseMultipleSynchronization(file: CompositeGeneratorNode, ruleCF: RuleControlFlow, allRulesCF: RuleControlFlow[]) : [string,string,string, TypedElement|undefined]{
+    const indexRight = ruleCF.premiseParticipants.findIndex(p => p.type == "event") + 1
+    let multipleSynchroPrefix: string = ""
+    let multipleSynchroParticipant: string = ""
+    let premiseActions: string = ""
+    let premiseGuards: string = ""
+    let params: TypedElement[] = []
+    let leftParticipantName = ruleCF.premiseParticipants[0].name
+    let rightParticipantName = undefined
+    switch (ruleCF.rule.premise.eventExpression.$type) {
+        case "EventConjunction":
+            rightParticipantName = ruleCF.premiseParticipants[indexRight].name
             file.append(`
-        let ${ruleCF.rule.name}ConditionNode: Node = new Choice("conditionNode"+getASTNodeUID(node.${ruleCF.premiseParticipants[0].name}))
-        ccfg.addNode(${ruleCF.rule.name}ConditionNode)
-        let tmpMultipleSynchroNode = ccfg.getNodeFromName("${multipleSynchroPrefix}"+getASTNodeUID(${multipleSynchroParticipant}))
-        if(tmpMultipleSynchroNode == undefined){
+    let ${ruleCF.rule.name}AndJoinNode: Node = new AndJoin("andJoinNode"+getASTNodeUID(node.${leftParticipantName}))
+    ccfg.addNode(${ruleCF.rule.name}AndJoinNode)
+    let ${leftParticipantName}TerminatesNode${ruleCF.rule.name} = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.${leftParticipantName}))
+    let ${rightParticipantName}TerminatesNode${ruleCF.rule.name} = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.${rightParticipantName}))
+    if(${leftParticipantName}TerminatesNode${ruleCF.rule.name} == undefined || ${rightParticipantName}TerminatesNode${ruleCF.rule.name} == undefined){
+        throw new Error("impossible to be there ${leftParticipantName}TerminatesNode${ruleCF.rule.name} ${rightParticipantName}TerminatesNode${ruleCF.rule.name}")
+    }
+    ccfg.addEdge(${leftParticipantName}TerminatesNode${ruleCF.rule.name},${ruleCF.rule.name}AndJoinNode)
+    ccfg.addEdge(${rightParticipantName}TerminatesNode${ruleCF.rule.name},${ruleCF.rule.name}AndJoinNode)
+            `)
+            multipleSynchroPrefix=  "andJoinNode"
+            multipleSynchroParticipant = `node.${leftParticipantName}`
+            let [a, g, p] = visitMultipleSynchroEventRef(ruleCF.rule.premise.eventExpression.lhs, ruleCF.rule.premise.eventExpression.rhs);
+            premiseActions = a
+            premiseGuards = g
+            params = p
+            break
+        case "EventDisjunction":
+            rightParticipantName = ruleCF.premiseParticipants[indexRight].name
+            file.append(`
+    let ${ruleCF.rule.name}OrJoinNode: Node = new OrJoin("orJoinNode"+getASTNodeUID(node.${leftParticipantName}))
+    ccfg.addNode(${ruleCF.rule.name}OrJoinNode)
+    let ${leftParticipantName}TerminatesNode${ruleCF.rule.name} = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.${leftParticipantName}))
+    let ${rightParticipantName}TerminatesNode${ruleCF.rule.name} = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.${rightParticipantName}))
+    if(${leftParticipantName}TerminatesNode${ruleCF.rule.name} == undefined || ${rightParticipantName}TerminatesNode${ruleCF.rule.name} == undefined){
+        throw new Error("impossible to be there ${leftParticipantName}TerminatesNode${ruleCF.rule.name} ${rightParticipantName}TerminatesNode${ruleCF.rule.name}")
+    }
+    ccfg.addEdge(${leftParticipantName}TerminatesNode${ruleCF.rule.name},${ruleCF.rule.name}OrJoinNode)
+    ccfg.addEdge(${rightParticipantName}TerminatesNode${ruleCF.rule.name},${ruleCF.rule.name}OrJoinNode)
+            `)
+            multipleSynchroPrefix= "orJoinNode"
+            multipleSynchroParticipant = `node.${leftParticipantName}`
+            let [a2, g2,p2] = visitMultipleSynchroEventRef(ruleCF.rule.premise.eventExpression.lhs, ruleCF.rule.premise.eventExpression.rhs);
+            premiseActions = a2
+            premiseGuards = g2
+            params = p2
+            break
+        case "NaryEventExpression":
+            if (ruleCF.rule.premise.eventExpression.policy.operator == "lastOf") {
+                file.append(`
+    let ${ruleCF.rule.name}LastOfNode: Node = new AndJoin("lastOfNode"+getASTNodeUID(node.${ruleCF.premiseParticipants[0].name}))
+    ccfg.replaceNode(${getEmittingRuleName(ruleCF,allRulesCF)}FakeNode,${ruleCF.rule.name}LastOfNode)                    
+                `)
+                multipleSynchroPrefix= "lastOfNode"
+                multipleSynchroParticipant = `node.${ruleCF.premiseParticipants[0].name}`
+            } else {
+                file.append(`
+    let ${ruleCF.rule.name}FirstOfNode: Node = new OrJoin("firstOfNode"+getASTNodeUID(node.${ruleCF.premiseParticipants[0].name}))
+    ccfg.replaceNode(${getEmittingRuleName(ruleCF,allRulesCF)}FakeNode,${ruleCF.rule.name}FirstOfNode)
+                `)
+                multipleSynchroPrefix= "lastOfNode"
+                multipleSynchroParticipant = `node.${ruleCF.premiseParticipants[0].name}`
+                break
+            }
+    }
+
+
+    if (ruleCF.rule.premise.eventExpression.$type === "NaryEventExpression") {
+        //no premise actions ?
+        return [multipleSynchroPrefix,multipleSynchroParticipant,premiseGuards, undefined]
+    }
+    let ownsACondition = chekIfOwnsACondition(ruleCF.rule.premise.eventExpression as EventCombination)
+    if(ownsACondition){
+        file.append(`
+    let ${ruleCF.rule.name}ConditionNode: Node = new Choice("conditionNode"+getASTNodeUID(node.${ruleCF.premiseParticipants[0].name}))
+    ccfg.addNode(${ruleCF.rule.name}ConditionNode)
+    let tmpMultipleSynchroNode = ccfg.getNodeFromName("${multipleSynchroPrefix}"+getASTNodeUID(${multipleSynchroParticipant}))
+    if(tmpMultipleSynchroNode == undefined){
+        throw new Error("impossible to be there ${multipleSynchroPrefix}"+getASTNodeUID(${multipleSynchroParticipant}))
+    }
+    ccfg.addEdge(tmpMultipleSynchroNode,${ruleCF.rule.name}ConditionNode)
+        `)
+        multipleSynchroPrefix= "conditionNode"
+        multipleSynchroParticipant = `node.${ruleCF.premiseParticipants[0].name}`
+    }
+
+    file.append(`
+    {
+        let multipleSynchroNode = ccfg.getNodeFromName("${multipleSynchroPrefix}"+getASTNodeUID(${multipleSynchroParticipant}))
+        if(multipleSynchroNode == undefined){
             throw new Error("impossible to be there ${multipleSynchroPrefix}"+getASTNodeUID(${multipleSynchroParticipant}))
         }
-        ccfg.addEdge(tmpMultipleSynchroNode,${ruleCF.rule.name}ConditionNode)
-            `)
-            multipleSynchroPrefix= "conditionNode"
-            multipleSynchroParticipant = `node.${ruleCF.premiseParticipants[0].name}`
-        }
-
-        file.append(`
-        {
-            let multipleSynchroNode = ccfg.getNodeFromName("${multipleSynchroPrefix}"+getASTNodeUID(${multipleSynchroParticipant}))
-            if(multipleSynchroNode == undefined){
-                throw new Error("impossible to be there ${multipleSynchroPrefix}"+getASTNodeUID(${multipleSynchroParticipant}))
-            }
-            multipleSynchroNode.params = [...multipleSynchroNode.params, ...[${params.map(p => "Object.assign( new TypedElement(), JSON.parse(`"+p.toJSON()+"`))").join(",")}]]
-            multipleSynchroNode.functionsDefs = [...multipleSynchroNode.functionsDefs, ...[${premiseActions}]] //HH
-        }
-        `)
-        
-        return [multipleSynchroPrefix,multipleSynchroParticipant,premiseGuards, undefined]
-        
-    } else {
-        let [varActions,param] = visitValuedEventRef(ruleCF.rule.premise.eventExpression as ValuedEventRef)
-        if(varActions.length>0){
-            console.log("varActions removed: ",varActions)
-        }
-        if(param.name != "NULL"){
-            return [`terminates`, `node.${ruleCF.premiseParticipants[0].name}`, "", param]
-        }
-        return [`terminates`, `node.${ruleCF.premiseParticipants[0].name}`, "", undefined]
+        multipleSynchroNode.params = [...multipleSynchroNode.params, ...[${params.map(p => "Object.assign( new TypedElement(), JSON.parse(`"+p.toJSON()+"`))").join(",")}]]
+        multipleSynchroNode.functionsDefs = [...multipleSynchroNode.functionsDefs, ...[${premiseActions}]] //HH
     }
+    `)
+    
+    return [multipleSynchroPrefix,multipleSynchroParticipant,premiseGuards, undefined]
+}
+
+function handlePremiseSimpleComparison(file: CompositeGeneratorNode, ruleCF: RuleControlFlow) : [string,string,string, TypedElement|undefined]{
+    let participantName = ruleCF.premiseParticipants[0].name
+    file.append(`
+        let ${participantName}TerminatesNode${ruleCF.rule.name} = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.${participantName}))
+            if(${participantName}TerminatesNode${ruleCF.rule.name} == undefined){
+                throw new Error("impossible to be there ${participantName}TerminatesNode${ruleCF.rule.name}")
+            }
+        let ${participantName}ChoiceNode${ruleCF.rule.name} = ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.${participantName}))
+        if (${participantName}ChoiceNode${ruleCF.rule.name} == undefined) {
+            let ${participantName}ChoiceNode = new Choice("choiceNode"+getASTNodeUID(node.${participantName}))
+            ccfg.addNode(${participantName}ChoiceNode)
+            ccfg.addEdge(${participantName}TerminatesNode${ruleCF.rule.name},${participantName}ChoiceNode)
+            ${participantName}ChoiceNode${ruleCF.rule.name} = ${participantName}ChoiceNode
+        }else{
+            ccfg.addEdge(${participantName}TerminatesNode${ruleCF.rule.name},${participantName}ChoiceNode${ruleCF.rule.name})
+        }
+        `);
+    let guards: string = visitValuedEventRefComparison(ruleCF.rule.premise.eventExpression as ValuedEventRefConstantComparison);
+    return [`choiceNode`, `node.${participantName}`, guards, undefined];
 }
 
 function visitMultipleSynchroEventRef(lhs: EventExpression, rhs: EventExpression) :[string, string, TypedElement[]]{

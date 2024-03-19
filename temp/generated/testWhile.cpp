@@ -6,7 +6,7 @@
 #include <iostream>
 #include "../utils/LockingQueue.hpp"
 
-#define DEBUG 0
+#define DEBUG 1
     
 class Void{
 };
@@ -75,7 +75,7 @@ void function32finishModel(){
 	
 }
 
-    int main() {
+int main() {
     
 #if DEBUG
     std::cout<<"1 : Step" <<std::endl;

@@ -8,21 +8,14 @@ import { CCFG, ContainerNode, Edge, Node, TypedElement } from '../ccfg/ccfglib';
 import chalk from 'chalk';
 
 
-export function generateCCFG(model: Model, filePath: string, destination: string | undefined): string {
-    const data = extractDestinationAndName(filePath, destination);
+export function generateCPPfromCCFG(model: Model, filePath: string, targetDirectory: string | undefined, debug: boolean|undefined): string {
+    const data = extractDestinationAndName(filePath, targetDirectory);
 
     const generatedDotFilePath = `${path.join(data.destination, data.name)}.dot`;
     const dotFile = new CompositeGeneratorNode();
 
     const generatedCodeFilePath = `${path.join(data.destination, data.name)}.cpp`;
     const cppFile = new CompositeGeneratorNode();
-
-    //TODO split the code generation in order to do function generation after the main generation
-    // const semanticFunctionsHeaderFilePath = `${path.join(data.destination, data.name)}SemanticFunctions.hpp`;
-    // const semanticFunctionsHeaderFile = new CompositeGeneratorNode();
-    
-    // const semanticFunctionsCodeFilePath = `${path.join(data.destination, data.name)}SemanticFunctions.cpp`;
-    // const semanticFunctionsCodeFile = new CompositeGeneratorNode();
 
     let ccfg = doGenerateCCFG(dotFile, model);
 
@@ -32,8 +25,10 @@ export function generateCCFG(model: Model, filePath: string, destination: string
     fs.writeFileSync(generatedDotFilePath, toString(dotFile));
 
     
-    
-    doGenerateCPP(cppFile, ccfg);
+    if(debug == undefined){
+        debug = false;
+    }
+    doGenerateCPP(cppFile, ccfg, debug);
 
 
     
@@ -59,7 +54,7 @@ function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model): CCFG {
     return ccfg;
 }
 
-function doGenerateCPP(codeFile: CompositeGeneratorNode, ccfg: CCFG): void {
+function doGenerateCPP(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: boolean = false): void {
     
     
     
@@ -68,7 +63,7 @@ function doGenerateCPP(codeFile: CompositeGeneratorNode, ccfg: CCFG): void {
         console.log("No initial state found");
         return;
     }
-    
+    let debugVal = debug ? "1" : "0";
     codeFile.append(`
 #include <string>
 #include <unordered_map>
@@ -77,7 +72,7 @@ function doGenerateCPP(codeFile: CompositeGeneratorNode, ccfg: CCFG): void {
 #include <iostream>
 #include "../utils/LockingQueue.hpp"
 
-#define DEBUG 0
+#define DEBUG ${debugVal}
     
 class Void{
 };
@@ -92,7 +87,7 @@ std::mutex sigma_mutex;  // protects sigma
     
     codeFile.append(functionsDefs);
     codeFile.append(`
-    int main() {
+int main() {
     `);
 
     let currentNode = initNode;
@@ -129,18 +124,6 @@ function compileFunctionDefs(ccfg: CCFG) : string {
 }
 
 function getCurrentUID(node: Node): number {
-    switch(node.getType()){
-        case "Step":
-            return node.uid;
-        case "Fork":
-            return node.uid;
-        case "AndJoin":
-            return node.uid;
-        case "OrJoin":
-            return node.uid;
-        case "Choice":
-            return node.uid;
-    } 
     return node.uid;
 }
 
@@ -160,7 +143,6 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
 
 
     currentNode.numberOfVisits = currentNode.numberOfVisits + 1;
-    // console.log(currentNode.getType()+"  pre  uid: "+currentUID+" visit#:"+currentNode.numberOfVisits);
 
     if(currentNode.inputEdges.length > 1){
         if (visitIsStarting == false && currentNode.numberOfVisits < currentNode.inputEdges.length) {
@@ -178,7 +160,6 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
         return
     }
     visitedUID.push(currentUID);
-    //console.log(currentNode.getType()+"  OK  uid: "+currentUID);
         
     switch(currentNode.getType()){
     case "Step":
@@ -242,13 +223,7 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
         thread${edge.to.uid}.detach();
             `);
         }
-        // if(continuations.length > 0){
-        //     let toVisit = continuations.pop();
-        //     if(toVisit != undefined){
-        //         visitAllNodes(ccfg, toVisit, /*nextUntilUID,*/ codeFile);
-        //     }
-            
-        // }
+
         break;
         }
     case "AndJoin":
@@ -266,9 +241,6 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
             let paramType: string| undefined = ptn.returnType
 
             let paramName = "AndJoinPopped_"+currentNode.uid+"_"+i;
-            // if(paramNames.length > i){
-            //     paramName = paramNames[i]
-            // }
             if(currentNode.params.length > i && (currentNode.params[i].type != undefined)){
                 paramType = currentNode.params[i].type
             }
@@ -302,10 +274,6 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
                     throw new Error("multiple previous typed nodes not handled here")
                 }
                 let ptn = ptns[0]
-                // paramName = "result"+ptn.functionsNames.join("_");
-                // if(paramNames.length > i){
-                //     paramName = paramNames[i]
-                // }
                 paramType = ptn.returnType
                 if(paramType != undefined){
                     break
@@ -388,20 +356,6 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
     recursLevel = recursLevel - 1;
     return;
 }
-
-// function getNextNodeWithCode(currentNode: Node): Node {
-//     if (currentNode.functionsDefs.length > 0){
-//         return currentNode
-//     }
-//     for(let e of currentNode.outputEdges){
-//         if(e.to.functionsDefs.length > 0){
-//             return e.to
-//         }
-//         let n = getNextNodeWithCode(e.to)
-//         return n
-//     }
-//     return currentNode
-// }
 
 
 function queueUidToPushIn(n: Node): number|undefined {

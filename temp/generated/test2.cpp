@@ -75,7 +75,7 @@ void function35executeAssignment2(int resRight){
 	int Assignment4_7_4_212529 = resRight; // was Assignment4_7_4_212363; but using the parameter name now
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
-                (*((int*)sigma["Variable0_0_0_10currentValue"])) = Assignment4_7_4_212529;
+                (*((int*)sigma["Variable1_0_1_10currentValue"])) = Assignment4_7_4_212529;
 }
 void function37executeAssignment(){
 	
@@ -251,7 +251,7 @@ void function119finishModel(){
 	
 }
 
-    int main() {
+int main() {
     
 #if DEBUG
     std::cout<<"1 : Step" <<std::endl;

@@ -4,18 +4,19 @@ import { Model } from '../language-server/generated/ast';
 import { SimpleLLanguageMetaData } from '../language-server/generated/module';
 import { createSimpleLServices } from '../language-server/simple-l-module';
 import { extractAstNode } from './cli-util';
-import { generateCCFG } from './generatorCCFG_manuallycodedReference';
+import { generateCPPfromCCFG } from './generatorCPPfromCCFG';
 import { NodeFileSystem } from 'langium/node';
 
 export const generateAction = async (fileName: string, opts: GenerateOptions): Promise<void> => {
     const services = createSimpleLServices(NodeFileSystem).SimpleL;
     const model = await extractAstNode<Model>(fileName, services);
-    const generatedFilePath = generateCCFG(model, fileName, opts.destination);
+    const generatedFilePath = generateCPPfromCCFG(model, fileName, opts.targetDirectory, opts.debug);
     console.log(chalk.green(`CCFG and C++ Code generated successfully: ${generatedFilePath}`));
 };
 
 export type GenerateOptions = {
-    destination?: string;
+    targetDirectory ?: string;
+    debug ?: boolean;
 }
 
 export default function(): void {
@@ -29,7 +30,8 @@ export default function(): void {
     program
         .command('generate')
         .argument('<file>', `source file (possible file extensions: ${fileExtensions})`)
-        .option('-d, --destination <dir>', 'destination directory of generating')
+        .option('-t, --targetDirectory <dir>', 'destination directory of generating', 'generated')
+        .option('-d, --debug ', 'ask for debugging message during execution of the generated code')
         .description('generates the concurrent control flow graph representation of the given source file')
         .action(generateAction);
 
