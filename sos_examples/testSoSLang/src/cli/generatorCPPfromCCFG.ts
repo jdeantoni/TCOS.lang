@@ -8,7 +8,8 @@ import { CCFG, ContainerNode, Edge, Node, TypedElement } from '../ccfg/ccfglib';
 import chalk from 'chalk';
 
 
-export function generateCPPfromCCFG(model: Model, filePath: string, targetDirectory: string | undefined, debug: boolean|undefined): string {
+let debug = false;
+export function generateCPPfromCCFG(model: Model, filePath: string, targetDirectory: string | undefined, doDebug: boolean|undefined): string {
     const data = extractDestinationAndName(filePath, targetDirectory);
 
     const generatedDotFilePath = `${path.join(data.destination, data.name)}.dot`;
@@ -25,9 +26,7 @@ export function generateCPPfromCCFG(model: Model, filePath: string, targetDirect
     fs.writeFileSync(generatedDotFilePath, toString(dotFile));
 
 
-    if(debug == undefined){
-        debug = false;
-    }
+    debug = doDebug != undefined ? doDebug : false;
     doGenerateCPP(cppFile, ccfg, debug);
 
 
@@ -65,7 +64,7 @@ function doGenerateCPP(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: bool
         console.log("No initial state found");
         return;
     }
-    let debugVal = debug ? "1" : "0";
+    
     codeFile.append(`
 #include <string>
 #include <unordered_map>
@@ -73,9 +72,13 @@ function doGenerateCPP(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: bool
 #include <mutex>
 #include <iostream>
 #include "../utils/LockingQueue.hpp"
-
-#define DEBUG ${debugVal}
-    
+`)
+if(debug){
+    codeFile.append(`
+#define DEBUG 1
+    `)
+}
+    codeFile.append(`
 class Void{
 };
 
@@ -112,6 +115,9 @@ function compileFunctionDefs(ccfg: CCFG) : string {
         if(node.getType() == "ContainerNode"){
             functionsDefs += compileFunctionDefs((node as ContainerNode).internalccfg);
         }else{
+            if(!debug && node.functionsDefs.length == 0){
+                continue
+            }
             if(node.returnType != undefined){
                 for (let fname of node.functionsNames) {
                 // console.log("function name: "+fname);
@@ -408,11 +414,17 @@ function queueUidToPushIn(n: Node): number|undefined {
 
 
 function addCorrespondingCode(codeFile: CompositeGeneratorNode, currentNode: Node, ccfg: CCFG) {
-    codeFile.append(`
-#if DEBUG
-    std::cout<<"${currentNode.uid} : ${currentNode.getType()}" <<std::endl;
-#endif
-    `);
+    
+    if(!debug && currentNode.functionsDefs.length == 0){
+        return
+    }
+    if(debug){
+        codeFile.append(`
+        #if DEBUG
+            std::cout<<"${currentNode.uid} : ${currentNode.getType()}" <<std::endl;
+        #endif
+        `);
+    }
 
     if(currentNode.returnType == undefined){
         return
