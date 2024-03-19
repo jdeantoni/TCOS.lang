@@ -160,3 +160,25 @@ open BooleanConst{
     -------------------------------------------                 evalBooleanConst
           <this,σ> ~> terminates[constantValue]
 }
+
+
+open While {
+
+           when starts
+    --------------------------                                whileStart
+      <this,σ> ~> <cond,σ>
+
+        when <cond,σ> -> true
+    ----------------------------                              whileBodyStart
+      <this,σ> ~> <body,σ>
+                 
+
+        when <body,σ> -> terminates
+    ---------------------------------                         whileBodyEnd
+          <this,σ> ~> <cond,σ>
+
+        when <cond,σ> -> false  
+    ----------------------------                              whileEnd
+        <this,σ> ~> terminates
+
+}

@@ -1,3 +1,4 @@
+import chalk from "chalk";
 import { AstNode } from "langium";
 import { integer } from "vscode-languageclient";
 
@@ -30,6 +31,7 @@ export abstract class Node {
 
 
     numberOfVisits: integer = 0
+    isInCycle: boolean = false;
 
     constructor(value: any, theActions: string[] = []) {
         this.uid = Node.uidCounter++;
@@ -86,6 +88,9 @@ export class ContainerNode extends Node {
     }
 
     getNodeByUID(uid: integer): Node | undefined {
+        if(this.owningCCFG != undefined){
+            return this.owningCCFG.getNodeByUID(uid);
+        }
         return this.internalccfg.getNodeByUID(uid);
     }
 
@@ -159,7 +164,7 @@ export class CCFG {
             this.nodes[index] = newNode;
             newNode.uid = oldNode.uid;
             newNode.functionsDefs = oldNode.functionsDefs;
-            newNode.value = oldNode.value;
+            // newNode.value = oldNode.value;
             newNode.returnType = oldNode.returnType;
             newNode.params = oldNode.params;
             newNode.functionsNames = oldNode.functionsNames;
@@ -174,6 +179,11 @@ export class CCFG {
                 edge.to = newNode;
                 newNode.inputEdges.push(edge);
             }
+        }
+        let owningCCFGOldNode = oldNode.owningCCFG;
+        if (owningCCFGOldNode != undefined){
+            owningCCFGOldNode.nodes = owningCCFGOldNode.nodes.filter(n => n.uid !== oldNode.uid);
+            owningCCFGOldNode.nodes.push(newNode);
         }
     }
 
@@ -191,6 +201,91 @@ export class CCFG {
         }
         return undefined
     }
+
+    getNodeFromName(name: string): Node | undefined {
+        for(let n of this.nodes){
+            if(n.value === name){
+                return n;
+            }
+            if(n.getType() == "ContainerNode"){
+                let res = (n as ContainerNode).internalccfg.getNodeFromName(name);
+                if(res != undefined){
+                    return res;
+                }
+            }
+        }
+        return undefined
+    }
+
+    addSyncEdge(): void{
+        for(let n of this.nodes){
+            if(n.getType() == "OrJoin" || n.getType() == "AndJoin"){
+                for(let n2 of this.nodes){
+                    if((n2.getType() == "Fork" || n2.getType() == "Choice")
+                        &&
+                        n2.outputEdges.length > 1){
+                        if(n2.isBefore(n)){
+                            n2.syncNodeIds.push(n.uid);
+                            n.syncNodeIds.push(n2.uid);
+                            this.syncEdges.push(new SyncEdge(n, n2, "sync"));
+                        }
+                    }
+                }
+            }
+            if(n.getType() == "ContainerNode"){
+                (n as ContainerNode).internalccfg.addSyncEdge();
+            }
+        }
+
+    }
+
+
+
+
+
+    detectCycles(): boolean {
+        const visited: Node[] = [];
+        const recursionStack: Node[] = [];
+
+        for (const node of this.nodes) {
+            if (this.detectCyclesRec(node, visited, recursionStack)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private detectCyclesRec(node: Node, visited: Node[], recursionStack: Node[]): boolean {
+        if (recursionStack.includes(node)) {
+            console.log(chalk.gray("info: cycle detected on node #"+node.uid+" ("+node.value+")"));
+            if(node.getType() == "OrJoin"){
+                node.isInCycle = true;
+            }
+            return true;
+        }
+
+        if (visited.includes(node)) {
+            return false;
+        }
+
+        visited.push(node);
+        recursionStack.push(node);
+
+        for (const edge of node.outputEdges) {
+            if (this.detectCyclesRec(edge.to, visited, recursionStack)) {
+                return true;
+            }
+        }
+
+        recursionStack.pop();
+
+        return false;
+    }
+
+
+
+
 
   
 
@@ -243,7 +338,7 @@ export class CCFG {
             } else {
                 let shape: string = this.dotGetNodeShape(node);
                 let label: string = this.dotGetNodeLabel(node);
-                nodeDot += `  "${node.uid}" [label="${label}" shape="${shape}"];\n`;
+                nodeDot += `  "${node.uid}" [label="${label}" shape="${shape}" ${node.isInCycle?`style="filled" fillcolor="lightblue"`:``}];\n`;
             }
 
         }
@@ -261,9 +356,9 @@ export class CCFG {
 
     dotGetNodeLabel(node: Node): string {
         if(node.functionsDefs.length == 0){
-            return node.uid.toString();
+            return node.uid.toString()+":"+node.value;
         }
-        return node.uid+":\n"+node.returnType+" function"+node.functionsNames+"("+node.params.map(p => (p as TypedElement).toString()).join(", ")+"){\n"+node.functionsDefs.map(
+        return node.uid.toString()+":"+node.value+":\n"+node.returnType+" function"+node.functionsNames+"("+node.params.map(p => (p as TypedElement).toString()).join(", ")+"){\n"+node.functionsDefs.map(
             a => a.replaceAll("\"","\\\"")).join("\n")+"\n}";
     }
 
@@ -284,31 +379,6 @@ export class CCFG {
         }
     }
 
-    getNodeFromName(name: string): Node | undefined {
-        return this.nodes.find(n => n.value === name);
-    }
-
-    addSyncEdge(): void{
-        for(let n of this.nodes){
-            if(n.getType() == "OrJoin" || n.getType() == "AndJoin"){
-                for(let n2 of this.nodes){
-                    if((n2.getType() == "Fork" || n2.getType() == "Choice")
-                        &&
-                        n2.outputEdges.length > 1){
-                        if(n2.isBefore(n)){
-                            n2.syncNodeIds.push(n.uid);
-                            n.syncNodeIds.push(n2.uid);
-                            this.syncEdges.push(new SyncEdge(n, n2, "sync"));
-                        }
-                    }
-                }
-            }
-            if(n.getType() == "ContainerNode"){
-                (n as ContainerNode).internalccfg.addSyncEdge();
-            }
-        }
-
-    }
 
 
 
