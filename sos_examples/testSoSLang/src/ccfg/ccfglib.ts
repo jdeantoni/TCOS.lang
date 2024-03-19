@@ -239,23 +239,48 @@ export class CCFG {
 
     }
 
-    annotateCycles(): void {
-        if(this.initialState == undefined){
-            throw new Error("annotateCycles(): No initial state");
+
+
+
+
+    detectCycles(): boolean {
+        const visited: Node[] = [];
+        const recursionStack: Node[] = [];
+
+        for (const node of this.nodes) {
+            if (this.detectCyclesRec(node, visited, recursionStack)) {
+                return true;
+            }
         }
-        this.annotateCyclesRec(this.initialState, []);
+
+        return false;
     }
 
-    annotateCyclesRec(n: Node, visited: Node[]): void {
-        if(visited.includes(n)){
-            console.log(chalk.red("Cycle detected on "+n.uid));
-            n.isInCycle = true;
-            return;
+    private detectCyclesRec(node: Node, visited: Node[], recursionStack: Node[]): boolean {
+        if (recursionStack.includes(node)) {
+            console.log(chalk.gray("info: cycle detected on node #"+node.uid+" ("+node.value+")"));
+            if(node.getType() == "OrJoin"){
+                node.isInCycle = true;
+            }
+            return true;
         }
-        visited.push(n);
-        for(let e of n.outputEdges){
-            this.annotateCyclesRec(e.to, visited);
+
+        if (visited.includes(node)) {
+            return false;
         }
+
+        visited.push(node);
+        recursionStack.push(node);
+
+        for (const edge of node.outputEdges) {
+            if (this.detectCyclesRec(edge.to, visited, recursionStack)) {
+                return true;
+            }
+        }
+
+        recursionStack.pop();
+
+        return false;
     }
 
 

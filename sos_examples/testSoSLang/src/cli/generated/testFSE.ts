@@ -444,7 +444,9 @@ export class CCFGVisitor implements SimpleLVisitor {
             if(condStartsNode != undefined){
                 for(let e of condStartsNode.inputEdges){
                     e.to = condOrJoinNode
+                    condOrJoinNode.inputEdges.push(e)
                 }
+                condStartsNode.inputEdges = []
                 ccfg.addEdge(condOrJoinNode,condStartsNode)
             }
         }
@@ -504,7 +506,9 @@ export class CCFGVisitor implements SimpleLVisitor {
             if(thenStartsNode != undefined){
                 for(let e of thenStartsNode.inputEdges){
                     e.to = thenOrJoinNode
+                    thenOrJoinNode.inputEdges.push(e)
                 }
+                thenStartsNode.inputEdges = []
                 ccfg.addEdge(thenOrJoinNode,thenStartsNode)
             }
         }
@@ -564,7 +568,9 @@ export class CCFGVisitor implements SimpleLVisitor {
             if(elseStartsNode != undefined){
                 for(let e of elseStartsNode.inputEdges){
                     e.to = elseOrJoinNode
+                    elseOrJoinNode.inputEdges.push(e)
                 }
+                elseStartsNode.inputEdges = []
                 ccfg.addEdge(elseOrJoinNode,elseStartsNode)
             }
         }
@@ -669,7 +675,9 @@ export class CCFGVisitor implements SimpleLVisitor {
             if(exprStartsNode != undefined){
                 for(let e of exprStartsNode.inputEdges){
                     e.to = exprOrJoinNode
+                    exprOrJoinNode.inputEdges.push(e)
                 }
+                exprStartsNode.inputEdges = []
                 ccfg.addEdge(exprOrJoinNode,exprStartsNode)
             }
         }
@@ -1061,7 +1069,9 @@ export class CCFGVisitor implements SimpleLVisitor {
             if(condStartsNode != undefined){
                 for(let e of condStartsNode.inputEdges){
                     e.to = condOrJoinNode
+                    condOrJoinNode.inputEdges.push(e)
                 }
+                condStartsNode.inputEdges = []
                 ccfg.addEdge(condOrJoinNode,condStartsNode)
             }
         }
@@ -1121,7 +1131,9 @@ export class CCFGVisitor implements SimpleLVisitor {
             if(bodyStartsNode != undefined){
                 for(let e of bodyStartsNode.inputEdges){
                     e.to = bodyOrJoinNode
+                    bodyOrJoinNode.inputEdges.push(e)
                 }
+                bodyStartsNode.inputEdges = []
                 ccfg.addEdge(bodyOrJoinNode,bodyStartsNode)
             }
         }
@@ -1167,7 +1179,9 @@ export class CCFGVisitor implements SimpleLVisitor {
             if(condStartsNode != undefined){
                 for(let e of condStartsNode.inputEdges){
                     e.to = condOrJoinNode
+                    condOrJoinNode.inputEdges.push(e)
                 }
+                condStartsNode.inputEdges = []
                 ccfg.addEdge(condOrJoinNode,condStartsNode)
             }
         }

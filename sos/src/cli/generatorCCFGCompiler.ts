@@ -318,7 +318,9 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
             if(${toVisitName}StartsNode != undefined){
                 for(let e of ${toVisitName}StartsNode.inputEdges){
                     e.to = ${toVisitName}OrJoinNode
+                    ${toVisitName}OrJoinNode.inputEdges.push(e)
                 }
+                ${toVisitName}StartsNode.inputEdges = []
                 ccfg.addEdge(${toVisitName}OrJoinNode,${toVisitName}StartsNode)
             }
         }

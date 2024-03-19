@@ -308,7 +308,7 @@ int main() {
 #endif
     function17startsParallelBloc();
          
-        LockingQueue<Void> queue20;
+            LockingQueue<Void> queue20;
         std::thread thread22([&](){
 
 #if DEBUG
@@ -321,7 +321,7 @@ int main() {
 #endif
     function25startPlus();
 
-        LockingQueue<int> queue34;
+            LockingQueue<int> queue34;
         std::thread thread29([&](){
 
 #if DEBUG
@@ -400,7 +400,7 @@ int main() {
 #endif
     function40startPlus();
 
-        LockingQueue<int> queue49;
+            LockingQueue<int> queue49;
         std::thread thread44([&](){
 
 #if DEBUG
@@ -501,7 +501,7 @@ int main() {
 #endif
     
         LockingQueue<Void> queue99;
-        
+            
         int VarRef7_4_7_6terminates = result56accessVarRef;//Choice node
         if((bool)VarRef7_4_7_6terminates == true){
 #if DEBUG
@@ -527,7 +527,7 @@ int main() {
 #endif
     function67startPlus();
 
-        LockingQueue<int> queue76;
+            LockingQueue<int> queue76;
         std::thread thread71([&](){
 
 #if DEBUG
@@ -628,7 +628,7 @@ int main() {
 #endif
     function87startPlus();
 
-        LockingQueue<int> queue96;
+            LockingQueue<int> queue96;
         std::thread thread91([&](){
 
 #if DEBUG
@@ -722,8 +722,8 @@ int main() {
 #endif
     function104evaluateConjunction();
 
-        LockingQueue<bool> queue106;
-        LockingQueue<bool> queue116;
+            LockingQueue<bool> queue106;
+            LockingQueue<bool> queue116;
         std::thread thread109([&](){
 
 #if DEBUG
