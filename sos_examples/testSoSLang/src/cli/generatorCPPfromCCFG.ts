@@ -24,7 +24,7 @@ export function generateCPPfromCCFG(model: Model, filePath: string, targetDirect
     }
     fs.writeFileSync(generatedDotFilePath, toString(dotFile));
 
-    
+
     if(debug == undefined){
         debug = false;
     }
@@ -49,6 +49,9 @@ function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model): CCFG {
     var ccfg = (res as ContainerNode).internalccfg;
    
     ccfg.addSyncEdge()
+
+    ccfg.annotateCycles();
+
 
     codeFile.append(ccfg.toDot());
     return ccfg;

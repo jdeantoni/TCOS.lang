@@ -1,3 +1,4 @@
+import chalk from "chalk";
 import { AstNode } from "langium";
 import { integer } from "vscode-languageclient";
 
@@ -30,6 +31,7 @@ export abstract class Node {
 
 
     numberOfVisits: integer = 0
+    isInCycle: boolean = false;
 
     constructor(value: any, theActions: string[] = []) {
         this.uid = Node.uidCounter++;
@@ -200,6 +202,66 @@ export class CCFG {
         return undefined
     }
 
+    getNodeFromName(name: string): Node | undefined {
+        for(let n of this.nodes){
+            if(n.value === name){
+                return n;
+            }
+            if(n.getType() == "ContainerNode"){
+                let res = (n as ContainerNode).internalccfg.getNodeFromName(name);
+                if(res != undefined){
+                    return res;
+                }
+            }
+        }
+        return undefined
+    }
+
+    addSyncEdge(): void{
+        for(let n of this.nodes){
+            if(n.getType() == "OrJoin" || n.getType() == "AndJoin"){
+                for(let n2 of this.nodes){
+                    if((n2.getType() == "Fork" || n2.getType() == "Choice")
+                        &&
+                        n2.outputEdges.length > 1){
+                        if(n2.isBefore(n)){
+                            n2.syncNodeIds.push(n.uid);
+                            n.syncNodeIds.push(n2.uid);
+                            this.syncEdges.push(new SyncEdge(n, n2, "sync"));
+                        }
+                    }
+                }
+            }
+            if(n.getType() == "ContainerNode"){
+                (n as ContainerNode).internalccfg.addSyncEdge();
+            }
+        }
+
+    }
+
+    annotateCycles(): void {
+        if(this.initialState == undefined){
+            throw new Error("annotateCycles(): No initial state");
+        }
+        this.annotateCyclesRec(this.initialState, []);
+    }
+
+    annotateCyclesRec(n: Node, visited: Node[]): void {
+        if(visited.includes(n)){
+            console.log(chalk.red("Cycle detected on "+n.uid));
+            n.isInCycle = true;
+            return;
+        }
+        visited.push(n);
+        for(let e of n.outputEdges){
+            this.annotateCyclesRec(e.to, visited);
+        }
+    }
+
+
+
+
+
   
 
 
@@ -251,7 +313,7 @@ export class CCFG {
             } else {
                 let shape: string = this.dotGetNodeShape(node);
                 let label: string = this.dotGetNodeLabel(node);
-                nodeDot += `  "${node.uid}" [label="${label}" shape="${shape}"];\n`;
+                nodeDot += `  "${node.uid}" [label="${label}" shape="${shape}" ${node.isInCycle?`style="filled" fillcolor="lightblue"`:``}];\n`;
             }
 
         }
@@ -292,42 +354,6 @@ export class CCFG {
         }
     }
 
-    getNodeFromName(name: string): Node | undefined {
-        for(let n of this.nodes){
-            if(n.value === name){
-                return n;
-            }
-            if(n.getType() == "ContainerNode"){
-                let res = (n as ContainerNode).internalccfg.getNodeFromName(name);
-                if(res != undefined){
-                    return res;
-                }
-            }
-        }
-        return undefined
-    }
-
-    addSyncEdge(): void{
-        for(let n of this.nodes){
-            if(n.getType() == "OrJoin" || n.getType() == "AndJoin"){
-                for(let n2 of this.nodes){
-                    if((n2.getType() == "Fork" || n2.getType() == "Choice")
-                        &&
-                        n2.outputEdges.length > 1){
-                        if(n2.isBefore(n)){
-                            n2.syncNodeIds.push(n.uid);
-                            n.syncNodeIds.push(n2.uid);
-                            this.syncEdges.push(new SyncEdge(n, n2, "sync"));
-                        }
-                    }
-                }
-            }
-            if(n.getType() == "ContainerNode"){
-                (n as ContainerNode).internalccfg.addSyncEdge();
-            }
-        }
-
-    }
 
 
 
