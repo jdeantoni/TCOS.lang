@@ -374,6 +374,8 @@ export class CCFG {
                 return "invtriangle";
             case "Fork":
                 return "triangle";
+            case "StartTimer":
+                return "parallelogram";
             default:
                 return "box";
         }
@@ -416,6 +418,26 @@ export class Fork extends Node {
 }
 
 export class OrJoin extends Join {
+    constructor(value: any) {
+        super(value);
+    }
+}
+
+export class Timer extends Node {
+    constructor(value: any) {
+        super(value);
+    }
+}
+
+export class StartTimer extends Timer {
+    duration: integer = 0;
+    constructor(value: any, d:integer) {
+        super(value);
+        this.duration = d;
+    }
+}
+
+export class StopTimer extends Timer {
     constructor(value: any) {
         super(value);
     }

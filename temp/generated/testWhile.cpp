@@ -16,58 +16,58 @@ void functioninit5Variable(){
 	sigma["Variable0_0_0_10currentValue"] = new int();
 }
 void function7initializeVar(){
-	int Variable0_0_0_101385 = 1; //undefined
+	int Variable0_0_0_101376 = 1; //undefined
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);
-                (*((int*)sigma["Variable0_0_0_10currentValue"])) = Variable0_0_0_101385;
+                (*((int*)sigma["Variable0_0_0_10currentValue"])) = Variable0_0_0_101376;
 }
 void functioninit9Variable(){
 	sigma["Variable1_0_1_10currentValue"] = new int();
 }
 void function11initializeVar(){
-	int Variable1_0_1_101385 = 0; //undefined
+	int Variable1_0_1_101376 = 0; //undefined
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);
-                (*((int*)sigma["Variable1_0_1_10currentValue"])) = Variable1_0_1_101385;
+                (*((int*)sigma["Variable1_0_1_10currentValue"])) = Variable1_0_1_101376;
 }
 void functioninit13Variable(){
 	sigma["Variable2_0_2_11currentValue"] = new int();
 }
 void function15initializeVar(){
-	int Variable2_0_2_111385 = 42; //undefined
+	int Variable2_0_2_111376 = 42; //undefined
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);
-                (*((int*)sigma["Variable2_0_2_11currentValue"])) = Variable2_0_2_111385;
+                (*((int*)sigma["Variable2_0_2_11currentValue"])) = Variable2_0_2_111376;
 }
 int function20accessVarRef(){
 	const std::lock_guard<std::mutex> lock(sigma_mutex);
-	int VarRef4_7_4_91588 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
-	int VarRef4_7_4_9terminates =  VarRef4_7_4_91588;
+	int VarRef4_7_4_91579 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
+	int VarRef4_7_4_9terminates =  VarRef4_7_4_91579;
 	return VarRef4_7_4_9terminates;
 }
 int function31accessVarRef(){
 	const std::lock_guard<std::mutex> lock(sigma_mutex);
-	int VarRef6_9_6_111588 = *(int *) sigma["Variable1_0_1_10currentValue"];//currentValue}
-	int VarRef6_9_6_11terminates =  VarRef6_9_6_111588;
+	int VarRef6_9_6_111579 = *(int *) sigma["Variable1_0_1_10currentValue"];//currentValue}
+	int VarRef6_9_6_11terminates =  VarRef6_9_6_111579;
 	return VarRef6_9_6_11terminates;
 }
 void function33executeAssignment2(int resRight){
-	int Assignment6_4_6_112529 = resRight; // was Assignment6_4_6_112363; but using the parameter name now
+	int Assignment6_4_6_112520 = resRight; // was Assignment6_4_6_112354; but using the parameter name now
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
-                (*((int*)sigma["Variable0_0_0_10currentValue"])) = Assignment6_4_6_112529;
+                (*((int*)sigma["Variable0_0_0_10currentValue"])) = Assignment6_4_6_112520;
 }
 int function38accessVarRef(){
 	const std::lock_guard<std::mutex> lock(sigma_mutex);
-	int VarRef7_9_7_111588 = *(int *) sigma["Variable2_0_2_11currentValue"];//currentValue}
-	int VarRef7_9_7_11terminates =  VarRef7_9_7_111588;
+	int VarRef7_9_7_111579 = *(int *) sigma["Variable2_0_2_11currentValue"];//currentValue}
+	int VarRef7_9_7_11terminates =  VarRef7_9_7_111579;
 	return VarRef7_9_7_11terminates;
 }
 void function40executeAssignment2(int resRight){
-	int Assignment7_4_7_112529 = resRight; // was Assignment7_4_7_112363; but using the parameter name now
+	int Assignment7_4_7_112520 = resRight; // was Assignment7_4_7_112354; but using the parameter name now
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
-                (*((int*)sigma["Variable1_0_1_10currentValue"])) = Assignment7_4_7_112529;
+                (*((int*)sigma["Variable1_0_1_10currentValue"])) = Assignment7_4_7_112520;
 }
 
 int main() {

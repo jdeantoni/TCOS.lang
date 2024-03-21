@@ -1,0 +1,133 @@
+digraph G {
+subgraph cluster_4 {
+label = "Variable0_0_0_10";
+  "5" [label="5:startsVariable0_0_0_10:
+void functioninit5Variable(){
+sigma[\"Variable0_0_0_10currentValue\"] = new int();
+}" shape="ellipse" ];
+  "6" [label="6:terminatesVariable0_0_0_10" shape="ellipse" ];
+  "7" [label="7:initializeVarStateModificationNode:
+void function7initializeVar(){
+int Variable0_0_0_101376 = 1; //undefined
+//TODO: fix this and avoid memory leak by deleting, constructing appropriately
+                const std::lock_guard<std::mutex> lock(sigma_mutex);
+                (*((int*)sigma[\"Variable0_0_0_10currentValue\"])) = Variable0_0_0_101376;
+}" shape="ellipse" ];
+}
+subgraph cluster_8 {
+label = "Variable1_0_1_10";
+  "9" [label="9:startsVariable1_0_1_10:
+void functioninit9Variable(){
+sigma[\"Variable1_0_1_10currentValue\"] = new int();
+}" shape="ellipse" ];
+  "10" [label="10:terminatesVariable1_0_1_10" shape="ellipse" ];
+  "11" [label="11:initializeVarStateModificationNode:
+void function11initializeVar(){
+int Variable1_0_1_101376 = 0; //undefined
+//TODO: fix this and avoid memory leak by deleting, constructing appropriately
+                const std::lock_guard<std::mutex> lock(sigma_mutex);
+                (*((int*)sigma[\"Variable1_0_1_10currentValue\"])) = Variable1_0_1_101376;
+}" shape="ellipse" ];
+}
+subgraph cluster_12 {
+label = "PeriodicBloc3_0_5_3";
+  "13" [label="13:startsPeriodicBloc3_0_5_3:
+void function13periodicStart(){
+sigma[\"PeriodicBloc3_0_5_3blocTrigger\"] = new unknown(100);
+}" shape="ellipse" ];
+  "14" [label="14:terminatesPeriodicBloc3_0_5_3" shape="ellipse" ];
+  "16" [label="16:startsblocTriggerPeriodicBloc3_0_5_3" shape="parallelogram" ];
+  "17" [label="17:terminatesblocTriggerPeriodicBloc3_0_5_3" shape="box" ];
+  "18" [label="18:periodicBodyStartForkNode" shape="triangle" ];
+  "31" [label="31:orJoinNodeblocTriggerPeriodicBloc3_0_5_3" shape="invtriangle" style="filled" fillcolor="lightblue"];
+subgraph cluster_15 {
+label = "blocTriggerPeriodicBloc3_0_5_3";
+}
+subgraph cluster_19 {
+label = "Bloc3_13_5_3";
+  "20" [label="20:startsBloc3_13_5_3" shape="ellipse" ];
+  "21" [label="21:terminatesBloc3_13_5_3" shape="ellipse" ];
+  "22" [label="22:startsarray4_4_4_11" shape="ellipse" ];
+  "30" [label="30:terminatesarray4_4_4_11" shape="ellipse" ];
+subgraph cluster_23 {
+label = "Assignment4_4_4_11";
+  "24" [label="24:startsAssignment4_4_4_11" shape="ellipse" ];
+  "25" [label="25:terminatesAssignment4_4_4_11" shape="ellipse" ];
+  "29" [label="29:executeAssignment2StateModificationNode:
+void function29executeAssignment2(int resRight){
+int Assignment4_4_4_112520 = resRight; // was Assignment4_4_4_112354; but using the parameter name now
+//TODO: fix this and avoid memory leak by deleting, constructing appropriately
+                const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
+                (*((int*)sigma[\"Variable0_0_0_10currentValue\"])) = Assignment4_4_4_112520;
+}" shape="ellipse" ];
+subgraph cluster_26 {
+label = "VarRef4_9_4_11";
+  "27" [label="27:startsVarRef4_9_4_11:
+int function27accessVarRef(){
+const std::lock_guard<std::mutex> lock(sigma_mutex);
+int VarRef4_9_4_111579 = *(int *) sigma[\"Variable0_0_0_10currentValue\"];//currentValue}
+int VarRef4_9_4_11terminates =  VarRef4_9_4_111579;
+return VarRef4_9_4_11terminates;
+}" shape="ellipse" ];
+  "28" [label="28:terminatesVarRef4_9_4_11" shape="ellipse" ];
+}
+}
+}
+}
+subgraph cluster_32 {
+label = "Assignment7_0_7_7";
+  "33" [label="33:startsAssignment7_0_7_7" shape="ellipse" ];
+  "34" [label="34:terminatesAssignment7_0_7_7" shape="ellipse" ];
+  "38" [label="38:executeAssignment2StateModificationNode:
+void function38executeAssignment2(int resRight){
+int Assignment7_0_7_72520 = resRight; // was Assignment7_0_7_72354; but using the parameter name now
+//TODO: fix this and avoid memory leak by deleting, constructing appropriately
+                const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
+                (*((int*)sigma[\"Variable1_0_1_10currentValue\"])) = Assignment7_0_7_72520;
+}" shape="ellipse" ];
+subgraph cluster_35 {
+label = "VarRef7_5_7_7";
+  "36" [label="36:startsVarRef7_5_7_7:
+int function36accessVarRef(){
+const std::lock_guard<std::mutex> lock(sigma_mutex);
+int VarRef7_5_7_71579 = *(int *) sigma[\"Variable0_0_0_10currentValue\"];//currentValue}
+int VarRef7_5_7_7terminates =  VarRef7_5_7_71579;
+return VarRef7_5_7_7terminates;
+}" shape="ellipse" ];
+  "37" [label="37:terminatesVarRef7_5_7_7" shape="ellipse" ];
+}
+}
+  "1" [label="1:startsModel0_0_7_7" shape="ellipse" ];
+  "2" [label="2:terminatesModel0_0_7_7" shape="ellipse" ];
+  "3" [label="3:startsarray0_0_0_10_1_0_1_10_3_0_5_3_7_0_7_7" shape="ellipse" ];
+  "39" [label="39:terminatesarray0_0_0_10_1_0_1_10_3_0_5_3_7_0_7_7" shape="ellipse" ];
+  "5" -> "7" [label=""];
+  "7" -> "6" [label=""];
+  "9" -> "11" [label=""];
+  "11" -> "10" [label=""];
+  "27" -> "28" [label=""];
+  "24" -> "27" [label=""];
+  "28" -> "29" [label=""];
+  "29" -> "25" [label=""];
+  "20" -> "22" [label=""];
+  "22" -> "24" [label=""];
+  "25" -> "30" [label=""];
+  "30" -> "21" [label=""];
+  "13" -> "31" [label=""];
+  "16" -> "17" [label=""];
+  "17" -> "18" [label=""];
+  "18" -> "20" [label=""];
+  "31" -> "16" [label=""];
+  "18" -> "31" [label=""];
+  "36" -> "37" [label=""];
+  "33" -> "36" [label=""];
+  "37" -> "38" [label=""];
+  "38" -> "34" [label=""];
+  "1" -> "3" [label=""];
+  "3" -> "5" [label=""];
+  "6" -> "9" [label=""];
+  "10" -> "13" [label=""];
+  "14" -> "33" [label=""];
+  "34" -> "39" [label=""];
+  "39" -> "2" [label=""];
+}

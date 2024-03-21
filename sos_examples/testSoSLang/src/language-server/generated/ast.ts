@@ -22,7 +22,7 @@ export function isExpr(item: unknown): item is Expr {
     return reflection.isInstance(item, Expr);
 }
 
-export type Statement = Assignment | Bloc | Expr | ParallelBloc | Variable | While;
+export type Statement = Assignment | Bloc | Expr | ParallelBloc | PeriodicBloc | Variable | While;
 
 export const Statement = 'Statement';
 
@@ -31,7 +31,7 @@ export function isStatement(item: unknown): item is Statement {
 }
 
 export interface Assignment extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'Assignment';
     expr: Expr
     variable: Reference<Variable>
@@ -44,7 +44,7 @@ export function isAssignment(item: unknown): item is Assignment {
 }
 
 export interface Bloc extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'Bloc';
     statements: Array<Statement>
 }
@@ -56,7 +56,7 @@ export function isBloc(item: unknown): item is Bloc {
 }
 
 export interface BooleanConst extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'BooleanConst';
     value: 'false' | 'true'
 }
@@ -68,7 +68,7 @@ export function isBooleanConst(item: unknown): item is BooleanConst {
 }
 
 export interface Conjunction extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'Conjunction';
     lhs: BooleanExpression
     rhs: BooleanExpression
@@ -81,7 +81,7 @@ export function isConjunction(item: unknown): item is Conjunction {
 }
 
 export interface Disjunction extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'Disjunction';
     lhs: BooleanExpression
     rhs: BooleanExpression
@@ -94,7 +94,7 @@ export function isDisjunction(item: unknown): item is Disjunction {
 }
 
 export interface If extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'If';
     cond: VarRef
     else: Bloc
@@ -119,7 +119,7 @@ export function isModel(item: unknown): item is Model {
 }
 
 export interface ParallelBloc extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'ParallelBloc';
     statements: Array<Statement>
 }
@@ -130,8 +130,21 @@ export function isParallelBloc(item: unknown): item is ParallelBloc {
     return reflection.isInstance(item, ParallelBloc);
 }
 
+export interface PeriodicBloc extends AstNode {
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
+    readonly $type: 'PeriodicBloc';
+    bloc: Bloc
+    time: number
+}
+
+export const PeriodicBloc = 'PeriodicBloc';
+
+export function isPeriodicBloc(item: unknown): item is PeriodicBloc {
+    return reflection.isInstance(item, PeriodicBloc);
+}
+
 export interface Plus extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'Plus';
     left: Expr
     right: Expr
@@ -144,7 +157,7 @@ export function isPlus(item: unknown): item is Plus {
 }
 
 export interface Variable extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'Variable';
     initialValue?: number
     name: string
@@ -157,7 +170,7 @@ export function isVariable(item: unknown): item is Variable {
 }
 
 export interface VarRef extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'VarRef';
     theVar: Reference<Variable>
 }
@@ -169,7 +182,7 @@ export function isVarRef(item: unknown): item is VarRef {
 }
 
 export interface While extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'While';
     body: Bloc
     cond: VarRef
@@ -192,6 +205,7 @@ export interface SimpleLAstType {
     If: If
     Model: Model
     ParallelBloc: ParallelBloc
+    PeriodicBloc: PeriodicBloc
     Plus: Plus
     Statement: Statement
     VarRef: VarRef
@@ -202,7 +216,7 @@ export interface SimpleLAstType {
 export class SimpleLAstReflection extends AbstractAstReflection {
 
     getAllTypes(): string[] {
-        return ['Assignment', 'Bloc', 'BooleanConst', 'BooleanExpression', 'Conjunction', 'Disjunction', 'Expr', 'If', 'Model', 'ParallelBloc', 'Plus', 'Statement', 'VarRef', 'Variable', 'While'];
+        return ['Assignment', 'Bloc', 'BooleanConst', 'BooleanExpression', 'Conjunction', 'Disjunction', 'Expr', 'If', 'Model', 'ParallelBloc', 'PeriodicBloc', 'Plus', 'Statement', 'VarRef', 'Variable', 'While'];
     }
 
     protected override computeIsSubtype(subtype: string, supertype: string): boolean {
@@ -210,6 +224,7 @@ export class SimpleLAstReflection extends AbstractAstReflection {
             case Assignment:
             case Bloc:
             case ParallelBloc:
+            case PeriodicBloc:
             case Variable:
             case While:
             case Expr: {

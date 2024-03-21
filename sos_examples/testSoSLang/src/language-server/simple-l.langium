@@ -13,8 +13,12 @@ ParallelBloc:
     ('|' statements+=Statement)*
     '|';
 
+PeriodicBloc:
+    'every' time=INT 'ms'
+    bloc=Bloc;
+
 Statement:
-    Variable | Expr | Assignment | Bloc | ParallelBloc | While;
+    Variable | Expr | Assignment | Bloc | ParallelBloc | PeriodicBloc| While;
 
 Expr:
     VarRef|Plus|If|BooleanExpression;
