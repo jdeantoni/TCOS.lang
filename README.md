@@ -17,7 +17,12 @@ If you're curious to see what a very simple TCOS specification looks like, see .
 
 more advanced examples are in the pipe, waiting for the meta compiler to work on more cases.
 
-useful cli:
- * npm run watch &
- * npm run langium:watch &
- * npm run langium:generate
+
+## very simple example of an imperative language and its TCOS
+
+![image](https://github.com/jdeantoni/TCOS.lang/assets/6162718/ecc8d1e0-9002-45f5-9b16-bcad340806d1)
+
+to be explained
+
+## usage
+TODO
