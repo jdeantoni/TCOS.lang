@@ -741,7 +741,7 @@ export function isSingleRuleSync(item: unknown): item is SingleRuleSync {
 export interface SoSPrimitiveType extends AstNode {
     readonly $container: CollectionRuleSync | ExplicitValuedEventRef | ImplicitValuedEventRef | RuleOpening | TypeReference;
     readonly $type: 'SoSPrimitiveType';
-    name: 'boolean' | 'event' | 'integer' | 'string' | 'void'
+    name: 'boolean' | 'event' | 'integer' | 'string' | 'timer' | 'void'
 }
 
 export const SoSPrimitiveType = 'SoSPrimitiveType';

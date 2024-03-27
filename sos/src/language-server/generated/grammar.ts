@@ -2863,6 +2863,10 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             {
               "$type": "Keyword",
               "value": "event"
+            },
+            {
+              "$type": "Keyword",
+              "value": "timer"
             }
           ]
         }

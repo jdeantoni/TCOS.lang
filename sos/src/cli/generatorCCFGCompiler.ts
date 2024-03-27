@@ -182,11 +182,12 @@ function checkIfMultipleTerminate(rulesCF: RuleControlFlow[]) {
  */
 function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode, rulesCF: RuleControlFlow[], previousNodeName: string, terminatesNodeName: string) {
 
-    let [previousNodePrefix, previousNodeParticipant, guardActions, param] = handlePreviousPremise(ruleCF, rulesCF, previousNodeName, file)
-    let nodeNameFromPreviousNode = (previousNodePrefix+previousNodeParticipant+ruleCF.rule.name).replace(/\./g,"_")
+    let [previousNodePrefix, previousNodeParticipantName, guardActions, param] = handlePreviousPremise(ruleCF, rulesCF, previousNodeName, file)
+    let nodeNameFromPreviousNode = (previousNodePrefix+previousNodeParticipantName+ruleCF.rule.name).replace(/\./g,"_").replaceAll("(","_").replaceAll(")","_").replaceAll(")","_").replaceAll("\"","").replaceAll("+","")
+    
     file.append(`
     {
-        let ${nodeNameFromPreviousNode} = ccfg.getNodeFromName("${previousNodePrefix}"+getASTNodeUID(${previousNodeParticipant}))
+        let ${nodeNameFromPreviousNode} = ccfg.getNodeFromName("${previousNodePrefix}"+${previousNodeParticipantName})
         if(${nodeNameFromPreviousNode} == undefined){
             throw new Error("impossible to be there ${nodeNameFromPreviousNode}")
         }
@@ -232,11 +233,59 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
         let splittedConclusionParticipants = splitArrayByParticipants(ruleCF.conclusionParticipants);
         for (let emissionParticipant of splittedConclusionParticipants) {
             const participantName = emissionParticipant[0].name;
+            let [elemToVisitIsARuntimeState, getAstNodeUidCall] = constructNodeName(ruleCF, participantName);
+            if(elemToVisitIsARuntimeState){
+                if(emissionParticipant[0].type != "timer"){
+                    throw new Error("only timer (and event but not yet supported) can be started/stopped from a rule, was "+emissionParticipant[0].type)
+                }
+                file.append(`
+    let ${participantName}CCFG${ruleCF.rule.name} = ccfg.getNodeFromName(${getAstNodeUidCall})
+    let ${participantName}StartsNode${ruleCF.rule.name} = ccfg.getNodeFromName("starts"+${getAstNodeUidCall})
+    let ${participantName}TerminatesNode${ruleCF.rule.name} = ccfg.getNodeFromName("terminates"+${getAstNodeUidCall})
+    if (${participantName}CCFG${ruleCF.rule.name} == undefined) {
+        ${participantName}CCFG${ruleCF.rule.name} = new ContainerNode("${participantName}"+getASTNodeUID(node))
+        ccfg.addNode( ${participantName}CCFG${ruleCF.rule.name})
+
+        ${participantName}StartsNode${ruleCF.rule.name} = new Step("starts${participantName}"+getASTNodeUID(node))
+        ccfg.addNode( ${participantName}StartsNode${ruleCF.rule.name})
+        ${participantName}TerminatesNode${ruleCF.rule.name} = new Step("terminates${participantName}"+getASTNodeUID(node))
+        ccfg.addNode(${participantName}TerminatesNode${ruleCF.rule.name})
+
+        {
+        let e1 = ccfg.addEdge(previousNode, ${participantName}StartsNode${ruleCF.rule.name})
+        e1.guards = [...e1.guards, ...[]] //FF2
+        let e2 = ccfg.addEdge( ${participantName}StartsNode${ruleCF.rule.name},${participantName}TerminatesNode${ruleCF.rule.name})
+        e2.guards = [...e1.guards, ...[]] //FF2
+        ccfg.addEdge(${ruleCF.rule.name}ForkNode,${participantName}StartsNode${ruleCF.rule.name})
+        }
+    }else{
+        let ${participantName}OrJoinNode = new OrJoin("orJoinNode"+${getAstNodeUidCall})
+        ccfg.addNode(${participantName}OrJoinNode)
+        let ${nodeNameFromPreviousNode} = ccfg.getNodeFromName("${previousNodePrefix}"+${previousNodeParticipantName})
+        if(${nodeNameFromPreviousNode} == undefined){
+            throw new Error("impossible to be there ${nodeNameFromPreviousNode}")
+        }
+        //ccfg.addEdge(${nodeNameFromPreviousNode},${participantName}OrJoinNode)
+        let ${participantName}StartsNode = ccfg.getNodeFromName("starts"+${getAstNodeUidCall})
+        if(${participantName}StartsNode != undefined){
+            for(let e of ${participantName}StartsNode.inputEdges){
+                e.to = ${participantName}OrJoinNode
+                ${participantName}OrJoinNode.inputEdges.push(e)
+            }
+            ${participantName}StartsNode.inputEdges = []
+            ccfg.addEdge(${participantName}OrJoinNode,${participantName}StartsNode)
+            ccfg.addEdge(${ruleCF.rule.name}ForkNode,${participantName}OrJoinNode)
+        }
+    }
+        `)
+        
+            }else{
             file.append(`
         let [${participantName}CCFG, ${participantName}StartNode/*,${participantName}TerminatesNode*/] = this.visit(node.${participantName})
         ccfg.addNode(${participantName}CCFG)
         ccfg.addEdge(${ruleCF.rule.name}ForkNode,${participantName}StartNode)
         `)
+            }
         }
     } else { //single emission
         let isEventEmissionACollection: boolean = checkIfEventEmissionIsCollectionBased(ruleCF);
@@ -281,6 +330,12 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
 
             }
         } else { //single emission, single event
+            if (ruleCF.conclusionParticipants.length == 0){
+                file.append(`
+        // conclusion with no event emission
+                `)
+            }
+            else 
             if (ruleCF.conclusionParticipants[ruleCF.conclusionParticipants.length - 1].name != undefined && ruleCF.conclusionParticipants[ruleCF.conclusionParticipants.length - 1].name == "terminates") {
                 file.append(`
         {let e = ccfg.addEdge(previousNode,${terminatesNodeName})
@@ -289,12 +344,42 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
         `);
             } else {
                 let toVisitName = ruleCF.conclusionParticipants[0].name;
-                file.append(`
-        let ${toVisitName}CCFG${ruleCF.rule.name} = ccfg.getNodeFromName(getASTNodeUID(node.${toVisitName}))
-        let ${toVisitName}StartsNode${ruleCF.rule.name} = ccfg.getNodeFromName("starts"+getASTNodeUID(node.${toVisitName}))
-        let ${toVisitName}TerminatesNode${ruleCF.rule.name} = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.${toVisitName}))
+                let [elemToVisitIsARuntimeState, getAstNodeUidCall] = constructNodeName(ruleCF, toVisitName);
+                    file.append(`
+        let ${toVisitName}CCFG${ruleCF.rule.name} = ccfg.getNodeFromName(${getAstNodeUidCall})
+        let ${toVisitName}StartsNode${ruleCF.rule.name} = ccfg.getNodeFromName("starts"+${getAstNodeUidCall})
+        let ${toVisitName}TerminatesNode${ruleCF.rule.name} = ccfg.getNodeFromName("terminates"+${getAstNodeUidCall})
         if (${toVisitName}CCFG${ruleCF.rule.name} == undefined) {
-            let [${toVisitName}CCFG, ${toVisitName}StartsNode,${toVisitName}TerminatesNode] = this.visit(node.${toVisitName})
+            `)
+                if(elemToVisitIsARuntimeState){
+                    if(ruleCF.conclusionParticipants[0].type != "timer"){
+                        throw new Error("only timer (and event but not yet supported) can be started/stopped from a rule")
+                    }
+            let duration = ((ruleCF.rule.$container as RuleOpening).runtimeState.filter(rs => rs.name == toVisitName)[0] as VariableDeclaration).value?.$cstNode?.text
+            file.append(`
+
+            ${toVisitName}CCFG${ruleCF.rule.name} = new ContainerNode("${toVisitName}"+getASTNodeUID(node))
+            ccfg.addNode( ${toVisitName}CCFG${ruleCF.rule.name})
+
+            ${toVisitName}StartsNode${ruleCF.rule.name} = new Step("starts${toVisitName}"+getASTNodeUID(node))
+            ccfg.addNode( ${toVisitName}StartsNode${ruleCF.rule.name})
+            ${toVisitName}StartsNode${ruleCF.rule.name}.functionsNames = [\`starts\${${toVisitName}StartsNode${ruleCF.rule.name}.uid}${toVisitName}\`]
+            ${toVisitName}StartsNode${ruleCF.rule.name}.returnType = "void"
+            ${toVisitName}StartsNode${ruleCF.rule.name}.functionsDefs = [...${toVisitName}StartsNode${ruleCF.rule.name}.functionsDefs, ...[\`std::this_thread::sleep_for(\${node.${duration}}ms);\`]] //GGG
+            ${toVisitName}TerminatesNode${ruleCF.rule.name} = new Step("terminates${toVisitName}"+getASTNodeUID(node))
+            ccfg.addNode(${toVisitName}TerminatesNode${ruleCF.rule.name})
+    
+            {
+            let e1 = ccfg.addEdge(previousNode, ${toVisitName}StartsNode${ruleCF.rule.name})
+            e1.guards = [...e1.guards, ...[]] //FFF
+            let e2 = ccfg.addEdge( ${toVisitName}StartsNode${ruleCF.rule.name},${toVisitName}TerminatesNode${ruleCF.rule.name})
+            e2.guards = [...e1.guards, ...[]] //FFF
+            }
+
+            `)
+                }else{
+            file.append(
+            `let [${toVisitName}CCFG, ${toVisitName}StartsNode,${toVisitName}TerminatesNode] = this.visit(node.${toVisitName})
             ccfg.addNode(${toVisitName}CCFG)
             ${toVisitName}CCFG${ruleCF.rule.name} = ${toVisitName}CCFG
             ${toVisitName}StartsNode${ruleCF.rule.name} = ${toVisitName}StartsNode
@@ -306,15 +391,18 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
             let e = ccfg.addEdge(previousNode,${toVisitName}StartsNode${ruleCF.rule.name})
             e.guards = [...e.guards, ...[${guardActions}]] //FF
             }
+            `)
+        }
+            file.append(`
         }else{
-            let ${toVisitName}OrJoinNode = new OrJoin("orJoinNode"+getASTNodeUID(node.${toVisitName}))
+            let ${toVisitName}OrJoinNode = new OrJoin("orJoinNode"+${getAstNodeUidCall})
             ccfg.addNode(${toVisitName}OrJoinNode)
-            let ${nodeNameFromPreviousNode} = ccfg.getNodeFromName("${previousNodePrefix}"+getASTNodeUID(${previousNodeParticipant}))
+            let ${nodeNameFromPreviousNode} = ccfg.getNodeFromName("${previousNodePrefix}"+${previousNodeParticipantName})
             if(${nodeNameFromPreviousNode} == undefined){
                 throw new Error("impossible to be there ${nodeNameFromPreviousNode}")
             }
             ccfg.addEdge(${nodeNameFromPreviousNode},${toVisitName}OrJoinNode)
-            let ${toVisitName}StartsNode = ccfg.getNodeFromName("starts"+getASTNodeUID(node.${toVisitName}))
+            let ${toVisitName}StartsNode = ccfg.getNodeFromName("starts"+${getAstNodeUidCall})
             if(${toVisitName}StartsNode != undefined){
                 for(let e of ${toVisitName}StartsNode.inputEdges){
                     e.to = ${toVisitName}OrJoinNode
@@ -348,6 +436,17 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
 }
 
 
+function constructNodeName(ruleCF: RuleControlFlow, participantName: string|undefined) : [boolean, string] {
+    let elemToVisitIsARuntimeState = (ruleCF.rule.$container as RuleOpening).runtimeState.some(rs => (rs as NamedElement).name == participantName)
+    let getAstNodeUidCall = ""
+    if (elemToVisitIsARuntimeState) {
+        getAstNodeUidCall = `"${participantName}"+getASTNodeUID(node)`;
+    } else {
+        getAstNodeUidCall = `getASTNodeUID(node.${participantName})`;
+    }
+    return [elemToVisitIsARuntimeState,getAstNodeUidCall];
+}
+
 /**
  * returns the previous node name. May imply the creation of new nodes in case of multiple synchronizations that may require a decision or join node
  * @param ruleCF 
@@ -357,7 +456,7 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
 function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow[], previousNodeName: string, file: CompositeGeneratorNode): [string,string,string, TypedElement|undefined] { 
     let isStartingRule = ruleCF.premiseParticipants[0].name == "starts";
     if (isStartingRule) {
-        return ["starts","node", "", undefined]
+        return ["starts","getASTNodeUID(node)", "", undefined]
     }
 
     let isSimpleComparison = ruleCF.rule.premise.eventExpression.$type == "ExplicitValuedEventRefConstantComparison"
@@ -378,10 +477,11 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
     if(varActions.length>0){
         console.warn(chalk.gray(`in the context of ${ruleCF.rule.name}, these varActions have been disregarded: ${varActions}`))
     }
+    let[, getAstNodeUidCall] = constructNodeName(ruleCF, ruleCF.premiseParticipants[0].name);
     if(param.name != "NULL"){
-        return [`terminates`, `node.${ruleCF.premiseParticipants[0].name}`, "", param]
+        return [`terminates`, `${getAstNodeUidCall}`, "", param]
     }
-    return [`terminates`, `node.${ruleCF.premiseParticipants[0].name}`, "", undefined]
+    return [`terminates`, `${getAstNodeUidCall}`, "", undefined]
     
 }
 
@@ -457,7 +557,7 @@ function handlePremiseMultipleSynchronization(file: CompositeGeneratorNode, rule
 
     if (ruleCF.rule.premise.eventExpression.$type === "NaryEventExpression") {
         //no premise actions ?
-        return [multipleSynchroPrefix,multipleSynchroParticipant,premiseGuards, undefined]
+        return [multipleSynchroPrefix,`getASTNodeUID(${multipleSynchroParticipant})`,premiseGuards, undefined]
     }
     let ownsACondition = chekIfOwnsACondition(ruleCF.rule.premise.eventExpression as EventCombination)
     if(ownsACondition){
@@ -485,19 +585,21 @@ function handlePremiseMultipleSynchronization(file: CompositeGeneratorNode, rule
     }
     `)
     
-    return [multipleSynchroPrefix,multipleSynchroParticipant,premiseGuards, undefined]
+    return [multipleSynchroPrefix,`getASTNodeUID(${multipleSynchroParticipant})`,premiseGuards, undefined]
 }
 
 function handlePremiseSimpleComparison(file: CompositeGeneratorNode, ruleCF: RuleControlFlow) : [string,string,string, TypedElement|undefined]{
+    let [, getAstNodeUidCall] = constructNodeName(ruleCF, ruleCF.premiseParticipants[0].name);
     let participantName = ruleCF.premiseParticipants[0].name
+
     file.append(`
-        let ${participantName}TerminatesNode${ruleCF.rule.name} = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.${participantName}))
+        let ${participantName}TerminatesNode${ruleCF.rule.name} = ccfg.getNodeFromName("terminates"+${getAstNodeUidCall})
             if(${participantName}TerminatesNode${ruleCF.rule.name} == undefined){
                 throw new Error("impossible to be there ${participantName}TerminatesNode${ruleCF.rule.name}")
             }
-        let ${participantName}ChoiceNode${ruleCF.rule.name} = ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.${participantName}))
+        let ${participantName}ChoiceNode${ruleCF.rule.name} = ccfg.getNodeFromName("choiceNode"+${getAstNodeUidCall})
         if (${participantName}ChoiceNode${ruleCF.rule.name} == undefined) {
-            let ${participantName}ChoiceNode = new Choice("choiceNode"+getASTNodeUID(node.${participantName}))
+            let ${participantName}ChoiceNode = new Choice("choiceNode"+${getAstNodeUidCall})
             ccfg.addNode(${participantName}ChoiceNode)
             ccfg.addEdge(${participantName}TerminatesNode${ruleCF.rule.name},${participantName}ChoiceNode)
             ${participantName}ChoiceNode${ruleCF.rule.name} = ${participantName}ChoiceNode
@@ -506,7 +608,7 @@ function handlePremiseSimpleComparison(file: CompositeGeneratorNode, ruleCF: Rul
         }
         `);
     let guards: string = visitValuedEventRefComparison(ruleCF.rule.premise.eventExpression as ValuedEventRefConstantComparison);
-    return [`choiceNode`, `node.${participantName}`, guards, undefined];
+    return [`choiceNode`, `${getAstNodeUidCall}`, guards, undefined];
 }
 
 function visitMultipleSynchroEventRef(lhs: EventExpression, rhs: EventExpression) :[string, string, TypedElement[]]{
@@ -878,8 +980,10 @@ function visitVariableDeclaration(runtimeState: VariableDeclaration[] | undefine
     var res : string = ""
     if (runtimeState != undefined) {
        // res = res + `\`const std::lock_guard<std::mutex> lock(sigma_mutex);\`,`
+        let sep = ""
         for(let vardDecl of runtimeState){
-            res = res + `\`sigma["\${getName(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?`\${node.${(vardDecl.value as MemberCall).element?.$refText}}`:""});\``
+            res = res + sep + `\`sigma["\${getName(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?`\${node.${(vardDecl.value as MemberCall).element?.$refText}}`:""});\``
+            sep= ","
         }
     }
     return res
@@ -1017,6 +1121,8 @@ function getCPPVariableTypeName(typeName: string): string {
             return "bool";
         case "void":
             return "void";
+        case "timer": //TO BE FIXED
+            return "int";    
         default:
             return "unknown";
     }
@@ -1026,21 +1132,9 @@ function getCPPVariableTypeName(typeName: string): string {
 
 function getVariableType(type: TypeReference | undefined) {
     if (type?.primitive) {
-        let fullName = type.primitive.name;
-        switch (fullName) {
-            case "integer":
-                return "int";
-            case "string":
-                return "std::string";
-            case "boolean":
-                return "bool";
-            case "void":
-                return "void";
-            default:
-                return "unknown";
-        }
-    } else if (type?.reference) {
-        return type.reference.ref?.name;
+        return getCPPVariableTypeName(type.primitive.name);
+    } else if (type?.reference && type.reference.ref?.name != undefined) {
+        return getCPPVariableTypeName(type.reference.ref?.name);
     }
     return "unknown"
 }

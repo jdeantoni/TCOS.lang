@@ -17,7 +17,7 @@ import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, ContainerNode, TypedEl
             return "noName"+globalUnNamedCounter++
         }
     }
-    import { Model,Bloc,ParallelBloc,Variable,VarRef,If,Assignment,Conjunction,Plus,BooleanConst,While } from "../../language-server/generated/ast";
+    import { Model,Bloc,ParallelBloc,Variable,VarRef,If,Assignment,Conjunction,Plus,BooleanConst,While,PeriodicBloc } from "../../language-server/generated/ast";
 
 export interface SimpleLVisitor {
     visit(node: AstNode): [Node,Node,Node];
@@ -34,6 +34,7 @@ export interface SimpleLVisitor {
      visitPlus(node: Plus): [Node, Node,Node];
      visitBooleanConst(node: BooleanConst): [Node, Node,Node];
      visitWhile(node: While): [Node, Node,Node];
+     visitPeriodicBloc(node: PeriodicBloc): [Node, Node,Node];
 }
 
 
@@ -86,6 +87,9 @@ export class CCFGVisitor implements SimpleLVisitor {
         if(node.$type == "While"){
             return this.visitWhile(node as While);
         }
+        if(node.$type == "PeriodicBloc"){
+            return this.visitPeriodicBloc(node as PeriodicBloc);
+        }
         throw new Error("Not implemented: " + node.$type);
     }
     
@@ -111,11 +115,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         let previousNode =undefined
         
     {
-        let startsnodestatementsInOrder1 = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
-        if(startsnodestatementsInOrder1 == undefined){
-            throw new Error("impossible to be there startsnodestatementsInOrder1")
+        let startsgetASTNodeUID_node_statementsInOrder1 = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
+        if(startsgetASTNodeUID_node_statementsInOrder1 == undefined){
+            throw new Error("impossible to be there startsgetASTNodeUID_node_statementsInOrder1")
         }
-        previousNode = startsnodestatementsInOrder1
+        previousNode = startsgetASTNodeUID_node_statementsInOrder1
     }
     
         let statementsInOrder1StepNode = new Step("starts"+getASTNodeUID(node.statements))
@@ -139,11 +143,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
     {
-        let terminatesnode_statementsfinishModel = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.statements))
-        if(terminatesnode_statementsfinishModel == undefined){
-            throw new Error("impossible to be there terminatesnode_statementsfinishModel")
+        let terminatesgetASTNodeUID_node_statements_finishModel = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.statements))
+        if(terminatesgetASTNodeUID_node_statements_finishModel == undefined){
+            throw new Error("impossible to be there terminatesgetASTNodeUID_node_statements_finishModel")
         }
-        previousNode = terminatesnode_statementsfinishModel
+        previousNode = terminatesgetASTNodeUID_node_statements_finishModel
     }
     
         {let e = ccfg.addEdge(previousNode,terminatesModelNode)
@@ -179,11 +183,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         let previousNode =undefined
         
     {
-        let startsnodestartsBloc = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
-        if(startsnodestartsBloc == undefined){
-            throw new Error("impossible to be there startsnodestartsBloc")
+        let startsgetASTNodeUID_node_startsBloc = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
+        if(startsgetASTNodeUID_node_startsBloc == undefined){
+            throw new Error("impossible to be there startsgetASTNodeUID_node_startsBloc")
         }
-        previousNode = startsnodestartsBloc
+        previousNode = startsgetASTNodeUID_node_startsBloc
     }
     
         let startsBlocStepNode = new Step("starts"+getASTNodeUID(node.statements))
@@ -207,11 +211,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
     {
-        let terminatesnode_statementsfinishBloc = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.statements))
-        if(terminatesnode_statementsfinishBloc == undefined){
-            throw new Error("impossible to be there terminatesnode_statementsfinishBloc")
+        let terminatesgetASTNodeUID_node_statements_finishBloc = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.statements))
+        if(terminatesgetASTNodeUID_node_statements_finishBloc == undefined){
+            throw new Error("impossible to be there terminatesgetASTNodeUID_node_statements_finishBloc")
         }
-        previousNode = terminatesnode_statementsfinishBloc
+        previousNode = terminatesgetASTNodeUID_node_statements_finishBloc
     }
     
         {let e = ccfg.addEdge(previousNode,terminatesBlocNode)
@@ -247,11 +251,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         let previousNode =undefined
         
     {
-        let startsnodestartsParallelBloc = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
-        if(startsnodestartsParallelBloc == undefined){
-            throw new Error("impossible to be there startsnodestartsParallelBloc")
+        let startsgetASTNodeUID_node_startsParallelBloc = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
+        if(startsgetASTNodeUID_node_startsParallelBloc == undefined){
+            throw new Error("impossible to be there startsgetASTNodeUID_node_startsParallelBloc")
         }
-        previousNode = startsnodestartsParallelBloc
+        previousNode = startsgetASTNodeUID_node_startsParallelBloc
     }
     
         let startsParallelBlocForkNode: Node = new Fork("startsParallelBlocForkNode")
@@ -278,11 +282,11 @@ export class CCFGVisitor implements SimpleLVisitor {
     ccfg.replaceNode(startsParallelBlocFakeNode,finishParallelBlocLastOfNode)                    
                 
     {
-        let lastOfNodenode_statementsfinishParallelBloc = ccfg.getNodeFromName("lastOfNode"+getASTNodeUID(node.statements))
-        if(lastOfNodenode_statementsfinishParallelBloc == undefined){
-            throw new Error("impossible to be there lastOfNodenode_statementsfinishParallelBloc")
+        let lastOfNodegetASTNodeUID_node_statements_finishParallelBloc = ccfg.getNodeFromName("lastOfNode"+getASTNodeUID(node.statements))
+        if(lastOfNodegetASTNodeUID_node_statements_finishParallelBloc == undefined){
+            throw new Error("impossible to be there lastOfNodegetASTNodeUID_node_statements_finishParallelBloc")
         }
-        previousNode = lastOfNodenode_statementsfinishParallelBloc
+        previousNode = lastOfNodegetASTNodeUID_node_statements_finishParallelBloc
     }
     
         {let e = ccfg.addEdge(previousNode,terminatesParallelBlocNode)
@@ -315,11 +319,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         let previousNode =undefined
         
     {
-        let startsnodeinitializeVar = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
-        if(startsnodeinitializeVar == undefined){
-            throw new Error("impossible to be there startsnodeinitializeVar")
+        let startsgetASTNodeUID_node_initializeVar = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
+        if(startsgetASTNodeUID_node_initializeVar == undefined){
+            throw new Error("impossible to be there startsgetASTNodeUID_node_initializeVar")
         }
-        previousNode = startsnodeinitializeVar
+        previousNode = startsgetASTNodeUID_node_initializeVar
     }
     
     {let initializeVarStateModificationNode: Node = new Step("initializeVarStateModificationNode")
@@ -329,9 +333,9 @@ export class CCFGVisitor implements SimpleLVisitor {
     previousNode = initializeVarStateModificationNode
     }
     previousNode.functionsNames = [...previousNode.functionsNames, ...[`${previousNode.uid}initializeVar`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}1385 = ${node.initialValue}; //undefined`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
+    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}1376 = ${node.initialValue}; //undefined`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);
-                (*((int*)sigma["${getName(node)}currentValue"])) = ${getName(node)}1385;`]] //AA
+                (*((int*)sigma["${getName(node)}currentValue"])) = ${getName(node)}1376;`]] //AA
     
         {let e = ccfg.addEdge(previousNode,terminatesVariableNode)
         e.guards = [...e.guards, ...[]] //EE
@@ -363,11 +367,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         let previousNode =undefined
         
     {
-        let startsnodeaccessVarRef = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
-        if(startsnodeaccessVarRef == undefined){
-            throw new Error("impossible to be there startsnodeaccessVarRef")
+        let startsgetASTNodeUID_node_accessVarRef = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
+        if(startsgetASTNodeUID_node_accessVarRef == undefined){
+            throw new Error("impossible to be there startsgetASTNodeUID_node_accessVarRef")
         }
-        previousNode = startsnodeaccessVarRef
+        previousNode = startsgetASTNodeUID_node_accessVarRef
     }
     
         {let e = ccfg.addEdge(previousNode,terminatesVarRefNode)
@@ -376,7 +380,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "int"
         previousNode.functionsNames = [`${previousNode.uid}accessVarRef`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`const std::lock_guard<std::mutex> lock(sigma_mutex);`,`int ${getName(node)}1588 = *(int *) sigma["${getName(node.theVar)}currentValue"];//currentValue}`,`int ${getName(node)}terminates =  ${getName(node)}1588;`,`return ${getName(node)}terminates;`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`const std::lock_guard<std::mutex> lock(sigma_mutex);`,`int ${getName(node)}1579 = *(int *) sigma["${getName(node.theVar)}currentValue"];//currentValue}`,`int ${getName(node)}terminates =  ${getName(node)}1579;`,`return ${getName(node)}terminates;`]] //GG
     
         return [ccfg,startsVarRefNode,terminatesVarRefNode]
     }
@@ -409,11 +413,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         let previousNode =undefined
         
     {
-        let startsnodecondStart = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
-        if(startsnodecondStart == undefined){
-            throw new Error("impossible to be there startsnodecondStart")
+        let startsgetASTNodeUID_node_condStart = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
+        if(startsgetASTNodeUID_node_condStart == undefined){
+            throw new Error("impossible to be there startsgetASTNodeUID_node_condStart")
         }
-        previousNode = startsnodecondStart
+        previousNode = startsgetASTNodeUID_node_condStart
     }
     
         let condCCFGcondStart = ccfg.getNodeFromName(getASTNodeUID(node.cond))
@@ -432,14 +436,15 @@ export class CCFGVisitor implements SimpleLVisitor {
             let e = ccfg.addEdge(previousNode,condStartsNodecondStart)
             e.guards = [...e.guards, ...[]] //FF
             }
+            
         }else{
             let condOrJoinNode = new OrJoin("orJoinNode"+getASTNodeUID(node.cond))
             ccfg.addNode(condOrJoinNode)
-            let startsnodecondStart = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
-            if(startsnodecondStart == undefined){
-                throw new Error("impossible to be there startsnodecondStart")
+            let startsgetASTNodeUID_node_condStart = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
+            if(startsgetASTNodeUID_node_condStart == undefined){
+                throw new Error("impossible to be there startsgetASTNodeUID_node_condStart")
             }
-            ccfg.addEdge(startsnodecondStart,condOrJoinNode)
+            ccfg.addEdge(startsgetASTNodeUID_node_condStart,condOrJoinNode)
             let condStartsNode = ccfg.getNodeFromName("starts"+getASTNodeUID(node.cond))
             if(condStartsNode != undefined){
                 for(let e of condStartsNode.inputEdges){
@@ -471,11 +476,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         
     {
-        let choiceNodenode_condcondTrueStart = ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.cond))
-        if(choiceNodenode_condcondTrueStart == undefined){
-            throw new Error("impossible to be there choiceNodenode_condcondTrueStart")
+        let choiceNodegetASTNodeUID_node_cond_condTrueStart = ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.cond))
+        if(choiceNodegetASTNodeUID_node_cond_condTrueStart == undefined){
+            throw new Error("impossible to be there choiceNodegetASTNodeUID_node_cond_condTrueStart")
         }
-        previousNode = choiceNodenode_condcondTrueStart
+        previousNode = choiceNodegetASTNodeUID_node_cond_condTrueStart
     }
     
         let thenCCFGcondTrueStart = ccfg.getNodeFromName(getASTNodeUID(node.then))
@@ -494,14 +499,15 @@ export class CCFGVisitor implements SimpleLVisitor {
             let e = ccfg.addEdge(previousNode,thenStartsNodecondTrueStart)
             e.guards = [...e.guards, ...[`(bool)${getName(node.cond)}terminates == true`]] //FF
             }
+            
         }else{
             let thenOrJoinNode = new OrJoin("orJoinNode"+getASTNodeUID(node.then))
             ccfg.addNode(thenOrJoinNode)
-            let choiceNodenode_condcondTrueStart = ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.cond))
-            if(choiceNodenode_condcondTrueStart == undefined){
-                throw new Error("impossible to be there choiceNodenode_condcondTrueStart")
+            let choiceNodegetASTNodeUID_node_cond_condTrueStart = ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.cond))
+            if(choiceNodegetASTNodeUID_node_cond_condTrueStart == undefined){
+                throw new Error("impossible to be there choiceNodegetASTNodeUID_node_cond_condTrueStart")
             }
-            ccfg.addEdge(choiceNodenode_condcondTrueStart,thenOrJoinNode)
+            ccfg.addEdge(choiceNodegetASTNodeUID_node_cond_condTrueStart,thenOrJoinNode)
             let thenStartsNode = ccfg.getNodeFromName("starts"+getASTNodeUID(node.then))
             if(thenStartsNode != undefined){
                 for(let e of thenStartsNode.inputEdges){
@@ -533,11 +539,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         
     {
-        let choiceNodenode_condcondFalseStart = ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.cond))
-        if(choiceNodenode_condcondFalseStart == undefined){
-            throw new Error("impossible to be there choiceNodenode_condcondFalseStart")
+        let choiceNodegetASTNodeUID_node_cond_condFalseStart = ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.cond))
+        if(choiceNodegetASTNodeUID_node_cond_condFalseStart == undefined){
+            throw new Error("impossible to be there choiceNodegetASTNodeUID_node_cond_condFalseStart")
         }
-        previousNode = choiceNodenode_condcondFalseStart
+        previousNode = choiceNodegetASTNodeUID_node_cond_condFalseStart
     }
     
         let elseCCFGcondFalseStart = ccfg.getNodeFromName(getASTNodeUID(node.else))
@@ -556,14 +562,15 @@ export class CCFGVisitor implements SimpleLVisitor {
             let e = ccfg.addEdge(previousNode,elseStartsNodecondFalseStart)
             e.guards = [...e.guards, ...[`(bool)${getName(node.cond)}terminates == false`]] //FF
             }
+            
         }else{
             let elseOrJoinNode = new OrJoin("orJoinNode"+getASTNodeUID(node.else))
             ccfg.addNode(elseOrJoinNode)
-            let choiceNodenode_condcondFalseStart = ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.cond))
-            if(choiceNodenode_condcondFalseStart == undefined){
-                throw new Error("impossible to be there choiceNodenode_condcondFalseStart")
+            let choiceNodegetASTNodeUID_node_cond_condFalseStart = ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.cond))
+            if(choiceNodegetASTNodeUID_node_cond_condFalseStart == undefined){
+                throw new Error("impossible to be there choiceNodegetASTNodeUID_node_cond_condFalseStart")
             }
-            ccfg.addEdge(choiceNodenode_condcondFalseStart,elseOrJoinNode)
+            ccfg.addEdge(choiceNodegetASTNodeUID_node_cond_condFalseStart,elseOrJoinNode)
             let elseStartsNode = ccfg.getNodeFromName("starts"+getASTNodeUID(node.else))
             if(elseStartsNode != undefined){
                 for(let e of elseStartsNode.inputEdges){
@@ -600,11 +607,11 @@ export class CCFGVisitor implements SimpleLVisitor {
     }
     
     {
-        let orJoinNodenode_elsecondStop = ccfg.getNodeFromName("orJoinNode"+getASTNodeUID(node.else))
-        if(orJoinNodenode_elsecondStop == undefined){
-            throw new Error("impossible to be there orJoinNodenode_elsecondStop")
+        let orJoinNodegetASTNodeUID_node_else_condStop = ccfg.getNodeFromName("orJoinNode"+getASTNodeUID(node.else))
+        if(orJoinNodegetASTNodeUID_node_else_condStop == undefined){
+            throw new Error("impossible to be there orJoinNodegetASTNodeUID_node_else_condStop")
         }
-        previousNode = orJoinNodenode_elsecondStop
+        previousNode = orJoinNodegetASTNodeUID_node_else_condStop
     }
     
         {let e = ccfg.addEdge(previousNode,terminatesIfNode)
@@ -640,11 +647,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         let previousNode =undefined
         
     {
-        let startsnodeexecuteAssignment = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
-        if(startsnodeexecuteAssignment == undefined){
-            throw new Error("impossible to be there startsnodeexecuteAssignment")
+        let startsgetASTNodeUID_node_executeAssignment = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
+        if(startsgetASTNodeUID_node_executeAssignment == undefined){
+            throw new Error("impossible to be there startsgetASTNodeUID_node_executeAssignment")
         }
-        previousNode = startsnodeexecuteAssignment
+        previousNode = startsgetASTNodeUID_node_executeAssignment
     }
     
         let exprCCFGexecuteAssignment = ccfg.getNodeFromName(getASTNodeUID(node.expr))
@@ -663,14 +670,15 @@ export class CCFGVisitor implements SimpleLVisitor {
             let e = ccfg.addEdge(previousNode,exprStartsNodeexecuteAssignment)
             e.guards = [...e.guards, ...[]] //FF
             }
+            
         }else{
             let exprOrJoinNode = new OrJoin("orJoinNode"+getASTNodeUID(node.expr))
             ccfg.addNode(exprOrJoinNode)
-            let startsnodeexecuteAssignment = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
-            if(startsnodeexecuteAssignment == undefined){
-                throw new Error("impossible to be there startsnodeexecuteAssignment")
+            let startsgetASTNodeUID_node_executeAssignment = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
+            if(startsgetASTNodeUID_node_executeAssignment == undefined){
+                throw new Error("impossible to be there startsgetASTNodeUID_node_executeAssignment")
             }
-            ccfg.addEdge(startsnodeexecuteAssignment,exprOrJoinNode)
+            ccfg.addEdge(startsgetASTNodeUID_node_executeAssignment,exprOrJoinNode)
             let exprStartsNode = ccfg.getNodeFromName("starts"+getASTNodeUID(node.expr))
             if(exprStartsNode != undefined){
                 for(let e of exprStartsNode.inputEdges){
@@ -688,11 +696,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
     {
-        let terminatesnode_exprexecuteAssignment2 = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.expr))
-        if(terminatesnode_exprexecuteAssignment2 == undefined){
-            throw new Error("impossible to be there terminatesnode_exprexecuteAssignment2")
+        let terminatesgetASTNodeUID_node_expr_executeAssignment2 = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.expr))
+        if(terminatesgetASTNodeUID_node_expr_executeAssignment2 == undefined){
+            throw new Error("impossible to be there terminatesgetASTNodeUID_node_expr_executeAssignment2")
         }
-        previousNode = terminatesnode_exprexecuteAssignment2
+        previousNode = terminatesgetASTNodeUID_node_expr_executeAssignment2
     }
     
     {let executeAssignment2StateModificationNode: Node = new Step("executeAssignment2StateModificationNode")
@@ -704,9 +712,9 @@ export class CCFGVisitor implements SimpleLVisitor {
     previousNode = executeAssignment2StateModificationNode
     }
     previousNode.functionsNames = [...previousNode.functionsNames, ...[`${previousNode.uid}executeAssignment2`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}2529 = resRight; // was ${getName(node)}2363; but using the parameter name now`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
+    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}2520 = resRight; // was ${getName(node)}2354; but using the parameter name now`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
-                (*((int*)sigma["${getName(node.variable)}currentValue"])) = ${getName(node)}2529;`]] //AA
+                (*((int*)sigma["${getName(node.variable)}currentValue"])) = ${getName(node)}2520;`]] //AA
     
         {let e = ccfg.addEdge(previousNode,terminatesAssignmentNode)
         e.guards = [...e.guards, ...[]] //EE
@@ -752,11 +760,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         let previousNode =undefined
         
     {
-        let startsnodeevaluateConjunction = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
-        if(startsnodeevaluateConjunction == undefined){
-            throw new Error("impossible to be there startsnodeevaluateConjunction")
+        let startsgetASTNodeUID_node_evaluateConjunction = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
+        if(startsgetASTNodeUID_node_evaluateConjunction == undefined){
+            throw new Error("impossible to be there startsgetASTNodeUID_node_evaluateConjunction")
         }
-        previousNode = startsnodeevaluateConjunction
+        previousNode = startsgetASTNodeUID_node_evaluateConjunction
     }
     
         let evaluateConjunctionForkNode: Node = new Fork("evaluateConjunctionForkNode")
@@ -792,11 +800,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         
     {
-        let choiceNodenode_lhsevaluateConjunction2 = ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.lhs))
-        if(choiceNodenode_lhsevaluateConjunction2 == undefined){
-            throw new Error("impossible to be there choiceNodenode_lhsevaluateConjunction2")
+        let choiceNodegetASTNodeUID_node_lhs_evaluateConjunction2 = ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.lhs))
+        if(choiceNodegetASTNodeUID_node_lhs_evaluateConjunction2 == undefined){
+            throw new Error("impossible to be there choiceNodegetASTNodeUID_node_lhs_evaluateConjunction2")
         }
-        previousNode = choiceNodenode_lhsevaluateConjunction2
+        previousNode = choiceNodegetASTNodeUID_node_lhs_evaluateConjunction2
     }
     
         {let e = ccfg.addEdge(previousNode,ConjunctionOrJoinNode)
@@ -822,11 +830,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         
     {
-        let choiceNodenode_rhsevaluateConjunction3 = ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.rhs))
-        if(choiceNodenode_rhsevaluateConjunction3 == undefined){
-            throw new Error("impossible to be there choiceNodenode_rhsevaluateConjunction3")
+        let choiceNodegetASTNodeUID_node_rhs_evaluateConjunction3 = ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.rhs))
+        if(choiceNodegetASTNodeUID_node_rhs_evaluateConjunction3 == undefined){
+            throw new Error("impossible to be there choiceNodegetASTNodeUID_node_rhs_evaluateConjunction3")
         }
-        previousNode = choiceNodenode_rhsevaluateConjunction3
+        previousNode = choiceNodegetASTNodeUID_node_rhs_evaluateConjunction3
     }
     
         {let e = ccfg.addEdge(previousNode,ConjunctionOrJoinNode)
@@ -865,11 +873,11 @@ export class CCFGVisitor implements SimpleLVisitor {
     }
     
     {
-        let conditionNodenode_lhsevaluateConjunction4 = ccfg.getNodeFromName("conditionNode"+getASTNodeUID(node.lhs))
-        if(conditionNodenode_lhsevaluateConjunction4 == undefined){
-            throw new Error("impossible to be there conditionNodenode_lhsevaluateConjunction4")
+        let conditionNodegetASTNodeUID_node_lhs_evaluateConjunction4 = ccfg.getNodeFromName("conditionNode"+getASTNodeUID(node.lhs))
+        if(conditionNodegetASTNodeUID_node_lhs_evaluateConjunction4 == undefined){
+            throw new Error("impossible to be there conditionNodegetASTNodeUID_node_lhs_evaluateConjunction4")
         }
-        previousNode = conditionNodenode_lhsevaluateConjunction4
+        previousNode = conditionNodegetASTNodeUID_node_lhs_evaluateConjunction4
     }
     
         {let e = ccfg.addEdge(previousNode,ConjunctionOrJoinNode)
@@ -906,11 +914,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         let previousNode =undefined
         
     {
-        let startsnodestartPlus = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
-        if(startsnodestartPlus == undefined){
-            throw new Error("impossible to be there startsnodestartPlus")
+        let startsgetASTNodeUID_node_startPlus = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
+        if(startsgetASTNodeUID_node_startPlus == undefined){
+            throw new Error("impossible to be there startsgetASTNodeUID_node_startPlus")
         }
-        previousNode = startsnodestartPlus
+        previousNode = startsgetASTNodeUID_node_startPlus
     }
     
         let startPlusForkNode: Node = new Fork("startPlusForkNode")
@@ -947,15 +955,15 @@ export class CCFGVisitor implements SimpleLVisitor {
             throw new Error("impossible to be there andJoinNode"+getASTNodeUID(node.right))
         }
         multipleSynchroNode.params = [...multipleSynchroNode.params, ...[Object.assign( new TypedElement(), JSON.parse(`{ "name": "n2", "type": "int"}`)),Object.assign( new TypedElement(), JSON.parse(`{ "name": "n1", "type": "int"}`))]]
-        multipleSynchroNode.functionsDefs = [...multipleSynchroNode.functionsDefs, ...[`int ${getName(node)}4276 = n2;`,`int ${getName(node)}4301 = n1;`]] //HH
+        multipleSynchroNode.functionsDefs = [...multipleSynchroNode.functionsDefs, ...[`int ${getName(node)}4267 = n2;`,`int ${getName(node)}4292 = n1;`]] //HH
     }
     
     {
-        let andJoinNodenode_rightfinishPlus = ccfg.getNodeFromName("andJoinNode"+getASTNodeUID(node.right))
-        if(andJoinNodenode_rightfinishPlus == undefined){
-            throw new Error("impossible to be there andJoinNodenode_rightfinishPlus")
+        let andJoinNodegetASTNodeUID_node_right_finishPlus = ccfg.getNodeFromName("andJoinNode"+getASTNodeUID(node.right))
+        if(andJoinNodegetASTNodeUID_node_right_finishPlus == undefined){
+            throw new Error("impossible to be there andJoinNodegetASTNodeUID_node_right_finishPlus")
         }
-        previousNode = andJoinNodenode_rightfinishPlus
+        previousNode = andJoinNodegetASTNodeUID_node_right_finishPlus
     }
     
         {let e = ccfg.addEdge(previousNode,terminatesPlusNode)
@@ -964,7 +972,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "int"
         previousNode.functionsNames = [`${previousNode.uid}finishPlus`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}4420 = n1; // was ${getName(node)}4301; but using the parameter name now`,`int ${getName(node)}4425 = n2; // was ${getName(node)}4276; but using the parameter name now`,`int ${getName(node)}4419 = ${getName(node)}4420 + ${getName(node)}4425;`,`int ${getName(node)}terminates =  ${getName(node)}4419;`,`return ${getName(node)}terminates;`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getName(node)}4411 = n1; // was ${getName(node)}4292; but using the parameter name now`,`int ${getName(node)}4416 = n2; // was ${getName(node)}4267; but using the parameter name now`,`int ${getName(node)}4410 = ${getName(node)}4411 + ${getName(node)}4416;`,`int ${getName(node)}terminates =  ${getName(node)}4410;`,`return ${getName(node)}terminates;`]] //GG
     
         return [ccfg,startsPlusNode,terminatesPlusNode]
     }
@@ -988,11 +996,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         let previousNode =undefined
         
     {
-        let startsnodeevalBooleanConst = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
-        if(startsnodeevalBooleanConst == undefined){
-            throw new Error("impossible to be there startsnodeevalBooleanConst")
+        let startsgetASTNodeUID_node_evalBooleanConst = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
+        if(startsgetASTNodeUID_node_evalBooleanConst == undefined){
+            throw new Error("impossible to be there startsgetASTNodeUID_node_evalBooleanConst")
         }
-        previousNode = startsnodeevalBooleanConst
+        previousNode = startsgetASTNodeUID_node_evalBooleanConst
     }
     
         {let e = ccfg.addEdge(previousNode,terminatesBooleanConstNode)
@@ -1001,7 +1009,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "bool"
         previousNode.functionsNames = [`${previousNode.uid}evalBooleanConst`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`const std::lock_guard<std::mutex> lock(sigma_mutex);`,`bool ${getName(node)}4639 = *(bool *) sigma["${getName(node)}constantValue"];//constantValue}`,`bool ${getName(node)}terminates =  ${getName(node)}4639;`,`return ${getName(node)}terminates;`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`const std::lock_guard<std::mutex> lock(sigma_mutex);`,`bool ${getName(node)}4630 = *(bool *) sigma["${getName(node)}constantValue"];//constantValue}`,`bool ${getName(node)}terminates =  ${getName(node)}4630;`,`return ${getName(node)}terminates;`]] //GG
     
         return [ccfg,startsBooleanConstNode,terminatesBooleanConstNode]
     }
@@ -1034,11 +1042,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         let previousNode =undefined
         
     {
-        let startsnodewhileStart = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
-        if(startsnodewhileStart == undefined){
-            throw new Error("impossible to be there startsnodewhileStart")
+        let startsgetASTNodeUID_node_whileStart = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
+        if(startsgetASTNodeUID_node_whileStart == undefined){
+            throw new Error("impossible to be there startsgetASTNodeUID_node_whileStart")
         }
-        previousNode = startsnodewhileStart
+        previousNode = startsgetASTNodeUID_node_whileStart
     }
     
         let condCCFGwhileStart = ccfg.getNodeFromName(getASTNodeUID(node.cond))
@@ -1057,14 +1065,15 @@ export class CCFGVisitor implements SimpleLVisitor {
             let e = ccfg.addEdge(previousNode,condStartsNodewhileStart)
             e.guards = [...e.guards, ...[]] //FF
             }
+            
         }else{
             let condOrJoinNode = new OrJoin("orJoinNode"+getASTNodeUID(node.cond))
             ccfg.addNode(condOrJoinNode)
-            let startsnodewhileStart = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
-            if(startsnodewhileStart == undefined){
-                throw new Error("impossible to be there startsnodewhileStart")
+            let startsgetASTNodeUID_node_whileStart = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
+            if(startsgetASTNodeUID_node_whileStart == undefined){
+                throw new Error("impossible to be there startsgetASTNodeUID_node_whileStart")
             }
-            ccfg.addEdge(startsnodewhileStart,condOrJoinNode)
+            ccfg.addEdge(startsgetASTNodeUID_node_whileStart,condOrJoinNode)
             let condStartsNode = ccfg.getNodeFromName("starts"+getASTNodeUID(node.cond))
             if(condStartsNode != undefined){
                 for(let e of condStartsNode.inputEdges){
@@ -1096,11 +1105,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         
     {
-        let choiceNodenode_condwhileBodyStart = ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.cond))
-        if(choiceNodenode_condwhileBodyStart == undefined){
-            throw new Error("impossible to be there choiceNodenode_condwhileBodyStart")
+        let choiceNodegetASTNodeUID_node_cond_whileBodyStart = ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.cond))
+        if(choiceNodegetASTNodeUID_node_cond_whileBodyStart == undefined){
+            throw new Error("impossible to be there choiceNodegetASTNodeUID_node_cond_whileBodyStart")
         }
-        previousNode = choiceNodenode_condwhileBodyStart
+        previousNode = choiceNodegetASTNodeUID_node_cond_whileBodyStart
     }
     
         let bodyCCFGwhileBodyStart = ccfg.getNodeFromName(getASTNodeUID(node.body))
@@ -1119,14 +1128,15 @@ export class CCFGVisitor implements SimpleLVisitor {
             let e = ccfg.addEdge(previousNode,bodyStartsNodewhileBodyStart)
             e.guards = [...e.guards, ...[`(bool)${getName(node.cond)}terminates == true`]] //FF
             }
+            
         }else{
             let bodyOrJoinNode = new OrJoin("orJoinNode"+getASTNodeUID(node.body))
             ccfg.addNode(bodyOrJoinNode)
-            let choiceNodenode_condwhileBodyStart = ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.cond))
-            if(choiceNodenode_condwhileBodyStart == undefined){
-                throw new Error("impossible to be there choiceNodenode_condwhileBodyStart")
+            let choiceNodegetASTNodeUID_node_cond_whileBodyStart = ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.cond))
+            if(choiceNodegetASTNodeUID_node_cond_whileBodyStart == undefined){
+                throw new Error("impossible to be there choiceNodegetASTNodeUID_node_cond_whileBodyStart")
             }
-            ccfg.addEdge(choiceNodenode_condwhileBodyStart,bodyOrJoinNode)
+            ccfg.addEdge(choiceNodegetASTNodeUID_node_cond_whileBodyStart,bodyOrJoinNode)
             let bodyStartsNode = ccfg.getNodeFromName("starts"+getASTNodeUID(node.body))
             if(bodyStartsNode != undefined){
                 for(let e of bodyStartsNode.inputEdges){
@@ -1144,11 +1154,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
     {
-        let terminatesnode_bodywhileBodyEnd = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.body))
-        if(terminatesnode_bodywhileBodyEnd == undefined){
-            throw new Error("impossible to be there terminatesnode_bodywhileBodyEnd")
+        let terminatesgetASTNodeUID_node_body_whileBodyEnd = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.body))
+        if(terminatesgetASTNodeUID_node_body_whileBodyEnd == undefined){
+            throw new Error("impossible to be there terminatesgetASTNodeUID_node_body_whileBodyEnd")
         }
-        previousNode = terminatesnode_bodywhileBodyEnd
+        previousNode = terminatesgetASTNodeUID_node_body_whileBodyEnd
     }
     
         let condCCFGwhileBodyEnd = ccfg.getNodeFromName(getASTNodeUID(node.cond))
@@ -1167,14 +1177,15 @@ export class CCFGVisitor implements SimpleLVisitor {
             let e = ccfg.addEdge(previousNode,condStartsNodewhileBodyEnd)
             e.guards = [...e.guards, ...[]] //FF
             }
+            
         }else{
             let condOrJoinNode = new OrJoin("orJoinNode"+getASTNodeUID(node.cond))
             ccfg.addNode(condOrJoinNode)
-            let terminatesnode_bodywhileBodyEnd = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.body))
-            if(terminatesnode_bodywhileBodyEnd == undefined){
-                throw new Error("impossible to be there terminatesnode_bodywhileBodyEnd")
+            let terminatesgetASTNodeUID_node_body_whileBodyEnd = ccfg.getNodeFromName("terminates"+getASTNodeUID(node.body))
+            if(terminatesgetASTNodeUID_node_body_whileBodyEnd == undefined){
+                throw new Error("impossible to be there terminatesgetASTNodeUID_node_body_whileBodyEnd")
             }
-            ccfg.addEdge(terminatesnode_bodywhileBodyEnd,condOrJoinNode)
+            ccfg.addEdge(terminatesgetASTNodeUID_node_body_whileBodyEnd,condOrJoinNode)
             let condStartsNode = ccfg.getNodeFromName("starts"+getASTNodeUID(node.cond))
             if(condStartsNode != undefined){
                 for(let e of condStartsNode.inputEdges){
@@ -1206,11 +1217,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         
     {
-        let choiceNodenode_condwhileEnd = ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.cond))
-        if(choiceNodenode_condwhileEnd == undefined){
-            throw new Error("impossible to be there choiceNodenode_condwhileEnd")
+        let choiceNodegetASTNodeUID_node_cond_whileEnd = ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.cond))
+        if(choiceNodegetASTNodeUID_node_cond_whileEnd == undefined){
+            throw new Error("impossible to be there choiceNodegetASTNodeUID_node_cond_whileEnd")
         }
-        previousNode = choiceNodenode_condwhileEnd
+        previousNode = choiceNodegetASTNodeUID_node_cond_whileEnd
     }
     
         {let e = ccfg.addEdge(previousNode,terminatesWhileNode)
@@ -1222,6 +1233,149 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
         return [ccfg,startsWhileNode,terminatesWhileNode]
+    }
+
+    visitPeriodicBloc(node: PeriodicBloc): [Node,Node,Node] {
+        let ccfg: ContainerNode = new ContainerNode(getASTNodeUID(node))
+
+
+        let startsPeriodicBlocNode: Node = new Step("starts"+getASTNodeUID(node),[`sigma["${getName(node)}blocTrigger"] = new int(${node.time});`])
+        if(startsPeriodicBlocNode.functionsDefs.length>0){
+            startsPeriodicBlocNode.returnType = "void"
+        }
+        startsPeriodicBlocNode.functionsNames = [`init${startsPeriodicBlocNode.uid}PeriodicBloc`]
+        ccfg.addNode(startsPeriodicBlocNode)
+        let terminatesPeriodicBlocNode: Node = new Step("terminates"+getASTNodeUID(node))
+        ccfg.addNode(terminatesPeriodicBlocNode)
+        // rule periodicStart
+   //premise: starts:event
+   //conclusion: blocTrigger:timer,starts:event
+// rule periodicBodyStart
+   //premise: blocTrigger:timer,terminates:event
+   //conclusion: bloc:Bloc,starts:event
+   //conclusion: bloc:Bloc,starts:event,blocTrigger:timer,starts:event
+
+        let previousNode =undefined
+        
+    {
+        let startsgetASTNodeUID_node_periodicStart = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
+        if(startsgetASTNodeUID_node_periodicStart == undefined){
+            throw new Error("impossible to be there startsgetASTNodeUID_node_periodicStart")
+        }
+        previousNode = startsgetASTNodeUID_node_periodicStart
+    }
+    
+        let blocTriggerCCFGperiodicStart = ccfg.getNodeFromName("blocTrigger"+getASTNodeUID(node))
+        let blocTriggerStartsNodeperiodicStart = ccfg.getNodeFromName("starts"+"blocTrigger"+getASTNodeUID(node))
+        let blocTriggerTerminatesNodeperiodicStart = ccfg.getNodeFromName("terminates"+"blocTrigger"+getASTNodeUID(node))
+        if (blocTriggerCCFGperiodicStart == undefined) {
+            
+
+            blocTriggerCCFGperiodicStart = new ContainerNode("blocTrigger"+getASTNodeUID(node))
+            ccfg.addNode( blocTriggerCCFGperiodicStart)
+
+            blocTriggerStartsNodeperiodicStart = new Step("startsblocTrigger"+getASTNodeUID(node))
+            ccfg.addNode( blocTriggerStartsNodeperiodicStart)
+            blocTriggerStartsNodeperiodicStart.functionsNames = [`starts${blocTriggerStartsNodeperiodicStart.uid}blocTrigger`]
+            blocTriggerStartsNodeperiodicStart.returnType = "void"
+            blocTriggerStartsNodeperiodicStart.functionsDefs = [...blocTriggerStartsNodeperiodicStart.functionsDefs, ...[`std::this_thread::sleep_for(${node.time}ms);`]] //GGG
+            blocTriggerTerminatesNodeperiodicStart = new Step("terminatesblocTrigger"+getASTNodeUID(node))
+            ccfg.addNode(blocTriggerTerminatesNodeperiodicStart)
+    
+            {
+            let e1 = ccfg.addEdge(previousNode, blocTriggerStartsNodeperiodicStart)
+            e1.guards = [...e1.guards, ...[]] //FFF
+            let e2 = ccfg.addEdge( blocTriggerStartsNodeperiodicStart,blocTriggerTerminatesNodeperiodicStart)
+            e2.guards = [...e1.guards, ...[]] //FFF
+            }
+
+            
+        }else{
+            let blocTriggerOrJoinNode = new OrJoin("orJoinNode"+"blocTrigger"+getASTNodeUID(node))
+            ccfg.addNode(blocTriggerOrJoinNode)
+            let startsgetASTNodeUID_node_periodicStart = ccfg.getNodeFromName("starts"+getASTNodeUID(node))
+            if(startsgetASTNodeUID_node_periodicStart == undefined){
+                throw new Error("impossible to be there startsgetASTNodeUID_node_periodicStart")
+            }
+            ccfg.addEdge(startsgetASTNodeUID_node_periodicStart,blocTriggerOrJoinNode)
+            let blocTriggerStartsNode = ccfg.getNodeFromName("starts"+"blocTrigger"+getASTNodeUID(node))
+            if(blocTriggerStartsNode != undefined){
+                for(let e of blocTriggerStartsNode.inputEdges){
+                    e.to = blocTriggerOrJoinNode
+                    blocTriggerOrJoinNode.inputEdges.push(e)
+                }
+                blocTriggerStartsNode.inputEdges = []
+                ccfg.addEdge(blocTriggerOrJoinNode,blocTriggerStartsNode)
+            }
+        }
+
+        
+        previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}periodicStart`] //overwrite existing name
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
+    
+    {
+        let terminatesblocTriggergetASTNodeUID_node_periodicBodyStart = ccfg.getNodeFromName("terminates"+"blocTrigger"+getASTNodeUID(node))
+        if(terminatesblocTriggergetASTNodeUID_node_periodicBodyStart == undefined){
+            throw new Error("impossible to be there terminatesblocTriggergetASTNodeUID_node_periodicBodyStart")
+        }
+        previousNode = terminatesblocTriggergetASTNodeUID_node_periodicBodyStart
+    }
+    
+        let periodicBodyStartForkNode: Node = new Fork("periodicBodyStartForkNode")
+        ccfg.addNode(periodicBodyStartForkNode)
+        {let e = ccfg.addEdge(previousNode,periodicBodyStartForkNode)
+        e.guards = [...e.guards, ...[]] //BB
+        }
+        
+        let [blocCCFG, blocStartNode/*,blocTerminatesNode*/] = this.visit(node.bloc)
+        ccfg.addNode(blocCCFG)
+        ccfg.addEdge(periodicBodyStartForkNode,blocStartNode)
+        
+    let blocTriggerCCFGperiodicBodyStart = ccfg.getNodeFromName("blocTrigger"+getASTNodeUID(node))
+    let blocTriggerStartsNodeperiodicBodyStart = ccfg.getNodeFromName("starts"+"blocTrigger"+getASTNodeUID(node))
+    let blocTriggerTerminatesNodeperiodicBodyStart = ccfg.getNodeFromName("terminates"+"blocTrigger"+getASTNodeUID(node))
+    if (blocTriggerCCFGperiodicBodyStart == undefined) {
+        blocTriggerCCFGperiodicBodyStart = new ContainerNode("blocTrigger"+getASTNodeUID(node))
+        ccfg.addNode( blocTriggerCCFGperiodicBodyStart)
+
+        blocTriggerStartsNodeperiodicBodyStart = new Step("startsblocTrigger"+getASTNodeUID(node))
+        ccfg.addNode( blocTriggerStartsNodeperiodicBodyStart)
+        blocTriggerTerminatesNodeperiodicBodyStart = new Step("terminatesblocTrigger"+getASTNodeUID(node))
+        ccfg.addNode(blocTriggerTerminatesNodeperiodicBodyStart)
+
+        {
+        let e1 = ccfg.addEdge(previousNode, blocTriggerStartsNodeperiodicBodyStart)
+        e1.guards = [...e1.guards, ...[]] //FF2
+        let e2 = ccfg.addEdge( blocTriggerStartsNodeperiodicBodyStart,blocTriggerTerminatesNodeperiodicBodyStart)
+        e2.guards = [...e1.guards, ...[]] //FF2
+        ccfg.addEdge(periodicBodyStartForkNode,blocTriggerStartsNodeperiodicBodyStart)
+        }
+    }else{
+        let blocTriggerOrJoinNode = new OrJoin("orJoinNode"+"blocTrigger"+getASTNodeUID(node))
+        ccfg.addNode(blocTriggerOrJoinNode)
+        let terminatesblocTriggergetASTNodeUID_node_periodicBodyStart = ccfg.getNodeFromName("terminates"+"blocTrigger"+getASTNodeUID(node))
+        if(terminatesblocTriggergetASTNodeUID_node_periodicBodyStart == undefined){
+            throw new Error("impossible to be there terminatesblocTriggergetASTNodeUID_node_periodicBodyStart")
+        }
+        //ccfg.addEdge(terminatesblocTriggergetASTNodeUID_node_periodicBodyStart,blocTriggerOrJoinNode)
+        let blocTriggerStartsNode = ccfg.getNodeFromName("starts"+"blocTrigger"+getASTNodeUID(node))
+        if(blocTriggerStartsNode != undefined){
+            for(let e of blocTriggerStartsNode.inputEdges){
+                e.to = blocTriggerOrJoinNode
+                blocTriggerOrJoinNode.inputEdges.push(e)
+            }
+            blocTriggerStartsNode.inputEdges = []
+            ccfg.addEdge(blocTriggerOrJoinNode,blocTriggerStartsNode)
+            ccfg.addEdge(periodicBodyStartForkNode,blocTriggerOrJoinNode)
+        }
+    }
+        
+        previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}periodicBodyStart`] //overwrite existing name
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
+    
+        return [ccfg,startsPeriodicBlocNode,terminatesPeriodicBlocNode]
     }
 
 }

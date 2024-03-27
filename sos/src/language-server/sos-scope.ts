@@ -12,7 +12,8 @@ import {
 import { AbstractRule, Assignment, CollectionRuleSync, CrossReference, isAbstractRule, isAlternatives, isAssignment, isCollectionRuleSync, isMemberCall, isRuleOpening, isRuleSync, isRWRule, 
          isSoSSpec, isTemporaryVariable, MemberCall, MethodMember, Parameter,isCrossReference, isGrammar,
          ParserRule, RuleOpening, RWRule, SoSSpec, TypeReference, VariableDeclaration,
-         Alternatives} from './generated/ast.js';
+         Alternatives,
+         FieldMember} from './generated/ast.js';
 import { getRuleOpeningChain, inferType } from './type-system/infer.js';
 import { isParserRuleType, isRuleOpeningType } from './type-system/descriptions.js';
 import { AbstractElement } from './generated/ast.js';
@@ -295,6 +296,37 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         allScopeElements = allScopeElements.concat(this.addClocks(ruleOpeningItem))
         allScopeElements = allScopeElements.concat(this.getAllTemporaryVariable(ruleOpeningItem))
         this.addListFunctions(ruleOpeningItem,allScopeElements,context)
+
+        for(let v of ruleOpeningItem.runtimeState){
+            if ((v as VariableDeclaration).type?.primitive?.name == "timer"){
+                const starts: FieldMember = {
+                    $container: v,
+                    $type: 'FieldMember',
+                    name: "starts",
+                    $cstNode: ruleOpeningItem.$cstNode,
+                    $containerProperty: "clocks",
+                   type:{} as TypeReference
+                };
+                starts.type = {
+                    $container: starts,
+                    $type: 'TypeReference',
+                };
+                starts.type.primitive = { name: 'event', $container: starts.type, $type: 'SoSPrimitiveType' };
+                const terminates: FieldMember = {
+                    $container: v,
+                    $type: 'FieldMember',
+                    name: "terminates",
+                    $cstNode: ruleOpeningItem.$cstNode,
+                    $containerProperty: "clocks",
+                    type:{} as TypeReference
+                };
+                terminates.type = {
+                    $container: terminates,
+                    $type: 'TypeReference',
+                };
+                terminates.type.primitive = { name: 'event', $container: starts.type, $type: 'SoSPrimitiveType' };
+            }
+        }
 
         return this.createScopeForNodes(allScopeElements);
     }
