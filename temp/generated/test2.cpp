@@ -4,7 +4,10 @@
 #include <thread>
 #include <mutex>
 #include <iostream>
+#include <chrono>
 #include "../utils/LockingQueue.hpp"
+
+using namespace std::chrono_literals;
 
 class Void{
 };
@@ -195,25 +198,29 @@ functioninit13Variable();
 function15initializeVar();
          
             LockingQueue<Void> queue20;
-        std::thread thread22([&](){
+            std::thread thread22([&](){
 
             LockingQueue<int> queue34;
-        std::thread thread29([&](){
+            std::thread thread29([&](){
 int result29accessVarRef = function29accessVarRef();
+{
 
             queue34.push(result29accessVarRef);
+                }
+
+            });
+            thread29.detach();
                 
-        });
-        thread29.detach();
-            
-        std::thread thread32([&](){
+            std::thread thread32([&](){
 int result32accessVarRef = function32accessVarRef();
+{
 
             queue34.push(result32accessVarRef);
+                }
+
+            });
+            thread32.detach();
                 
-        });
-        thread32.detach();
-            
         //start of and join node
         
         int AndJoinPopped_34_0;
@@ -225,32 +232,38 @@ int result32accessVarRef = function32accessVarRef();
 
         //end of and join node
         function35executeAssignment2(result34finishPlus);
+{
 
             Void fakeParam20;
             queue20.push(fakeParam20);
+                }
+
+            });
+            thread22.detach();
                 
-        });
-        thread22.detach();
-            
-        std::thread thread37([&](){
+            std::thread thread37([&](){
 
             LockingQueue<int> queue49;
-        std::thread thread44([&](){
+            std::thread thread44([&](){
 int result44accessVarRef = function44accessVarRef();
+{
 
             queue49.push(result44accessVarRef);
+                }
+
+            });
+            thread44.detach();
                 
-        });
-        thread44.detach();
-            
-        std::thread thread47([&](){
+            std::thread thread47([&](){
 int result47accessVarRef = function47accessVarRef();
+{
 
             queue49.push(result47accessVarRef);
+                }
+
+            });
+            thread47.detach();
                 
-        });
-        thread47.detach();
-            
         //start of and join node
         
         int AndJoinPopped_49_0;
@@ -262,13 +275,15 @@ int result47accessVarRef = function47accessVarRef();
 
         //end of and join node
         function50executeAssignment2(result49finishPlus);
+{
 
             Void fakeParam20;
             queue20.push(fakeParam20);
+                }
+
+            });
+            thread37.detach();
                 
-        });
-        thread37.detach();
-            
         //start of and join node
         
         Void AndJoinPopped_20_0;
@@ -285,22 +300,26 @@ int result47accessVarRef = function47accessVarRef();
         int VarRef7_4_7_6terminates = result56accessVarRef;//Choice node
         if((bool)VarRef7_4_7_6terminates == true){
             LockingQueue<int> queue76;
-        std::thread thread71([&](){
+            std::thread thread71([&](){
 int result71accessVarRef = function71accessVarRef();
+{
 
             queue76.push(result71accessVarRef);
+                }
+
+            });
+            thread71.detach();
                 
-        });
-        thread71.detach();
-            
-        std::thread thread74([&](){
+            std::thread thread74([&](){
 int result74accessVarRef = function74accessVarRef();
+{
 
             queue76.push(result74accessVarRef);
+                }
+
+            });
+            thread74.detach();
                 
-        });
-        thread74.detach();
-            
         //start of and join node
         
         int AndJoinPopped_76_0;
@@ -312,31 +331,37 @@ int result74accessVarRef = function74accessVarRef();
 
         //end of and join node
         function77executeAssignment2(result76finishPlus);
+{
 
             Void fakeParam99;
             queue99.push(fakeParam99);
-                
+                }
+
             //END IF (bool)VarRef7_4_7_6terminates == true
         }
             //Choice node
         if((bool)VarRef7_4_7_6terminates == false){
             LockingQueue<int> queue96;
-        std::thread thread91([&](){
+            std::thread thread91([&](){
 int result91accessVarRef = function91accessVarRef();
+{
 
             queue96.push(result91accessVarRef);
+                }
+
+            });
+            thread91.detach();
                 
-        });
-        thread91.detach();
-            
-        std::thread thread94([&](){
+            std::thread thread94([&](){
 int result94accessVarRef = function94accessVarRef();
+{
 
             queue96.push(result94accessVarRef);
+                }
+
+            });
+            thread94.detach();
                 
-        });
-        thread94.detach();
-            
         //start of and join node
         
         int AndJoinPopped_96_0;
@@ -348,10 +373,12 @@ int result94accessVarRef = function94accessVarRef();
 
         //end of and join node
         function97executeAssignment2(result96finishPlus);
+{
 
             Void fakeParam99;
             queue99.push(fakeParam99);
-                
+                }
+
             //END IF (bool)VarRef7_4_7_6terminates == false
         }
              //or join node
@@ -360,17 +387,21 @@ int result94accessVarRef = function94accessVarRef();
         
             LockingQueue<bool> queue106;
             LockingQueue<bool> queue116;
-        std::thread thread109([&](){
+            std::thread thread109([&](){
 bool result109evalBooleanConst = function109evalBooleanConst();
+{
 
             queue116.push(result109evalBooleanConst);
-                
+                }
+
                 {
         bool BooleanConst16_6_16_10terminates = result109evalBooleanConst;//Choice node
         if((bool)BooleanConst16_6_16_10terminates == false){bool result114evaluateConjunction2 = function114evaluateConjunction2();
+{
 
             queue106.push(result114evaluateConjunction2);
-                
+                }
+
             //END IF (bool)BooleanConst16_6_16_10terminates == false
         }
             
@@ -379,20 +410,24 @@ bool result109evalBooleanConst = function109evalBooleanConst();
                 {
                 }
                 
-        });
-        thread109.detach();
-            
-        std::thread thread112([&](){
+            });
+            thread109.detach();
+                
+            std::thread thread112([&](){
 bool result112evalBooleanConst = function112evalBooleanConst();
+{
 
             queue116.push(result112evalBooleanConst);
-                
+                }
+
                 {
         bool BooleanConst16_14_16_19terminates = result112evalBooleanConst;//Choice node
         if((bool)BooleanConst16_14_16_19terminates == false){bool result115evaluateConjunction3 = function115evaluateConjunction3();
+{
 
             queue106.push(result115evaluateConjunction3);
-                
+                }
+
             //END IF (bool)BooleanConst16_14_16_19terminates == false
         }
             
@@ -401,9 +436,9 @@ bool result112evalBooleanConst = function112evalBooleanConst();
                 {
                 }
                 
-        });
-        thread112.detach();
-            
+            });
+            thread112.detach();
+                
         //start of and join node
         
         bool AndJoinPopped_116_0;
@@ -417,9 +452,11 @@ bool result112evalBooleanConst = function112evalBooleanConst();
         bool BooleanConst16_6_16_10terminates = AndJoinPopped_116_0;
         bool BooleanConst16_14_16_19terminates = AndJoinPopped_116_1;//Choice node
         if((bool)BooleanConst16_6_16_10terminates == true && (bool)BooleanConst16_14_16_19terminates == true){bool result117evaluateConjunction4 = function117evaluateConjunction4();
+{
 
             queue106.push(result117evaluateConjunction4);
-                
+                }
+
             //END IF (bool)BooleanConst16_6_16_10terminates == true && (bool)BooleanConst16_14_16_19terminates == true
         }
              //or join node

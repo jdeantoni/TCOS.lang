@@ -1,6 +1,6 @@
 
 import { AstNode, Reference, isReference } from "langium";
-import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, StartTimer, StopTimer, ContainerNode, TypedElement } from "../../ccfg/ccfglib";
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, ContainerNode, TypedElement } from "../../ccfg/ccfglib";
 
     import { Range, integer } from "vscode-languageserver";
 
@@ -1239,7 +1239,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         let ccfg: ContainerNode = new ContainerNode(getASTNodeUID(node))
 
 
-        let startsPeriodicBlocNode: Node = new Step("starts"+getASTNodeUID(node),[`sigma["${getName(node)}blocTrigger"] = new unknown(${node.time});`])
+        let startsPeriodicBlocNode: Node = new Step("starts"+getASTNodeUID(node),[`sigma["${getName(node)}blocTrigger"] = new int(${node.time});`])
         if(startsPeriodicBlocNode.functionsDefs.length>0){
             startsPeriodicBlocNode.returnType = "void"
         }
@@ -1274,16 +1274,19 @@ export class CCFGVisitor implements SimpleLVisitor {
             blocTriggerCCFGperiodicStart = new ContainerNode("blocTrigger"+getASTNodeUID(node))
             ccfg.addNode( blocTriggerCCFGperiodicStart)
 
-            blocTriggerStartsNodeperiodicStart = new StartTimer("startsblocTrigger"+getASTNodeUID(node),node.time)
+            blocTriggerStartsNodeperiodicStart = new Step("startsblocTrigger"+getASTNodeUID(node))
             ccfg.addNode( blocTriggerStartsNodeperiodicStart)
-            blocTriggerTerminatesNodeperiodicStart = new StopTimer("terminatesblocTrigger"+getASTNodeUID(node))
+            blocTriggerStartsNodeperiodicStart.functionsNames = [`starts${blocTriggerStartsNodeperiodicStart.uid}blocTrigger`]
+            blocTriggerStartsNodeperiodicStart.returnType = "void"
+            blocTriggerStartsNodeperiodicStart.functionsDefs = [...blocTriggerStartsNodeperiodicStart.functionsDefs, ...[`std::this_thread::sleep_for(${node.time}ms);`]] //GGG
+            blocTriggerTerminatesNodeperiodicStart = new Step("terminatesblocTrigger"+getASTNodeUID(node))
             ccfg.addNode(blocTriggerTerminatesNodeperiodicStart)
     
             {
             let e1 = ccfg.addEdge(previousNode, blocTriggerStartsNodeperiodicStart)
-            e1.guards = [...e1.guards, ...[]] //FF
+            e1.guards = [...e1.guards, ...[]] //FFF
             let e2 = ccfg.addEdge( blocTriggerStartsNodeperiodicStart,blocTriggerTerminatesNodeperiodicStart)
-            e2.guards = [...e1.guards, ...[]] //FF
+            e2.guards = [...e1.guards, ...[]] //FFF
             }
 
             
@@ -1336,9 +1339,9 @@ export class CCFGVisitor implements SimpleLVisitor {
         blocTriggerCCFGperiodicBodyStart = new ContainerNode("blocTrigger"+getASTNodeUID(node))
         ccfg.addNode( blocTriggerCCFGperiodicBodyStart)
 
-        blocTriggerStartsNodeperiodicBodyStart = new StartTimer("startsblocTrigger"+getASTNodeUID(node),node.time)
+        blocTriggerStartsNodeperiodicBodyStart = new Step("startsblocTrigger"+getASTNodeUID(node))
         ccfg.addNode( blocTriggerStartsNodeperiodicBodyStart)
-        blocTriggerTerminatesNodeperiodicBodyStart = new StopTimer("terminatesblocTrigger"+getASTNodeUID(node))
+        blocTriggerTerminatesNodeperiodicBodyStart = new Step("terminatesblocTrigger"+getASTNodeUID(node))
         ccfg.addNode(blocTriggerTerminatesNodeperiodicBodyStart)
 
         {

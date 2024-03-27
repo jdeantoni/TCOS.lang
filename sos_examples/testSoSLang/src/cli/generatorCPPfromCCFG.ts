@@ -50,6 +50,7 @@ function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model): CCFG {
     ccfg.addSyncEdge()
 
     ccfg.detectCycles();
+    ccfg.collectCycles()
 
     codeFile.append(ccfg.toDot());
     return ccfg;
@@ -71,7 +72,10 @@ function doGenerateCPP(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: bool
 #include <thread>
 #include <mutex>
 #include <iostream>
+#include <chrono>
 #include "../utils/LockingQueue.hpp"
+
+using namespace std::chrono_literals;
 `)
 if(debug){
     codeFile.append(`
@@ -158,7 +162,7 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
     if(currentNode.inputEdges.length > 1){
         
         if (visitIsStarting == false && currentNode.numberOfVisits < currentNode.inputEdges.length) {
-            if(currentNode.isInCycle){
+            if(currentNode.isCycleInitiator){
                 if(! continuations.includes(currentNode)){
                     // console.log("add continuation "+currentNode.uid  + " nbVisit = "+currentNode.numberOfVisits)
                     continuationsRecursLevel.push(recursLevel-1);
@@ -173,7 +177,7 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
         
         if (currentNode.numberOfVisits == currentNode.inputEdges.length){        
             if(! continuations.includes(currentNode)){
-                if(currentNode.isInCycle){
+                if(currentNode.isCycleInitiator){
                     continuationsRecursLevel.push(recursLevel-1);
                     currentNode.numberOfVisits = currentNode.inputEdges.length;
                 }
@@ -189,6 +193,10 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
     visitedUID.push(currentUID);
     // console.log("visit "+currentNode.uid  + " nbVisit = "+currentNode.numberOfVisits)
 
+
+    // if(currentNode.cycles.length > 0){
+    //     console.log("cycle detected in" + currentNode.uid+":"+currentNode.cycles.map(c => c.map(n => n.uid).join("->")).join(" | "))
+    // }
     switch(currentNode.getType()){
     case "Step":
         {
@@ -244,15 +252,25 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
         continuationsRecursLevel.push(recursLevel);
 
         for(let edge of edgeToVisit){
-            fifoThreadUid.add(currentNode.uid,edge.to.uid);
-            codeFile.append(`
-        std::thread thread${edge.to.uid}([&](){\n`
-            );
-            visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ codeFile);
-            codeFile.append(`
-        });
-        thread${edge.to.uid}.detach();
-            `);
+            //console.log("fork node cycles = "+currentNode.cycles.map(c => c.map(n => n.uid).join("->")).join(" | "))
+            if (edge.to.cycles.length > 0 && ! edge.to.cyclePossessAnAndJoin()){
+                //we have a cycle and no andJoin in the cycle
+                //console.log(edge.to.uid+": no andJoin in cycle ")
+                visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ codeFile);
+                if(edge.to.isCycleInitiator){
+                    addQueuePushCode(edge.to.uid,edge.to,ccfg,codeFile,undefined)
+                }
+            }else{
+                fifoThreadUid.add(currentNode.uid,edge.to.uid);
+                codeFile.append(`
+            std::thread thread${edge.to.uid}([&](){\n`
+                );
+                visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ codeFile);
+                codeFile.append(`
+            });
+            thread${edge.to.uid}.detach();
+                `);
+            }
         }
 
         break;
@@ -315,7 +333,7 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
                 currentNode.returnType = paramType
             }
             paramType = paramType != "void" ? paramType : "Void"
-            if(currentNode.isInCycle){
+            if(currentNode.isCycleInitiator){
                 codeFile.append(`queue${currentNode.uid}:`);
             }
             codeFile.append(` //or join node
@@ -449,9 +467,13 @@ function addCorrespondingCode(codeFile: CompositeGeneratorNode, currentNode: Nod
         let queueUID = queueUidToPushIn(currentNode)
         addQueuePushCode(queueUID, currentNode, ccfg, codeFile, f);
     });
+    if(currentNode.functionsNames.length == 0){
+        let queueUID = queueUidToPushIn(currentNode)
+        addQueuePushCode(queueUID, currentNode, ccfg, codeFile, undefined);
+    }
 }
 
-function addQueuePushCode(queueUID: number | undefined, currentNode: Node, ccfg: CCFG, codeFile: CompositeGeneratorNode, f: string) {
+function addQueuePushCode(queueUID: number | undefined, currentNode: Node, ccfg: CCFG, codeFile: CompositeGeneratorNode, f: string|undefined) {
     if (queueUID != undefined) {
 
         let syncNode = ccfg.getNodeByUID(queueUID);
@@ -469,8 +491,8 @@ function addQueuePushCode(queueUID: number | undefined, currentNode: Node, ccfg:
         LockingQueue<${(ptn.returnType!="void")?ptn.returnType : "Void"}> queue${queueUID};
             `);
         }
-
-        if (currentNode.returnType == undefined || currentNode.returnType == "void") {
+        codeFile.append(`{\n`)
+        if (currentNode.returnType == undefined || currentNode.returnType == "void" || f == undefined) {
             //create a fake parameter to push in the queue
             codeFile.append(`
             ${(ptn.returnType != "void") ? ptn.returnType : "Void"} fakeParam${queueUID};
@@ -481,11 +503,12 @@ function addQueuePushCode(queueUID: number | undefined, currentNode: Node, ccfg:
             queue${queueUID}.push(result${f});
                 `);
         }
-        if(syncNode.isInCycle){
+        if(syncNode.isCycleInitiator){
            codeFile.append(`
            goto queue${syncNode.uid};
             `);
         }
+        codeFile.append(`}\n`)
     }
 }
 

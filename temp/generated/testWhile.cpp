@@ -4,7 +4,10 @@
 #include <thread>
 #include <mutex>
 #include <iostream>
+#include <chrono>
 #include "../utils/LockingQueue.hpp"
+
+using namespace std::chrono_literals;
 
 class Void{
 };
@@ -79,12 +82,14 @@ functioninit13Variable();
 function15initializeVar();
 
         LockingQueue<Void> queue42;
-            
+            {
+
             Void fakeParam42;
             queue42.push(fakeParam42);
                 
            goto queue42;
-            queue42: //or join node
+            }
+queue42: //or join node
         Void OrJoinPopped_42;
         queue42.waitAndPop(OrJoinPopped_42);
         int result20accessVarRef = function20accessVarRef();
@@ -94,12 +99,14 @@ function15initializeVar();
 function33executeAssignment2(result31accessVarRef);
 int result38accessVarRef = function38accessVarRef();
 function40executeAssignment2(result38accessVarRef);
+{
 
             Void fakeParam42;
             queue42.push(fakeParam42);
                 
            goto queue42;
-            
+            }
+
             //END IF (bool)VarRef4_7_4_9terminates == true
         }
             //Choice node

@@ -31,7 +31,8 @@ export abstract class Node {
 
 
     numberOfVisits: integer = 0
-    isInCycle: boolean = false;
+    isCycleInitiator: boolean = false;
+    cycles: Node[][] = []
 
     constructor(value: any, theActions: string[] = []) {
         this.uid = Node.uidCounter++;
@@ -58,6 +59,17 @@ export abstract class Node {
 
         return false
     }
+
+    cyclePossessAnAndJoin(): boolean {
+        return this.cycles.some(c => { return c.some(n => {
+            // console.log(n.uid+":"+n.getType())
+            if(n.getType() == "AndJoin"){
+                return true;
+            }
+            return false;
+        })})
+    }
+
     
 
 }
@@ -246,47 +258,105 @@ export class CCFG {
     detectCycles(): boolean {
         const visited: Node[] = [];
         const recursionStack: Node[] = [];
-
         for (const node of this.nodes) {
             if (this.detectCyclesRec(node, visited, recursionStack)) {
                 return true;
             }
         }
-
         return false;
     }
 
     private detectCyclesRec(node: Node, visited: Node[], recursionStack: Node[]): boolean {
         if (recursionStack.includes(node)) {
-            console.log(chalk.gray("info: cycle detected on node #"+node.uid+" ("+node.value+")"));
-            if(node.getType() == "OrJoin"){
-                node.isInCycle = true;
+            console.log(chalk.gray("info: cycle detected on node #" + node.uid + " (" + node.value + ")"));
+            if (node.getType() == "OrJoin") {
+                node.isCycleInitiator = true;
             }
             return true;
         }
-
         if (visited.includes(node)) {
             return false;
         }
-
         visited.push(node);
         recursionStack.push(node);
-
         for (const edge of node.outputEdges) {
             if (this.detectCyclesRec(edge.to, visited, recursionStack)) {
                 return true;
             }
         }
-
         recursionStack.pop();
-
         return false;
     }
 
+    collectCycles(): void {
+        for (const node of this.nodes) {
+            this.findCycles(node, []);
+        }
+    }
 
+    private findCycles(node: Node, path: Node[]): void {
+        // const cycles: Node[][] = [];
+        if (path.includes(node)) {
+            const cycleStartIndex = path.indexOf(node);
+            const cycle = path.slice(cycleStartIndex);
+            // if (! node.cycles.some( c => c == cycle)){
+               // node.cycles.push(cycle);
+                console.log(chalk.gray("info: cycle detected on node #" + node.uid + " (" + node.value + ")\n\t" + cycle.map(n => n.uid).join(" -> ") + " -> " + node.uid ));                
+                for(const n of cycle){
+                    if (! n.cycles.some(c => c === cycle)){    
+                        n.cycles.push(cycle);
+                    }
+                }
+            // }
+            return ;
+        }
+        path.push(node);
+        for (const edge of node.outputEdges) {
+            const nextNode = edge.to;
+            const nextPath = [...path];
+            this.findCycles(nextNode, nextPath);
+        }
+        return;
+    }
+    // detectCycles(): boolean {
+    //     const visited: Node[] = [];
+    //     const recursionStack: Node[] = [];
 
+    //     for (const node of this.nodes) {
+    //         if (this.detectCyclesRec(node, visited, recursionStack)) {
+    //             return true;
+    //         }
+    //     }
 
+    //     return false;
+    // }
 
+    // private detectCyclesRec(node: Node, visited: Node[], recursionStack: Node[]): boolean {
+    //     if (recursionStack.includes(node)) {
+    //         console.log(chalk.gray("info: cycle detected on node #"+node.uid+" ("+node.value+")"));
+    //         if(node.getType() == "OrJoin"){
+    //             node.isCycleInitiator = true;
+    //         }
+    //         return true;
+    //     }
+
+    //     if (visited.includes(node)) {
+    //         return false;
+    //     }
+
+    //     visited.push(node);
+    //     recursionStack.push(node);
+
+    //     for (const edge of node.outputEdges) {
+    //         if (this.detectCyclesRec(edge.to, visited, recursionStack)) {
+    //             return true;
+    //         }
+    //     }
+
+    //     recursionStack.pop();
+
+    //     return false;
+    // }
   
 
 
@@ -338,7 +408,7 @@ export class CCFG {
             } else {
                 let shape: string = this.dotGetNodeShape(node);
                 let label: string = this.dotGetNodeLabel(node);
-                nodeDot += `  "${node.uid}" [label="${label}" shape="${shape}" ${node.isInCycle?`style="filled" fillcolor="lightblue"`:``}];\n`;
+                nodeDot += `  "${node.uid}" [label="${label}" shape="${shape}" ${node.isCycleInitiator?`style="filled" fillcolor="lightblue"`:``}];\n`;
             }
 
         }
@@ -423,25 +493,25 @@ export class OrJoin extends Join {
     }
 }
 
-export class Timer extends Node {
-    constructor(value: any) {
-        super(value);
-    }
-}
+// export class Timer extends Node {
+//     constructor(value: any) {
+//         super(value);
+//     }
+// }
 
-export class StartTimer extends Timer {
-    duration: integer = 0;
-    constructor(value: any, d:integer) {
-        super(value);
-        this.duration = d;
-    }
-}
+// export class StartTimer extends Timer {
+//     duration: integer = 0;
+//     constructor(value: any, d:integer) {
+//         super(value);
+//         this.duration = d;
+//     }
+// }
 
-export class StopTimer extends Timer {
-    constructor(value: any) {
-        super(value);
-    }
-}
+// export class StopTimer extends Timer {
+//     constructor(value: any) {
+//         super(value);
+//     }
+// }
 
 export class AndJoin extends Join {
     constructor(value: any) {

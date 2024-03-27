@@ -246,9 +246,9 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
         ${participantName}CCFG${ruleCF.rule.name} = new ContainerNode("${participantName}"+getASTNodeUID(node))
         ccfg.addNode( ${participantName}CCFG${ruleCF.rule.name})
 
-        ${participantName}StartsNode${ruleCF.rule.name} = new StartTimer("starts${participantName}"+getASTNodeUID(node),node.${((ruleCF.rule.$container as RuleOpening).runtimeState.filter(rs => rs.name == emissionParticipant[0].name)[0] as VariableDeclaration).value?.$cstNode?.text})
+        ${participantName}StartsNode${ruleCF.rule.name} = new Step("starts${participantName}"+getASTNodeUID(node))
         ccfg.addNode( ${participantName}StartsNode${ruleCF.rule.name})
-        ${participantName}TerminatesNode${ruleCF.rule.name} = new StopTimer("terminates${participantName}"+getASTNodeUID(node))
+        ${participantName}TerminatesNode${ruleCF.rule.name} = new Step("terminates${participantName}"+getASTNodeUID(node))
         ccfg.addNode(${participantName}TerminatesNode${ruleCF.rule.name})
 
         {
@@ -343,8 +343,8 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
         }
         `);
             } else {
-                let [elemToVisitIsARuntimeState, getAstNodeUidCall] = constructNodeName(ruleCF, ruleCF.conclusionParticipants[0].name);
                 let toVisitName = ruleCF.conclusionParticipants[0].name;
+                let [elemToVisitIsARuntimeState, getAstNodeUidCall] = constructNodeName(ruleCF, toVisitName);
                     file.append(`
         let ${toVisitName}CCFG${ruleCF.rule.name} = ccfg.getNodeFromName(${getAstNodeUidCall})
         let ${toVisitName}StartsNode${ruleCF.rule.name} = ccfg.getNodeFromName("starts"+${getAstNodeUidCall})
@@ -355,21 +355,25 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
                     if(ruleCF.conclusionParticipants[0].type != "timer"){
                         throw new Error("only timer (and event but not yet supported) can be started/stopped from a rule")
                     }
+            let duration = ((ruleCF.rule.$container as RuleOpening).runtimeState.filter(rs => rs.name == toVisitName)[0] as VariableDeclaration).value?.$cstNode?.text
             file.append(`
 
             ${toVisitName}CCFG${ruleCF.rule.name} = new ContainerNode("${toVisitName}"+getASTNodeUID(node))
             ccfg.addNode( ${toVisitName}CCFG${ruleCF.rule.name})
 
-            ${toVisitName}StartsNode${ruleCF.rule.name} = new StartTimer("starts${toVisitName}"+getASTNodeUID(node),node.${((ruleCF.rule.$container as RuleOpening).runtimeState.filter(rs => rs.name == toVisitName)[0] as VariableDeclaration).value?.$cstNode?.text})
+            ${toVisitName}StartsNode${ruleCF.rule.name} = new Step("starts${toVisitName}"+getASTNodeUID(node))
             ccfg.addNode( ${toVisitName}StartsNode${ruleCF.rule.name})
-            ${toVisitName}TerminatesNode${ruleCF.rule.name} = new StopTimer("terminates${toVisitName}"+getASTNodeUID(node))
+            ${toVisitName}StartsNode${ruleCF.rule.name}.functionsNames = [\`starts\${${toVisitName}StartsNode${ruleCF.rule.name}.uid}${toVisitName}\`]
+            ${toVisitName}StartsNode${ruleCF.rule.name}.returnType = "void"
+            ${toVisitName}StartsNode${ruleCF.rule.name}.functionsDefs = [...${toVisitName}StartsNode${ruleCF.rule.name}.functionsDefs, ...[\`std::this_thread::sleep_for(\${node.${duration}}ms);\`]] //GGG
+            ${toVisitName}TerminatesNode${ruleCF.rule.name} = new Step("terminates${toVisitName}"+getASTNodeUID(node))
             ccfg.addNode(${toVisitName}TerminatesNode${ruleCF.rule.name})
     
             {
             let e1 = ccfg.addEdge(previousNode, ${toVisitName}StartsNode${ruleCF.rule.name})
-            e1.guards = [...e1.guards, ...[]] //FF
+            e1.guards = [...e1.guards, ...[]] //FFF
             let e2 = ccfg.addEdge( ${toVisitName}StartsNode${ruleCF.rule.name},${toVisitName}TerminatesNode${ruleCF.rule.name})
-            e2.guards = [...e1.guards, ...[]] //FF
+            e2.guards = [...e1.guards, ...[]] //FFF
             }
 
             `)
@@ -675,7 +679,7 @@ function checkIfEventEmissionIsCollectionBased(ruleCF: RuleControlFlow) {
 function writePreambule(fileNode: CompositeGeneratorNode, data: FilePathData) {
     fileNode.append(`
 import { AstNode, Reference, isReference } from "langium";
-import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, StartTimer, StopTimer, ContainerNode, TypedElement } from "../../ccfg/ccfglib";`, NL)
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, ContainerNode, TypedElement } from "../../ccfg/ccfglib";`, NL)
 }
 
 
@@ -1117,6 +1121,8 @@ function getCPPVariableTypeName(typeName: string): string {
             return "bool";
         case "void":
             return "void";
+        case "timer": //TO BE FIXED
+            return "int";    
         default:
             return "unknown";
     }
@@ -1126,21 +1132,9 @@ function getCPPVariableTypeName(typeName: string): string {
 
 function getVariableType(type: TypeReference | undefined) {
     if (type?.primitive) {
-        let fullName = type.primitive.name;
-        switch (fullName) {
-            case "integer":
-                return "int";
-            case "string":
-                return "std::string";
-            case "boolean":
-                return "bool";
-            case "void":
-                return "void";
-            default:
-                return "unknown";
-        }
-    } else if (type?.reference) {
-        return type.reference.ref?.name;
+        return getCPPVariableTypeName(type.primitive.name);
+    } else if (type?.reference && type.reference.ref?.name != undefined) {
+        return getCPPVariableTypeName(type.reference.ref?.name);
     }
     return "unknown"
 }

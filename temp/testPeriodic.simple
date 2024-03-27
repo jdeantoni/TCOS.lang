@@ -1,8 +1,8 @@
 var v1 = 1          //v1Decl
 var v3 = 0          //v3Decl
 
-every 100 ms {
-    v1 = v1
+every 1000 ms {
+    v1 = (v1+v1)
   }
 
 v3 = v1
