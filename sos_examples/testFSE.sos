@@ -168,11 +168,11 @@ open While {
       <this,σ> ~> <cond,σ>
  
         when <cond,σ> -> true
-    ----------------------------                              whileBodyStart
+    --------------------------                                whileBodyStart
       <this,σ> ~> <body,σ>
                  
 
-        when <body,σ> -> terminates
+      when <body,σ> -> terminates
     ---------------------------------                         whileBodyEnd
           <this,σ> ~> <cond,σ>
 
@@ -184,7 +184,7 @@ open While {
 
 open PeriodicBloc{
 
-  var blocTrigger: timer = time;
+  var blocTrigger: Timer = time;
   // var isExecuting: boolean = false;
 
             when starts

@@ -298,7 +298,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         this.addListFunctions(ruleOpeningItem,allScopeElements,context)
 
         for(let v of ruleOpeningItem.runtimeState){
-            if ((v as VariableDeclaration).type?.primitive?.name == "timer"){
+            if ((v as VariableDeclaration).type?.primitive?.name == "Timer"){
                 const starts: FieldMember = {
                     $container: v,
                     $type: 'FieldMember',
