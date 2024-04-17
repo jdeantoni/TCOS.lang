@@ -554,17 +554,58 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             "cardinality": "*"
           },
           {
-            "$type": "Assignment",
-            "feature": "eventemissions",
-            "operator": "+=",
-            "terminal": {
-              "$type": "RuleCall",
-              "rule": {
-                "$ref": "#/rules@5"
+            "$type": "Group",
+            "elements": [
+              {
+                "$type": "Assignment",
+                "feature": "eventemissions",
+                "operator": "+=",
+                "terminal": {
+                  "$type": "RuleCall",
+                  "rule": {
+                    "$ref": "#/rules@5"
+                  },
+                  "arguments": []
+                }
               },
-              "arguments": []
-            },
-            "cardinality": "*"
+              {
+                "$type": "Group",
+                "elements": [
+                  {
+                    "$type": "Assignment",
+                    "feature": "eventEmissionOperator",
+                    "operator": "=",
+                    "terminal": {
+                      "$type": "Alternatives",
+                      "elements": [
+                        {
+                          "$type": "Keyword",
+                          "value": "||"
+                        },
+                        {
+                          "$type": "Keyword",
+                          "value": ";"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "$type": "Assignment",
+                    "feature": "eventemissions",
+                    "operator": "+=",
+                    "terminal": {
+                      "$type": "RuleCall",
+                      "rule": {
+                        "$ref": "#/rules@5"
+                      },
+                      "arguments": []
+                    }
+                  }
+                ],
+                "cardinality": "*"
+              }
+            ],
+            "cardinality": "?"
           }
         ]
       },
@@ -2866,7 +2907,7 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
             },
             {
               "$type": "Keyword",
-              "value": "timer"
+              "value": "Timer"
             }
           ]
         }

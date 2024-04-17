@@ -48,8 +48,6 @@ export function isFSMModel(item: unknown): item is FSMModel {
 export interface State extends AstNode {
     readonly $container: FSM;
     readonly $type: 'State';
-    inTransitions: Array<Reference<Transition>>
-    isInitial: boolean
     name: string
     outTransitions: Array<Reference<Transition>>
 }
@@ -107,7 +105,6 @@ export class FiniteStateMachineAstReflection extends AbstractAstReflection {
             case 'Transition:target': {
                 return State;
             }
-            case 'State:inTransitions':
             case 'State:outTransitions': {
                 return Transition;
             }
@@ -145,8 +142,6 @@ export class FiniteStateMachineAstReflection extends AbstractAstReflection {
                 return {
                     name: 'State',
                     mandatory: [
-                        { name: 'inTransitions', type: 'array' },
-                        { name: 'isInitial', type: 'boolean' },
                         { name: 'outTransitions', type: 'array' }
                     ]
                 };

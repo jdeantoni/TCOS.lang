@@ -7,11 +7,11 @@ export interface SimpleLVisitor {
     visit(node: AstNode| Reference<AstNode>): [Node,Node];
     
 
-     visitFSMModel(node: FSMModel): [Node,Node];
-     visitFSM(node: FSM): [Node,Node];
-     visitEvent(node: Event): [Node,Node];
-     visitState(node: State): [Node,Node];
-     visitTransition(node: Transition): [Node,Node];
+     visitFSMModel(node: FSMModel): [ Node,Node];
+     visitFSM(node: FSM): [ Node,Node];
+     visitEvent(node: Event): [ Node,Node];
+     visitState(node: State): [ Node,Node];
+     visitTransition(node: Transition): [ Node,Node];
 }
 
 
@@ -45,10 +45,7 @@ export interface SimpleLVisitor {
 
 
 export class CCFGVisitor implements SimpleLVisitor {
-    ccfg: CCFG = new CCFG();
-
-  
-    
+    ccfg: CCFG = new CCFG();    
 
     visit(node: AstNode | Reference<AstNode>): [Node,Node] {
         if(isReference(node)){
@@ -57,6 +54,8 @@ export class CCFGVisitor implements SimpleLVisitor {
             }
             node = node.ref
         }
+
+
         if(node.$type == "FSMModel"){
             return this.visitFSMModel(node as FSMModel);
         }
@@ -76,6 +75,9 @@ export class CCFGVisitor implements SimpleLVisitor {
     }
     
     visitFSMModel(node: FSMModel): [Node,Node] {
+        // let ccfg: this.ccfg//ContainerNode = new ContainerNode(getASTNodeUID(node))
+        // this.ccfg.addNode(ccfg) //temporaryly add the container to the global ccfg
+
         let startsFSMModelNode: Node = new Step("starts"+getASTNodeUID(node),[])
         if(startsFSMModelNode.functionsDefs.length>0){
             startsFSMModelNode.returnType = "void"
@@ -94,8 +96,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         let previousNode =undefined
         
     {
-        let startsnodeFSMstart = this.retrieveNode("starts",node) //retrieve 1
-        previousNode = startsnodeFSMstart
+        let startsgetASTNodeUID_node_FSMstart = this.ccfg.getNodeFromName("starts"+getASTNodeUID(node))
+        if(startsgetASTNodeUID_node_FSMstart == undefined){
+            throw new Error("impossible to be there startsgetASTNodeUID_node_FSMstart")
+        }
+        previousNode = startsgetASTNodeUID_node_FSMstart
     }
     
         let FSMstartForkNode: Node = new Fork("FSMstartForkNode")
@@ -107,7 +112,8 @@ export class CCFGVisitor implements SimpleLVisitor {
         let FSMstartFakeNode: Node = new AndJoin("FSMstartFakeNode")    
         this.ccfg.addNode(FSMstartFakeNode)    
         for (var child of node.fsms) {
-            let [childStartsNode,childTerminatesNode] = this.getOrVisitNode(child)
+            let [childStartsNode,childTerminatesNode] = this.visit(child)
+            // this.ccfg.addNode(childCCFG)
             this.ccfg.addEdge(FSMstartForkNode,childStartsNode)
             this.ccfg.addEdge(childTerminatesNode,FSMstartFakeNode)
         }
@@ -121,8 +127,11 @@ export class CCFGVisitor implements SimpleLVisitor {
     this.ccfg.replaceNode(FSMstartFakeNode,FSMendLastOfNode)                    
                 
     {
-        let lastOfNodenode_fsmsFSMend = this.retrieveNode("lastOfNode",node.fsms) //retrieve 1
-        previousNode = lastOfNodenode_fsmsFSMend
+        let lastOfNodegetASTNodeUID_node_fsms_FSMend = this.ccfg.getNodeFromName("lastOfNode"+getASTNodeUID(node.fsms))
+        if(lastOfNodegetASTNodeUID_node_fsms_FSMend == undefined){
+            throw new Error("impossible to be there lastOfNodegetASTNodeUID_node_fsms_FSMend")
+        }
+        previousNode = lastOfNodegetASTNodeUID_node_fsms_FSMend
     }
     
         {let e = this.ccfg.addEdge(previousNode,terminatesFSMModelNode)
@@ -137,6 +146,10 @@ export class CCFGVisitor implements SimpleLVisitor {
     }
 
     visitFSM(node: FSM): [Node,Node] {
+        // let ccfg: ContainerNode = new ContainerNode(getASTNodeUID(node))
+        // this.ccfg.addNode(ccfg) //temporaryly add the container to the global ccfg
+
+
         let startsFSMNode: Node = new Step("starts"+getASTNodeUID(node),[`sigma["${getASTNodeUID(node)}currentState"] = new unknown();`])
         if(startsFSMNode.functionsDefs.length>0){
             startsFSMNode.returnType = "void"
@@ -145,43 +158,80 @@ export class CCFGVisitor implements SimpleLVisitor {
         this.ccfg.addNode(startsFSMNode)
         let terminatesFSMNode: Node = new Step("terminates"+getASTNodeUID(node))
         this.ccfg.addNode(terminatesFSMNode)
-        // rule fsmInit
+        // rule init
    //premise: starts:event
    //conclusion: initialState:[State:ID],starts:event
 
         let previousNode =undefined
         
     {
-        let startsnodefsmInit = this.retrieveNode("starts",node) //retrieve 1
-        previousNode = startsnodefsmInit
+        let startsgetASTNodeUID_node_init = this.ccfg.getNodeFromName("starts"+getASTNodeUID(node))
+        if(startsgetASTNodeUID_node_init == undefined){
+            throw new Error("impossible to be there startsgetASTNodeUID_node_init")
+        }
+        previousNode = startsgetASTNodeUID_node_init
     }
     
-    {let fsmInitStateModificationNode: Node = new Step("fsmInitStateModificationNode")
-    this.ccfg.addNode(fsmInitStateModificationNode)
-    let e = this.ccfg.addEdge(previousNode,fsmInitStateModificationNode)
+    {let initStateModificationNode: Node = new Step("initStateModificationNode")
+    this.ccfg.addNode(initStateModificationNode)
+    let e = this.ccfg.addEdge(previousNode,initStateModificationNode)
     e.guards = [...e.guards, ...[]]
-    previousNode = fsmInitStateModificationNode
+    previousNode = initStateModificationNode
     }
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`${previousNode.uid}fsmInit`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`unknown ${getASTNodeUID(node)}549 = ${node.initialState}; //undefined`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
+    previousNode.functionsNames = [...previousNode.functionsNames, ...[`${previousNode.uid}init`]] 
+    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`unknown ${getASTNodeUID(node)}546 = ${node.initialState}; //undefined`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);
-                (*((unknown*)sigma["${getASTNodeUID(node)}currentState"])) = ${getASTNodeUID(node)}549;`]] //AA
+                (*((unknown*)sigma["${getASTNodeUID(node)}currentState"])) = ${getASTNodeUID(node)}546;`]] //AA
     
-        let initialStateStartsNodefsmInit = this.retrieveNode("starts",node.initialState)
-        
+        let initialStateCCFGinit = this.ccfg.getNodeFromName(getASTNodeUID(node.initialState))
+        let initialStateStartsNodeinit = this.ccfg.getNodeFromName("starts"+getASTNodeUID(node.initialState))
+        let initialStateTerminatesNodeinit = this.ccfg.getNodeFromName("terminates"+getASTNodeUID(node.initialState))
+        if (initialStateCCFGinit == undefined) {
+            let [initialStateStartsNode,initialStateTerminatesNode] = this.visit(node.initialState)
+            // this.ccfg.addNode(initialStateCCFG)
+            // initialStateCCFGinit = initialStateCCFG
+            initialStateStartsNodeinit = initialStateStartsNode
+            initialStateTerminatesNodeinit = initialStateTerminatesNode
+            if(initialStateTerminatesNodeinit == undefined || initialStateStartsNodeinit == undefined /*|| initialStateCCFGinit == undefined*/){
+                throw new Error("impossible to be there initialStateTerminatesNodeinit initialStateStartsNodeinit initialStateCCFGinit")
+            }
             {
-            let e = this.ccfg.addEdge(previousNode,initialStateStartsNodefsmInit)
+            let e = this.ccfg.addEdge(previousNode,initialStateStartsNodeinit)
             e.guards = [...e.guards, ...[]] //FF
             }
             
+        }else{
+            let initialStateOrJoinNode = new OrJoin("orJoinNode"+getASTNodeUID(node.initialState))
+            this.ccfg.addNode(initialStateOrJoinNode)
+            let startsgetASTNodeUID_node_init = this.ccfg.getNodeFromName("starts"+getASTNodeUID(node))
+            if(startsgetASTNodeUID_node_init == undefined){
+                throw new Error("impossible to be there startsgetASTNodeUID_node_init")
+            }
+            this.ccfg.addEdge(startsgetASTNodeUID_node_init,initialStateOrJoinNode)
+            let initialStateStartsNode = this.ccfg.getNodeFromName("starts"+getASTNodeUID(node.initialState))
+            if(initialStateStartsNode != undefined){
+                for(let e of initialStateStartsNode.inputEdges){
+                    e.to = initialStateOrJoinNode
+                    initialStateOrJoinNode.inputEdges.push(e)
+                }
+                initialStateStartsNode.inputEdges = []
+                this.ccfg.addEdge(initialStateOrJoinNode,initialStateStartsNode)
+            }
+        }
+
+        
         previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}fsmInit`] //overwrite existing name
+        previousNode.functionsNames = [`${previousNode.uid}init`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
         return [startsFSMNode,terminatesFSMNode]
     }
 
     visitEvent(node: Event): [Node,Node] {
+        // let ccfg: ContainerNode = new ContainerNode(getASTNodeUID(node))
+        // this.ccfg.addNode(ccfg) //temporaryly add the container to the global ccfg
+
+
         let startsEventNode: Node = new Step("starts"+getASTNodeUID(node),[])
         if(startsEventNode.functionsDefs.length>0){
             startsEventNode.returnType = "void"
@@ -197,8 +247,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         let previousNode =undefined
         
     {
-        let startsnodefugaceEvent = this.retrieveNode("starts",node) //retrieve 1
-        previousNode = startsnodefugaceEvent
+        let startsgetASTNodeUID_node_fugaceEvent = this.ccfg.getNodeFromName("starts"+getASTNodeUID(node))
+        if(startsgetASTNodeUID_node_fugaceEvent == undefined){
+            throw new Error("impossible to be there startsgetASTNodeUID_node_fugaceEvent")
+        }
+        previousNode = startsgetASTNodeUID_node_fugaceEvent
     }
     
         {let e = this.ccfg.addEdge(previousNode,terminatesEventNode)
@@ -213,6 +266,10 @@ export class CCFGVisitor implements SimpleLVisitor {
     }
 
     visitState(node: State): [Node,Node] {
+        // let ccfg: ContainerNode = new ContainerNode(getASTNodeUID(node))
+        // this.ccfg.addNode(ccfg) //temporaryly add the container to the global ccfg
+
+
         let startsStateNode: Node = new Step("starts"+getASTNodeUID(node),[])
         if(startsStateNode.functionsDefs.length>0){
             startsStateNode.returnType = "void"
@@ -221,59 +278,83 @@ export class CCFGVisitor implements SimpleLVisitor {
         this.ccfg.addNode(startsStateNode)
         let terminatesStateNode: Node = new Step("terminates"+getASTNodeUID(node))
         this.ccfg.addNode(terminatesStateNode)
-        // rule stateInit
+        // rule init
    //premise: starts:event
    //conclusion: outTransitions:[Transition:ID][],transition:unknown,starts:event
-// rule stateEnd
+// rule end
    //premise: outTransitions:[Transition:ID][],terminates:event
-   //conclusion: terminates:event
+   //conclusion: outTransitions:[Transition:ID][],transition:unknown,terminates:event
+   //conclusion: outTransitions:[Transition:ID][],transition:unknown,terminates:event,terminates:event
 
+        let StateOrJoinNode: Node = new OrJoin("orJoin"+getASTNodeUID(node))
+        this.ccfg.addNode(StateOrJoinNode)
+        this.ccfg.addEdge(StateOrJoinNode,terminatesStateNode)
+        
         let previousNode =undefined
         
     {
-        let startsnodestateInit = this.retrieveNode("starts",node) //retrieve 1
-        previousNode = startsnodestateInit
+        let startsgetASTNodeUID_node_init = this.ccfg.getNodeFromName("starts"+getASTNodeUID(node))
+        if(startsgetASTNodeUID_node_init == undefined){
+            throw new Error("impossible to be there startsgetASTNodeUID_node_init")
+        }
+        previousNode = startsgetASTNodeUID_node_init
     }
     
-        let stateInitForkNode: Node = new Fork("stateInitForkNode")
-        this.ccfg.addNode(stateInitForkNode)
-        {let e = this.ccfg.addEdge(previousNode,stateInitForkNode)
+        let initForkNode: Node = new Fork("initForkNode")
+        this.ccfg.addNode(initForkNode)
+        {let e = this.ccfg.addEdge(previousNode,initForkNode)
         e.guards = [...e.guards, ...[]] //CC
         }
 
-        let stateInitFakeNode: Node = new AndJoin("stateInitFakeNode")    
-        this.ccfg.addNode(stateInitFakeNode)    
+        let initFakeNode: Node = new AndJoin("initFakeNode")    
+        this.ccfg.addNode(initFakeNode)    
         for (var child of node.outTransitions) {
-            let [childStartsNode,childTerminatesNode] = this.getOrVisitNode(child)
-            this.ccfg.addEdge(stateInitForkNode,childStartsNode)
-            this.ccfg.addEdge(childTerminatesNode,stateInitFakeNode)
+            let [childStartsNode,childTerminatesNode] = this.visit(child)
+            // this.ccfg.addNode(childCCFG)
+            this.ccfg.addEdge(initForkNode,childStartsNode)
+            this.ccfg.addEdge(childTerminatesNode,initFakeNode)
         }
 
         
         previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}stateInit`] //overwrite existing name
+        previousNode.functionsNames = [`${previousNode.uid}init`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
-    let stateEndFirstOfNode: Node = new OrJoin("firstOfNode"+getASTNodeUID(node.outTransitions))
-    this.ccfg.replaceNode(stateInitFakeNode,stateEndFirstOfNode)
+    let endFirstOfNode: Node = new OrJoin("firstOfNode"+getASTNodeUID(node.outTransitions))
+    this.ccfg.replaceNode(initFakeNode,endFirstOfNode)
                 
     {
-        let firstOfNodenode_outTransitionsstateEnd = this.retrieveNode("firstOfNode",node.outTransitions) //retrieve 1
-        previousNode = firstOfNodenode_outTransitionsstateEnd
+        let firstOfNodegetASTNodeUID_node_outTransitions_end = this.ccfg.getNodeFromName("firstOfNode"+getASTNodeUID(node.outTransitions))
+        if(firstOfNodegetASTNodeUID_node_outTransitions_end == undefined){
+            throw new Error("impossible to be there firstOfNodegetASTNodeUID_node_outTransitions_end")
+        }
+        previousNode = firstOfNodegetASTNodeUID_node_outTransitions_end
     }
     
-        {let e = this.ccfg.addEdge(previousNode,terminatesStateNode)
-        e.guards = [...e.guards, ...[]] //EE
-        }
+        // let endForkNode: Node = new Fork("endForkNode")
+        // this.ccfg.addNode(endForkNode)
+        // {let e = this.ccfg.addEdge(previousNode,endForkNode)
+        // e.guards = [...e.guards, ...[]] //BB
+        // }
         
+        // let [outTransitionsStartNode/*,outTransitionsTerminatesNode*/] = this.visit(node.outTransitions)
+        // this.ccfg.addNode(outTransitionsCCFG)
+        // this.ccfg.addEdge(endForkNode,outTransitionsStartNode)
+        
+        this.ccfg.addEdge(previousNode,StateOrJoinNode)
+
         previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}stateEnd`] //overwrite existing name
+        previousNode.functionsNames = [`${previousNode.uid}end`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
         return [startsStateNode,terminatesStateNode]
     }
 
     visitTransition(node: Transition): [Node,Node] {
+        // let ccfg: ContainerNode = new ContainerNode(getASTNodeUID(node))
+        // this.ccfg.addNode(ccfg) //temporaryly add the container to the global ccfg
+
+
         let startsTransitionNode: Node = new Step("starts"+getASTNodeUID(node),[`sigma["${getASTNodeUID(node)}isSensitive"] = new bool(false);`])
         if(startsTransitionNode.functionsDefs.length>0){
             startsTransitionNode.returnType = "void"
@@ -282,63 +363,61 @@ export class CCFGVisitor implements SimpleLVisitor {
         this.ccfg.addNode(startsTransitionNode)
         let terminatesTransitionNode: Node = new Step("terminates"+getASTNodeUID(node))
         this.ccfg.addNode(terminatesTransitionNode)
-        // rule transitionInit
+        // rule init
    //premise: starts:event
 // rule fire
    //premise: guardEvent:[Event:ID],terminates:event
    //conclusion: sentEvent:[Event:ID],starts:event
-// rule transitionEnd
-   //premise: sentEvent:[Event:ID],terminates:event
-   //conclusion: terminates:event
-   //conclusion: terminates:event,target:[State:ID],starts:event
+   //conclusion: sentEvent:[Event:ID],starts:event,terminates:event
+   //conclusion: sentEvent:[Event:ID],starts:event,terminates:event,target:[State:ID],starts:event
 
         let previousNode =undefined
         
     {
-        let startsnodetransitionInit = this.retrieveNode("starts",node) //retrieve 1
-        previousNode = startsnodetransitionInit
+        let startsgetASTNodeUID_node_init = this.ccfg.getNodeFromName("starts"+getASTNodeUID(node))
+        if(startsgetASTNodeUID_node_init == undefined){
+            throw new Error("impossible to be there startsgetASTNodeUID_node_init")
+        }
+        previousNode = startsgetASTNodeUID_node_init
     }
     
         // conclusion with no event emission
                 
         previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}transitionInit`] //overwrite existing name
+        previousNode.functionsNames = [`${previousNode.uid}init`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
     {
-        let terminatesnode_guardEventfire = this.retrieveNode("terminates",node.guardEvent) //retrieve 1
-        previousNode = terminatesnode_guardEventfire
+        let terminatesgetASTNodeUID_node_guardEvent_fire = this.getOrVisitNode(node.guardEvent)[1]
+        if(terminatesgetASTNodeUID_node_guardEvent_fire == undefined){
+            throw new Error("impossible to be there terminatesgetASTNodeUID_node_guardEvent_fire")
+        }
+        previousNode = terminatesgetASTNodeUID_node_guardEvent_fire
     }
     
-        let sentEventStartsNodefire = this.retrieveNode("starts",node.sentEvent)
+        let fireForkNode: Node = new Fork("fireForkNode")
+        this.ccfg.addNode(fireForkNode)
+        {let e = this.ccfg.addEdge(previousNode,fireForkNode)
+        e.guards = [...e.guards, ...[]] //BB
+        }
         
-            {
-            let e = this.ccfg.addEdge(previousNode,sentEventStartsNodefire)
-            e.guards = [...e.guards, ...[]] //FF
-            }
-            
+        let [sentEventStartNode/*,sentEventTerminatesNode*/] =this.getOrVisitNode(node.sentEvent)
+        // this.ccfg.addNode(sentEventCCFG)
+        this.ccfg.addEdge(fireForkNode,sentEventStartNode)
+        
+        let [targetStartNode/*,targetTerminatesNode*/] = this.getOrVisitNode(node.target)
+        // this.ccfg.addNode(targetCCFG)
+        this.ccfg.addEdge(fireForkNode,targetStartNode)
+
+        this.ccfg.addEdge(fireForkNode,terminatesTransitionNode)
+        
         previousNode.returnType = "void"
         previousNode.functionsNames = [`${previousNode.uid}fire`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
-    {
-        let terminatesnode_sentEventtransitionEnd = this.retrieveNode("terminates",node.sentEvent) //retrieve 1
-        previousNode = terminatesnode_sentEventtransitionEnd
-    }
-    
-        this.ccfg.addEdge(previousNode,terminatesTransitionNode)
-        previousNode = terminatesTransitionNode
-        
-        let [targetStartNode,targetTerminatesNode] = this.getOrVisitNode(node.target)
-        this.ccfg.addEdge(previousNode,targetStartNode)
-        previousNode = targetTerminatesNode
-        
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}transitionEnd`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
         return [startsTransitionNode,terminatesTransitionNode]
     }
+
 
     getOrVisitNode(node:AstNode | Reference<AstNode> |undefined): [Node,Node]{
         if(node === undefined){
@@ -350,37 +429,19 @@ export class CCFGVisitor implements SimpleLVisitor {
             }
             node = node.ref
         }
+        console.log("getOrVisitNode: "+node.$cstNode?.text)
 
         let startsNode = this.ccfg.getNodeFromName("starts"+getASTNodeUID(node))
         if(startsNode !== undefined){
+            console.log("          GET  "+startsNode.uid)
             let terminatesNode = this.ccfg.getNodeFromName("terminates"+getASTNodeUID(node))
             if(terminatesNode === undefined){
                 throw new Error("impossible to be there")
             }
             return [startsNode,terminatesNode]
         }
+        console.log("          VISIT")
         let [starts,terminates] = this.visit(node)
         return [starts,terminates]
     }
-
-    retrieveNode(prefix: string, node: AstNode | AstNode[] | Reference<AstNode> | Reference<AstNode>[] | undefined): Node {
-        if(node === undefined){
-            throw new Error("not possible to retrieve a node from an undefined AstNode")
-        }
-        if(Array.isArray(node) || (prefix != "starts" && prefix != "terminates")){
-            let n = this.ccfg.getNodeFromName(prefix+getASTNodeUID(node))
-            if(n === undefined){
-                throw new Error("impossible to retrieve "+prefix+getASTNodeUID(node)+ "from the ccfg")
-            }
-            return n
-        }
-        if(prefix == "starts"){
-            return this.getOrVisitNode(node)[0]
-        }
-        if(prefix == "terminates"){
-            return this.getOrVisitNode(node)[1]
-        }       
-        throw new Error("not possible to retrieve the node given as parameter: "+prefix+getASTNodeUID(node))
-    }
-    
 }

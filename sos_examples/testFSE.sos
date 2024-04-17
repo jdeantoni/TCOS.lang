@@ -122,10 +122,9 @@ open Assignment {
 
 
 open Conjunction { //parallel version
-          when starts                   
-    -------------------------                                   evaluateConjunction
-      <this,σ> ~> <lhs,σ>
-                  <rhs,σ>   
+                when starts                   
+    -------------------------------------                       evaluateConjunction
+      <this,σ> ~> <lhs,σ> || <rhs,σ>   
  
               when <lhs,σ> -> false
     --------------------------------------------                evaluateConjunction2
@@ -144,8 +143,7 @@ open Plus {
   
                   when starts
     -------------------------------------------                 startPlus
-        <this,σ> ~> <right,σ>
-                    <left,σ>
+        <this,σ> ~> <right,σ>||<left,σ>
    
       when (<right,σ> -> n2:integer ^ <left,σ> -> n1:integer)
     ----------------------------------------------------------  finishPlus
@@ -184,7 +182,7 @@ open While {
 
 open PeriodicBloc{
 
-  var blocTrigger: timer = time;
+  var blocTrigger: Timer = time;
   // var isExecuting: boolean = false;
 
             when starts
@@ -193,7 +191,7 @@ open PeriodicBloc{
   
           when <blocTrigger,σ> 
       -------------------------------------------------         periodicBodyStart
-        <this,σ> ~> <bloc,σ>
+        <this,σ> ~> <bloc,σ>;
                     <blocTrigger,σ>
                   
   

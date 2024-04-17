@@ -4,7 +4,7 @@ import path from 'path';
 import { Model } from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
 import { CCFGVisitor } from './generated/testFSE';
-import { CCFG, ContainerNode, Edge, Node, TypedElement } from '../ccfg/ccfglib';
+import { CCFG, Edge, Node, TypedElement } from '../ccfg/ccfglib';
 import chalk from 'chalk';
 
 
@@ -43,9 +43,9 @@ export function generateCPPfromCCFG(model: Model, filePath: string, targetDirect
 
 function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model): CCFG {
     var visitor = new CCFGVisitor();
-    let [res] = visitor.visit(model);
+    visitor.visit(model);
 
-    var ccfg = (res as ContainerNode).internalccfg;
+    var ccfg = visitor.ccfg
    
     ccfg.addSyncEdge()
 
@@ -116,9 +116,9 @@ int main() {
 function compileFunctionDefs(ccfg: CCFG) : string {
     let functionsDefs = "";
     for (let node of ccfg.nodes) {
-        if(node.getType() == "ContainerNode"){
-            functionsDefs += compileFunctionDefs((node as ContainerNode).internalccfg);
-        }else{
+        // if(node.getType() == "ContainerNode"){
+        //     functionsDefs += compileFunctionDefs((node as ContainerNode).internalccfg);
+        // }else{
             if(!debug && node.functionsDefs.length == 0){
                 continue
             }
@@ -130,7 +130,7 @@ function compileFunctionDefs(ccfg: CCFG) : string {
                     functionsDefs += "}\n";
                 }
             }
-        }
+        // }
     }
     return functionsDefs;
 }

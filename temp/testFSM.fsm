@@ -1,4 +1,16 @@
-* state s1
-state s2
-t1: s1 --zaza--> s2
-t2: s2 --titi--> s1
+event e1
+event e2
+
+event ea
+event eb
+fsm fsm1 [s1]
+    state s1{
+        out : t1 //t3
+    }
+    state s2{
+        out:  t2
+    }
+    
+    t1: s1 ---when e1/ea--> s2
+//    t3: s1 ---when e2/eb--> s1
+    t2: s2 ---when e2/eb--> s1

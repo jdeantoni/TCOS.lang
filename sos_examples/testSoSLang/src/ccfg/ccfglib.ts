@@ -74,44 +74,50 @@ export abstract class Node {
 
 }
 
-export class ContainerNode extends Node {
+// export class ContainerNode extends Node {
 
-    internalccfg: CCFG;
+//     internalccfg: CCFG;
 
-    constructor(value: any, theActions: string[] = []) {
-        super(value, theActions);
-        this.internalccfg = new CCFG();
-    }
+//     constructor(value: any, theActions: string[] = []) {
+//         super(value, theActions);
+//         this.internalccfg = new CCFG();
+//     }
 
-    addNode(node: Node): Node {
-        return this.internalccfg.addNode(node);
-    }
+//     addNode(node: Node): Node {
+//         return this.internalccfg.addNode(node);
+//     }
 
-    addEdge(from: Node, to: Node, label:string=""): Edge {
-        return this.internalccfg.addEdge(from, to, label);
-    }
+//     addEdge(from: Node, to: Node, label:string=""): Edge {
+//         return this.internalccfg.addEdge(from, to, label);
+//     }
 
-    toDot(): string {
-        return this.internalccfg.toDot();
-    }
+//     toDot(): string {
+//         return this.internalccfg.toDot();
+//     }
 
-    getNodeFromName(name: string): Node | undefined {
-        return this.internalccfg.getNodeFromName(name);
-    }
+//     getNodeFromName(name: string): Node | undefined {
+//         let res = this.internalccfg.getNodeFromName(name);
+//         if(res == undefined){
+//             if(this.owningCCFG != undefined){
+//                 return this.owningCCFG.getNodeFromName(name);
+//             }
+//         }
+//         return res;
+//     }
 
-    getNodeByUID(uid: integer): Node | undefined {
-        if(this.owningCCFG != undefined){
-            return this.owningCCFG.getNodeByUID(uid);
-        }
-        return this.internalccfg.getNodeByUID(uid);
-    }
+//     getNodeByUID(uid: integer): Node | undefined {
+//         if(this.owningCCFG != undefined){
+//             return this.owningCCFG.getNodeByUID(uid);
+//         }
+//         return this.internalccfg.getNodeByUID(uid);
+//     }
 
-    replaceNode(oldNode: Node, newNode: Node): void {
-        this.internalccfg.replaceNode(oldNode, newNode);
-    }
+//     replaceNode(oldNode: Node, newNode: Node): void {
+//         this.internalccfg.replaceNode(oldNode, newNode);
+//     }
 
 
-}
+// }
 
 
 export class Edge {
@@ -149,25 +155,64 @@ export class CCFG {
         if(this.nodes.length == 0){
             this.initialState = node;
         }
-
+        if(node.owningCCFG != undefined){
+            node.owningCCFG.nodes = node.owningCCFG.nodes.filter(n => n.uid !== node.uid);
+        }
         let res = this.nodes.find(n => n === node);
         if (res == undefined) {
             this.nodes.push(node);
-            node.owningCCFG = this;
         }
+        node.owningCCFG = this;
         return node;
     }
 
+    /**
+     * add an edge between from and to. If the targetted node already has an input edge, manage the associated orJoin node
+     * 
+     * @param from 
+     * @param to 
+     * @param label 
+     * @returns 
+     */
     addEdge(from: Node, to: Node, label:string=""): Edge {
         let res : Edge | undefined = this.edges.find(e => e.from === from && e.to === to);
         if (res == undefined) {
             const edge = new Edge(from, to);
             this.edges.push(edge);
             from.outputEdges.push(edge);
-            to.inputEdges.push(edge);
-            return edge;
+
+            if(to.inputEdges.length == 0 || to.getType() == "AndJoin" || to.getType() == "OrJoin"){
+                to.inputEdges.push(edge);
+                return edge;
+            }else{ //already an input edge. check if an orJoin Node
+                if (to.inputEdges.length == 1 && to.inputEdges[0].from.getType() == "OrJoin"){
+                    console.log(chalk.bgYellow("adding to an existing or join node: "+to.value+" -> "+to.inputEdges[0].from.value+" -> "+to.inputEdges[0].from.uid+" "+to.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges.length));
+                    edge.to = to.inputEdges[0].from;
+                    to.inputEdges[0].from.inputEdges.push(edge);                   
+                    return edge
+                }else{
+                    let toUID = to.value.startsWith("starts")?to.value.substring(6):to.value.startsWith("terminates")?to.value.substring(10):to.value;
+                    console.log(chalk.bgRed(to.value+" : creating a new or Join node: orJoinNode"+toUID));
+                    let orJoinNode = new OrJoin("orJoinNode"+toUID);
+                    this.addNode(orJoinNode)
+                    
+                    edge.to = orJoinNode
+                    for(let e of to.inputEdges){
+                        e.to = orJoinNode
+                        orJoinNode.inputEdges.push(e)
+                    }
+                    to.inputEdges = []
+                    to.inputEdges.push(edge)
+                    let secondEdge = new Edge(orJoinNode, to)
+                    this.edges.push(secondEdge)
+                    to.inputEdges.push(secondEdge)
+                    orJoinNode.outputEdges.push(secondEdge)
+                    return edge
+                }
+            }
         }
-        return res;
+        console.log(chalk.grey("warning, edge already exists"));
+        return res
     }
 
     replaceNode(oldNode: Node, newNode: Node): void {
@@ -204,12 +249,12 @@ export class CCFG {
             if(n.uid === uid){
                 return n;
             }
-            if(n.getType() == "ContainerNode"){
-                let res = (n as ContainerNode).internalccfg.getNodeByUID(uid);
-                if(res != undefined){
-                    return res;
-                }
-            }
+            // if(n.getType() == "ContainerNode"){
+            //     let res = (n as ContainerNode).internalccfg.getNodeByUID(uid);
+            //     if(res != undefined){
+            //         return res;
+            //     }
+            // }
         }
         return undefined
     }
@@ -219,13 +264,14 @@ export class CCFG {
             if(n.value === name){
                 return n;
             }
-            if(n.getType() == "ContainerNode"){
-                let res = (n as ContainerNode).internalccfg.getNodeFromName(name);
-                if(res != undefined){
-                    return res;
-                }
-            }
+            // if(n.getType() == "ContainerNode"){
+            //     let res = (n as ContainerNode).internalccfg.getNodeFromName(name);
+            //     if(res != undefined){
+            //         return res;
+            //     }
+            // }
         }
+        
         return undefined
     }
 
@@ -244,9 +290,9 @@ export class CCFG {
                     }
                 }
             }
-            if(n.getType() == "ContainerNode"){
-                (n as ContainerNode).internalccfg.addSyncEdge();
-            }
+            // if(n.getType() == "ContainerNode"){
+            //     (n as ContainerNode).internalccfg.addSyncEdge();
+            // }
         }
 
     }
@@ -376,11 +422,11 @@ export class CCFG {
      */
     private dotGetCCFGEdges() : string{
         let edgeDot = ""
-        for (let node of this.nodes) {
-            if (node.getType() == "ContainerNode") {
-                edgeDot += (node as ContainerNode).internalccfg.dotGetCCFGEdges();
-            }
-        }
+        // for (let node of this.nodes) {
+        //     if (node.getType() == "ContainerNode") {
+        //         edgeDot += (node as ContainerNode).internalccfg.dotGetCCFGEdges();
+        //     }
+        // }
         for (let edge of this.edges) {
             edgeDot += `  "${edge.from.uid}" -> "${edge.to.uid}" [label="${this.dotGetEdgeLabel(edge)}"];\n`;
         }
@@ -398,18 +444,18 @@ export class CCFG {
         let subG = ""
         let nodeDot = ""
         for (let node of this.nodes) {
-            if (node.getType() == "ContainerNode") {
-               subG += `subgraph cluster_${node.uid} {\n`;
-               subG += `label = "${node.value}";\n`;
-                let [s, d ] = (node as ContainerNode).internalccfg.dotGetCCFGNodes()
-                subG += d;
-                subG += s;
-                subG += `}\n`;
-            } else {
+            // if (node.getType() == "ContainerNode") {
+            //    subG += `subgraph cluster_${node.uid} {\n`;
+            //    subG += `label = "${node.value}";\n`;
+            //     let [s, d ] = (node as ContainerNode).internalccfg.dotGetCCFGNodes()
+            //     subG += d;
+            //     subG += s;
+            //     subG += `}\n`;
+            // } else {
                 let shape: string = this.dotGetNodeShape(node);
                 let label: string = this.dotGetNodeLabel(node);
                 nodeDot += `  "${node.uid}" [label="${label}" shape="${shape}" ${node.isCycleInitiator?`style="filled" fillcolor="lightblue"`:``}];\n`;
-            }
+            // }
 
         }
         return [subG, nodeDot];
