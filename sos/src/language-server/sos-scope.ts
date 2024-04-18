@@ -13,7 +13,8 @@ import { AbstractRule, Assignment, CollectionRuleSync, CrossReference, isAbstrac
          isSoSSpec, isTemporaryVariable, MemberCall, MethodMember, Parameter,isCrossReference, isGrammar,
          ParserRule, RuleOpening, RWRule, SoSSpec, TypeReference, VariableDeclaration,
          Alternatives,
-         FieldMember} from './generated/ast.js';
+         FieldMember,
+         isParserRule} from './generated/ast.js';
 import { getRuleOpeningChain, inferType } from './type-system/infer.js';
 import { isParserRuleType, isRuleOpeningType } from './type-system/descriptions.js';
 import { AbstractElement } from './generated/ast.js';
@@ -46,11 +47,33 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                     return this.scopeRuleOpeningMembers(ruleOpeningItem);
                 }
             }
-            // if (isCollectionRuleSync(previous)){
-            //     const collectionRuleItem = getContainerOfType(previous.$container, isCollectionRuleSync);
-            //     return this.scopeCollectionRuleMembers(collectionRuleItem);
-            // }
+            //TODO: should never write a so crappy code ! To be refactored !
             if (isMemberCall(previous) && previous.element !== undefined){
+                const collectionRuleSync = getContainerOfType(previous.$container, isCollectionRuleSync);
+                if(collectionRuleSync){
+                    if((collectionRuleSync.collection as MemberCall).element?.ref){
+                        let collectionElemRef = (collectionRuleSync.collection as MemberCall).element?.ref
+                        if(collectionElemRef != undefined){
+                            var terminal = (collectionElemRef as unknown as Assignment).terminal
+                            if (isCrossReference(terminal)){
+                                if(isParserRule((terminal as CrossReference).type.ref)){
+                                    const parserRuleItem = (terminal as CrossReference).type.ref
+                                    const sosSpec = getContainerOfType(context.container, isSoSSpec)
+                                    if(sosSpec){
+                                        for(var ro of sosSpec.rtdAndRules){
+                                            if (isRuleOpening(ro)){
+                                                if (ro.onRule?.ref?.name === (parserRuleItem as ParserRule).name){
+                                                    return this.scopeParsingRule(parserRuleItem as ParserRule,ro)
+                                                }
+                                            }
+                                        }
+                                        //should only take assignement as a variant of scopePArsingRule
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 const ruleOpeningItem = getContainerOfType(previous.$container, isRuleOpening);
                 if (ruleOpeningItem) {
                     return this.scopeRuleOpeningMembers(ruleOpeningItem,previous);
@@ -100,6 +123,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         this.addListFunctions(ruleOpeningItem, allScopeElements);
         allScopeElements = allScopeElements.concat(this.addClocks(ruleOpeningItem))
         allScopeElements = allScopeElements.concat(this.getAllTemporaryVariable(ruleOpeningItem))
+        allScopeElements = allScopeElements.concat(this.getAllRuntimeState(ruleOpeningItem))
         return this.createScopeForNodes(allScopeElements);
     }
 
@@ -378,6 +402,12 @@ export class SoSScopeProvider extends DefaultScopeProvider {
             }
         });
         return alltempVars
+    }
+
+    private getAllRuntimeState(ruleOpeningItem: RuleOpening): AstNode[] {
+        var allVars: AstNode[] = [];
+        ruleOpeningItem.runtimeState.forEach(v => allVars.push(v));
+        return allVars
     }
 
     private getAllAssignments(element: AbstractElement): Assignment[] {

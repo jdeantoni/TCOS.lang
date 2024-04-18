@@ -1,0 +1,77 @@
+testFSM
+import "fsm/src/language-server/finite-state-machine.langium"
+
+open FSMModel{
+                         when starts
+    ------------------------------------------------------ FSMstart
+       <this,σ> ~> fsms->concurrent.foreach(fsm => <fsm,σ>)
+
+        when lastOf(fsms.terminates)
+    -------------------------------------                  FSMend
+         <this,σ> ~> terminates
+}
+
+open FSM {
+    var currentState:State;
+
+                    when starts
+    ----------------------------------------- fsmInit
+     <this,σ> ~> currentState := initialState;
+                 <initialState,σ>
+
+//                 when starts
+//         [currentState.outTransitions.size == 0]
+//     ----------------------------------------------                  end
+//                   <this,σ> ~> terminates                    
+}
+
+open Event {
+
+            when starts
+    --------------------------   fugaceEvent
+      <this,σ> ~> terminates    
+}
+
+open State {
+    var askTermination: Event ;
+    var stopOtherTransitions: Event;
+
+                                  when starts            
+    ----------------------------------------------------------------------------- stateInit
+    <this,σ> ~> outTransitions->concurrent.foreach(transition => <transition,σ>)
+
+
+          when askTermination
+    ----------------------------------------------                  stateEnd
+          <this,σ> ~> terminates
+
+                            when stopOtherTransitions
+    ------------------------------------------------------------------------ stateStopAllTransitions
+      <this,σ> ~> outTransitions->sequential.foreach(t => emits t.disable)
+}
+
+open Transition{
+    var isSensitive:boolean = false;
+    var disable: Event;
+
+            when starts
+    --------------------------------------- transitionInit
+        <this,σ> ~> isSensitive := true;
+
+             
+      when <guardEvent,σ> [isSensitive == true]
+    ------------------------------------------------------ fire
+         <this,σ> ~> isSensitive := false;
+                     <sentEvent,σ>
+                     
+              when <sentEvent,σ>
+    ----------------------------------------------                  transitionEnd
+         <this,σ> ~> terminates;
+                     <target,σ>
+        
+
+          when disable [isSensitive == true]
+    ----------------------------------------------                  transitionStop
+          <this,σ> ~> isSensitive := false;
+                      terminates
+}
