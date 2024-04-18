@@ -307,9 +307,9 @@ export class CCFGVisitor implements SimpleLVisitor {
     previousNode = initializeVarStateModificationNode
     }
     previousNode.functionsNames = [...previousNode.functionsNames, ...[`${previousNode.uid}initializeVar`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getASTNodeUID(node)}1376 = ${node.initialValue}; //undefined`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
+    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getASTNodeUID(node)}1377 = ${node.initialValue}; //undefined`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);
-                (*((int*)sigma["${getASTNodeUID(node)}currentValue"])) = ${getASTNodeUID(node)}1376;`]] //AA
+                (*((int*)sigma["${getASTNodeUID(node)}currentValue"])) = ${getASTNodeUID(node)}1377;`]] //AA
     
         {let e = this.ccfg.addEdge(previousNode,terminatesVariableNode)
         e.guards = [...e.guards, ...[]] //EE
@@ -348,7 +348,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "int"
         previousNode.functionsNames = [`${previousNode.uid}accessVarRef`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`const std::lock_guard<std::mutex> lock(sigma_mutex);`,`int ${getASTNodeUID(node)}1579 = *(int *) sigma["${getASTNodeUID(node.theVar)}currentValue"];//currentValue}`,`int ${getASTNodeUID(node)}terminates =  ${getASTNodeUID(node)}1579;`,`return ${getASTNodeUID(node)}terminates;`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`const std::lock_guard<std::mutex> lock(sigma_mutex);`,`int ${getASTNodeUID(node)}1583 = *(int *) sigma["${getASTNodeUID(node.theVar)}currentValue"];//currentValue}`,`int ${getASTNodeUID(node)}terminates =  ${getASTNodeUID(node)}1583;`,`return ${getASTNodeUID(node)}terminates;`]] //GG
     
         return [startsVarRefNode,terminatesVarRefNode]
     }
@@ -527,9 +527,9 @@ export class CCFGVisitor implements SimpleLVisitor {
     previousNode = executeAssignment2StateModificationNode
     }
     previousNode.functionsNames = [...previousNode.functionsNames, ...[`${previousNode.uid}executeAssignment2`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getASTNodeUID(node)}2520 = resRight; // was ${getASTNodeUID(node)}2354; but using the parameter name now`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
+    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getASTNodeUID(node)}2524 = resRight; // was ${getASTNodeUID(node)}2358; but using the parameter name now`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
-                (*((int*)sigma["${getASTNodeUID(node.variable)}currentValue"])) = ${getASTNodeUID(node)}2520;`]] //AA
+                (*((int*)sigma["${getASTNodeUID(node.variable)}currentValue"])) = ${getASTNodeUID(node)}2524;`]] //AA
     
         {let e = this.ccfg.addEdge(previousNode,terminatesAssignmentNode)
         e.guards = [...e.guards, ...[]] //EE
@@ -733,7 +733,7 @@ export class CCFGVisitor implements SimpleLVisitor {
             throw new Error("impossible to be there andJoinNode"+getASTNodeUID(node.right))
         }
         multipleSynchroNode.params = [...multipleSynchroNode.params, ...[Object.assign( new TypedElement(), JSON.parse(`{ "name": "n2", "type": "int"}`)),Object.assign( new TypedElement(), JSON.parse(`{ "name": "n1", "type": "int"}`))]]
-        multipleSynchroNode.functionsDefs = [...multipleSynchroNode.functionsDefs, ...[`int ${getASTNodeUID(node)}4267 = n2;`,`int ${getASTNodeUID(node)}4292 = n1;`]] //HH
+        multipleSynchroNode.functionsDefs = [...multipleSynchroNode.functionsDefs, ...[`int ${getASTNodeUID(node)}4243 = n2;`,`int ${getASTNodeUID(node)}4268 = n1;`]] //HH
     }
     
     {
@@ -747,7 +747,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "int"
         previousNode.functionsNames = [`${previousNode.uid}finishPlus`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getASTNodeUID(node)}4411 = n1; // was ${getASTNodeUID(node)}4292; but using the parameter name now`,`int ${getASTNodeUID(node)}4416 = n2; // was ${getASTNodeUID(node)}4267; but using the parameter name now`,`int ${getASTNodeUID(node)}4410 = ${getASTNodeUID(node)}4411 + ${getASTNodeUID(node)}4416;`,`int ${getASTNodeUID(node)}terminates =  ${getASTNodeUID(node)}4410;`,`return ${getASTNodeUID(node)}terminates;`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getASTNodeUID(node)}4387 = n1; // was ${getASTNodeUID(node)}4268; but using the parameter name now`,`int ${getASTNodeUID(node)}4392 = n2; // was ${getASTNodeUID(node)}4243; but using the parameter name now`,`int ${getASTNodeUID(node)}4386 = ${getASTNodeUID(node)}4387 + ${getASTNodeUID(node)}4392;`,`int ${getASTNodeUID(node)}terminates =  ${getASTNodeUID(node)}4386;`,`return ${getASTNodeUID(node)}terminates;`]] //GG
     
         return [startsPlusNode,terminatesPlusNode]
     }
@@ -778,7 +778,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "bool"
         previousNode.functionsNames = [`${previousNode.uid}evalBooleanConst`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`const std::lock_guard<std::mutex> lock(sigma_mutex);`,`bool ${getASTNodeUID(node)}4630 = *(bool *) sigma["${getASTNodeUID(node)}constantValue"];//constantValue}`,`bool ${getASTNodeUID(node)}terminates =  ${getASTNodeUID(node)}4630;`,`return ${getASTNodeUID(node)}terminates;`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`const std::lock_guard<std::mutex> lock(sigma_mutex);`,`bool ${getASTNodeUID(node)}4606 = *(bool *) sigma["${getASTNodeUID(node)}constantValue"];//constantValue}`,`bool ${getASTNodeUID(node)}terminates =  ${getASTNodeUID(node)}4606;`,`return ${getASTNodeUID(node)}terminates;`]] //GG
     
         return [startsBooleanConstNode,terminatesBooleanConstNode]
     }
@@ -904,11 +904,11 @@ export class CCFGVisitor implements SimpleLVisitor {
         this.ccfg.addNode(terminatesPeriodicBlocNode)
         // rule periodicStart
    //premise: starts:event
-   //conclusion: blocTrigger:timer,starts:event
+   //conclusion: blocTrigger:Timer,starts:event
 // rule periodicBodyStart
-   //premise: blocTrigger:timer,terminates:event
+   //premise: blocTrigger:Timer,terminates:event
    //conclusion: bloc:Bloc,starts:event
-   //conclusion: bloc:Bloc,starts:event,blocTrigger:timer,starts:event
+   //conclusion: bloc:Bloc,starts:event,blocTrigger:Timer,starts:event
 
         let previousNode =undefined
         
@@ -932,7 +932,7 @@ export class CCFGVisitor implements SimpleLVisitor {
             let e1 = this.ccfg.addEdge(previousNode, blocTriggerStartsNodeperiodicStart)
             e1.guards = [...e1.guards, ...[]] //FFF
             let e2 = this.ccfg.addEdge( blocTriggerStartsNodeperiodicStart,blocTriggerTerminatesNodeperiodicStart)
-            e2.guards = [...e1.guards, ...[]] //FFF
+            e2.guards = [...e2.guards, ...[]] //FFF
             }
 
             
@@ -941,8 +941,8 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
     {
-        let terminatesnodeperiodicBodyStart = this.retrieveNode("terminates",node) //retrieve 1
-        previousNode = terminatesnodeperiodicBodyStart
+        let terminatesblocTriggernodeperiodicBodyStart = this.retrieveNode("terminatesblocTrigger",node) //retrieve 1
+        previousNode = terminatesblocTriggernodeperiodicBodyStart
     }
     
         let periodicBodyStartForkNode: Node = new Fork("periodicBodyStartForkNode")
@@ -957,10 +957,10 @@ export class CCFGVisitor implements SimpleLVisitor {
     let blocTriggerStartsNodeperiodicBodyStart = this.retrieveNode("starts"+"blocTrigger",node)
     let blocTriggerTerminatesNodeperiodicBodyStart = this.retrieveNode("terminates"+"blocTrigger",node)
     {
-    let e1 = this.ccfg.addEdge(previousNode, blocTriggerStartsNodeperiodicBodyStart)
-    e1.guards = [...e1.guards, ...[]] //FF2
+    //let e1 = this.ccfg.addEdge(previousNode, blocTriggerStartsNodeperiodicBodyStart)
+    //e1.guards = [...e1.guards, ...[]] //FF22
     let e2 = this.ccfg.addEdge( blocTriggerStartsNodeperiodicBodyStart,blocTriggerTerminatesNodeperiodicBodyStart)
-    e2.guards = [...e1.guards, ...[]] //FF2
+    e2.guards = [...e2.guards, ...[]] //FF22
     this.ccfg.addEdge(periodicBodyStartForkNode,blocTriggerStartsNodeperiodicBodyStart)
     }
    

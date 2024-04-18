@@ -232,7 +232,7 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
     if (isMultipleEmission) {
         let isParallel = ruleCF.rule.conclusion.eventEmissionOperator != ";";
         if (isParallel) {
-            handleParallelMultipleEmissions(file, ruleCF, guardActions);
+            handleParallelMultipleEmissions(file, ruleCF, guardActions, terminatesNodeName);
         }else{
             handleSequentialMultipleEmissions(file, ruleCF, guardActions, terminatesNodeName);
         }
@@ -316,7 +316,7 @@ function handleSingleEmission(ruleCF: RuleControlFlow, file: CompositeGeneratorN
         let ${toVisitName}StartsNode${ruleCF.rule.name} = this.retrieveNode("starts",${participant})
         `);
             if (extraPrefix.length != 0) {
-                if (ruleCF.conclusionParticipants[0].type != "timer") {
+                if (ruleCF.conclusionParticipants[0].type != "Timer") {
                     throw new Error("in " + ruleCF.rule.name + ", only timer (and event but not yet supported) can be started/stopped from a rule, was " + ruleCF.conclusionParticipants[0].type + "(" + toVisitName + ")\n\t extraPrefix is " + extraPrefix);
                 }
                 let duration = ((ruleCF.rule.$container as RuleOpening).runtimeState.filter(rs => rs.name == toVisitName)[0] as VariableDeclaration).value?.$cstNode?.text;
@@ -334,7 +334,7 @@ function handleSingleEmission(ruleCF: RuleControlFlow, file: CompositeGeneratorN
             let e1 = this.ccfg.addEdge(previousNode, ${toVisitName}StartsNode${ruleCF.rule.name})
             e1.guards = [...e1.guards, ...[]] //FFF
             let e2 = this.ccfg.addEdge( ${toVisitName}StartsNode${ruleCF.rule.name},${toVisitName}TerminatesNode${ruleCF.rule.name})
-            e2.guards = [...e1.guards, ...[]] //FFF
+            e2.guards = [...e2.guards, ...[]] //FFF
             }
 
             `);
@@ -350,7 +350,7 @@ function handleSingleEmission(ruleCF: RuleControlFlow, file: CompositeGeneratorN
     }
 }
 
-function handleParallelMultipleEmissions(file: CompositeGeneratorNode, ruleCF: RuleControlFlow, guardActions: string) {
+function handleParallelMultipleEmissions(file: CompositeGeneratorNode, ruleCF: RuleControlFlow, guardActions: string, terminatesNodeName: string) {
     file.append(`
         let ${ruleCF.rule.name}ForkNode: Node = new Fork("${ruleCF.rule.name}ForkNode")
         this.ccfg.addNode(${ruleCF.rule.name}ForkNode)
@@ -363,26 +363,34 @@ function handleParallelMultipleEmissions(file: CompositeGeneratorNode, ruleCF: R
         const participantName = emissionParticipant[0].name;
         let [extraPrefix, participant] = getExtraPrefix(ruleCF, participantName);
         if (extraPrefix.length != 0) {
-            if (emissionParticipant[0].type != "timer") {
+            if (emissionParticipant[0].type != "Timer") {
                 throw new Error("only timer (and event but not yet supported) can be started/stopped from a rule, was " + emissionParticipant[0].type);
             }
             file.append(`
     let ${participantName}StartsNode${ruleCF.rule.name} = this.retrieveNode("starts"+${extraPrefix},${participant})
     let ${participantName}TerminatesNode${ruleCF.rule.name} = this.retrieveNode("terminates"+${extraPrefix},${participant})
     {
-    let e1 = this.ccfg.addEdge(previousNode, ${participantName}StartsNode${ruleCF.rule.name})
-    e1.guards = [...e1.guards, ...[]] //FF2
+    //let e1 = this.ccfg.addEdge(previousNode, ${participantName}StartsNode${ruleCF.rule.name})
+    //e1.guards = [...e1.guards, ...[]] //FF22
     let e2 = this.ccfg.addEdge( ${participantName}StartsNode${ruleCF.rule.name},${participantName}TerminatesNode${ruleCF.rule.name})
-    e2.guards = [...e1.guards, ...[]] //FF2
+    e2.guards = [...e2.guards, ...[]] //FF22
     this.ccfg.addEdge(${ruleCF.rule.name}ForkNode,${participantName}StartsNode${ruleCF.rule.name})
     }
    `);
 
         } else {
+            if(participantName == "this" && emissionParticipant[1].name == "terminates") {
+                file.append(`
+        this.ccfg.addEdge(previousNode,${terminatesNodeName})
+        previousNode = ${terminatesNodeName}
+        `);
+            }else{
+
             file.append(`
         let [${participantName}StartNode/*,${participantName}TerminatesNode*/] = this.getOrVisitNode(node.${participantName})
         this.ccfg.addEdge(${ruleCF.rule.name}ForkNode,${participantName}StartNode)
         `);
+            }
         }
     }
 }
@@ -395,7 +403,7 @@ function handleSequentialMultipleEmissions(file: CompositeGeneratorNode, ruleCF:
         const participantName = emissionParticipant[0].name;
         let [extraPrefix, participant] = getExtraPrefix(ruleCF, participantName);
         if (extraPrefix.length != 0) {
-            if (emissionParticipant[0].type != "timer") {
+            if (emissionParticipant[0].type != "Timer") {
                 throw new Error("only timer (and event but not yet supported) can be started/stopped from a rule, was " + emissionParticipant[0].type);
             }
             file.append(`
@@ -405,7 +413,7 @@ function handleSequentialMultipleEmissions(file: CompositeGeneratorNode, ruleCF:
     let e1 = this.ccfg.addEdge(previousNode, ${participantName}StartsNode${ruleCF.rule.name})
     e1.guards = [...e1.guards, ...[]] //FF3
     let e2 = this.ccfg.addEdge( ${participantName}StartsNode${ruleCF.rule.name},${participantName}TerminatesNode${ruleCF.rule.name})
-    e2.guards = [...e1.guards, ...[]] //FF3
+    e2.guards = [...e2.guards, ...[]] //FF3
     }
    `);
 
@@ -448,7 +456,7 @@ function getExtraPrefix(ruleCF: RuleControlFlow, participantName: string|undefin
  * returns the previous node name. May imply the creation of new nodes in case of multiple synchronizations that may require a decision or join node
  * @param ruleCF 
  * @param previousNodeName 
- * @returns [the previous node name, the guards, the parameter typed element in json format]
+ * @returns [the previous node prefix, the guards, the parameter typed element in json format]
  */
 function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow[], previousNodeName: string, file: CompositeGeneratorNode): [string,string,string, TypedElement|undefined] { 
     let isStartingRule = ruleCF.premiseParticipants[0].name == "starts";
@@ -474,11 +482,11 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
     if(varActions.length>0){
         console.warn(chalk.gray(`in the context of ${ruleCF.rule.name}, these varActions have been disregarded: ${varActions}`))
     }
-    let[, participant] = getExtraPrefix(ruleCF, ruleCF.premiseParticipants[0].name);
+    let[extraPrefix, participant] = getExtraPrefix(ruleCF, ruleCF.premiseParticipants[0].name);
     if(param.name != "NULL"){
-        return [`terminates`, `${participant}`, "", param]
+        return [`terminates${extraPrefix.replaceAll(`"`,``)}`, `${participant}`, "", param]
     }
-    return [`terminates`, `${participant}`, "", undefined]
+    return [`terminates${extraPrefix.replaceAll(`"`,``)}`, `${participant}`, "", undefined]
     
 }
 
@@ -929,7 +937,7 @@ function splitArrayByParticipants(elements: TypedElement[]): TypedElement[][] {
     let currentArray: TypedElement[] = [];
     
     for (const element of elements) {
-        console.log(chalk.bgGreenBright("element", element.name, "type", element.type))
+        // console.log(chalk.bgGreenBright("element", element.name, "type", element.type))
         if (element.type === 'event') {
             if (currentArray.length > 0) {
                 result.push(currentArray);
@@ -1167,7 +1175,7 @@ function getCPPVariableTypeName(typeName: string): string {
             return "bool";
         case "void":
             return "void";
-        case "timer": //TO BE FIXED
+        case "Timer": //TO BE FIXED
             return "int";    
         default:
             return "unknown";

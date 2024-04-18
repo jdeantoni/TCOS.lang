@@ -6,7 +6,7 @@ import "./testSoSLang/src/language-server/simple-l.langium"
 
 open Model { 
 
-                            when starts
+                            when starts 
     ------------------------------------------------------------ statementsInOrder1
       <this,σ> ~> statements->sequential.foreach(s => <s,σ>)
 
@@ -57,6 +57,7 @@ open Variable {
 }
 
 open VarRef {
+  
                   when starts
     ---------------------------------------------              accessVarRef 
       <this,σ> ~> emits terminates[theVar.currentValue]
@@ -191,8 +192,7 @@ open PeriodicBloc{
   
           when <blocTrigger,σ> 
       -------------------------------------------------         periodicBodyStart
-        <this,σ> ~> <bloc,σ>;
-                    <blocTrigger,σ>
+        <this,σ> ~> <bloc,σ> || <blocTrigger,σ>
                   
   
       //          when <bloc,σ>
