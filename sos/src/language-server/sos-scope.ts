@@ -6,7 +6,7 @@
 
 import {
     AstNode,
-    DefaultScopeComputation, DefaultScopeProvider, EMPTY_SCOPE, getContainerOfType, LangiumServices, ReferenceInfo,Scope, ScopeOptions, stream, streamAllContents, StreamScope
+    DefaultScopeComputation, DefaultScopeProvider, EMPTY_SCOPE, getContainerOfType, isReference, LangiumServices, ReferenceInfo,Scope, ScopeOptions, stream, streamAllContents, StreamScope
 } from 'langium';
 
 import { AbstractRule, Assignment, CollectionRuleSync, CrossReference, isAbstractRule, isAlternatives, isAssignment, isCollectionRuleSync, isMemberCall, isRuleOpening, isRuleSync, isRWRule, 
@@ -41,12 +41,14 @@ export class SoSScopeProvider extends DefaultScopeProvider {
             const memberCall = context.container as MemberCall;
             const previous = memberCall.previous;
             if (!previous) {
-               // return super.getScope(context);
                 const ruleOpeningItem = getContainerOfType(context.container, isRuleOpening);
+                
+               // return super.getScope(context);
                 if (ruleOpeningItem) {
                     return this.scopeRuleOpeningMembers(ruleOpeningItem);
                 }
             }
+            
             //TODO: should never write a so crappy code ! To be refactored !
             if (isMemberCall(previous) && previous.element !== undefined){
                 const collectionRuleSync = getContainerOfType(previous.$container, isCollectionRuleSync);
@@ -74,10 +76,33 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                         }
                     }
                 }
+                if(isReference(previous.element)){
+                    let elemRef = previous.element?.ref
+                        if(elemRef != undefined){
+                            var terminal = (elemRef as unknown as Assignment).terminal
+                            if (isCrossReference(terminal)){
+                                if(isParserRule((terminal as CrossReference).type.ref)){
+                                    const parserRuleItem = (terminal as CrossReference).type.ref
+                                    const sosSpec = getContainerOfType(context.container, isSoSSpec)
+                                    if(sosSpec){
+                                        for(var ro of sosSpec.rtdAndRules){
+                                            if (isRuleOpening(ro)){
+                                                if (ro.onRule?.ref?.name === (parserRuleItem as ParserRule).name){
+                                                    return this.scopeParsingRule(parserRuleItem as ParserRule,ro)
+                                                }
+                                            }
+                                        }
+                                        //should only take assignement as a variant of scopePArsingRule
+                                    }
+                                }
+                            }
+                        }
+                }
                 const ruleOpeningItem = getContainerOfType(previous.$container, isRuleOpening);
                 if (ruleOpeningItem) {
                     return this.scopeRuleOpeningMembers(ruleOpeningItem,previous);
                 }
+                
             }
             const previousType = inferType(previous, new Map());
             if (isRuleOpeningType(previousType)) {
@@ -98,6 +123,17 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                 }
                 if(isMemberCall(previous)){
                     const ruleOpeningItem: RuleOpening | undefined = getContainerOfType(previous?.$container, isRuleOpening);
+                //     console.log(chalk.red("previous is ", previous.$type))
+                //     if(isReference(previous.element)){
+                //         console.log(chalk.red("isReference", previous.element.$refText))
+                //         if (ruleOpeningItem && previous.element.ref && previous.element.ref.$type.toString() == "Assignment" && ((previous.element.ref as unknown as  Assignment).terminal as CrossReference).type){
+
+                //             let parserRuleItem = ((previous.element.ref as unknown as  Assignment).terminal as CrossReference).type.ref as ParserRule
+                //             if(parserRuleItem){
+                //                 return this.scopeParsingRule(parserRuleItem, ruleOpeningItem);
+                //             }
+                //         }
+                //     }
                     if (ruleOpeningItem){
                         return this.scopeParsingRule(previousType.literal, ruleOpeningItem);
                     }
@@ -118,8 +154,9 @@ export class SoSScopeProvider extends DefaultScopeProvider {
     //     return this.createScopeForNodes(allScopeElements);
     // }
 
-    private scopeParsingRule(parserRuleItem: ParserRule, ruleOpeningItem: RuleOpening): Scope {
+    private scopeParsingRule(parserRuleItem: ParserRule, ruleOpeningItem: RuleOpening, initialMembers: AstNode[] = []): Scope {
         var allScopeElements: AstNode[] = (parserRuleItem !== undefined)?this.getAllAssignments(parserRuleItem.definition) : [];
+        allScopeElements = allScopeElements.concat(initialMembers)
         this.addListFunctions(ruleOpeningItem, allScopeElements);
         allScopeElements = allScopeElements.concat(this.addClocks(ruleOpeningItem))
         allScopeElements = allScopeElements.concat(this.getAllTemporaryVariable(ruleOpeningItem))
@@ -265,9 +302,10 @@ export class SoSScopeProvider extends DefaultScopeProvider {
 
     }
 
-    private scopeRuleOpeningMembers(ruleOpeningItem: RuleOpening, context: MemberCall | undefined = undefined): Scope {
+    private scopeRuleOpeningMembers(ruleOpeningItem: RuleOpening, context: MemberCall | undefined = undefined, initialMembers:AstNode[] = []): Scope {
         
         var allScopeElements: AstNode[] = (ruleOpeningItem.onRule?.ref !== undefined)?this.getAllAssignments(ruleOpeningItem.onRule.ref.definition) : [];
+        allScopeElements = allScopeElements.concat(initialMembers)
         allScopeElements = allScopeElements.concat((ruleOpeningItem.onRule?.ref !== undefined)?this.getAllRules(ruleOpeningItem.onRule.ref.definition):[])        
         //if (! isForControlFlowRule)
         var allMembers:AstNode[] = []
@@ -288,6 +326,15 @@ export class SoSScopeProvider extends DefaultScopeProvider {
             }
         }else{
             allMembers = getRuleOpeningChain(ruleOpeningItem).flatMap(e => e.runtimeState);
+            if(context && isReference(context.element)){
+                if (ruleOpeningItem && context.element.ref && context.element.ref.$type.toString() == "Assignment" && ((context.element.ref as unknown as  Assignment).terminal as CrossReference).type){
+                    let parserRuleItem = ((context.element.ref as unknown as  Assignment).terminal as CrossReference).type.ref as ParserRule
+                    if(parserRuleItem){
+                        var allScopeElements: AstNode[] = (parserRuleItem !== undefined)?this.getAllAssignments(parserRuleItem.definition) : [];
+                        allMembers = allMembers.concat(allScopeElements)
+                    }
+                }
+            }         
         }
             for(let rule of ruleOpeningItem.rules){
                 if(isRWRule(rule)){
