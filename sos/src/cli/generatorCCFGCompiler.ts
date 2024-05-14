@@ -98,9 +98,14 @@ export class CCFGVisitor implements SimpleLVisitor {
         if (openedRule.onRule?.ref != undefined) {
             name = openedRule.onRule.ref.name
         }
+
+
+        
         file.append(`
-    visit${name}(node: ${name}): [Node,Node] {
-        let starts${name}Node: Node = new Step("starts"+getASTNodeUID(node),[${visitVariableDeclaration(openedRule.runtimeState as VariableDeclaration[])}])
+    visit${name}(node: ${name}): [Node,Node] {`)
+        visitVariableDeclaration(openedRule.runtimeState as VariableDeclaration[], file)
+        file.append(`
+        let starts${name}Node: Node = new Step("starts"+getASTNodeUID(node),[${getVariableDeclarationCode(openedRule.runtimeState as VariableDeclaration[])}])
         if(starts${name}Node.functionsDefs.length>0){
             starts${name}Node.returnType = "void"
         }
@@ -1019,6 +1024,27 @@ function visitValuedEventRef(valuedEventRef: ValuedEventRef | undefined): [strin
 }
 
 
+/**
+ * @param  
+ * @returns 
+ */
+function visitVariableDeclaration(runtimeState: VariableDeclaration[] | undefined, file : CompositeGeneratorNode): void {
+    if (runtimeState != undefined) {
+       // res = res + `\`const std::lock_guard<std::mutex> lock(sigma_mutex);\`,`
+        for(let vardDecl of runtimeState){
+            if(vardDecl.type != undefined && vardDecl.type.$cstNode?.text == "Event"){
+                file.append(`
+                let starts${vardDecl.name}Node: Node = new Step("starts${vardDecl.name}"+getASTNodeUID(node))\n
+                this.ccfg.addNode(starts${vardDecl.name}Node)
+                let terminates${vardDecl.name}Node: Node = new Step("terminates${vardDecl.name}"+getASTNodeUID(node))\n
+                this.ccfg.addNode(terminates${vardDecl.name}Node)
+                this.ccfg.addEdge(starts${vardDecl.name}Node,terminates${vardDecl.name}Node)
+                `)
+            }
+        }
+    }
+    return
+}
 
 
 /**
@@ -1026,18 +1052,22 @@ function visitValuedEventRef(valuedEventRef: ValuedEventRef | undefined): [strin
  * @param runtimeState 
  * @returns 
  */
-function visitVariableDeclaration(runtimeState: VariableDeclaration[] | undefined): string {
+function getVariableDeclarationCode(runtimeState: VariableDeclaration[] | undefined): string {
     var res : string = ""
     if (runtimeState != undefined) {
        // res = res + `\`const std::lock_guard<std::mutex> lock(sigma_mutex);\`,`
         let sep = ""
         for(let vardDecl of runtimeState){
-            if(vardDecl.value != undefined && vardDecl.value.$type == "MemberCall"){
-            res = res + sep + `\`sigma["\${getASTNodeUID(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?`\${node.${(vardDecl.value as MemberCall).element?.$refText}}`:""});\``
+            if(vardDecl.type != undefined && vardDecl.type.$cstNode?.text == "Event"){
+                continue
             }else{
-                res = res + sep + `\`sigma["\${getASTNodeUID(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?vardDecl.value.$cstNode?.text:""});\``
+                if(vardDecl.value != undefined && vardDecl.value.$type == "MemberCall"){
+                    res = res + sep + `\`sigma["\${getASTNodeUID(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?`\${node.${(vardDecl.value as MemberCall).element?.$refText}}`:""});\``
+                }else{
+                    res = res + sep + `\`sigma["\${getASTNodeUID(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?vardDecl.value.$cstNode?.text:""});\``
+                }
+                sep= ","
             }
-            sep= ","
         }
     }
     return res

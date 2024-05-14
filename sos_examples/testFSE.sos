@@ -205,3 +205,31 @@ open PeriodicBloc{
                     
 
 }
+
+open FunctionCall {
+
+                      when starts
+      ----------------------------------------------------     functionCallArgsStart
+        <this,σ> ~> args->sequential.foreach(a => <a,σ>)
+  
+              when <args.last(),σ> -> evaluatedArgs 
+      ----------------------------------------------------     functionCallStarts
+        <this,σ> ~> //theFunction.params  := evaluatedArgs;      -> what is appropriate to be done there ?
+                    <theFunction,σ>
+
+                 when <theFunction,σ>
+      -------------------------------------------------         functionCallEnd
+                <this,σ> ~> terminates
+
+}
+
+open FunctionDef{
+  
+                        when starts
+        ----------------------------------------------------     functionDefArgsStart
+                    <this,σ> ~> <body,σ>
+  
+                when <body,σ> -> terminates
+        -------------------------------------------------         functionDefEnd
+                  <this,σ> ~> terminates
+}

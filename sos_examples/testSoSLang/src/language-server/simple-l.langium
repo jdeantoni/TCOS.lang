@@ -1,7 +1,8 @@
 grammar SimpleL
 
 entry Model:
-    statements+=(Statement)*;
+    (functionDefs+=FunctionDef)*
+    (statements+=Statement)*;
 
 Bloc:
     '{'
@@ -18,10 +19,10 @@ PeriodicBloc:
     bloc=Bloc;
 
 Statement:
-    Variable | Expr | Assignment | Bloc | ParallelBloc | PeriodicBloc| While;
+    Variable | Expr | Assignment | Bloc | ParallelBloc | PeriodicBloc| While | If | FunctionCall;
 
 Expr:
-    VarRef|Plus|If|BooleanExpression;
+    VarRef|Plus|BooleanExpression;
 
 BooleanExpression:
     Conjunction | Disjunction | BooleanConst;
@@ -55,8 +56,13 @@ VarRef:
     theVar=[Variable:ID];
 
 
+FunctionDef: //no return yet
+    'function' name=ID '(' (params+=ID)* ')' body=Bloc;
 
 
+
+FunctionCall:
+    theFunction=[FunctionDef:ID] '(' (args+=Expr)* ')';
 
 
 

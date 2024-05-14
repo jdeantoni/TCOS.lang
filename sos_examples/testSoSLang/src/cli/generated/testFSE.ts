@@ -1,7 +1,7 @@
 
 import { AstNode, Reference, isReference } from "langium";
 import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, TypedElement } from "../../ccfg/ccfglib";
-import { Model,Bloc,ParallelBloc,Variable,VarRef,If,Assignment,Conjunction,Plus,BooleanConst,While,PeriodicBloc } from "../../language-server/generated/ast";
+import { Model,Bloc,ParallelBloc,Variable,VarRef,If,Assignment,Conjunction,Plus,BooleanConst,While,PeriodicBloc,FunctionCall,FunctionDef } from "../../language-server/generated/ast";
 
 export interface SimpleLVisitor {
     visit(node: AstNode| Reference<AstNode>): [Node,Node];
@@ -19,6 +19,8 @@ export interface SimpleLVisitor {
      visitBooleanConst(node: BooleanConst): [Node,Node];
      visitWhile(node: While): [Node,Node];
      visitPeriodicBloc(node: PeriodicBloc): [Node,Node];
+     visitFunctionCall(node: FunctionCall): [Node,Node];
+     visitFunctionDef(node: FunctionDef): [Node,Node];
 }
 
 
@@ -99,6 +101,12 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         if(node.$type == "PeriodicBloc"){
             return this.visitPeriodicBloc(node as PeriodicBloc);
+        }
+        if(node.$type == "FunctionCall"){
+            return this.visitFunctionCall(node as FunctionCall);
+        }
+        if(node.$type == "FunctionDef"){
+            return this.visitFunctionDef(node as FunctionDef);
         }
         throw new Error("Not implemented: " + node.$type);
     }
@@ -969,6 +977,133 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
         return [startsPeriodicBlocNode,terminatesPeriodicBlocNode]
+    }
+
+    visitFunctionCall(node: FunctionCall): [Node,Node] {
+        let startsFunctionCallNode: Node = new Step("starts"+getASTNodeUID(node),[])
+        if(startsFunctionCallNode.functionsDefs.length>0){
+            startsFunctionCallNode.returnType = "void"
+        }
+        startsFunctionCallNode.functionsNames = [`init${startsFunctionCallNode.uid}FunctionCall`]
+        this.ccfg.addNode(startsFunctionCallNode)
+        let terminatesFunctionCallNode: Node = new Step("terminates"+getASTNodeUID(node))
+        this.ccfg.addNode(terminatesFunctionCallNode)
+        // rule functionCallArgsStart
+   //premise: starts:event
+   //conclusion: args:Expr[],a:unknown,starts:event
+// rule functionCallStarts
+   //premise: args:Expr[],last():Expr,terminates:event
+   //conclusion: theFunction:[FunctionDef:ID],starts:event
+// rule functionCallEnd
+   //premise: theFunction:[FunctionDef:ID],terminates:event
+   //conclusion: terminates:event
+
+        let previousNode =undefined
+        
+    {
+        let startsnodefunctionCallArgsStart = this.retrieveNode("starts",node) //retrieve 1
+        previousNode = startsnodefunctionCallArgsStart
+    }
+    
+        let functionCallArgsStartStepNode = new Step("starts"+getASTNodeUID(node.args))
+        this.ccfg.addNode(functionCallArgsStartStepNode)
+        let e = this.ccfg.addEdge(previousNode,functionCallArgsStartStepNode)
+        e.guards = [...e.guards, ...[]] //DD
+
+        previousNode = functionCallArgsStartStepNode
+        for (var child of node.args) {
+            let [childStartsNode,childTerminatesNode] = this.getOrVisitNode(child)
+            this.ccfg.addEdge(previousNode,childStartsNode)
+            previousNode = childTerminatesNode
+        }
+        let argsTerminatesNode = new Step("terminates"+getASTNodeUID(node.args))
+        this.ccfg.addNode(argsTerminatesNode)
+        this.ccfg.addEdge(previousNode,argsTerminatesNode)
+        
+        previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}functionCallArgsStart`] //overwrite existing name
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
+    
+    {
+        let terminatesnode_argsfunctionCallStarts = this.retrieveNode("terminates",node.args) //retrieve 1
+        previousNode = terminatesnode_argsfunctionCallStarts
+    }
+    
+        let theFunctionStartsNodefunctionCallStarts = this.retrieveNode("starts",node.theFunction)
+        
+            {
+            let e = this.ccfg.addEdge(previousNode,theFunctionStartsNodefunctionCallStarts)
+            e.guards = [...e.guards, ...[]] //FF
+            }
+            
+        previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}functionCallStarts`] //overwrite existing name
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
+    
+    {
+        let terminatesnode_theFunctionfunctionCallEnd = this.retrieveNode("terminates",node.theFunction) //retrieve 1
+        previousNode = terminatesnode_theFunctionfunctionCallEnd
+    }
+    
+        {let e = this.ccfg.addEdge(previousNode,terminatesFunctionCallNode)
+        e.guards = [...e.guards, ...[]] //EE
+        }
+        
+        previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}functionCallEnd`] //overwrite existing name
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
+    
+        return [startsFunctionCallNode,terminatesFunctionCallNode]
+    }
+
+    visitFunctionDef(node: FunctionDef): [Node,Node] {
+        let startsFunctionDefNode: Node = new Step("starts"+getASTNodeUID(node),[])
+        if(startsFunctionDefNode.functionsDefs.length>0){
+            startsFunctionDefNode.returnType = "void"
+        }
+        startsFunctionDefNode.functionsNames = [`init${startsFunctionDefNode.uid}FunctionDef`]
+        this.ccfg.addNode(startsFunctionDefNode)
+        let terminatesFunctionDefNode: Node = new Step("terminates"+getASTNodeUID(node))
+        this.ccfg.addNode(terminatesFunctionDefNode)
+        // rule functionDefArgsStart
+   //premise: starts:event
+   //conclusion: body:Bloc,starts:event
+// rule functionDefEnd
+   //premise: body:Bloc,terminates:event
+   //conclusion: terminates:unknown
+
+        let previousNode =undefined
+        
+    {
+        let startsnodefunctionDefArgsStart = this.retrieveNode("starts",node) //retrieve 1
+        previousNode = startsnodefunctionDefArgsStart
+    }
+    
+        let bodyStartsNodefunctionDefArgsStart = this.retrieveNode("starts",node.body)
+        
+            {
+            let e = this.ccfg.addEdge(previousNode,bodyStartsNodefunctionDefArgsStart)
+            e.guards = [...e.guards, ...[]] //FF
+            }
+            
+        previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}functionDefArgsStart`] //overwrite existing name
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
+    
+    {
+        let terminatesnode_bodyfunctionDefEnd = this.retrieveNode("terminates",node.body) //retrieve 1
+        previousNode = terminatesnode_bodyfunctionDefEnd
+    }
+    
+        {let e = this.ccfg.addEdge(previousNode,terminatesFunctionDefNode)
+        e.guards = [...e.guards, ...[]] //EE
+        }
+        
+        previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}functionDefEnd`] //overwrite existing name
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
+    
+        return [startsFunctionDefNode,terminatesFunctionDefNode]
     }
 
     getOrVisitNode(node:AstNode | Reference<AstNode> |undefined): [Node,Node]{
