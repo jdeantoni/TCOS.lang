@@ -12,12 +12,10 @@ open FSMModel{
 }
 
 open FSM {
-    var currentState:State;
 
                     when starts
     ----------------------------------------- fsmInit
-     <this,σ> ~> currentState := initialState;
-                 <initialState,σ>
+     <this,σ> ~> <initialState,σ>
 
 //                 when starts
 //         [currentState.outTransitions.size == 0]
@@ -32,21 +30,11 @@ open Event {
       <this,σ> ~> terminates    
 }
 
-open State {
 
-            when starts            
-    --------------------------------------- stateInit
-    <this,σ> ~> outTransitions->concurrent.foreach(transition => <transition,σ>)
-
-
-          when firstOf(outTransitions.terminates)
-    ----------------------------------------------                  stateEnd
-          <this,σ> ~> //outTransitions->sequential.foreach(transition => transition.terminates)
-                      terminates
-}
 
 open Transition{
     var isSensitive:boolean = false;
+    var disable: Event;
 
             when starts
     --------------------------------------- transitionInit
@@ -56,6 +44,8 @@ open Transition{
       when <guardEvent,σ> [isSensitive == true]
     ------------------------------------------------------ fire
          <this,σ> ~> isSensitive := false;
+                     emits source.stopOtherTransitions;
+                     emits source.askTermination;
                      <sentEvent,σ>
                      
               when <sentEvent,σ>
@@ -63,4 +53,27 @@ open Transition{
          <this,σ> ~> terminates;
                      <target,σ>
         
+
+          when disable [isSensitive == true]
+    ----------------------------------------------                  transitionStop
+          <this,σ> ~> isSensitive := false;
+                      terminates
+}
+
+open State {
+    var askTermination: Event ;
+    var stopOtherTransitions: Event;
+
+                                  when starts            
+    ----------------------------------------------------------------------------- stateInit
+    <this,σ> ~> outTransitions->concurrent.foreach(transition => <transition,σ>)
+
+
+          when askTermination
+    ----------------------------------------------                  stateEnd
+          <this,σ> ~>   terminates
+
+                            when stopOtherTransitions
+    ------------------------------------------------------------------------ stateStopAllTransitions
+      <this,σ> ~> outTransitions->sequential.foreach(t => emits t.disable)
 }

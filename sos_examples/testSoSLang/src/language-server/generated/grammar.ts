@@ -16,17 +16,35 @@ export const SimpleLGrammar = (): Grammar => loadedSimpleLGrammar ?? (loadedSimp
       "name": "Model",
       "entry": true,
       "definition": {
-        "$type": "Assignment",
-        "feature": "statements",
-        "operator": "+=",
-        "terminal": {
-          "$type": "RuleCall",
-          "rule": {
-            "$ref": "#/rules@4"
+        "$type": "Group",
+        "elements": [
+          {
+            "$type": "Assignment",
+            "feature": "functionDefs",
+            "operator": "+=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@16"
+              },
+              "arguments": []
+            },
+            "cardinality": "*"
           },
-          "arguments": []
-        },
-        "cardinality": "*"
+          {
+            "$type": "Assignment",
+            "feature": "statements",
+            "operator": "+=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@4"
+              },
+              "arguments": []
+            },
+            "cardinality": "*"
+          }
+        ]
       },
       "definesHiddenTokens": false,
       "fragment": false,
@@ -132,7 +150,7 @@ export const SimpleLGrammar = (): Grammar => loadedSimpleLGrammar ?? (loadedSimp
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@18"
+                "$ref": "#/rules@20"
               },
               "arguments": []
             }
@@ -216,6 +234,20 @@ export const SimpleLGrammar = (): Grammar => loadedSimpleLGrammar ?? (loadedSimp
               "$ref": "#/rules@10"
             },
             "arguments": []
+          },
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@11"
+            },
+            "arguments": []
+          },
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@17"
+            },
+            "arguments": []
           }
         ]
       },
@@ -243,13 +275,6 @@ export const SimpleLGrammar = (): Grammar => loadedSimpleLGrammar ?? (loadedSimp
             "$type": "RuleCall",
             "rule": {
               "$ref": "#/rules@13"
-            },
-            "arguments": []
-          },
-          {
-            "$type": "RuleCall",
-            "rule": {
-              "$ref": "#/rules@11"
             },
             "arguments": []
           },
@@ -575,7 +600,7 @@ export const SimpleLGrammar = (): Grammar => loadedSimpleLGrammar ?? (loadedSimp
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@17"
+                "$ref": "#/rules@19"
               },
               "arguments": []
             }
@@ -594,7 +619,7 @@ export const SimpleLGrammar = (): Grammar => loadedSimpleLGrammar ?? (loadedSimp
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@18"
+                    "$ref": "#/rules@20"
                   },
                   "arguments": []
                 }
@@ -680,7 +705,7 @@ export const SimpleLGrammar = (): Grammar => loadedSimpleLGrammar ?? (loadedSimp
               "terminal": {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@17"
+                  "$ref": "#/rules@19"
                 },
                 "arguments": []
               },
@@ -727,12 +752,131 @@ export const SimpleLGrammar = (): Grammar => loadedSimpleLGrammar ?? (loadedSimp
           "terminal": {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@17"
+              "$ref": "#/rules@19"
             },
             "arguments": []
           },
           "deprecatedSyntax": false
         }
+      },
+      "definesHiddenTokens": false,
+      "entry": false,
+      "fragment": false,
+      "hiddenTokens": [],
+      "parameters": [],
+      "wildcard": false
+    },
+    {
+      "$type": "ParserRule",
+      "name": "FunctionDef",
+      "definition": {
+        "$type": "Group",
+        "elements": [
+          {
+            "$type": "Keyword",
+            "value": "function"
+          },
+          {
+            "$type": "Assignment",
+            "feature": "name",
+            "operator": "=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@19"
+              },
+              "arguments": []
+            }
+          },
+          {
+            "$type": "Keyword",
+            "value": "("
+          },
+          {
+            "$type": "Assignment",
+            "feature": "params",
+            "operator": "+=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@19"
+              },
+              "arguments": []
+            },
+            "cardinality": "*"
+          },
+          {
+            "$type": "Keyword",
+            "value": ")"
+          },
+          {
+            "$type": "Assignment",
+            "feature": "body",
+            "operator": "=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@1"
+              },
+              "arguments": []
+            }
+          }
+        ]
+      },
+      "definesHiddenTokens": false,
+      "entry": false,
+      "fragment": false,
+      "hiddenTokens": [],
+      "parameters": [],
+      "wildcard": false
+    },
+    {
+      "$type": "ParserRule",
+      "name": "FunctionCall",
+      "definition": {
+        "$type": "Group",
+        "elements": [
+          {
+            "$type": "Assignment",
+            "feature": "theFunction",
+            "operator": "=",
+            "terminal": {
+              "$type": "CrossReference",
+              "type": {
+                "$ref": "#/rules@16"
+              },
+              "terminal": {
+                "$type": "RuleCall",
+                "rule": {
+                  "$ref": "#/rules@19"
+                },
+                "arguments": []
+              },
+              "deprecatedSyntax": false
+            }
+          },
+          {
+            "$type": "Keyword",
+            "value": "("
+          },
+          {
+            "$type": "Assignment",
+            "feature": "args",
+            "operator": "+=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@5"
+              },
+              "arguments": []
+            },
+            "cardinality": "*"
+          },
+          {
+            "$type": "Keyword",
+            "value": ")"
+          }
+        ]
       },
       "definesHiddenTokens": false,
       "entry": false,

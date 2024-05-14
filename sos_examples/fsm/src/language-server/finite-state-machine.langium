@@ -1,20 +1,19 @@
 grammar FiniteStateMachine
 
 entry FSMModel:
-    events+=Event
-    fsms+=FSM;
-
+    (events+=Event)*
+    (fsms+=FSM)*
+;
 FSM:
-    name=ID ':' initialState=[State:ID] 
+    'fsm' name=ID '[' initialState=[State:ID] ']'
     (states+=State | transitions+=Transition)*;
 
 Event:
-    name=ID;
+    "event" name=ID;
 
 State:
-    (isInitial?='*')? 'state' name=ID'{'
-        'in'':' inTransitions+=[Transition:ID]
-        'out'':' outTransitions+=[Transition:ID]
+    'state' name=ID'{'
+        'out'':' (outTransitions+=[Transition:ID])*
     '}';
 
 Transition:

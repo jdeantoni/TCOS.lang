@@ -228,6 +228,7 @@ export function isCollectionRuleSync(item: unknown): item is CollectionRuleSync 
 export interface Conclusion extends AstNode {
     readonly $container: RWRule;
     readonly $type: 'Conclusion';
+    eventEmissionOperator?: ';' | '||'
     eventemissions: Array<EventEmission>
     statemodifications: Array<StateModification>
 }

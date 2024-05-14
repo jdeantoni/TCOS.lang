@@ -11,21 +11,25 @@
             "request": "launch",
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}"
-            ]
-            
+            ],
+            "sourceMaps": true,
+            "outFiles": [
+                "${workspaceFolder}/testSoSLang/out/**/*.js",
+                "${workspaceFolder}/fsm/out/**/*.js",
+            ]            
         },
         {
             "name": "Attach to Language Server",
             "type": "node",
-            "port": 9229,
+            "port": 6011,
             "request": "attach",
             "skipFiles": [
                 "<node_internals>/**"
             ],
             "sourceMaps": true,
             "outFiles": [
-                "${workspaceFolder}/out/**/*.js",
-                "${workspaceFolder}/node_modules/langium"
+                "${workspaceFolder}/testSoSLang/out/**/*.js",
+                "${workspaceFolder}/fsm/out/**/*.js",
             ]
         }
     ]

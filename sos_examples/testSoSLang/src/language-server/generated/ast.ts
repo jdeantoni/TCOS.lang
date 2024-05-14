@@ -14,7 +14,7 @@ export function isBooleanExpression(item: unknown): item is BooleanExpression {
     return reflection.isInstance(item, BooleanExpression);
 }
 
-export type Expr = BooleanExpression | If | Plus | VarRef;
+export type Expr = BooleanExpression | Plus | VarRef;
 
 export const Expr = 'Expr';
 
@@ -22,7 +22,7 @@ export function isExpr(item: unknown): item is Expr {
     return reflection.isInstance(item, Expr);
 }
 
-export type Statement = Assignment | Bloc | Expr | ParallelBloc | PeriodicBloc | Variable | While;
+export type Statement = Assignment | Bloc | Expr | FunctionCall | If | ParallelBloc | PeriodicBloc | Variable | While;
 
 export const Statement = 'Statement';
 
@@ -31,7 +31,7 @@ export function isStatement(item: unknown): item is Statement {
 }
 
 export interface Assignment extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | FunctionCall | FunctionDef | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'Assignment';
     expr: Expr
     variable: Reference<Variable>
@@ -44,7 +44,7 @@ export function isAssignment(item: unknown): item is Assignment {
 }
 
 export interface Bloc extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | FunctionCall | FunctionDef | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'Bloc';
     statements: Array<Statement>
 }
@@ -56,7 +56,7 @@ export function isBloc(item: unknown): item is Bloc {
 }
 
 export interface BooleanConst extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | FunctionCall | FunctionDef | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'BooleanConst';
     value: 'false' | 'true'
 }
@@ -68,7 +68,7 @@ export function isBooleanConst(item: unknown): item is BooleanConst {
 }
 
 export interface Conjunction extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | FunctionCall | FunctionDef | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'Conjunction';
     lhs: BooleanExpression
     rhs: BooleanExpression
@@ -81,7 +81,7 @@ export function isConjunction(item: unknown): item is Conjunction {
 }
 
 export interface Disjunction extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | FunctionCall | FunctionDef | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'Disjunction';
     lhs: BooleanExpression
     rhs: BooleanExpression
@@ -93,8 +93,35 @@ export function isDisjunction(item: unknown): item is Disjunction {
     return reflection.isInstance(item, Disjunction);
 }
 
+export interface FunctionCall extends AstNode {
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | FunctionCall | FunctionDef | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
+    readonly $type: 'FunctionCall';
+    args: Array<Expr>
+    theFunction: Reference<FunctionDef>
+}
+
+export const FunctionCall = 'FunctionCall';
+
+export function isFunctionCall(item: unknown): item is FunctionCall {
+    return reflection.isInstance(item, FunctionCall);
+}
+
+export interface FunctionDef extends AstNode {
+    readonly $container: Model;
+    readonly $type: 'FunctionDef';
+    body: Bloc
+    name: string
+    params: Array<string>
+}
+
+export const FunctionDef = 'FunctionDef';
+
+export function isFunctionDef(item: unknown): item is FunctionDef {
+    return reflection.isInstance(item, FunctionDef);
+}
+
 export interface If extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | FunctionCall | FunctionDef | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'If';
     cond: VarRef
     else: Bloc
@@ -109,6 +136,7 @@ export function isIf(item: unknown): item is If {
 
 export interface Model extends AstNode {
     readonly $type: 'Model';
+    functionDefs: Array<FunctionDef>
     statements: Array<Statement>
 }
 
@@ -119,7 +147,7 @@ export function isModel(item: unknown): item is Model {
 }
 
 export interface ParallelBloc extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | FunctionCall | FunctionDef | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'ParallelBloc';
     statements: Array<Statement>
 }
@@ -131,7 +159,7 @@ export function isParallelBloc(item: unknown): item is ParallelBloc {
 }
 
 export interface PeriodicBloc extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | FunctionCall | FunctionDef | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'PeriodicBloc';
     bloc: Bloc
     time: number
@@ -144,7 +172,7 @@ export function isPeriodicBloc(item: unknown): item is PeriodicBloc {
 }
 
 export interface Plus extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | FunctionCall | FunctionDef | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'Plus';
     left: Expr
     right: Expr
@@ -157,7 +185,7 @@ export function isPlus(item: unknown): item is Plus {
 }
 
 export interface Variable extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | FunctionCall | FunctionDef | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'Variable';
     initialValue?: number
     name: string
@@ -170,7 +198,7 @@ export function isVariable(item: unknown): item is Variable {
 }
 
 export interface VarRef extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | FunctionCall | FunctionDef | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'VarRef';
     theVar: Reference<Variable>
 }
@@ -182,7 +210,7 @@ export function isVarRef(item: unknown): item is VarRef {
 }
 
 export interface While extends AstNode {
-    readonly $container: Assignment | Bloc | Conjunction | Disjunction | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
+    readonly $container: Assignment | Bloc | Conjunction | Disjunction | FunctionCall | FunctionDef | If | Model | ParallelBloc | PeriodicBloc | Plus | While;
     readonly $type: 'While';
     body: Bloc
     cond: VarRef
@@ -202,6 +230,8 @@ export interface SimpleLAstType {
     Conjunction: Conjunction
     Disjunction: Disjunction
     Expr: Expr
+    FunctionCall: FunctionCall
+    FunctionDef: FunctionDef
     If: If
     Model: Model
     ParallelBloc: ParallelBloc
@@ -216,13 +246,15 @@ export interface SimpleLAstType {
 export class SimpleLAstReflection extends AbstractAstReflection {
 
     getAllTypes(): string[] {
-        return ['Assignment', 'Bloc', 'BooleanConst', 'BooleanExpression', 'Conjunction', 'Disjunction', 'Expr', 'If', 'Model', 'ParallelBloc', 'PeriodicBloc', 'Plus', 'Statement', 'VarRef', 'Variable', 'While'];
+        return ['Assignment', 'Bloc', 'BooleanConst', 'BooleanExpression', 'Conjunction', 'Disjunction', 'Expr', 'FunctionCall', 'FunctionDef', 'If', 'Model', 'ParallelBloc', 'PeriodicBloc', 'Plus', 'Statement', 'VarRef', 'Variable', 'While'];
     }
 
     protected override computeIsSubtype(subtype: string, supertype: string): boolean {
         switch (subtype) {
             case Assignment:
             case Bloc:
+            case FunctionCall:
+            case If:
             case ParallelBloc:
             case PeriodicBloc:
             case Variable:
@@ -235,7 +267,6 @@ export class SimpleLAstReflection extends AbstractAstReflection {
             case Disjunction: {
                 return this.isSubtype(BooleanExpression, supertype);
             }
-            case If:
             case Plus:
             case VarRef:
             case BooleanExpression: {
@@ -254,6 +285,9 @@ export class SimpleLAstReflection extends AbstractAstReflection {
             case 'VarRef:theVar': {
                 return Variable;
             }
+            case 'FunctionCall:theFunction': {
+                return FunctionDef;
+            }
             default: {
                 throw new Error(`${referenceId} is not a valid reference id.`);
             }
@@ -270,10 +304,27 @@ export class SimpleLAstReflection extends AbstractAstReflection {
                     ]
                 };
             }
+            case 'FunctionCall': {
+                return {
+                    name: 'FunctionCall',
+                    mandatory: [
+                        { name: 'args', type: 'array' }
+                    ]
+                };
+            }
+            case 'FunctionDef': {
+                return {
+                    name: 'FunctionDef',
+                    mandatory: [
+                        { name: 'params', type: 'array' }
+                    ]
+                };
+            }
             case 'Model': {
                 return {
                     name: 'Model',
                     mandatory: [
+                        { name: 'functionDefs', type: 'array' },
                         { name: 'statements', type: 'array' }
                     ]
                 };

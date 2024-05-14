@@ -28,7 +28,8 @@ export const FiniteStateMachineGrammar = (): Grammar => loadedFiniteStateMachine
                 "$ref": "#/rules@2"
               },
               "arguments": []
-            }
+            },
+            "cardinality": "*"
           },
           {
             "$type": "Assignment",
@@ -40,7 +41,8 @@ export const FiniteStateMachineGrammar = (): Grammar => loadedFiniteStateMachine
                 "$ref": "#/rules@1"
               },
               "arguments": []
-            }
+            },
+            "cardinality": "*"
           }
         ]
       },
@@ -57,6 +59,10 @@ export const FiniteStateMachineGrammar = (): Grammar => loadedFiniteStateMachine
         "$type": "Group",
         "elements": [
           {
+            "$type": "Keyword",
+            "value": "fsm"
+          },
+          {
             "$type": "Assignment",
             "feature": "name",
             "operator": "=",
@@ -70,7 +76,7 @@ export const FiniteStateMachineGrammar = (): Grammar => loadedFiniteStateMachine
           },
           {
             "$type": "Keyword",
-            "value": ":"
+            "value": "["
           },
           {
             "$type": "Assignment",
@@ -90,6 +96,10 @@ export const FiniteStateMachineGrammar = (): Grammar => loadedFiniteStateMachine
               },
               "deprecatedSyntax": false
             }
+          },
+          {
+            "$type": "Keyword",
+            "value": "]"
           },
           {
             "$type": "Alternatives",
@@ -134,16 +144,25 @@ export const FiniteStateMachineGrammar = (): Grammar => loadedFiniteStateMachine
       "$type": "ParserRule",
       "name": "Event",
       "definition": {
-        "$type": "Assignment",
-        "feature": "name",
-        "operator": "=",
-        "terminal": {
-          "$type": "RuleCall",
-          "rule": {
-            "$ref": "#/rules@6"
+        "$type": "Group",
+        "elements": [
+          {
+            "$type": "Keyword",
+            "value": "event"
           },
-          "arguments": []
-        }
+          {
+            "$type": "Assignment",
+            "feature": "name",
+            "operator": "=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@6"
+              },
+              "arguments": []
+            }
+          }
+        ]
       },
       "definesHiddenTokens": false,
       "entry": false,
@@ -158,16 +177,6 @@ export const FiniteStateMachineGrammar = (): Grammar => loadedFiniteStateMachine
       "definition": {
         "$type": "Group",
         "elements": [
-          {
-            "$type": "Assignment",
-            "feature": "isInitial",
-            "operator": "?=",
-            "terminal": {
-              "$type": "Keyword",
-              "value": "*"
-            },
-            "cardinality": "?"
-          },
           {
             "$type": "Keyword",
             "value": "state"
@@ -187,33 +196,6 @@ export const FiniteStateMachineGrammar = (): Grammar => loadedFiniteStateMachine
           {
             "$type": "Keyword",
             "value": "{"
-          },
-          {
-            "$type": "Keyword",
-            "value": "in"
-          },
-          {
-            "$type": "Keyword",
-            "value": ":"
-          },
-          {
-            "$type": "Assignment",
-            "feature": "inTransitions",
-            "operator": "+=",
-            "terminal": {
-              "$type": "CrossReference",
-              "type": {
-                "$ref": "#/rules@4"
-              },
-              "terminal": {
-                "$type": "RuleCall",
-                "rule": {
-                  "$ref": "#/rules@6"
-                },
-                "arguments": []
-              },
-              "deprecatedSyntax": false
-            }
           },
           {
             "$type": "Keyword",
@@ -240,7 +222,8 @@ export const FiniteStateMachineGrammar = (): Grammar => loadedFiniteStateMachine
                 "arguments": []
               },
               "deprecatedSyntax": false
-            }
+            },
+            "cardinality": "*"
           },
           {
             "$type": "Keyword",

@@ -15,7 +15,7 @@ open FSM {
     var currentState:State;
 
                     when starts
-    ----------------------------------------- fsmInit
+    ----------------------------------------- init
      <this,σ> ~> currentState := initialState;
                  <initialState,σ>
 
@@ -35,13 +35,13 @@ open Event {
 open State {
 
             when starts            
-    --------------------------------------- stateInit
+    --------------------------------------- init
     <this,σ> ~> outTransitions->concurrent.foreach(transition => <transition,σ>)
 
 
           when firstOf(outTransitions.terminates)
-    ----------------------------------------------                  stateEnd
-          <this,σ> ~> //outTransitions->sequential.foreach(transition => transition.terminates)
+    ----------------------------------------------                  end
+          <this,σ> ~> outTransitions->sequential.foreach(transition => transition.terminates);
                       terminates
 }
 
@@ -49,18 +49,15 @@ open Transition{
     var isSensitive:boolean = false;
 
             when starts
-    --------------------------------------- transitionInit
+    --------------------------------------- init
         <this,σ> ~> isSensitive := true;
 
              
       when <guardEvent,σ> [isSensitive == true]
     ------------------------------------------------------ fire
          <this,σ> ~> isSensitive := false;
-                     <sentEvent,σ>
-                     
-              when <sentEvent,σ>
-    ----------------------------------------------                  transitionEnd
-         <this,σ> ~> terminates;
+                     <sentEvent,σ>;
+                     terminates ;
                      <target,σ>
         
 }

@@ -59,7 +59,8 @@ Premise:
 
 Conclusion:
 	'<''this'',''σ''>' '~>' (statemodifications+=StateModification)*
-							(eventemissions+=EventEmission)* 
+							(eventemissions+=EventEmission (eventEmissionOperator=("||"|";") eventemissions+=EventEmission )*)?
+							//WARNING: this is a quick and dirty addition of sequential or parallel emission but should be refactored with a composite pattern
 	;
 
 EventRef:

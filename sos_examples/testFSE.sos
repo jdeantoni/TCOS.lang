@@ -6,7 +6,7 @@ import "./testSoSLang/src/language-server/simple-l.langium"
 
 open Model { 
 
-                            when starts
+                            when starts 
     ------------------------------------------------------------ statementsInOrder1
       <this,σ> ~> statements->sequential.foreach(s => <s,σ>)
 
@@ -57,6 +57,7 @@ open Variable {
 }
 
 open VarRef {
+  
                   when starts
     ---------------------------------------------              accessVarRef 
       <this,σ> ~> emits terminates[theVar.currentValue]
@@ -122,10 +123,9 @@ open Assignment {
 
 
 open Conjunction { //parallel version
-          when starts                   
-    -------------------------                                   evaluateConjunction
-      <this,σ> ~> <lhs,σ>
-                  <rhs,σ>   
+                when starts                   
+    -------------------------------------                       evaluateConjunction
+      <this,σ> ~> <lhs,σ> || <rhs,σ>   
  
               when <lhs,σ> -> false
     --------------------------------------------                evaluateConjunction2
@@ -144,8 +144,7 @@ open Plus {
   
                   when starts
     -------------------------------------------                 startPlus
-        <this,σ> ~> <right,σ>
-                    <left,σ>
+        <this,σ> ~> <right,σ>||<left,σ>
    
       when (<right,σ> -> n2:integer ^ <left,σ> -> n1:integer)
     ----------------------------------------------------------  finishPlus
@@ -193,8 +192,7 @@ open PeriodicBloc{
   
           when <blocTrigger,σ> 
       -------------------------------------------------         periodicBodyStart
-        <this,σ> ~> <bloc,σ>
-                    <blocTrigger,σ>
+        <this,σ> ~> <bloc,σ> || <blocTrigger,σ>
                   
   
       //          when <bloc,σ>
@@ -206,4 +204,32 @@ open PeriodicBloc{
       //   <this,σ> ~> terminates(false) //timing probleme
                     
 
+}
+
+open FunctionCall {
+
+                      when starts
+      ----------------------------------------------------     functionCallArgsStart
+        <this,σ> ~> args->sequential.foreach(a => <a,σ>)
+  
+              when <args.last(),σ> -> evaluatedArgs 
+      ----------------------------------------------------     functionCallStarts
+        <this,σ> ~> //theFunction.params  := evaluatedArgs;      -> what is appropriate to be done there ?
+                    <theFunction,σ>
+
+                 when <theFunction,σ>
+      -------------------------------------------------         functionCallEnd
+                <this,σ> ~> terminates
+
+}
+
+open FunctionDef{
+  
+                        when starts
+        ----------------------------------------------------     functionDefArgsStart
+                    <this,σ> ~> <body,σ>
+  
+                when <body,σ> -> terminates
+        -------------------------------------------------         functionDefEnd
+                  <this,σ> ~> terminates
 }
