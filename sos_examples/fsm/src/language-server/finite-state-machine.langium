@@ -19,8 +19,7 @@ State:
 Transition:
     name=ID':' source=[State:ID] 
     '---'('when' guardEvent=[Event:ID] | 'after' time=INT) 
-    '/' 
-    sentEvent=[Event:ID] '-->' target=[State:ID];
+    ('/' sentEvent=[Event:ID])? '-->' target=[State:ID];
 
 hidden terminal WS: /\s+/;
 terminal ID: /[_a-zA-Z][\w_]*/;

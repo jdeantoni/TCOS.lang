@@ -171,6 +171,14 @@ export class CCFGVisitor implements SimpleLVisitor {
     }
 
     visitEvent(node: Event): [Node,Node] {
+                let startsfinishesNode: Node = new Step("startsfinishes"+getASTNodeUID(node))
+
+                this.ccfg.addNode(startsfinishesNode)
+                let terminatesfinishesNode: Node = new Step("terminatesfinishes"+getASTNodeUID(node))
+
+                this.ccfg.addNode(terminatesfinishesNode)
+                this.ccfg.addEdge(startsfinishesNode,terminatesfinishesNode)
+                
         let startsEventNode: Node = new Step("starts"+getASTNodeUID(node),[])
         if(startsEventNode.functionsDefs.length>0){
             startsEventNode.returnType = "void"
@@ -179,15 +187,28 @@ export class CCFGVisitor implements SimpleLVisitor {
         this.ccfg.addNode(startsEventNode)
         let terminatesEventNode: Node = new Step("terminates"+getASTNodeUID(node))
         this.ccfg.addNode(terminatesEventNode)
-        // rule fugaceEvent
+        // rule eventNonFugace
    //premise: starts:event
+// rule eventTerminates
+   //premise: finishes:Event
    //conclusion: terminates:event
 
         let previousNode =undefined
         
     {
-        let startsnodefugaceEvent = this.retrieveNode("starts",node) //retrieve 1
-        previousNode = startsnodefugaceEvent
+        let startsnodeeventNonFugace = this.retrieveNode("starts",node) //retrieve 1
+        previousNode = startsnodeeventNonFugace
+    }
+    
+        // conclusion with no event emission
+                
+        previousNode.returnType = "void"
+        previousNode.functionsNames = [`${previousNode.uid}eventNonFugace`] //overwrite existing name
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
+    
+    {
+        let terminatesfinishesnodeeventTerminates = this.retrieveNode("terminatesfinishes",node) //retrieve 1
+        previousNode = terminatesfinishesnodeeventTerminates
     }
     
         {let e = this.ccfg.addEdge(previousNode,terminatesEventNode)
@@ -195,7 +216,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         }
         
         previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}fugaceEvent`] //overwrite existing name
+        previousNode.functionsNames = [`${previousNode.uid}eventTerminates`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
         return [startsEventNode,terminatesEventNode]
@@ -210,7 +231,7 @@ export class CCFGVisitor implements SimpleLVisitor {
                 this.ccfg.addNode(terminatesdisableNode)
                 this.ccfg.addEdge(startsdisableNode,terminatesdisableNode)
                 
-        let startsTransitionNode: Node = new Step("starts"+getASTNodeUID(node),[`sigma["${getASTNodeUID(node)}isSensitive"] = new bool(false);`])
+        let startsTransitionNode: Node = new Step("starts"+getASTNodeUID(node),[`sigma["${getASTNodeUID(node)}isFiring"] = new bool(false);`])
         if(startsTransitionNode.functionsDefs.length>0){
             startsTransitionNode.returnType = "void"
         }
@@ -220,15 +241,16 @@ export class CCFGVisitor implements SimpleLVisitor {
         this.ccfg.addNode(terminatesTransitionNode)
         // rule transitionInit
    //premise: starts:event
-// rule fire
-   //premise: guardEvent:[Event:ID],terminates:event
+// rule transitionFire
+   //premise: guardEvent:[Event:ID],starts:event
    //conclusion: source:[State:ID],stopOtherTransitions:Event
-   //conclusion: source:[State:ID],stopOtherTransitions:Event,source:[State:ID],askTermination:Event
-   //conclusion: source:[State:ID],stopOtherTransitions:Event,source:[State:ID],askTermination:Event,sentEvent:[Event:ID],starts:event
+   //conclusion: source:[State:ID],stopOtherTransitions:Event,sentEvent:[Event:ID],starts:event
 // rule transitionEnd
    //premise: sentEvent:[Event:ID],terminates:event
-   //conclusion: terminates:event
-   //conclusion: terminates:event,target:[State:ID],starts:event
+   //conclusion: guardEvent:[Event:ID],terminates:event
+   //conclusion: guardEvent:[Event:ID],terminates:event,source:[State:ID],askTermination:Event
+   //conclusion: guardEvent:[Event:ID],terminates:event,source:[State:ID],askTermination:Event,terminates:event
+   //conclusion: guardEvent:[Event:ID],terminates:event,source:[State:ID],askTermination:Event,terminates:event,target:[State:ID],starts:event
 // rule transitionStop
    //premise: disable:Event
    //conclusion: terminates:event
@@ -251,29 +273,57 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
     {
-        let terminatesnode_guardEventfire = this.retrieveNode("terminates",node.guardEvent) //retrieve 1
-        previousNode = terminatesnode_guardEventfire
+        let startsnode_guardEventtransitionFire = this.retrieveNode("starts",node.guardEvent) //retrieve 1
+        previousNode = startsnode_guardEventtransitionFire
     }
     
-        let [sourceStartNode,sourceTerminatesNode] = this.getOrVisitNode(node.source)
-        this.ccfg.addEdge(previousNode,sourceStartNode)
-        previousNode = sourceTerminatesNode
+        let sourceStopOtherTransition = this.retrieveNode("startsstopOtherTransitions",node.source)
+        this.ccfg.addEdge(previousNode,sourceStopOtherTransition)
+        previousNode = sourceStopOtherTransition
         
         previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}fire`] //overwrite existing name
+        previousNode.functionsNames = [`${previousNode.uid}transitionFire`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-    {
-        let terminatesnode_sentEventtransitionEnd = this.retrieveNode("terminates",node.sentEvent) //retrieve 1
-        previousNode = terminatesnode_sentEventtransitionEnd
+    if(node.sentEvent){
+        {
+            let startsnodesentEvent = this.retrieveNode("starts",node.sentEvent) //retrieve 1
+            this.ccfg.addEdge(previousNode,startsnodesentEvent)
+            previousNode = startsnodesentEvent
+        }
+
+        {
+            let terminatesnode_sentEventtransitionEnd = this.retrieveNode("terminates",node.sentEvent) //retrieve 1
+            this.ccfg.addEdge(previousNode,terminatesnode_sentEventtransitionEnd)
+            previousNode = terminatesnode_sentEventtransitionEnd
+        }
     }
     
-        this.ccfg.addEdge(previousNode,TransitionOrJoinNode)
-        previousNode = TransitionOrJoinNode
         
-        let [targetStartNode,targetTerminatesNode] = this.getOrVisitNode(node.target)
-        this.ccfg.addEdge(previousNode,targetStartNode)
-        previousNode = targetTerminatesNode
+        let [guardEventStartNode/*,guardEventTerminatesNode*/] = this.getOrVisitNode(node.guardEvent)
+        this.ccfg.addEdge(previousNode,guardEventStartNode)
+        previousNode = guardEventStartNode
+        
+        let sourceAskTermination = this.retrieveNode("startsaskTermination",node.source)
+        this.ccfg.addEdge(previousNode,sourceAskTermination)
+        previousNode = sourceAskTermination
+
+        if(node.sentEvent){
+            let startsFinishesEvent = this.retrieveNode("startsfinishes",node.sentEvent)
+            this.ccfg.addEdge(previousNode,startsFinishesEvent)
+            previousNode = startsFinishesEvent
+        }
+
+        let transitionEndForkNode: Node = new Fork("transitionEndForkNode")
+        this.ccfg.addNode(transitionEndForkNode)
+        {let e = this.ccfg.addEdge(previousNode,transitionEndForkNode)
+        e.guards = [...e.guards, ...[]] //BB
+        }
+
+        this.ccfg.addEdge(transitionEndForkNode,TransitionOrJoinNode)
+
+        let [targetStartNode/*,targetTerminatesNode*/] = this.getOrVisitNode(node.target)
+        this.ccfg.addEdge(transitionEndForkNode,targetStartNode)
+        previousNode = targetStartNode
         
         previousNode.returnType = "void"
         previousNode.functionsNames = [`${previousNode.uid}transitionEnd`] //overwrite existing name

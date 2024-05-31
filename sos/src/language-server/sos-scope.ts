@@ -161,6 +161,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         allScopeElements = allScopeElements.concat(this.addClocks(ruleOpeningItem))
         allScopeElements = allScopeElements.concat(this.getAllTemporaryVariable(ruleOpeningItem))
         allScopeElements = allScopeElements.concat(this.getAllRuntimeState(ruleOpeningItem))
+        allScopeElements = allScopeElements.concat(this.addAllFacilities(ruleOpeningItem))
         return this.createScopeForNodes(allScopeElements);
     }
 
@@ -365,6 +366,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
             }
        // }
         allScopeElements = allScopeElements.concat(this.addClocks(ruleOpeningItem))
+        allScopeElements = allScopeElements.concat(this.addAllFacilities(ruleOpeningItem))
         allScopeElements = allScopeElements.concat(this.getAllTemporaryVariable(ruleOpeningItem))
         this.addListFunctions(ruleOpeningItem,allScopeElements,context)
 
@@ -412,6 +414,46 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         
         return res
     }
+
+    private addAllFacilities(ruleOpeningItem: RuleOpening): AstNode[] {
+        var res : AstNode[] =[]
+        const others: VariableDeclaration = {
+            $container: ruleOpeningItem,
+            $type: 'VariableDeclaration',
+            name: "others",
+            $cstNode: ruleOpeningItem.$cstNode,
+            $containerProperty: "facilities",
+            assignment: false
+        };
+        others.type = {
+            $container: others,
+            $type: 'TypeReference',
+        };
+        //siblings.type.reference = {ref : { text: 'siblings', $container: siblings.type, $type: 'ParserRule' }, $refText: 'Facility' };
+        others.type.primitive = { name: 'void', $container: others.type, $type: 'SoSPrimitiveType' };
+        res.push(others);
+
+
+        const aThis: VariableDeclaration = {
+            $container: ruleOpeningItem,
+            $type: 'VariableDeclaration',
+            name: "this",
+            $cstNode: ruleOpeningItem.$cstNode,
+            $containerProperty: "facilities",
+            assignment: false
+        };
+        aThis.type = {
+            $container: aThis,
+            $type: 'TypeReference',
+        };
+        //siblings.type.reference = {ref : { text: 'siblings', $container: siblings.type, $type: 'ParserRule' }, $refText: 'Facility' };
+        aThis.type.reference = {ref : ruleOpeningItem.onRule?.ref, $refText: ruleOpeningItem.onRule?.ref?.name != undefined?ruleOpeningItem.onRule?.ref?.name:ruleOpeningItem.$type }; 
+        
+        res.push(aThis);
+
+        return res
+    }
+
 
     private addClock(ruleOpeningItem: RuleOpening, clockName: string): VariableDeclaration {
         const finish: VariableDeclaration = {

@@ -19,39 +19,39 @@ void functioninit3Variable(){
 	sigma["Variable0_0_0_10currentValue"] = new int();
 }
 void function5initializeVar(){
-	int Variable0_0_0_101377 = 1; //undefined
+	int Variable0_0_0_101361 = 1; //undefined
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);
-                (*((int*)sigma["Variable0_0_0_10currentValue"])) = Variable0_0_0_101377;
+                (*((int*)sigma["Variable0_0_0_10currentValue"])) = Variable0_0_0_101361;
 }
 void functioninit6Variable(){
 	sigma["Variable1_0_1_10currentValue"] = new int();
 }
 void function8initializeVar(){
-	int Variable1_0_1_101377 = 4; //undefined
+	int Variable1_0_1_101361 = 4; //undefined
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);
-                (*((int*)sigma["Variable1_0_1_10currentValue"])) = Variable1_0_1_101377;
+                (*((int*)sigma["Variable1_0_1_10currentValue"])) = Variable1_0_1_101361;
 }
 void functioninit9Variable(){
 	sigma["Variable2_0_2_10currentValue"] = new int();
 }
 void function11initializeVar(){
-	int Variable2_0_2_101377 = 0; //undefined
+	int Variable2_0_2_101361 = 0; //undefined
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);
-                (*((int*)sigma["Variable2_0_2_10currentValue"])) = Variable2_0_2_101377;
+                (*((int*)sigma["Variable2_0_2_10currentValue"])) = Variable2_0_2_101361;
 }
 int function21accessVarRef(){
 	const std::lock_guard<std::mutex> lock(sigma_mutex);
-	int VarRef4_18_4_201583 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
-	int VarRef4_18_4_20terminates =  VarRef4_18_4_201583;
+	int VarRef4_18_4_201567 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
+	int VarRef4_18_4_20terminates =  VarRef4_18_4_201567;
 	return VarRef4_18_4_20terminates;
 }
 int function23accessVarRef(){
 	const std::lock_guard<std::mutex> lock(sigma_mutex);
-	int VarRef4_13_4_151583 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
-	int VarRef4_13_4_15terminates =  VarRef4_13_4_151583;
+	int VarRef4_13_4_151567 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
+	int VarRef4_13_4_15terminates =  VarRef4_13_4_151567;
 	return VarRef4_13_4_15terminates;
 }
 int function25finishPlus(int n2, int n1){
@@ -64,21 +64,21 @@ int function25finishPlus(int n2, int n1){
 	return Plus4_12_4_21terminates;
 }
 void function26executeAssignment2(int resRight){
-	int Assignment4_7_4_212524 = resRight; // was Assignment4_7_4_212358; but using the parameter name now
+	int Assignment4_7_4_212508 = resRight; // was Assignment4_7_4_212342; but using the parameter name now
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
-                (*((int*)sigma["Variable1_0_1_10currentValue"])) = Assignment4_7_4_212524;
+                (*((int*)sigma["Variable1_0_1_10currentValue"])) = Assignment4_7_4_212508;
 }
 int function32accessVarRef(){
 	const std::lock_guard<std::mutex> lock(sigma_mutex);
-	int VarRef5_18_5_201583 = *(int *) sigma["Variable1_0_1_10currentValue"];//currentValue}
-	int VarRef5_18_5_20terminates =  VarRef5_18_5_201583;
+	int VarRef5_18_5_201567 = *(int *) sigma["Variable1_0_1_10currentValue"];//currentValue}
+	int VarRef5_18_5_20terminates =  VarRef5_18_5_201567;
 	return VarRef5_18_5_20terminates;
 }
 int function34accessVarRef(){
 	const std::lock_guard<std::mutex> lock(sigma_mutex);
-	int VarRef5_13_5_151583 = *(int *) sigma["Variable1_0_1_10currentValue"];//currentValue}
-	int VarRef5_13_5_15terminates =  VarRef5_13_5_151583;
+	int VarRef5_13_5_151567 = *(int *) sigma["Variable1_0_1_10currentValue"];//currentValue}
+	int VarRef5_13_5_15terminates =  VarRef5_13_5_151567;
 	return VarRef5_13_5_15terminates;
 }
 int function36finishPlus(int n2, int n1){
@@ -91,27 +91,27 @@ int function36finishPlus(int n2, int n1){
 	return Plus5_12_5_21terminates;
 }
 void function37executeAssignment2(int resRight){
-	int Assignment5_7_5_212524 = resRight; // was Assignment5_7_5_212358; but using the parameter name now
+	int Assignment5_7_5_212508 = resRight; // was Assignment5_7_5_212342; but using the parameter name now
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
-                (*((int*)sigma["Variable1_0_1_10currentValue"])) = Assignment5_7_5_212524;
+                (*((int*)sigma["Variable1_0_1_10currentValue"])) = Assignment5_7_5_212508;
 }
 int function41accessVarRef(){
 	const std::lock_guard<std::mutex> lock(sigma_mutex);
-	int VarRef7_4_7_61583 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
-	int VarRef7_4_7_6terminates =  VarRef7_4_7_61583;
+	int VarRef7_4_7_61567 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
+	int VarRef7_4_7_6terminates =  VarRef7_4_7_61567;
 	return VarRef7_4_7_6terminates;
 }
 int function52accessVarRef(){
 	const std::lock_guard<std::mutex> lock(sigma_mutex);
-	int VarRef9_15_9_171583 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
-	int VarRef9_15_9_17terminates =  VarRef9_15_9_171583;
+	int VarRef9_15_9_171567 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
+	int VarRef9_15_9_17terminates =  VarRef9_15_9_171567;
 	return VarRef9_15_9_17terminates;
 }
 int function54accessVarRef(){
 	const std::lock_guard<std::mutex> lock(sigma_mutex);
-	int VarRef9_10_9_121583 = *(int *) sigma["Variable1_0_1_10currentValue"];//currentValue}
-	int VarRef9_10_9_12terminates =  VarRef9_10_9_121583;
+	int VarRef9_10_9_121567 = *(int *) sigma["Variable1_0_1_10currentValue"];//currentValue}
+	int VarRef9_10_9_12terminates =  VarRef9_10_9_121567;
 	return VarRef9_10_9_12terminates;
 }
 int function56finishPlus(int n2, int n1){
@@ -124,21 +124,21 @@ int function56finishPlus(int n2, int n1){
 	return Plus9_9_9_18terminates;
 }
 void function57executeAssignment2(int resRight){
-	int Assignment9_4_9_182524 = resRight; // was Assignment9_4_9_182358; but using the parameter name now
+	int Assignment9_4_9_182508 = resRight; // was Assignment9_4_9_182342; but using the parameter name now
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
-                (*((int*)sigma["Variable1_0_1_10currentValue"])) = Assignment9_4_9_182524;
+                (*((int*)sigma["Variable1_0_1_10currentValue"])) = Assignment9_4_9_182508;
 }
 int function67accessVarRef(){
 	const std::lock_guard<std::mutex> lock(sigma_mutex);
-	int VarRef12_15_12_171583 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
-	int VarRef12_15_12_17terminates =  VarRef12_15_12_171583;
+	int VarRef12_15_12_171567 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
+	int VarRef12_15_12_17terminates =  VarRef12_15_12_171567;
 	return VarRef12_15_12_17terminates;
 }
 int function69accessVarRef(){
 	const std::lock_guard<std::mutex> lock(sigma_mutex);
-	int VarRef12_10_12_121583 = *(int *) sigma["Variable1_0_1_10currentValue"];//currentValue}
-	int VarRef12_10_12_12terminates =  VarRef12_10_12_121583;
+	int VarRef12_10_12_121567 = *(int *) sigma["Variable1_0_1_10currentValue"];//currentValue}
+	int VarRef12_10_12_12terminates =  VarRef12_10_12_121567;
 	return VarRef12_10_12_12terminates;
 }
 int function71finishPlus(int n2, int n1){
@@ -151,23 +151,23 @@ int function71finishPlus(int n2, int n1){
 	return Plus12_9_12_18terminates;
 }
 void function72executeAssignment2(int resRight){
-	int Assignment12_4_12_182524 = resRight; // was Assignment12_4_12_182358; but using the parameter name now
+	int Assignment12_4_12_182508 = resRight; // was Assignment12_4_12_182342; but using the parameter name now
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
-                (*((int*)sigma["Variable0_0_0_10currentValue"])) = Assignment12_4_12_182524;
+                (*((int*)sigma["Variable0_0_0_10currentValue"])) = Assignment12_4_12_182508;
 }
 bool function81evalBooleanConst(){
 	sigma["BooleanConst16_6_16_10constantValue"] = new bool(true);
 	const std::lock_guard<std::mutex> lock(sigma_mutex);
-	bool BooleanConst16_6_16_104606 = *(bool *) sigma["BooleanConst16_6_16_10constantValue"];//constantValue}
-	bool BooleanConst16_6_16_10terminates =  BooleanConst16_6_16_104606;
+	bool BooleanConst16_6_16_105091 = *(bool *) sigma["BooleanConst16_6_16_10constantValue"];//constantValue}
+	bool BooleanConst16_6_16_10terminates =  BooleanConst16_6_16_105091;
 	return BooleanConst16_6_16_10terminates;
 }
 bool function83evalBooleanConst(){
 	sigma["BooleanConst16_14_16_19constantValue"] = new bool(false);
 	const std::lock_guard<std::mutex> lock(sigma_mutex);
-	bool BooleanConst16_14_16_194606 = *(bool *) sigma["BooleanConst16_14_16_19constantValue"];//constantValue}
-	bool BooleanConst16_14_16_19terminates =  BooleanConst16_14_16_194606;
+	bool BooleanConst16_14_16_195091 = *(bool *) sigma["BooleanConst16_14_16_19constantValue"];//constantValue}
+	bool BooleanConst16_14_16_19terminates =  BooleanConst16_14_16_195091;
 	return BooleanConst16_14_16_19terminates;
 }
 bool function85evaluateConjunction2(){
@@ -183,10 +183,10 @@ bool function88evaluateConjunction4(){
 	return Conjunction16_5_16_20terminates;
 }
 void function89executeAssignment2(int resRight){
-	int Assignment16_0_16_202524 = resRight; // was Assignment16_0_16_202358; but using the parameter name now
+	int Assignment16_0_16_202508 = resRight; // was Assignment16_0_16_202342; but using the parameter name now
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
-                (*((int*)sigma["Variable2_0_2_10currentValue"])) = Assignment16_0_16_202524;
+                (*((int*)sigma["Variable2_0_2_10currentValue"])) = Assignment16_0_16_202508;
 }
 
 int main() {
@@ -197,16 +197,12 @@ function8initializeVar();
 functioninit9Variable();
 function11initializeVar();
 
-            LockingQueue<int> queue25;
-            LockingQueue<int> queue36;         
-            LockingQueue<Void> queue15;
-            LockingQueue<int> queue56;
-            LockingQueue<int> queue71;         
-            LockingQueue<Void> queue74;
-            LockingQueue<bool> queue79;
-            LockingQueue<bool> queue87;
+        LockingQueue<Void> queue15; //queue 1
+            
             std::thread thread16([&](){
 
+        LockingQueue<int> queue25; //queue 1
+            
             std::thread thread21([&](){
 int result21accessVarRef = function21accessVarRef();
 {
@@ -249,6 +245,8 @@ int result23accessVarRef = function23accessVarRef();
                 
             std::thread thread27([&](){
 
+        LockingQueue<int> queue36; //queue 1
+            
             std::thread thread32([&](){
 int result32accessVarRef = function32accessVarRef();
 {
@@ -300,8 +298,12 @@ int result34accessVarRef = function34accessVarRef();
         //end of and join node
         int result41accessVarRef = function41accessVarRef();
 
+        LockingQueue<Void> queue74; //queue 1
+            
         int VarRef7_4_7_6terminates = result41accessVarRef;//Choice node
         if((bool)VarRef7_4_7_6terminates == true){
+        LockingQueue<int> queue56; //queue 1
+            
             std::thread thread52([&](){
 int result52accessVarRef = function52accessVarRef();
 {
@@ -343,6 +345,8 @@ int result54accessVarRef = function54accessVarRef();
         }
             //Choice node
         if((bool)VarRef7_4_7_6terminates == false){
+        LockingQueue<int> queue71; //queue 1
+            
             std::thread thread67([&](){
 int result67accessVarRef = function67accessVarRef();
 {
@@ -386,6 +390,8 @@ int result69accessVarRef = function69accessVarRef();
         Void OrJoinPopped_74;
         queue74.waitAndPop(OrJoinPopped_74);
         
+        LockingQueue<bool> queue87; //queue 1
+            
             std::thread thread81([&](){
 bool result81evalBooleanConst = function81evalBooleanConst();
 {
@@ -394,6 +400,8 @@ bool result81evalBooleanConst = function81evalBooleanConst();
                 }
 
                 {
+        LockingQueue<bool> queue79; //queue 1
+            
         bool BooleanConst16_6_16_10terminates = result81evalBooleanConst;//Choice node
         if((bool)BooleanConst16_6_16_10terminates == false){bool result85evaluateConjunction2 = function85evaluateConjunction2();
 {

@@ -4,7 +4,7 @@ import path from 'path';
 import { Model } from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
 import { CCFGVisitor } from './generated/testFSE';
-import { CCFG, Edge, Node, TypedElement } from '../ccfg/ccfglib';
+import { CCFG, Edge, Node, Step, TypedElement } from '../ccfg/ccfglib';
 import chalk from 'chalk';
 
 
@@ -43,11 +43,19 @@ export function generateCPPfromCCFG(model: Model, filePath: string, targetDirect
 
 function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model): CCFG {
     var visitor = new CCFGVisitor();
-    visitor.visit(model);
+    let [startModel,stopModel] = visitor.visit(model);
+    
 
     var ccfg = visitor.ccfg
+    let initNode = new Step(-1)
+    ccfg.addNode(initNode);
+    ccfg.initialState = initNode;
+    ccfg.addEdge(initNode, startModel);
+    let endNode = new Step(-2)
+    ccfg.addNode(endNode);
+    ccfg.addEdge(stopModel, endNode);
    
-    ccfg.addSyncEdge()
+    ccfg.computeCorrespondingNodes()//addSyncEdge()
 
     ccfg.detectCycles();
     ccfg.collectCycles()
@@ -225,29 +233,16 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
         {
         let edgeToVisit: Edge[] = currentNode.outputEdges;
         
-        for(let syncUID of currentNode.syncNodeIds){
-            let n = ccfg.getNodeByUID(syncUID);
-            if (n != undefined){
-                let ptns: Node[] = getPreviousTypedNodes(n.inputEdges[0]);
-                if(ptns.length > 1){
-                    throw new Error("multiple previous typed nodes not handled here")
-                }
-                let ptn = ptns[0]
-                if(ptn.returnType != undefined){
-                    if(!createdQueueIds.includes(syncUID)){
-                        createdQueueIds.push(syncUID);
-                        if(ptn.returnType != "void"){
-                            codeFile.append(`
-            LockingQueue<${ptn.returnType}> queue${syncUID};`);
-                        }else{
-                            codeFile.append(`         
-            LockingQueue<Void> queue${syncUID};`);       
-                        }
-                    }
-                }
-               
+
+        addSyncUIDQueueDeclaration(currentNode, ccfg, codeFile);
+        const multiplePathOrJoinNodes: Set<Node> = containsMultiplePathOrJoin(currentNode);
+        if(multiplePathOrJoinNodes.size > 0){
+            console.log("multiplePathOrJoinNodes = "+Array.from(multiplePathOrJoinNodes).map(n => n.syncNodeIds.map(sn => sn).join(",")).join(" -- "))
+            for(let node of multiplePathOrJoinNodes){
+                addQueueDeclaration(node, codeFile);
             }
         }
+
 
         continuationsRecursLevel.push(recursLevel);
 
@@ -320,7 +315,9 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
             for(let e of currentNode.inputEdges){
                 let ptns: Node[] = getPreviousTypedNodes(e);
                 if(ptns.length > 1){
-                    throw new Error("multiple previous typed nodes not handled here")
+                    if (! ptns.every(ptn => ptn.returnType == ptns[0].returnType)){
+                        throw new Error("multiple previous typed nodes not handled here")
+                    }
                 }
                 let ptn = ptns[0]
                 paramType = ptn.returnType
@@ -346,22 +343,7 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
         }
     case "Choice":
         {
-        for(let syncUID of currentNode.syncNodeIds){
-            let n = ccfg.getNodeByUID(syncUID);
-            if (n != undefined){
-                let ptns: Node[] = getPreviousTypedNodes(n.inputEdges[0]);
-                if(ptns.length > 1){
-                    throw new Error("multiple previous typed nodes not handled here")
-                }
-                let ptn = ptns[0]
-                if(!createdQueueIds.includes(syncUID)){
-                    createdQueueIds.push(syncUID);
-                    codeFile.append(`
-        LockingQueue<${(ptn.returnType!="void")?ptn.returnType : "Void"}> queue${syncUID};
-            `);
-                }
-            }
-        }
+        addSyncUIDQueueDeclaration(currentNode, ccfg, codeFile);
 
         continuationsRecursLevel.push(recursLevel);
 
@@ -414,6 +396,32 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
     return;
 }
 
+
+function addSyncUIDQueueDeclaration(currentNode: Node, ccfg: CCFG, codeFile: CompositeGeneratorNode) {
+    for (let syncUID of currentNode.syncNodeIds) {
+        let n = ccfg.getNodeByUID(syncUID);
+        addQueueDeclaration(n, codeFile);
+    }
+}
+
+function addQueueDeclaration(n: Node | undefined, codeFile: CompositeGeneratorNode) {
+    if (n != undefined) {
+        let ptns: Node[] = getPreviousTypedNodes(n.inputEdges[0]);
+        if (ptns.length > 1) {
+            let refType: string | undefined = ptns[0].returnType;
+            if (!ptns.every(ptn => ptn.returnType == refType)) {
+                throw new Error("multiple previous typed nodes not handled here");
+            }
+        }
+        let ptn = ptns[0];
+        if (!createdQueueIds.includes(n.uid)) {
+            createdQueueIds.push(n.uid);
+            codeFile.append(`
+        LockingQueue<${(ptn.returnType != "void") ? ptn.returnType : "Void"}> queue${n.uid}; //queue 1
+            `);
+        }
+    }
+}
 
 function queueUidToPushIn(n: Node): number|undefined {
     for(let e of n.outputEdges){
@@ -488,7 +496,7 @@ function addQueuePushCode(queueUID: number | undefined, currentNode: Node, ccfg:
         if(!createdQueueIds.includes(queueUID)){
             createdQueueIds.push(queueUID);
             codeFile.append(`
-        LockingQueue<${(ptn.returnType!="void")?ptn.returnType : "Void"}> queue${queueUID};
+        LockingQueue<${(ptn.returnType!="void")?ptn.returnType : "Void"}> queue${queueUID}; //queue 2
             `);
         }
         codeFile.append(`{\n`)
@@ -545,21 +553,31 @@ function getParameterNames(currentNode: Node): string[] {
     return res
 }
  
+let visitedUID2: number[] = []
 function getPreviousTypedNodes(ie: Edge, stopAlsoOnNoCodeJoinNode = false): Node[] {
+    if(visitedUID2.includes(ie.from.uid)){
+        visitedUID2 = []
+        return [];
+    }else{
+        visitedUID2.push(ie.from.uid);
+    }
     let ptn: Node = ie.from
     let res : Node[] = []
     if (ptn.returnType != undefined && stopAlsoOnNoCodeJoinNode){
         res.push(ptn)
+        visitedUID2 = []
         return res
     }
     if (ptn.returnType != undefined && ! stopAlsoOnNoCodeJoinNode && ptn.functionsDefs.length > 0){
         res.push(ptn)
+        visitedUID2 = []
         return res
     }
           
     for(let e of ptn.inputEdges){
         res = [...res, ...getPreviousTypedNodes(e,stopAlsoOnNoCodeJoinNode)]  
     }
+    visitedUID2 = []
     return res;
 }
 
@@ -588,4 +606,27 @@ function addComparisonVariableDeclaration(codeFile: CompositeGeneratorNode, curr
         }
     }
 }
+
+function containsMultiplePathOrJoin(currentNode: Node): Set<Node> {
+    const visitedNodes: Set<number> = new Set();
+    const orJoinNodes: Set<Node> = new Set();
+    const queue: Node[] = [currentNode];
+    while (queue.length > 0) {
+        const node = queue.shift();
+        if (node) {
+            visitedNodes.add(node.uid);
+            if (node.getType() === "OrJoin" && node.syncNodeIds.length > 1) {
+                orJoinNodes.add(node);
+            }
+            for (const edge of node.outputEdges) {
+                if (!visitedNodes.has(edge.to.uid)) {
+                    queue.push(edge.to);
+                }
+            }
+        }
+    }
+    return orJoinNodes;
+}
+
+
 

@@ -112,7 +112,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     }
     
     visitModel(node: Model): [Node,Node] {
-        let startsModelNode: Node = new Step("starts"+getASTNodeUID(node),[])
+        let startsModelNode: Node = new Step("starts"+getASTNodeUID(node),[`sigma["${getASTNodeUID(node)}temp4test"] = new bool(true);`])
         if(startsModelNode.functionsDefs.length>0){
             startsModelNode.returnType = "void"
         }
@@ -129,15 +129,23 @@ export class CCFGVisitor implements SimpleLVisitor {
 
         let previousNode =startsModelNode
         
+    let predicateNodestarts: Choice = new Choice("predicateNode"+"starts"+getASTNodeUID(node))
+    this.ccfg.addNode(predicateNodestarts)
+    this.ccfg.addEdge(previousNode,predicateNodestarts)
+    let estarts = this.ccfg.addEdge(predicateNodestarts,previousNode)
+    estarts.guards = [...estarts.guards, ...["else"]] //ZZ
+    previousNode = predicateNodestarts
+
+    
     {
-        let startsnodestatementsInOrder1 = this.retrieveNode("starts",node) //retrieve 1
-        previousNode = startsnodestatementsInOrder1
+        let predicateNodestartsnodestatementsInOrder1 = this.retrieveNode("predicateNodestarts",node) //retrieve 1
+        previousNode = predicateNodestartsnodestatementsInOrder1
     }
     
         let statementsInOrder1StepNode = new Step("starts"+getASTNodeUID(node.statements))
         this.ccfg.addNode(statementsInOrder1StepNode)
         let e = this.ccfg.addEdge(previousNode,statementsInOrder1StepNode)
-        e.guards = [...e.guards, ...[]] //DD
+        e.guards = [...e.guards, ...["temp4test == true"]] //DD
 
         previousNode = statementsInOrder1StepNode
         for (var child of node.statements) {
@@ -148,19 +156,26 @@ export class CCFGVisitor implements SimpleLVisitor {
         let statementsTerminatesNode = new Step("terminates"+getASTNodeUID(node.statements))
         this.ccfg.addNode(statementsTerminatesNode)
         this.ccfg.addEdge(previousNode,statementsTerminatesNode)
-        previousNode = statementsTerminatesNode
         
         previousNode.returnType = "void"
         previousNode.functionsNames = [`${previousNode.uid}statementsInOrder1`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
+    let predicateNodeterminates: Choice = new Choice("predicateNode"+"terminates"+getASTNodeUID(node.statements))
+    this.ccfg.addNode(predicateNodeterminates)
+    this.ccfg.addEdge(previousNode,predicateNodeterminates)
+    let eterminates = this.ccfg.addEdge(predicateNodeterminates,previousNode)
+    eterminates.guards = [...eterminates.guards, ...["else"]] //ZZ
+    previousNode = predicateNodeterminates
+
+    
     {
-        let terminatesnode_statementsfinishModel = this.retrieveNode("terminates",node.statements) //retrieve 1
-        previousNode = terminatesnode_statementsfinishModel
+        let predicateNodeterminatesnode_statementsfinishModel = this.retrieveNode("predicateNodeterminates",node.statements) //retrieve 1
+        previousNode = predicateNodeterminatesnode_statementsfinishModel
     }
     
         {let e = this.ccfg.addEdge(previousNode,terminatesModelNode)
-        e.guards = [...e.guards, ...[]] //EE
+        e.guards = [...e.guards, ...["temp4test == true"]] //EE
         }
         
         previousNode.returnType = "void"
@@ -207,7 +222,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         let statementsTerminatesNode = new Step("terminates"+getASTNodeUID(node.statements))
         this.ccfg.addNode(statementsTerminatesNode)
         this.ccfg.addEdge(previousNode,statementsTerminatesNode)
-        previousNode = statementsTerminatesNode
         
         previousNode.returnType = "void"
         previousNode.functionsNames = [`${previousNode.uid}startsBloc`] //overwrite existing name
@@ -317,9 +331,9 @@ export class CCFGVisitor implements SimpleLVisitor {
     previousNode = initializeVarStateModificationNode
     }
     previousNode.functionsNames = [...previousNode.functionsNames, ...[`${previousNode.uid}initializeVar`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getASTNodeUID(node)}1361 = ${node.initialValue}; //undefined`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
+    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getASTNodeUID(node)}1432 = ${node.initialValue}; //undefined`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);
-                (*((int*)sigma["${getASTNodeUID(node)}currentValue"])) = ${getASTNodeUID(node)}1361;`]] //AA
+                (*((int*)sigma["${getASTNodeUID(node)}currentValue"])) = ${getASTNodeUID(node)}1432;`]] //AA
     
         {let e = this.ccfg.addEdge(previousNode,terminatesVariableNode)
         e.guards = [...e.guards, ...[]] //EE
@@ -358,7 +372,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "int"
         previousNode.functionsNames = [`${previousNode.uid}accessVarRef`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`const std::lock_guard<std::mutex> lock(sigma_mutex);`,`int ${getASTNodeUID(node)}1567 = *(int *) sigma["${getASTNodeUID(node.theVar)}currentValue"];//currentValue}`,`int ${getASTNodeUID(node)}terminates =  ${getASTNodeUID(node)}1567;`,`return ${getASTNodeUID(node)}terminates;`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`const std::lock_guard<std::mutex> lock(sigma_mutex);`,`int ${getASTNodeUID(node)}1638 = *(int *) sigma["${getASTNodeUID(node.theVar)}currentValue"];//currentValue}`,`int ${getASTNodeUID(node)}terminates =  ${getASTNodeUID(node)}1638;`,`return ${getASTNodeUID(node)}terminates;`]] //GG
     
         return [startsVarRefNode,terminatesVarRefNode]
     }
@@ -537,9 +551,9 @@ export class CCFGVisitor implements SimpleLVisitor {
     previousNode = executeAssignment2StateModificationNode
     }
     previousNode.functionsNames = [...previousNode.functionsNames, ...[`${previousNode.uid}executeAssignment2`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getASTNodeUID(node)}2508 = resRight; // was ${getASTNodeUID(node)}2342; but using the parameter name now`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
+    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getASTNodeUID(node)}2579 = resRight; // was ${getASTNodeUID(node)}2413; but using the parameter name now`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
-                (*((int*)sigma["${getASTNodeUID(node.variable)}currentValue"])) = ${getASTNodeUID(node)}2508;`]] //AA
+                (*((int*)sigma["${getASTNodeUID(node.variable)}currentValue"])) = ${getASTNodeUID(node)}2579;`]] //AA
     
         {let e = this.ccfg.addEdge(previousNode,terminatesAssignmentNode)
         e.guards = [...e.guards, ...[]] //EE
@@ -743,7 +757,7 @@ export class CCFGVisitor implements SimpleLVisitor {
             throw new Error("impossible to be there andJoinNode"+getASTNodeUID(node.right))
         }
         multipleSynchroNode.params = [...multipleSynchroNode.params, ...[Object.assign( new TypedElement(), JSON.parse(`{ "name": "n2", "type": "int"}`)),Object.assign( new TypedElement(), JSON.parse(`{ "name": "n1", "type": "int"}`))]]
-        multipleSynchroNode.functionsDefs = [...multipleSynchroNode.functionsDefs, ...[`int ${getASTNodeUID(node)}4243 = n2;`,`int ${getASTNodeUID(node)}4268 = n1;`]] //HH
+        multipleSynchroNode.functionsDefs = [...multipleSynchroNode.functionsDefs, ...[`int ${getASTNodeUID(node)}4314 = n2;`,`int ${getASTNodeUID(node)}4339 = n1;`]] //HH
     }
     
     {
@@ -757,7 +771,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "int"
         previousNode.functionsNames = [`${previousNode.uid}finishPlus`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getASTNodeUID(node)}4387 = n1; // was ${getASTNodeUID(node)}4268; but using the parameter name now`,`int ${getASTNodeUID(node)}4392 = n2; // was ${getASTNodeUID(node)}4243; but using the parameter name now`,`int ${getASTNodeUID(node)}4386 = ${getASTNodeUID(node)}4387 + ${getASTNodeUID(node)}4392;`,`int ${getASTNodeUID(node)}terminates =  ${getASTNodeUID(node)}4386;`,`return ${getASTNodeUID(node)}terminates;`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`int ${getASTNodeUID(node)}4458 = n1; // was ${getASTNodeUID(node)}4339; but using the parameter name now`,`int ${getASTNodeUID(node)}4463 = n2; // was ${getASTNodeUID(node)}4314; but using the parameter name now`,`int ${getASTNodeUID(node)}4457 = ${getASTNodeUID(node)}4458 + ${getASTNodeUID(node)}4463;`,`int ${getASTNodeUID(node)}terminates =  ${getASTNodeUID(node)}4457;`,`return ${getASTNodeUID(node)}terminates;`]] //GG
     
         return [startsPlusNode,terminatesPlusNode]
     }
@@ -788,7 +802,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "bool"
         previousNode.functionsNames = [`${previousNode.uid}evalBooleanConst`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`const std::lock_guard<std::mutex> lock(sigma_mutex);`,`bool ${getASTNodeUID(node)}5091 = *(bool *) sigma["${getASTNodeUID(node)}constantValue"];//constantValue}`,`bool ${getASTNodeUID(node)}terminates =  ${getASTNodeUID(node)}5091;`,`return ${getASTNodeUID(node)}terminates;`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`const std::lock_guard<std::mutex> lock(sigma_mutex);`,`bool ${getASTNodeUID(node)}5162 = *(bool *) sigma["${getASTNodeUID(node)}constantValue"];//constantValue}`,`bool ${getASTNodeUID(node)}terminates =  ${getASTNodeUID(node)}5162;`,`return ${getASTNodeUID(node)}terminates;`]] //GG
     
         return [startsBooleanConstNode,terminatesBooleanConstNode]
     }
@@ -904,7 +918,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     }
 
     visitPeriodicBloc(node: PeriodicBloc): [Node,Node] {
-        let startsPeriodicBlocNode: Node = new Step("starts"+getASTNodeUID(node),[`sigma["${getASTNodeUID(node)}blocTrigger"] = new int(${node.time});`,`sigma["${getASTNodeUID(node)}isExecuting"] = new bool(false);`])
+        let startsPeriodicBlocNode: Node = new Step("starts"+getASTNodeUID(node),[`sigma["${getASTNodeUID(node)}blocTrigger"] = new int(${node.time});`])
         if(startsPeriodicBlocNode.functionsDefs.length>0){
             startsPeriodicBlocNode.returnType = "void"
         }
@@ -917,13 +931,8 @@ export class CCFGVisitor implements SimpleLVisitor {
    //conclusion: blocTrigger:Timer,starts:event
 // rule periodicBodyStart
    //premise: blocTrigger:Timer,terminates:event
-   //conclusion: blocTrigger:Timer,starts:event
-   //conclusion: blocTrigger:Timer,starts:event,bloc:Bloc,starts:event
-// rule periodicBodyEnd
-   //premise: bloc:Bloc,terminates:event
-// rule periodicBodyProblem
-   //premise: blocTrigger:Timer,terminates:event
-   //conclusion: terminates:event
+   //conclusion: bloc:Bloc,starts:event
+   //conclusion: bloc:Bloc,starts:event,blocTrigger:Timer,starts:event
 
         let previousNode =startsPeriodicBlocNode
         
@@ -955,32 +964,19 @@ export class CCFGVisitor implements SimpleLVisitor {
         previousNode.functionsNames = [`${previousNode.uid}periodicStart`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
-        let nodeNodeperiodicBodyStart = this.retrieveNode("terminatesblocTrigger",node)
-        
-    previousNode = nodeNodeperiodicBodyStart
-    let nodeChoiceNodeperiodicBodyStart = this.ccfg.getNodeFromName("predicateNode"+"terminatesblocTrigger"+getASTNodeUID(node))
-    if (nodeChoiceNodeperiodicBodyStart == undefined) {
-        nodeChoiceNodeperiodicBodyStart = new Choice("predicateNode"+"terminatesblocTrigger"+getASTNodeUID(node))
-        this.ccfg.addNode(nodeChoiceNodeperiodicBodyStart)
-        this.ccfg.addEdge(nodeNodeperiodicBodyStart,nodeChoiceNodeperiodicBodyStart)
-        let eterminatesblocTriggerperiodicBodyStart = this.ccfg.addEdge(nodeChoiceNodeperiodicBodyStart,previousNode)
-        eterminatesblocTriggerperiodicBodyStart.guards = [...eterminatesblocTriggerperiodicBodyStart.guards, ...["else"]] //ZZ
-        previousNode = nodeChoiceNodeperiodicBodyStart
-    }else{
-        this.ccfg.addEdge(previousNode,nodeChoiceNodeperiodicBodyStart)
-        previousNode = nodeChoiceNodeperiodicBodyStart
-    }
-    
     {
-        let predicateNodeterminatesblocTriggernodeperiodicBodyStart = this.retrieveNode("predicateNodeterminatesblocTrigger",node) //retrieve 1
-        previousNode = predicateNodeterminatesblocTriggernodeperiodicBodyStart
+        let terminatesblocTriggernodeperiodicBodyStart = this.retrieveNode("terminatesblocTrigger",node) //retrieve 1
+        previousNode = terminatesblocTriggernodeperiodicBodyStart
     }
     
         let periodicBodyStartForkNode: Node = new Fork("periodicBodyStartForkNode")
         this.ccfg.addNode(periodicBodyStartForkNode)
         {let e = this.ccfg.addEdge(previousNode,periodicBodyStartForkNode)
-        e.guards = [...e.guards, ...["isExecuting == false"]] //BB
+        e.guards = [...e.guards, ...[]] //BB
         }
+        
+        let [blocStartNode/*,blocTerminatesNode*/] = this.getOrVisitNode(node.bloc)
+        this.ccfg.addEdge(periodicBodyStartForkNode,blocStartNode)
         
     let blocTriggerStartsNodeperiodicBodyStart = this.retrieveNode("starts"+"blocTrigger",node)
     let blocTriggerTerminatesNodeperiodicBodyStart = this.retrieveNode("terminates"+"blocTrigger",node)
@@ -992,51 +988,8 @@ export class CCFGVisitor implements SimpleLVisitor {
     this.ccfg.addEdge(periodicBodyStartForkNode,blocTriggerStartsNodeperiodicBodyStart)
     }
    
-        let [blocStartNode/*,blocTerminatesNode*/] = this.getOrVisitNode(node.bloc)
-        this.ccfg.addEdge(periodicBodyStartForkNode,blocStartNode)
-        
         previousNode.returnType = "void"
         previousNode.functionsNames = [`${previousNode.uid}periodicBodyStart`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-    {
-        let terminatesnode_blocperiodicBodyEnd = this.retrieveNode("terminates",node.bloc) //retrieve 1
-        previousNode = terminatesnode_blocperiodicBodyEnd
-    }
-    
-        // conclusion with no event emission
-                
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}periodicBodyEnd`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-        let nodeNodeperiodicBodyProblem = this.retrieveNode("terminatesblocTrigger",node)
-        
-    previousNode = nodeNodeperiodicBodyProblem
-    let nodeChoiceNodeperiodicBodyProblem = this.ccfg.getNodeFromName("predicateNode"+"terminatesblocTrigger"+getASTNodeUID(node))
-    if (nodeChoiceNodeperiodicBodyProblem == undefined) {
-        nodeChoiceNodeperiodicBodyProblem = new Choice("predicateNode"+"terminatesblocTrigger"+getASTNodeUID(node))
-        this.ccfg.addNode(nodeChoiceNodeperiodicBodyProblem)
-        this.ccfg.addEdge(nodeNodeperiodicBodyProblem,nodeChoiceNodeperiodicBodyProblem)
-        let eterminatesblocTriggerperiodicBodyProblem = this.ccfg.addEdge(nodeChoiceNodeperiodicBodyProblem,previousNode)
-        eterminatesblocTriggerperiodicBodyProblem.guards = [...eterminatesblocTriggerperiodicBodyProblem.guards, ...["else"]] //ZZ
-        previousNode = nodeChoiceNodeperiodicBodyProblem
-    }else{
-        this.ccfg.addEdge(previousNode,nodeChoiceNodeperiodicBodyProblem)
-        previousNode = nodeChoiceNodeperiodicBodyProblem
-    }
-    
-    {
-        let predicateNodeterminatesblocTriggernodeperiodicBodyProblem = this.retrieveNode("predicateNodeterminatesblocTrigger",node) //retrieve 1
-        previousNode = predicateNodeterminatesblocTriggernodeperiodicBodyProblem
-    }
-    
-        {let e = this.ccfg.addEdge(previousNode,terminatesPeriodicBlocNode)
-        e.guards = [...e.guards, ...["isExecuting == true"]] //EE
-        }
-        
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}periodicBodyProblem`] //overwrite existing name
         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
     
         return [startsPeriodicBlocNode,terminatesPeriodicBlocNode]
@@ -1082,7 +1035,6 @@ export class CCFGVisitor implements SimpleLVisitor {
         let argsTerminatesNode = new Step("terminates"+getASTNodeUID(node.args))
         this.ccfg.addNode(argsTerminatesNode)
         this.ccfg.addEdge(previousNode,argsTerminatesNode)
-        previousNode = argsTerminatesNode
         
         previousNode.returnType = "void"
         previousNode.functionsNames = [`${previousNode.uid}functionCallArgsStart`] //overwrite existing name

@@ -58,9 +58,14 @@ Premise:
 
 
 Conclusion:
-	'<''this'',''σ''>' '~>' (statemodifications+=StateModification)*
+	'<''this'',''σ''>' '~>' (aborts+=AbortStatement)*
+							(statemodifications+=StateModification)*
 							(eventemissions+=EventEmission (eventEmissionOperator=("||"|";") eventemissions+=EventEmission )*)?
 							//WARNING: this is a quick and dirty addition of sequential or parallel emission but should be refactored with a composite pattern
+	;
+
+AbortStatement:
+	'aborts' target=MemberCall ";"
 	;
 
 EventRef:

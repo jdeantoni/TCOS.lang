@@ -1,0 +1,28 @@
+digraph G {
+  "0" [label="0:startsModel0_0_0_10" shape="ellipse" ];
+  "1" [label="1:terminatesModel0_0_0_10" shape="ellipse" ];
+  "2" [label="2:startsarray0_0_0_10" shape="ellipse" ];
+  "3" [label="3:startsVariable0_0_0_10:
+void functioninit3Variable(){
+sigma[\"Variable0_0_0_10currentValue\"] = new int();
+}" shape="ellipse" ];
+  "4" [label="4:terminatesVariable0_0_0_10" shape="ellipse" ];
+  "5" [label="5:initializeVarStateModificationNode:
+void function5initializeVar(){
+int Variable0_0_0_101361 = 1; //undefined
+//TODO: fix this and avoid memory leak by deleting, constructing appropriately
+                const std::lock_guard<std::mutex> lock(sigma_mutex);
+                (*((int*)sigma[\"Variable0_0_0_10currentValue\"])) = Variable0_0_0_101361;
+}" shape="ellipse" ];
+  "6" [label="6:terminatesarray0_0_0_10" shape="ellipse" ];
+  "7" [label="7:-1" shape="ellipse" ];
+  "8" [label="8:-2" shape="ellipse" ];
+  "0" -> "2" [label=""];
+  "3" -> "5" [label=""];
+  "5" -> "4" [label=""];
+  "2" -> "3" [label=""];
+  "4" -> "6" [label=""];
+  "6" -> "1" [label=""];
+  "7" -> "0" [label=""];
+  "1" -> "8" [label=""];
+}

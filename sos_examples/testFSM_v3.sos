@@ -38,47 +38,45 @@ open Event {
 
 open Transition{
       
-    var disable: Event;
-    var isFiring: boolean = false;
+//       var timer:Timer = time;
 
-            when starts
-    ---------------------------------------                        transitionInit
-        <this,σ> ~> isFiring := false;
+//             when starts
+//     ---------------------------------------                        transitionInit
+//         <this,σ> ~> <timer,σ> 
+
+//             when timer.terminates
+//       ---------------------------------------                        transitionEnd
+//             <this,σ> ~> terminates
 
              
-            when guardEvent.starts 
+            when guardEvent.starts              //waiting for something different from a xx.terminates|starts means being reactive >=| ?
     ------------------------------------------------------         transitionFire
-        <this,σ> ~> isFiring := true;
-                     emits source.stopOtherTransitions;
-                     <sentEvent,σ>                     
-                     
+        <this,σ> ~>  aborts others;
+                     <sentEvent,σ>                      
+                                          //here ! if the sentEvent is not waited in abother transition, the sentEvent.terminates will never be emitted
             when <sentEvent,σ>
     ----------------------------------------------                  transitionEnd
-        <this,σ> ~> emits guardEvent.terminates;
-                    emits source.askTermination;
-                    emits sentEvent.finishes;
-                    terminates || <target,σ>
+        <this,σ> ~> emits guardEvent.finishes;  //concluding an emits different from a xx.starts|terminates means |=> ?
+                    terminates;
+                    <target,σ>
         
 
-            when disable [isFiring == false]
-    ----------------------------------------------                  transitionStop
-        <this,σ> ~> terminates
+           
 }
 
 open State {
     var askTermination: Event ;
-    var stopOtherTransitions: Event;
 
                                   when starts            
     -----------------------------------------------------------------------------   stateInit
-    <this,σ> ~> outTransitions->concurrent.foreach(transition => <transition,σ>) 
+    <this,σ> ~> //outTransitions->concurrent.foreach(transition => <transition,σ>) 
 
+      when firstOf(outTransitions.guardEvent.starts)
+      ----------------------------------------------                                  stateFire
+        <this,σ> ~> <outTransitions.starts,σ>
 
           when askTermination
     ----------------------------------------------                                  stateEnd
           <this,σ> ~>   terminates
 
-                            when stopOtherTransitions
-    ------------------------------------------------------------------------        stateStopAllTransitions
-      <this,σ> ~> outTransitions->sequential.foreach(t => emits t.disable)
 }

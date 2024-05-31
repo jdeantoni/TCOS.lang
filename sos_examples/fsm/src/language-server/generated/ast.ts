@@ -63,7 +63,7 @@ export interface Transition extends AstNode {
     readonly $type: 'Transition';
     guardEvent?: Reference<Event>
     name: string
-    sentEvent: Reference<Event>
+    sentEvent?: Reference<Event>
     source: Reference<State>
     target: Reference<State>
     time?: number

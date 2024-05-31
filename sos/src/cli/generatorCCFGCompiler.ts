@@ -131,7 +131,7 @@ export class CCFGVisitor implements SimpleLVisitor {
             terminatesNodeName = `${name}OrJoinNode`
         }
         file.append(`
-        let previousNode =undefined
+        let previousNode =starts${name}Node
         `)
         handleConclusion(startingRules[0], file, rulesCF, previousNodeName, terminatesNodeName);
         for (let ruleCF of rulesCF) {
@@ -298,6 +298,7 @@ function handleSingleEmission(ruleCF: RuleControlFlow, file: CompositeGeneratorN
         let ${ruleCF.conclusionParticipants[0].name}TerminatesNode = new Step("terminates"+getASTNodeUID(node.${ruleCF.conclusionParticipants[0].name}))
         this.ccfg.addNode(${ruleCF.conclusionParticipants[0].name}TerminatesNode)
         this.ccfg.addEdge(previousNode,${ruleCF.conclusionParticipants[0].name}TerminatesNode)
+        previousNode = ${ruleCF.conclusionParticipants[0].name}TerminatesNode
         `);
 
         }
@@ -457,13 +458,55 @@ function getExtraPrefix(ruleCF: RuleControlFlow, participantName: string|undefin
     }
 }
 
+
+function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow[], previousNodeName: string, file: CompositeGeneratorNode): [string,string,string, TypedElement|undefined] { 
+    let [nodePrefix, participantName, guards, param] = handleEventPartOfPreviousPremise(ruleCF, allRulesCF, previousNodeName, file);
+    if(ruleCF.rule.premise.booleanExpression == undefined || ruleCF.rule.premise.booleanExpression.length == 0){
+        return [nodePrefix, participantName, guards, param];
+    }
+
+    //WARNING: only a single guard spported for now
+    // console.log(chalk.bgRedBright("ruleCF.rule.premise.booleanExpression", ruleCF.rule.premise.booleanExpression))
+    let theguard = (ruleCF.rule.premise.booleanExpression[0] as BinaryExpression).$cstNode?.text
+    console.log(chalk.bgRedBright("the premise Name", ruleCF.premiseParticipants[0].name, "----", participantName))
+
+    if(ruleCF.premiseParticipants[0].name == "starts" || ruleCF.premiseParticipants[0].name == "terminates")
+        file.append(`
+    let ${participantName.replaceAll(".","_")}Node${ruleCF.rule.name} = this.retrieveNode("${ruleCF.premiseParticipants[0].name}",${participantName}) //retrieve 3
+    `)
+    else{
+        file.append(`
+        let ${participantName.replaceAll(".","_")}Node${ruleCF.rule.name} = this.retrieveNode("${nodePrefix}",${participantName})
+        `)
+    }
+
+
+    file.append(`
+    previousNode = ${participantName.replaceAll(".","_")}Node${ruleCF.rule.name}
+    let ${participantName.replaceAll(".","_")}ChoiceNode${ruleCF.rule.name} = this.ccfg.getNodeFromName("predicateNode"+"${nodePrefix}"+getASTNodeUID(${participantName}))
+    if (${participantName.replaceAll(".","_")}ChoiceNode${ruleCF.rule.name} == undefined) {
+        ${participantName.replaceAll(".","_")}ChoiceNode${ruleCF.rule.name} = new Choice("predicateNode"+"${nodePrefix}"+getASTNodeUID(${participantName}))
+        this.ccfg.addNode(${participantName.replaceAll(".","_")}ChoiceNode${ruleCF.rule.name})
+        this.ccfg.addEdge(${participantName.replaceAll(".","_")}Node${ruleCF.rule.name},${participantName.replaceAll(".","_")}ChoiceNode${ruleCF.rule.name})
+        let e${nodePrefix}${ruleCF.rule.name} = this.ccfg.addEdge(${participantName.replaceAll(".","_")}ChoiceNode${ruleCF.rule.name},previousNode)
+        e${nodePrefix}${ruleCF.rule.name}.guards = [...e${nodePrefix}${ruleCF.rule.name}.guards, ...["else"]] //ZZ
+        previousNode = ${participantName.replaceAll(".","_")}ChoiceNode${ruleCF.rule.name}
+    }else{
+        this.ccfg.addEdge(previousNode,${participantName.replaceAll(".","_")}ChoiceNode${ruleCF.rule.name})
+        previousNode = ${participantName.replaceAll(".","_")}ChoiceNode${ruleCF.rule.name}
+    }
+    `)
+    let g = theguard+guards
+    return [`predicateNode${nodePrefix}`, participantName, `"${g}"`, param];
+}
+
 /**
  * returns the previous node name. May imply the creation of new nodes in case of multiple synchronizations that may require a decision or join node
  * @param ruleCF 
  * @param previousNodeName 
- * @returns [the previous node prefix, the guards, the parameter typed element in json format]
+ * @returns [the previous node prefix, the participant name, the guards, the parameter typed element in json format]
  */
-function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow[], previousNodeName: string, file: CompositeGeneratorNode): [string,string,string, TypedElement|undefined] { 
+function handleEventPartOfPreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow[], previousNodeName: string, file: CompositeGeneratorNode): [string,string,string, TypedElement|undefined] { 
     let isStartingRule = ruleCF.premiseParticipants[0].name == "starts";
     if (isStartingRule) {
         return ["starts","node", "", undefined]
@@ -474,6 +517,13 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
     if (isSimpleComparison) {
         return handlePremiseSimpleComparison(file, ruleCF);
     }
+
+    // /**
+    //  * WARNING: not correct here but a very first shot
+    //  */
+    // if(ruleCF.rule.premise.booleanExpression){
+    //     handlePremiseGuard(file,ruleCF)
+    // }
 
     let isMultipleSynchronization = ruleCF.rule.premise.eventExpression.$type == "EventConjunction"
                                     || ruleCF.rule.premise.eventExpression.$type == "EventDisjunction"
@@ -494,7 +544,13 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
     return [`terminates${extraPrefix.replaceAll(`"`,``)}`, `${participant}`, "", undefined]
     
 }
-
+/**
+ * 
+ * @param file 
+ * @param ruleCF 
+ * @param allRulesCF 
+ * @returns [the previous node prefix, the participant name, the guards, the parameter typed element in json format]
+ */
 function handlePremiseMultipleSynchronization(file: CompositeGeneratorNode, ruleCF: RuleControlFlow, allRulesCF: RuleControlFlow[]) : [string,string,string, TypedElement|undefined]{
     const indexRight = ruleCF.premiseParticipants.findIndex(p => p.type == "event") + 1
     let multipleSynchroPrefix: string = ""
@@ -543,7 +599,7 @@ function handlePremiseMultipleSynchronization(file: CompositeGeneratorNode, rule
             if (ruleCF.rule.premise.eventExpression.policy.operator == "lastOf") {
                 file.append(`
     let ${ruleCF.rule.name}LastOfNode: Node = new AndJoin("lastOfNode"+getASTNodeUID(node.${ruleCF.premiseParticipants[0].name}))
-    this.ccfg.replaceNode(${getEmittingRuleName(ruleCF,allRulesCF)}FakeNode,${ruleCF.rule.name}LastOfNode)                    
+    this.ccfg.replaceNode(${getEmittingRuleName(ruleCF,allRulesCF, true)}FakeNode,${ruleCF.rule.name}LastOfNode)                    
                 `)
                 multipleSynchroPrefix= "lastOfNode"
                 multipleSynchroParticipant = `node.${ruleCF.premiseParticipants[0].name}`
@@ -591,7 +647,12 @@ function handlePremiseMultipleSynchronization(file: CompositeGeneratorNode, rule
     
     return [multipleSynchroPrefix,`${multipleSynchroParticipant}`,premiseGuards, undefined]
 }
-
+/**
+ * 
+ * @param file 
+ * @param ruleCF 
+ * @returns [the previous node prefix, the participant name, the guards, the parameter typed element in json format]
+ */
 function handlePremiseSimpleComparison(file: CompositeGeneratorNode, ruleCF: RuleControlFlow) : [string,string,string, TypedElement|undefined]{
     let [extraPrefix, participant] = getExtraPrefix(ruleCF, ruleCF.premiseParticipants[0].name);
     let participantName = ruleCF.premiseParticipants[0].name
@@ -611,6 +672,32 @@ function handlePremiseSimpleComparison(file: CompositeGeneratorNode, ruleCF: Rul
     let guards: string = visitValuedEventRefComparison(ruleCF.rule.premise.eventExpression as ValuedEventRefConstantComparison);
     return [`choiceNode`+extraPrefix, `${participant}`, guards, undefined];
 }
+
+// /**
+//  * 
+//  * @param file 
+//  * @param ruleCF 
+//  * @returns [the previous node prefix, the participant name, the guards, the parameter typed element in json format]
+//  */
+// function handlePremiseGuard(file: CompositeGeneratorNode, ruleCF: RuleControlFlow) : [string,string,string, TypedElement|undefined]{
+//     let [extraPrefix, participant] = getExtraPrefix(ruleCF, ruleCF.premiseParticipants[0].name);
+//     let participantName = ruleCF.premiseParticipants[0].name
+
+//     file.append(`
+//         let ${participantName}TerminatesNode${ruleCF.rule.name} = this.retrieveNode("terminates",${participant})
+//         let ${participantName}ChoiceNode${ruleCF.rule.name} = this.ccfg.getNodeFromName("choiceNode"+getASTNodeUID(${participant}))
+//         if (${participantName}ChoiceNode${ruleCF.rule.name} == undefined) {
+//             let ${participantName}ChoiceNode = new Choice("choiceNode"+getASTNodeUID(${participant}))
+//             this.ccfg.addNode(${participantName}ChoiceNode)
+//             this.ccfg.addEdge(${participantName}TerminatesNode${ruleCF.rule.name},${participantName}ChoiceNode)
+//             ${participantName}ChoiceNode${ruleCF.rule.name} = ${participantName}ChoiceNode
+//         }else{
+//             this.ccfg.addEdge(${participantName}TerminatesNode${ruleCF.rule.name},${participantName}ChoiceNode${ruleCF.rule.name})
+//         }
+//         `);
+//     let guards: string = visitValuedEventRefComparison(ruleCF.rule.premise.eventExpression as ValuedEventRefConstantComparison);
+//     return [`choiceNode`+extraPrefix, `${participant}`, guards, undefined];
+// }
 
 function visitMultipleSynchroEventRef(lhs: EventExpression, rhs: EventExpression) :[string, string, TypedElement[]]{
     let actions : string = ""
@@ -655,26 +742,35 @@ function chekIfOwnsACondition(comb: EventCombination): boolean {
            comb.rhs.$type == "ExplicitValuedEventRefConstantComparison" || comb.rhs.$type == "ImplicitValuedEventRefConstantComparison"
 }
 
-function getEmittingRuleName(ruleCF: RuleControlFlow, allRulesCF: RuleControlFlow[]): string {
+function getEmittingRuleName(ruleCF: RuleControlFlow, allRulesCF: RuleControlFlow[], isConcurrent:boolean = true): string {
     let premiseFirstParticipant = ruleCF.premiseParticipants[0]
-    for(let rule of allRulesCF){
-        if (rule.conclusionParticipants[0].name === premiseFirstParticipant.name){
-            return rule.rule.name
+    let allMatchingRules = allRulesCF.filter(r => r.conclusionParticipants[0].name == premiseFirstParticipant.name)
+    
+    if (allMatchingRules.length == 1) {
+        return allMatchingRules[0].rule.name
+    }else{
+        if(isConcurrent){
+            // console.log(chalk.bgRedBright("allMatchingRules", allMatchingRules.map(r => r.rule.conclusion.eventemissions.map(e => e.$cstNode?.text)).join(",")))
+            allMatchingRules = allMatchingRules.filter(r => r.rule.conclusion.eventemissions.map(e => e.$cstNode?.text).join(",").includes("concurrent"))
+        }
+        if(allMatchingRules.length >= 1){
+            return allMatchingRules[0].rule.name
         }
     }
+    
     return "NotFound"+premiseFirstParticipant.name
 }
 
 
 
 function checkIfEventEmissionIsCollectionBased(ruleCF: RuleControlFlow) {
-    let isEventEmissionACollection: boolean = false;
     for (let p of ruleCF.conclusionParticipants) {
         if (p.isCollection) {
-            isEventEmissionACollection = true;
+            return true;
+            
         }
     }
-    return isEventEmissionACollection;
+    return false;
 }
 
 function writePreambule(fileNode: CompositeGeneratorNode, data: FilePathData) {

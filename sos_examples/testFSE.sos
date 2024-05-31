@@ -6,23 +6,25 @@ import "./testSoSLang/src/language-server/simple-l.langium"
 
 open Model { 
 
-                            when starts 
+
+                       when starts 
     ------------------------------------------------------------ statementsInOrder1
       <this,σ> ~> statements->sequential.foreach(s => <s,σ>)
 
 
 
-             when <statements.last(),σ>
+             when <statements.last(),σ> 
     -------------------------------------------                finishModel
               <this,σ> ~> terminates
+
 
 }
 
 open Bloc {
 
-                          when starts
-    -----------------------------------------------------      startsBloc
-            <this,σ> ~> statements->sequential.foreach(s => <s,σ>)
+                        when starts
+    ----------------------------------------------------------- startsBloc
+        <this,σ> ~> statements->sequential.foreach(s => <s,σ>)
 
   
               when <statements.last(),σ>            
@@ -34,7 +36,7 @@ open ParallelBloc {
 
                           when starts
     -------------------------------------------------------------------- startsParallelBloc
-      <this,σ> ~> statements->concurrent.foreach(s => emits s.starts)
+      <this,σ> ~> statements->concurrent.foreach(s => <s,σ>)
 
 
 
@@ -125,8 +127,8 @@ open Assignment {
 open Conjunction { //parallel version
                 when starts                   
     -------------------------------------                       evaluateConjunction
-      <this,σ> ~> <lhs,σ> || <rhs,σ>   
- 
+      <this,σ> ~> <lhs,σ> || <rhs,σ>
+
               when <lhs,σ> -> false
     --------------------------------------------                evaluateConjunction2
           <this,σ> ~> terminates[false]
@@ -140,7 +142,7 @@ open Conjunction { //parallel version
           <this,σ> ~> terminates[true]
 }
 
-open Plus {
+open Plus { // parallel version
   
                   when starts
     -------------------------------------------                 startPlus
@@ -150,6 +152,20 @@ open Plus {
     ----------------------------------------------------------  finishPlus
         <this,σ> ~> terminates[(n1 + n2)]
 }
+
+// open Plus { // lazy version
+//           when starts
+//     -------------------------------------------                 startPlus
+//         <this,σ> ~> <right,σ>
+   
+//       when <right,σ> -> n2:integer
+//     ----------------------------------------------------------  rightPlus
+//         <this,σ> ~> <left,σ>
+
+//       when <left,σ> -> n1:integer
+//     ----------------------------------------------------------  finishPlus2
+//         <this,σ> ~> terminates[(n1 + n2)]
+// }
 
 open BooleanConst{
 
@@ -184,25 +200,24 @@ open While {
 open PeriodicBloc{
 
   var blocTrigger: Timer = time;
-  // var isExecuting: boolean = false;
+  var isExecuting: boolean = false;
 
-            when starts
-      --------------------------                                periodicStart
+          when starts
+      -------------------------------                           periodicStart
         <this,σ> ~> <blocTrigger,σ>
   
-          when <blocTrigger,σ> 
-      -------------------------------------------------         periodicBodyStart
-        <this,σ> ~> <bloc,σ> || <blocTrigger,σ>
+          when <blocTrigger,σ> [isExecuting == false]
+      -------------------------------------------               periodicBodyStart
+        <this,σ> ~> <blocTrigger,σ> || <bloc,σ>
                   
   
-      //          when <bloc,σ>
-      // ---------------------------------                         periodicBodyEnd
-      //       <this,σ> ~> isExecuting := false;
+          when <bloc,σ>
+      ------------------------------------                      periodicBodyEnd
+        <this,σ> ~> isExecuting := false;
   
-      //   when <blocTrigger,σ> [isExecuting == true]
-      // ---------------------------------------------------       periodicBodyStart
-      //   <this,σ> ~> terminates(false) //timing probleme
-                    
+          when <blocTrigger,σ> [isExecuting == true]
+      ---------------------------------------------------       periodicBodyProblem
+        <this,σ> ~> terminates(false) //timing problem
 
 }
 
