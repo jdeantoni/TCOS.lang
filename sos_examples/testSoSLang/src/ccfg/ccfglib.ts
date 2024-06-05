@@ -26,7 +26,7 @@ export abstract class Node {
     syncNodeIds: integer[] = [];
     functionsNames: string[] = [];
     params: TypedElement[] = []
-    functionsDefs: string[];
+    functionsDefs: string[]  | FunctionDef[];
     returnType: string|undefined = undefined;
 
 
@@ -118,6 +118,20 @@ export abstract class Node {
 
 
 // }
+
+
+export class FunctionDef  {
+    name: string = "";
+    type: string = "";
+
+    params: TypedElement[] = [];
+    returnType: string = "";
+    body: string = "";
+
+    constructor() {
+        
+    }
+}
 
 
 export class Edge {
