@@ -356,7 +356,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "int"
         previousNode.functionsNames = [`${previousNode.uid}accessVarRef`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`const std::lock_guard<std::mutex> lock(sigma_mutex);`,`int ${getASTNodeUID(node)}1645 = *(int *) sigma["${getASTNodeUID(node.theVar)}currentValue"];//currentValue}`,`int ${getASTNodeUID(node)}terminates =  ${getASTNodeUID(node)}1645;`,`return ${getASTNodeUID(node)}terminates;`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`const std::lock_guard<std::mutex> lock(sigma_mutex); `,`int ${getASTNodeUID(node)}1645 = *(int *) sigma["${getASTNodeUID(node.theVar)}currentValuemanger"];//currentValue}`,`int ${getASTNodeUID(node)}terminates =  ${getASTNodeUID(node)}1645;`,`return ${getASTNodeUID(node)}terminates;`]] //GG
     
         return [startsVarRefNode,terminatesVarRefNode]
     }
@@ -786,7 +786,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "bool"
         previousNode.functionsNames = [`${previousNode.uid}evalBooleanConst`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`const std::lock_guard<std::mutex> lock(sigma_mutex);`,`bool ${getASTNodeUID(node)}4765 = *(bool *) sigma["${getASTNodeUID(node)}constantValue"];//constantValue}`,`bool ${getASTNodeUID(node)}terminates =  ${getASTNodeUID(node)}4765;`,`return ${getASTNodeUID(node)}terminates;`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`const std::lock_guard<std::mutex> lock(sigma_mutex); `,`bool ${getASTNodeUID(node)}4765 = *(bool *) sigma["${getASTNodeUID(node)}constantValuemanger"];//constantValue}`,`bool ${getASTNodeUID(node)}terminates =  ${getASTNodeUID(node)}4765;`,`return ${getASTNodeUID(node)}terminates;`]] //GG
     
         return [startsBooleanConstNode,terminatesBooleanConstNode]
     }

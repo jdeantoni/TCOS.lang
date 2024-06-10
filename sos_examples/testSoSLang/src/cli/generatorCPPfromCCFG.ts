@@ -4,9 +4,8 @@ import path from 'path';
 import { Model } from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
 import { CCFGVisitor } from './generated/testFSE';
-import { CCFG, Edge, FunctionDef, Node, TypedElement } from '../ccfg/ccfglib';
+import { CCFG, Edge, Node, TypedElement } from '../ccfg/ccfglib';
 import chalk from 'chalk';
-import { isType } from 'langium/lib/grammar/generated/ast';
 
 
 let debug = false;
@@ -130,13 +129,6 @@ function compileFunctionDefs(ccfg: CCFG) : string {
                         functionsDefs += node.returnType + " function" + fname + `(${node.params.map(p => (p as TypedElement).toString()).join(", ")}){\n\t`;
                         functionsDefs += node.functionsDefs.map(a => a).join("\n\t") + "\n // la \n";
                         functionsDefs += "} //c'est ici\n";
-                    }
-                }
-                else {
-                    const FuncDefs = node.functionsDefs as FunctionDef[];
-                    for (let func of node.functionsDefs) {
-                        
-                    
                     }
                 }
             }

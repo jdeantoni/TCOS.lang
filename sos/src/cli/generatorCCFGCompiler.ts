@@ -253,7 +253,7 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
     let functionType = "void"
     for(let emission of ruleCF.rule.conclusion.eventemissions){
         if(emission.$type == "ValuedEventEmission"){
-            let [visitedEmission, returnType] =  visitValuedEventEmission(emission as ValuedEventEmission)
+            let [visitedEmission, returnType] =  visitValuedEventEmission(emission as ValuedEventEmission,file)
             functionType = returnType
             eventEmissionActions = eventEmissionActions + visitedEmission
         }
@@ -430,9 +430,9 @@ function handleParallelMultipleEmissions(file: CompositeGeneratorNode, ruleCF: R
  */
 function handleSequentialMultipleEmissions(file: CompositeGeneratorNode, ruleCF: RuleControlFlow, guardActions: string, terminatesNodeName: string) {
     let splittedConclusionParticipants = splitArrayByParticipants(ruleCF.conclusionParticipants);
-    console.log(chalk.bgGreenBright("ruleCF.conclusionParticipants", ruleCF.conclusionParticipants.map(p => p.name)))
+    //console.log(chalk.bgGreenBright("ruleCF.conclusionParticipants", ruleCF.conclusionParticipants.map(p => p.name)))
     for (let emissionParticipant of splittedConclusionParticipants) {
-        console.log(chalk.bgGreenBright("emissionParticipant", emissionParticipant.map(p => p.name)))
+        //console.log(chalk.bgGreenBright("emissionParticipant", emissionParticipant.map(p => p.name)))
         const participantName = emissionParticipant[0].name;
         let [extraPrefix, participant] = getExtraPrefix(ruleCF, participantName);
         if (extraPrefix.length != 0) {
@@ -451,7 +451,7 @@ function handleSequentialMultipleEmissions(file: CompositeGeneratorNode, ruleCF:
    `);
 
         } else {
-            console.log(chalk.bgGreenBright("participantName", participantName))
+            //console.log(chalk.bgGreenBright("participantName", participantName))
             if(participantName == "this" && emissionParticipant[1].name == "terminates") {
                 file.append(`
         this.ccfg.addEdge(previousNode,${terminatesNodeName})
@@ -1228,27 +1228,31 @@ function getVariableDeclarationCode(runtimeState: VariableDeclaration[] | undefi
  * @param runtimeState 
  * @returns 
  */
-function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefined): [string, string] {
+function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefined,file:CompositeGeneratorNode): [string, string] {
     var res : string = ""
     if (valuedEmission != undefined) {
         let varType = inferType(valuedEmission.data, new Map())
         let typeName = getCPPVariableTypeName(varType.$type)
 
         if(valuedEmission.data != undefined && valuedEmission.data.$type == "MemberCall"){
+            
             //todo write a node that saves the variable
             res = createVariableFromMemberCall(valuedEmission.data as MemberCall, typeName)
+            console.log(res)
         }
         if(valuedEmission.data != undefined && valuedEmission.data.$type == "BinaryExpression"){
             //todo write a node that joins the two variable nodes and saves the result
             let lhs = (valuedEmission.data as BinaryExpression).left
             let lhsType = inferType(lhs, new Map())
             let lhsTypeName = getCPPVariableTypeName(lhsType.$type)
-            let leftRes = createVariableFromMemberCall(lhs as MemberCall, lhsTypeName)
+            let leftRes: string = ""; // Declare the variable rightRes
+            leftRes = createVariableFromMemberCall(lhs as MemberCall, lhsTypeName);
             res = res + leftRes+","
             let rhs = (valuedEmission.data as BinaryExpression).right
             let rhsType = inferType(rhs, new Map())
             let rhsTypeName = getCPPVariableTypeName(rhsType.$type)
-            let rightRes = createVariableFromMemberCall(rhs as MemberCall, rhsTypeName)
+            let rightRes: string = ""; // Declare the variable rightRes
+            rightRes  = createVariableFromMemberCall(rhs as MemberCall, rhsTypeName);
             res = res + rightRes+","
             let applyOp = (valuedEmission.data as BinaryExpression).operator
             res = res + `\`${typeName} \${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset} = \${getASTNodeUID(node)}${lhs.$cstNode?.offset} ${applyOp} \${getASTNodeUID(node)}${rhs.$cstNode?.offset};\``
@@ -1262,8 +1266,10 @@ function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefine
         if(res.length > 0){
             res = res + ","
         }
+        console.log(res)
         res = res + `\`${typeName} \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  \${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset};\``
         res = res + "," +`\`return \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name};\``
+        
         return [res, typeName]
     }
     return [res , "void"]
@@ -1277,18 +1283,21 @@ function createVariableFromMemberCall(data: MemberCall, typeName: string): strin
         return res
     }
 
-    res = res + "new ";
-/*
+
+
     if (elem?.$type == "VariableDeclaration") {
-        res = res +`\`const std::lock_guard<std::mutex> lock(sigma_mutex);\`,`
-        res = res + `\`${typeName} \${getASTNodeUID(node)}${data.$cstNode?.offset} = *(${typeName} *) sigma["\${getASTNodeUID(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name}"];//${elem.name}}\``
+        res = res +`\`const std::lock_guard<std::mutex> lock(sigma_mutex); \`,`
+        res = res + `\`${typeName} \${getASTNodeUID(node)}${data.$cstNode?.offset} = *(${typeName} *) sigma["\${getASTNodeUID(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name}manger"];//${elem.name}}\``
+        
     } 
     else if (elem?.$type == "TemporaryVariable") {
         res = res + `\`${typeName} \${getASTNodeUID(node)}${data.$cstNode?.offset} = ${elem.name}; // was \${getASTNodeUID(node)}${prev != undefined ? prev?.ref?.$cstNode?.offset : elem.$cstNode?.offset}; but using the parameter name now\``
     }
-    else /*if (elem?.$type == "Assignment") {
+    else /*if (elem?.$type == "Assignment")*/ {
+        
         res = res + `\`${typeName} \${getASTNodeUID(node)}${data.$cstNode?.offset} = \${node.${data.$cstNode?.text}};\ //${elem.name}\``
-    }*/
+    }
+    console.log(res)
     return res
 }
 

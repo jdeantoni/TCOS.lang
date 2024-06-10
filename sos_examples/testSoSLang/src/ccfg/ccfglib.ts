@@ -26,9 +26,9 @@ export abstract class Node {
     syncNodeIds: integer[] = [];
     functionsNames: string[] = [];
     params: TypedElement[] = []
-    functionsDefs: string[]  | FunctionDef[];
+    functionsDefs: string[] ;
     returnType: string|undefined = undefined;
-
+    implemType: string|undefined = undefined;
 
     numberOfVisits: integer = 0
     isCycleInitiator: boolean = false;
@@ -126,11 +126,15 @@ export class FunctionDef  {
 
     params: TypedElement[] = [];
     returnType: string = "";
+    typeName: string = "";
     body: string = "";
+    astNodeuid:string = "";
+    prevelement: FunctionDef | undefined = undefined;
 
     constructor() {
         
     }
+    
 }
 
 
