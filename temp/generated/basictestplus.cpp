@@ -22,10 +22,11 @@ void functioninit3Variable(){
  // la 
 } //c'est ici
 void function5initializeVar(){
-	int Variable2_0_2_10143 = 2; //undefined
+	int Variable2_0_2_101430;
+	Variable2_0_2_101430 = 2;
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);
-                (*((int*)sigma["Variable2_0_2_10currentValue"])) = Variable2_0_2_10143;
+                (*((int*)sigma["Variable2_0_2_10currentValue"])) = Variable2_0_2_101430;
  // la 
 } //c'est ici
 void functioninit6Variable(){
@@ -33,21 +34,25 @@ void functioninit6Variable(){
  // la 
 } //c'est ici
 void function8initializeVar(){
-	int Variable4_0_4_10143 = 3; //undefined
+	int Variable4_0_4_101430;
+	Variable4_0_4_101430 = 3;
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);
-                (*((int*)sigma["Variable4_0_4_10currentValue"])) = Variable4_0_4_10143;
+                (*((int*)sigma["Variable4_0_4_10currentValue"])) = Variable4_0_4_101430;
  // la 
 } //c'est ici
 int function11accessVarRef(){
-	const std::lock_guard<std::mutex> lock(sigma_mutex);
-	int VarRef7_5_7_71645 = *(int *) sigma["Variable2_0_2_10currentValue"];//currentValue}
-	int VarRef7_5_7_7terminates =  VarRef7_5_7_71645;
+	std::lock_guard<std::mutex> lock(sigma_mutex);
+	int VarRef7_5_7_71645;
+	VarRef7_5_7_71645 = *((int*)sigma["Variable2_0_2_10currentValuemanager"]);
+	int VarRef7_5_7_7terminates;
+	VarRef7_5_7_7terminates = VarRef7_5_7_71645;
 	return VarRef7_5_7_7terminates;
  // la 
 } //c'est ici
 void function13executeAssignment2(int resRight){
-	int Assignment7_0_7_72620 = resRight; // was Assignment7_0_7_72452; but using the parameter name now
+	int Assignment7_0_7_72620;
+	Assignment7_0_7_72620 = resRight;
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
                 (*((int*)sigma["Variable4_0_4_10currentValue"])) = Assignment7_0_7_72620;
@@ -95,7 +100,6 @@ int main() {
         #if DEBUG
             std::cout<<"9 : Step" <<std::endl;
         #endif
-        function9executeAssignment();
 
         #if DEBUG
             std::cout<<"11 : Step" <<std::endl;
@@ -114,12 +118,10 @@ int main() {
         #if DEBUG
             std::cout<<"10 : Step" <<std::endl;
         #endif
-        function10statementsInOrder1();
 
         #if DEBUG
             std::cout<<"14 : Step" <<std::endl;
         #endif
-        function14finishModel();
 
     //WARNING !! temporary code to test
     for(auto entry : sigma){

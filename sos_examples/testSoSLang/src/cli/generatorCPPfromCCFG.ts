@@ -7,7 +7,12 @@ import { CCFGVisitor } from './generated/testFSE';
 import { CCFG, Edge, Node, TypedElement } from '../ccfg/ccfglib';
 import chalk from 'chalk';
 
-
+const lock= "lock"
+const createVar = "createVar"
+const assignVar = "assignVar"
+const accessVar = "accessVar"
+const operation = "operation"
+const ret ="return"
 let debug = false;
 export function generateCPPfromCCFG(model: Model, filePath: string, targetDirectory: string | undefined, doDebug: boolean|undefined): string {
     const data = extractDestinationAndName(filePath, targetDirectory);
@@ -127,7 +132,25 @@ function compileFunctionDefs(ccfg: CCFG) : string {
                     for (let fname of node.functionsNames) {
                     // console.log("function name: "+fname);
                         functionsDefs += node.returnType + " function" + fname + `(${node.params.map(p => (p as TypedElement).toString()).join(", ")}){\n\t`;
-                        functionsDefs += node.functionsDefs.map(a => a).join("\n\t") + "\n // la \n";
+                        functionsDefs += node.functionsDefs.map(a => {
+                            let b = a.split(",")
+                            if (b[0] == ret) {
+                                return b[0] + " " + b[1] + ";";
+                            }else if (b[0]==lock){
+                                return "std::lock_guard<std::mutex> lock(sigma_mutex);"
+                            }else if (b[0]==createVar){
+                                return b[1] + " " + b[2] + ";";
+                            }else if (b[0]==assignVar){
+                                return b[1] + " = " + b[2] + ";";
+                            } else if (b[0]==accessVar){
+                                return b[2] + " = *(("+b[1]+"*)sigma[\"" + b[3] + "\"]);";
+                            } else if (b[0]==operation){
+                                return b[1] + " = " + b[2] + b[3] + b[4] + ";";
+                            }else{
+                                return a; //return the original string
+                            }
+
+                        }).join("\n\t") + "\n // la \n";
                         functionsDefs += "} //c'est ici\n";
                     }
                 }

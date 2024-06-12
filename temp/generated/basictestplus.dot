@@ -9,10 +9,11 @@ sigma[\"Variable2_0_2_10currentValue\"] = new int();
   "4" [label="4:terminatesVariable2_0_2_10" shape="ellipse" ];
   "5" [label="5:initializeVarStateModificationNode:
 void function5initializeVar(){
-int Variable2_0_2_10143 = 2; //undefined
+createVar,int,Variable2_0_2_101430
+assignVar,Variable2_0_2_101430,2
 //TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);
-                (*((int*)sigma[\"Variable2_0_2_10currentValue\"])) = Variable2_0_2_10143;
+                (*((int*)sigma[\"Variable2_0_2_10currentValue\"])) = Variable2_0_2_101430;
 }" shape="ellipse" ];
   "6" [label="6:startsVariable4_0_4_10:
 void functioninit6Variable(){
@@ -21,24 +22,28 @@ sigma[\"Variable4_0_4_10currentValue\"] = new int();
   "7" [label="7:terminatesVariable4_0_4_10" shape="ellipse" ];
   "8" [label="8:initializeVarStateModificationNode:
 void function8initializeVar(){
-int Variable4_0_4_10143 = 3; //undefined
+createVar,int,Variable4_0_4_101430
+assignVar,Variable4_0_4_101430,3
 //TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);
-                (*((int*)sigma[\"Variable4_0_4_10currentValue\"])) = Variable4_0_4_10143;
+                (*((int*)sigma[\"Variable4_0_4_10currentValue\"])) = Variable4_0_4_101430;
 }" shape="ellipse" ];
   "9" [label="9:startsAssignment7_0_7_7" shape="ellipse" ];
   "10" [label="10:terminatesAssignment7_0_7_7" shape="ellipse" ];
   "11" [label="11:startsVarRef7_5_7_7:
 int function11accessVarRef(){
-const std::lock_guard<std::mutex> lock(sigma_mutex);
-int VarRef7_5_7_71645 = *(int *) sigma[\"Variable2_0_2_10currentValue\"];//currentValue}
-int VarRef7_5_7_7terminates =  VarRef7_5_7_71645;
-return VarRef7_5_7_7terminates;
+lock,variableMutex
+createVar,int,VarRef7_5_7_71645
+accessVar,int,VarRef7_5_7_71645,Variable2_0_2_10currentValuemanager
+createVar,int,VarRef7_5_7_7terminates
+assignVar,VarRef7_5_7_7terminates,VarRef7_5_7_71645
+return,VarRef7_5_7_7terminates
 }" shape="ellipse" ];
   "12" [label="12:terminatesVarRef7_5_7_7" shape="ellipse" ];
   "13" [label="13:executeAssignment2StateModificationNode:
 void function13executeAssignment2(int resRight){
-int Assignment7_0_7_72620 = resRight; // was Assignment7_0_7_72452; but using the parameter name now
+createVar,int,Assignment7_0_7_72620
+assignVar,Assignment7_0_7_72620,resRight
 //TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
                 (*((int*)sigma[\"Variable4_0_4_10currentValue\"])) = Assignment7_0_7_72620;

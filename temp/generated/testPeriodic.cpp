@@ -19,63 +19,49 @@ std::mutex sigma_mutex;  // protects sigma
 
 void functioninit3Variable(){
 	sigma["Variable0_0_0_10currentValue"] = new int();
- la 
+ // la 
 } //c'est ici
 void function5initializeVar(){
 	int Variable0_0_0_101430 = 1; //undefined
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);
                 (*((int*)sigma["Variable0_0_0_10currentValue"])) = Variable0_0_0_101430;
- la 
+ // la 
 } //c'est ici
 void functioninit6Variable(){
 	sigma["Variable1_0_1_10currentValue"] = new int();
- la 
+ // la 
 } //c'est ici
 void function8initializeVar(){
 	int Variable1_0_1_101430 = 0; //undefined
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);
                 (*((int*)sigma["Variable1_0_1_10currentValue"])) = Variable1_0_1_101430;
- la 
+ // la 
 } //c'est ici
 void function9periodicStart(){
 	sigma["PeriodicBloc3_0_5_3blocTrigger"] = new int(1000);
- la 
+ // la 
 } //c'est ici
 void functionstarts11blocTrigger(){
 	std::this_thread::sleep_for(1000ms);
- la 
-} //c'est ici
-void function12periodicBodyStart(){
-	
- la 
-} //c'est ici
-void function17executeAssignment(){
-	
- la 
-} //c'est ici
-void function18startsBloc(){
-	
- la 
-} //c'est ici
-void function19startPlus(){
-	
- la 
+ // la 
 } //c'est ici
 int function22accessVarRef(){
-	const std::lock_guard<std::mutex> lock(sigma_mutex);
-	int VarRef4_13_4_151645 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
+	lock [variableMutex]
+	 create variable [int]  [VarRef4_13_4_151645]
+	 assign variable [int] [VarRef4_13_4_151645] ["Variable0_0_0_10currentValuemanager"]
 	int VarRef4_13_4_15terminates =  VarRef4_13_4_151645;
 	return VarRef4_13_4_15terminates;
- la 
+ // la 
 } //c'est ici
 int function24accessVarRef(){
-	const std::lock_guard<std::mutex> lock(sigma_mutex);
-	int VarRef4_10_4_121645 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
+	lock [variableMutex]
+	 create variable [int]  [VarRef4_10_4_121645]
+	 assign variable [int] [VarRef4_10_4_121645] ["Variable0_0_0_10currentValuemanager"]
 	int VarRef4_10_4_12terminates =  VarRef4_10_4_121645;
 	return VarRef4_10_4_12terminates;
- la 
+ // la 
 } //c'est ici
 int function26finishPlus(int n2, int n1){
 	int Plus4_9_4_164391 = n2;
@@ -85,44 +71,29 @@ int function26finishPlus(int n2, int n1){
 	int Plus4_9_4_164536 = Plus4_9_4_164537 + Plus4_9_4_164542;
 	int Plus4_9_4_16terminates =  Plus4_9_4_164536;
 	return Plus4_9_4_16terminates;
- la 
+ // la 
 } //c'est ici
 void function27executeAssignment2(int resRight){
 	int Assignment4_4_4_162620 = resRight; // was Assignment4_4_4_162452; but using the parameter name now
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
                 (*((int*)sigma["Variable0_0_0_10currentValue"])) = Assignment4_4_4_162620;
- la 
-} //c'est ici
-void function28finishBloc(){
-	
- la 
-} //c'est ici
-void function30executeAssignment(){
-	
- la 
-} //c'est ici
-void function31statementsInOrder1(){
-	
- la 
+ // la 
 } //c'est ici
 int function32accessVarRef(){
-	const std::lock_guard<std::mutex> lock(sigma_mutex);
-	int VarRef7_5_7_71645 = *(int *) sigma["Variable0_0_0_10currentValue"];//currentValue}
+	lock [variableMutex]
+	 create variable [int]  [VarRef7_5_7_71645]
+	 assign variable [int] [VarRef7_5_7_71645] ["Variable0_0_0_10currentValuemanager"]
 	int VarRef7_5_7_7terminates =  VarRef7_5_7_71645;
 	return VarRef7_5_7_7terminates;
- la 
+ // la 
 } //c'est ici
 void function34executeAssignment2(int resRight){
 	int Assignment7_0_7_72620 = resRight; // was Assignment7_0_7_72452; but using the parameter name now
 	//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
                 (*((int*)sigma["Variable1_0_1_10currentValue"])) = Assignment7_0_7_72620;
- la 
-} //c'est ici
-void function35finishModel(){
-	
- la 
+ // la 
 } //c'est ici
 
 int main() {

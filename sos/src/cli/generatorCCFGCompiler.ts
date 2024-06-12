@@ -7,6 +7,13 @@ import { inferType } from '../language-server/type-system/infer.js';
 import chalk from 'chalk';
 
 
+const lock= "lock"
+const createVar = "createVar"
+const assignVar = "assignVar"
+const accessVar = "accessVar"
+//const operation = "operation"
+const ret ="return"
+
 
 // this function is used to generate the code for the visitor pattern of the specified compiler
 
@@ -1256,19 +1263,27 @@ function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefine
             res = res + rightRes+","
             let applyOp = (valuedEmission.data as BinaryExpression).operator
             res = res + `\`${typeName} \${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset} = \${getASTNodeUID(node)}${lhs.$cstNode?.offset} ${applyOp} \${getASTNodeUID(node)}${rhs.$cstNode?.offset};\``
+            //res = res + `\`${createVar},\${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,`
+            //res = res + `\`${operation},\${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset},\${getASTNodeUID(node)}${lhs.$cstNode?.offset},${applyOp},\${getASTNodeUID(node)}${rhs.$cstNode?.offset}\`,`
         }
         if(valuedEmission.data != undefined && valuedEmission.data.$type == "BooleanExpression" || valuedEmission.data.$type == "NumberExpression" || valuedEmission.data.$type == "StringExpression"){
             // write a node that sends the value specified 
-            res = `\`${typeName} \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  ${valuedEmission.data.$cstNode?.text};\``
-            res = res + "," +`\`return \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name};\``
+            //res = `\`${typeName} \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  ${valuedEmission.data.$cstNode?.text};\``
+            //res = res + "," +`\`return \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name};\``
+            res = res  +`\`${createVar},${typeName},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\``+ ","
+            res = res  +`\`${assignVar},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name},${valuedEmission.data.$cstNode?.text}\``+ ","
+            res = res  +`\`${ret},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\``+ ","
             return [res, typeName]
         }
         if(res.length > 0){
             res = res + ","
         }
         console.log(res)
-        res = res + `\`${typeName} \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  \${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset};\``
-        res = res + "," +`\`return \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name};\``
+        //res = res + `\`${typeName} \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  \${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset};\``
+        //res = res + "," +`\`return \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name};\``
+        res = res+ `\`${createVar},${typeName},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\`,`
+        res = res+ `\`${assignVar},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name},\${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,`
+        res = res+ `\`${ret},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\``
         
         return [res, typeName]
     }
@@ -1286,18 +1301,23 @@ function createVariableFromMemberCall(data: MemberCall, typeName: string): strin
 
 
     if (elem?.$type == "VariableDeclaration") {
-        res = res +`\`const std::lock_guard<std::mutex> lock(sigma_mutex); \`,`
-        res = res + `\`${typeName} \${getASTNodeUID(node)}${data.$cstNode?.offset} = *(${typeName} *) sigma["\${getASTNodeUID(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name}manger"];//${elem.name}}\``
-        
+        //res = res +`\`const std::lock_guard<std::mutex> lock(sigma_mutex); \`,`
+        //res = res + `\`${typeName} \${getASTNodeUID(node)}${data.$cstNode?.offset} = *(${typeName} *) sigma["\${getASTNodeUID(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name}manager"];//${elem.name}}\``
+        res = res+ `\`${lock},variableMutex\`,`
+        res = res+ `\`${createVar},${typeName},\${getASTNodeUID(node)}${data.$cstNode?.offset}\`,`
+        res = res+ `\`${accessVar},${typeName},\${getASTNodeUID(node)}${data.$cstNode?.offset},\${getASTNodeUID(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name}manager\``
     } 
     else if (elem?.$type == "TemporaryVariable") {
-        res = res + `\`${typeName} \${getASTNodeUID(node)}${data.$cstNode?.offset} = ${elem.name}; // was \${getASTNodeUID(node)}${prev != undefined ? prev?.ref?.$cstNode?.offset : elem.$cstNode?.offset}; but using the parameter name now\``
+        //res = res + `\`${typeName} \${getASTNodeUID(node)}${data.$cstNode?.offset} = ${elem.name}; // was \${getASTNodeUID(node)}${prev != undefined ? prev?.ref?.$cstNode?.offset : elem.$cstNode?.offset}; but using the parameter name now\``
+        res = res+ `\`${createVar},${typeName},\${getASTNodeUID(node)}${data.$cstNode?.offset}\`,`
+        res = res+ `\`${assignVar},\${getASTNodeUID(node)}${data.$cstNode?.offset},${elem.name}\`` 
     }
     else /*if (elem?.$type == "Assignment")*/ {
         
-        res = res + `\`${typeName} \${getASTNodeUID(node)}${data.$cstNode?.offset} = \${node.${data.$cstNode?.text}};\ //${elem.name}\``
+        //res = res + `\`${typeName} \${getASTNodeUID(node)}${data.$cstNode?.offset} = \${node.${data.$cstNode?.text}};\ //${elem.name}\``
+        res = res+ `\`${createVar},${typeName},\${getASTNodeUID(node)}${data.$cstNode?.offset}\`,`
+        res = res+ `\`${assignVar},\${getASTNodeUID(node)}${data.$cstNode?.offset},\${node.${data.$cstNode?.text}}\``
     }
-    console.log(res)
     return res
 }
 
