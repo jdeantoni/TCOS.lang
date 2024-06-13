@@ -9,8 +9,10 @@ import chalk from 'chalk';
 
 const lock= "lock"
 const createVar = "createVar"
+const createGlobalVar = "createGlobalVar"
 const assignVar = "assignVar"
-const accessVar = "accessVar"
+const setVarFromGlobal = "setVarFromGlobal"
+const setGlobalVar = "setGlobalVar"
 const operation = "operation"
 const ret ="return"
 let debug = false;
@@ -84,8 +86,8 @@ if(debug){
     codeFile.append(`
 
 
-std::unordered_map<std::string, void*> sigma;
-std::mutex sigma_mutex;  // protects sigma
+##std::unordered_map<std::string, void*> sigma;
+##std::mutex sigma_mutex;  // protects sigma
 
 `);
 
@@ -94,7 +96,7 @@ std::mutex sigma_mutex;  // protects sigma
     
     codeFile.append(functionsDefs);
     codeFile.append(`
-int main() {
+def main() {
     `);
 
     let currentNode = initNode;
@@ -124,20 +126,26 @@ function compileFunctionDefs(ccfg: CCFG) : string {
                 if(typeof node.functionsDefs[0] == "string"){
                     for (let fname of node.functionsNames) {
                     // console.log("function name: "+fname);
-                        functionsDefs += node.returnType + " function" + fname + `(${node.params.map(p => (p as TypedElement).toString()).join(", ")}){\n\t`;
+                        functionsDefs += "def" + fname + `(${node.params.map(p => (p as TypedElement).name.toString()).join(", ")}){\n\t`;
                         functionsDefs += node.functionsDefs.map(a => {
                             let b = a.split(",")
                             if (b[0] == ret) {
-                                return b[0] + " " + b[1];
+                                return "return " + b[1];
                             }else if (b[0]==lock){
                                 return "std::lock_guard<std::mutex> lock(sigma_mutex);"
                             }else if (b[0]==createVar){
-                                return b[1] + " " + b[2] + ";";
+                                return "";
                             }else if (b[0]==assignVar){
                                 return b[1] + " = " + b[2] + ";";
-                            } else if (b[0]==accessVar){
-                                return b[2] + " = *(("+b[1]+"*)sigma[\"" + b[3] + "\"]);";
-                            } else if (b[0]==operation){
+                            } else if (b[0]==setVarFromGlobal){
+
+                                return "global" +b[3] + "\n\t"+b[2] + " = " + b[3];
+                            } else if (b[0]==createGlobalVar){
+                                return "global " + b[2];
+                            } else if (b[0]==setGlobalVar){
+                                return b[2] + " = " + b[3];
+                            }
+                            else if (b[0]==operation){
                                 return b[1] + " = " + b[2] + b[3] + b[4] + ";";
                             }else{
                                 return a; //return the original string

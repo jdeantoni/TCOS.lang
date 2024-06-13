@@ -9,8 +9,10 @@ import chalk from 'chalk';
 
 const lock= "lock"
 const createVar = "createVar"
+const createGlobalVar = "createGlobalVar"
 const assignVar = "assignVar"
-const accessVar = "accessVar"
+const setVarFromGlobal = "setVarFromGlobal"
+const setGlobalVar = "setGlobalVar"
 //const operation = "operation"
 const ret ="return"
 
@@ -1219,9 +1221,11 @@ function getVariableDeclarationCode(runtimeState: VariableDeclaration[] | undefi
                 continue
             }else{
                  if(vardDecl.value != undefined && vardDecl.value.$type == "MemberCall"){
-                   res = res + sep + `\`sigma["\${getASTNodeUID(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?`\${node.${(vardDecl.value as MemberCall).element?.$refText}}`:""});\``
+                   //res = res + sep + `\`sigma["\${getASTNodeUID(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?`\${node.${(vardDecl.value as MemberCall).element?.$refText}}`:""});\``
+                   res = res + sep + `\`${createGlobalVar},${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?`\${node.${(vardDecl.value as MemberCall).element?.$refText}}`:""},\${getASTNodeUID(node)}${vardDecl.name}\``
                 }else{
-                    res = res + sep + `\`sigma["\${getASTNodeUID(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?vardDecl.value.$cstNode?.text:""});\``
+                    //res = res + sep + `\`sigma["\${getASTNodeUID(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?vardDecl.value.$cstNode?.text:""});\``
+                    res = res + sep + `\`${createGlobalVar},${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?vardDecl.value.$cstNode?.text:""},\${getASTNodeUID(node)}${vardDecl.name}\``
                 }
                 sep= ","
             }
@@ -1305,7 +1309,7 @@ function createVariableFromMemberCall(data: MemberCall, typeName: string): strin
         //res = res + `\`${typeName} \${getASTNodeUID(node)}${data.$cstNode?.offset} = *(${typeName} *) sigma["\${getASTNodeUID(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name}manager"];//${elem.name}}\``
         res = res+ `\`${lock},variableMutex\`,`
         res = res+ `\`${createVar},${typeName},\${getASTNodeUID(node)}${data.$cstNode?.offset}\`,`
-        res = res+ `\`${accessVar},${typeName},\${getASTNodeUID(node)}${data.$cstNode?.offset},\${getASTNodeUID(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name}manager\``
+        res = res+ `\`${setVarFromGlobal},${typeName},\${getASTNodeUID(node)}${data.$cstNode?.offset},\${getASTNodeUID(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name}manager\``
     } 
     else if (elem?.$type == "TemporaryVariable") {
         //res = res + `\`${typeName} \${getASTNodeUID(node)}${data.$cstNode?.offset} = ${elem.name}; // was \${getASTNodeUID(node)}${prev != undefined ? prev?.ref?.$cstNode?.offset : elem.$cstNode?.offset}; but using the parameter name now\``

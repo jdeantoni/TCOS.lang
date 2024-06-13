@@ -10,7 +10,7 @@ import chalk from 'chalk';
 const lock= "lock"
 const createVar = "createVar"
 const assignVar = "assignVar"
-const accessVar = "accessVar"
+const setVarFromGlobal = "setVarFromGlobal"
 const operation = "operation"
 const ret ="return"
 let debug = false;
@@ -142,7 +142,7 @@ function compileFunctionDefs(ccfg: CCFG) : string {
                                 return b[1] + " " + b[2] + ";";
                             }else if (b[0]==assignVar){
                                 return b[1] + " = " + b[2] + ";";
-                            } else if (b[0]==accessVar){
+                            } else if (b[0]==setVarFromGlobal){
                                 return b[2] + " = *(("+b[1]+"*)sigma[\"" + b[3] + "\"]);";
                             } else if (b[0]==operation){
                                 return b[1] + " = " + b[2] + b[3] + b[4] + ";";
