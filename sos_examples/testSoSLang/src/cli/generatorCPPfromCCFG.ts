@@ -11,6 +11,8 @@ const lock= "lock"
 const createVar = "createVar"
 const assignVar = "assignVar"
 const setVarFromGlobal = "setVarFromGlobal"
+const createGlobalVar = "createGlobalVar"
+const setGlobalVar = "setGlobalVar"
 const operation = "operation"
 const ret ="return"
 let debug = false;
@@ -144,6 +146,10 @@ function compileFunctionDefs(ccfg: CCFG) : string {
                                 return b[1] + " = " + b[2] + ";";
                             } else if (b[0]==setVarFromGlobal){
                                 return b[2] + " = *(("+b[1]+"*)sigma[\"" + b[3] + "\"]);";
+                            } else if (b[0]==createGlobalVar){
+                                return "sigma[\"" + b[2] + "\"] = new "+b[1]+"();"
+                            } else if (b[0]==setGlobalVar){
+                                return "*(("+b[1]+"*)sigma[\"" + b[2] + "\"])" + " = " + b[3];
                             } else if (b[0]==operation){
                                 return b[1] + " = " + b[2] + b[3] + b[4] + ";";
                             }else{

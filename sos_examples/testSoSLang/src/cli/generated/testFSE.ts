@@ -289,7 +289,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     }
 
     visitVariable(node: Variable): [Node,Node] {
-        let startsVariableNode: Node = new Step("starts"+getASTNodeUID(node),[`sigma["${getASTNodeUID(node)}currentValue"] = new int();`])
+        let startsVariableNode: Node = new Step("starts"+getASTNodeUID(node),[`createGlobalVar,int,${getASTNodeUID(node)}currentValue`])
         if(startsVariableNode.functionsDefs.length>0){
             startsVariableNode.returnType = "void"
         }
@@ -315,9 +315,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     previousNode = initializeVarStateModificationNode
     }
     previousNode.functionsNames = [...previousNode.functionsNames, ...[`${previousNode.uid}initializeVar`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}1430`,`assignVar,${getASTNodeUID(node)}1430,${node.initialValue}`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-                const std::lock_guard<std::mutex> lock(sigma_mutex);
-                (*((int*)sigma["${getASTNodeUID(node)}currentValue"])) = ${getASTNodeUID(node)}1430;`]] //AA
+    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}1430`,`assignVar,${getASTNodeUID(node)}1430,${node.initialValue}`,`setGlobalVar,int,${getASTNodeUID(node)}currentValue,${getASTNodeUID(node)}1430`]] //AA
     
         {let e = this.ccfg.addEdge(previousNode,terminatesVariableNode)
         e.guards = [...e.guards, ...[]] //EE
@@ -356,7 +354,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "int"
         previousNode.functionsNames = [`${previousNode.uid}accessVarRef`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`lock,variableMutex`,`createVar,int,${getASTNodeUID(node)}1645`,`accessVar,int,${getASTNodeUID(node)}1645,${getASTNodeUID(node.theVar)}currentValuemanager`,`createVar,int,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,${getASTNodeUID(node)}1645`,`return,${getASTNodeUID(node)}terminates`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`lock,variableMutex`,`createVar,int,${getASTNodeUID(node)}1645`,`setVarFromGlobal,int,${getASTNodeUID(node)}1645,${getASTNodeUID(node.theVar)}currentValue`,`createVar,int,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,${getASTNodeUID(node)}1645`,`return,${getASTNodeUID(node)}terminates`]] //GG
     
         return [startsVarRefNode,terminatesVarRefNode]
     }
@@ -535,9 +533,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     previousNode = executeAssignment2StateModificationNode
     }
     previousNode.functionsNames = [...previousNode.functionsNames, ...[`${previousNode.uid}executeAssignment2`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}2620`,`assignVar,${getASTNodeUID(node)}2620,resRight`,`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-                const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
-                (*((int*)sigma["${getASTNodeUID(node.variable)}currentValue"])) = ${getASTNodeUID(node)}2620;`]] //AA
+    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}2620`,`assignVar,${getASTNodeUID(node)}2620,resRight`,`setGlobalVar,int,${getASTNodeUID(node.variable)}currentValue,${getASTNodeUID(node)}2620`]] //AA
     
         {let e = this.ccfg.addEdge(previousNode,terminatesAssignmentNode)
         e.guards = [...e.guards, ...[]] //EE
@@ -755,13 +751,13 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "int"
         previousNode.functionsNames = [`${previousNode.uid}finishPlus`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}4537`,`assignVar,${getASTNodeUID(node)}4537,n1`,`createVar,int,${getASTNodeUID(node)}4542`,`assignVar,${getASTNodeUID(node)}4542,n2`,`int ${getASTNodeUID(node)}4536 = ${getASTNodeUID(node)}4537 + ${getASTNodeUID(node)}4542;`,`createVar,int,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,${getASTNodeUID(node)}4536`,`return,${getASTNodeUID(node)}terminates`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}4537`,`assignVar,${getASTNodeUID(node)}4537,n1`,`createVar,int,${getASTNodeUID(node)}4542`,`assignVar,${getASTNodeUID(node)}4542,n2`,`createVar,${getASTNodeUID(node)}4536`,`operation,${getASTNodeUID(node)}4536,${getASTNodeUID(node)}4537,+,${getASTNodeUID(node)}4542`,`createVar,int,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,${getASTNodeUID(node)}4536`,`return,${getASTNodeUID(node)}terminates`]] //GG
     
         return [startsPlusNode,terminatesPlusNode]
     }
 
     visitBooleanConst(node: BooleanConst): [Node,Node] {
-        let startsBooleanConstNode: Node = new Step("starts"+getASTNodeUID(node),[`sigma["${getASTNodeUID(node)}constantValue"] = new bool(${node.value});`])
+        let startsBooleanConstNode: Node = new Step("starts"+getASTNodeUID(node),[`createGlobalVar,bool${node.value},${getASTNodeUID(node)}constantValue`])
         if(startsBooleanConstNode.functionsDefs.length>0){
             startsBooleanConstNode.returnType = "void"
         }
@@ -786,7 +782,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "bool"
         previousNode.functionsNames = [`${previousNode.uid}evalBooleanConst`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`lock,variableMutex`,`createVar,bool,${getASTNodeUID(node)}4765`,`accessVar,bool,${getASTNodeUID(node)}4765,${getASTNodeUID(node)}constantValuemanager`,`createVar,bool,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,${getASTNodeUID(node)}4765`,`return,${getASTNodeUID(node)}terminates`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`lock,variableMutex`,`createVar,bool,${getASTNodeUID(node)}4765`,`setVarFromGlobal,bool,${getASTNodeUID(node)}4765,${getASTNodeUID(node)}constantValue`,`createVar,bool,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,${getASTNodeUID(node)}4765`,`return,${getASTNodeUID(node)}terminates`]] //GG
     
         return [startsBooleanConstNode,terminatesBooleanConstNode]
     }
@@ -902,7 +898,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     }
 
     visitPeriodicBloc(node: PeriodicBloc): [Node,Node] {
-        let startsPeriodicBlocNode: Node = new Step("starts"+getASTNodeUID(node),[`sigma["${getASTNodeUID(node)}blocTrigger"] = new int(${node.time});`])
+        let startsPeriodicBlocNode: Node = new Step("starts"+getASTNodeUID(node),[`createGlobalVar,int${node.time},${getASTNodeUID(node)}blocTrigger`])
         if(startsPeriodicBlocNode.functionsDefs.length>0){
             startsPeriodicBlocNode.returnType = "void"
         }

@@ -96,18 +96,15 @@ if(debug){
     
     codeFile.append(functionsDefs);
     codeFile.append(`
-def main() {
-    `);
+def main():
+\t`);
 
     let currentNode = initNode;
     visitAllNodes(ccfg, currentNode, /*-1,*/ codeFile, true);
 
     codeFile.append(`
-    //WARNING !! temporary code to test
-    for(auto entry : sigma){
-        std::cout << entry.first << " : " << *((int*)entry.second) << std::endl;
-    }
-}
+if __name__ == "__main__":
+    main()
     `);
 
 }
@@ -126,33 +123,31 @@ function compileFunctionDefs(ccfg: CCFG) : string {
                 if(typeof node.functionsDefs[0] == "string"){
                     for (let fname of node.functionsNames) {
                     // console.log("function name: "+fname);
-                        functionsDefs += "def" + fname + `(${node.params.map(p => (p as TypedElement).name.toString()).join(", ")}){\n\t`;
+                        functionsDefs += "def function" + fname + `(${node.params.map(p => (p as TypedElement).name.toString()).join(", ")}) :\n\t`;
                         functionsDefs += node.functionsDefs.map(a => {
                             let b = a.split(",")
                             if (b[0] == ret) {
                                 return "return " + b[1];
-                            }else if (b[0]==lock){
-                                return "std::lock_guard<std::mutex> lock(sigma_mutex);"
-                            }else if (b[0]==createVar){
+                            }  else if (b[0]==lock){
+                                return "## std::lock_guard<std::mutex> lock(sigma_mutex);"
+                            } else if (b[0]==createVar){
                                 return "";
-                            }else if (b[0]==assignVar){
-                                return b[1] + " = " + b[2] + ";";
+                            } else if (b[0]==assignVar){
+                                return b[1] + " = " + b[2] ;
                             } else if (b[0]==setVarFromGlobal){
-
-                                return "global" +b[3] + "\n\t"+b[2] + " = " + b[3];
+                                return "global " +b[3] + "\n\t"+b[2] + " = " + b[3];
                             } else if (b[0]==createGlobalVar){
                                 return "global " + b[2];
                             } else if (b[0]==setGlobalVar){
-                                return b[2] + " = " + b[3];
-                            }
-                            else if (b[0]==operation){
-                                return b[1] + " = " + b[2] + b[3] + b[4] + ";";
-                            }else{
-                                return a; //return the original string
+                                return "global " +b[2] + "\n\t"+b[2] + " = " + b[3];
+                            } else if (b[0]==operation){
+                                return b[1] + " = " + b[2] + b[3] + b[4] ;
+                            } else{
+                                return "##" + a; //return the original string
                             }
 
-                        }).join("\n\t") + "\n // la \n";
-                        functionsDefs += "} //c'est ici\n";
+                        }).join("\n\t") ;
+                        functionsDefs += "\n";
                     }
                 }
             }
@@ -476,7 +471,7 @@ function addCorrespondingCode(codeFile: CompositeGeneratorNode, currentNode: Nod
 
     currentNode.functionsNames.forEach(f => {
         if(currentNode.returnType != undefined && currentNode.returnType != "void"){
-            codeFile.append(`${currentNode.returnType} result${f} = `);
+            codeFile.append(`result${f} = `);
         }
         codeFile.append(`function${f}(`)
         let paramNames = getParameterNames(currentNode);
@@ -485,7 +480,7 @@ function addCorrespondingCode(codeFile: CompositeGeneratorNode, currentNode: Nod
             codeFile.append(sep+paramNames[i]);
             sep=", "
         }
-        codeFile.append(`);\n`);
+        codeFile.append(`)\n\t`);
         if(currentNode.functionsDefs.length == 0){
             return
         }

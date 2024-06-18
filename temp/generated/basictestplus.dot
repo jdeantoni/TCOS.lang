@@ -1,54 +1,88 @@
 digraph G {
-  "0" [label="0:startsModel2_0_7_7" shape="ellipse" ];
-  "1" [label="1:terminatesModel2_0_7_7" shape="ellipse" ];
-  "2" [label="2:startsarray2_0_2_10_4_0_4_10_7_0_7_7" shape="ellipse" ];
+  "0" [label="0:startsModel2_0_11_1" shape="ellipse" ];
+  "1" [label="1:terminatesModel2_0_11_1" shape="ellipse" ];
+  "2" [label="2:startsarray2_0_2_10_4_0_4_10_6_0_11_1" shape="ellipse" ];
   "3" [label="3:startsVariable2_0_2_10:
 void functioninit3Variable(){
-sigma[\"Variable2_0_2_10currentValue\"] = new int();
+createGlobalVar,int,Variable2_0_2_10currentValue
 }" shape="ellipse" ];
   "4" [label="4:terminatesVariable2_0_2_10" shape="ellipse" ];
   "5" [label="5:initializeVarStateModificationNode:
 void function5initializeVar(){
 createVar,int,Variable2_0_2_101430
-assignVar,Variable2_0_2_101430,2
-//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-                const std::lock_guard<std::mutex> lock(sigma_mutex);
-                (*((int*)sigma[\"Variable2_0_2_10currentValue\"])) = Variable2_0_2_101430;
+assignVar,Variable2_0_2_101430,1
+setGlobalVar,int,Variable2_0_2_10currentValue,Variable2_0_2_101430
 }" shape="ellipse" ];
   "6" [label="6:startsVariable4_0_4_10:
 void functioninit6Variable(){
-sigma[\"Variable4_0_4_10currentValue\"] = new int();
+createGlobalVar,int,Variable4_0_4_10currentValue
 }" shape="ellipse" ];
   "7" [label="7:terminatesVariable4_0_4_10" shape="ellipse" ];
   "8" [label="8:initializeVarStateModificationNode:
 void function8initializeVar(){
 createVar,int,Variable4_0_4_101430
 assignVar,Variable4_0_4_101430,3
-//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-                const std::lock_guard<std::mutex> lock(sigma_mutex);
-                (*((int*)sigma[\"Variable4_0_4_10currentValue\"])) = Variable4_0_4_101430;
+setGlobalVar,int,Variable4_0_4_10currentValue,Variable4_0_4_101430
 }" shape="ellipse" ];
-  "9" [label="9:startsAssignment7_0_7_7" shape="ellipse" ];
-  "10" [label="10:terminatesAssignment7_0_7_7" shape="ellipse" ];
-  "11" [label="11:startsVarRef7_5_7_7:
+  "9" [label="9:startsIf6_0_11_1" shape="ellipse" ];
+  "10" [label="10:terminatesIf6_0_11_1" shape="ellipse" ];
+  "11" [label="11:startsVarRef6_4_6_6:
 int function11accessVarRef(){
 lock,variableMutex
-createVar,int,VarRef7_5_7_71645
-accessVar,int,VarRef7_5_7_71645,Variable2_0_2_10currentValuemanager
-createVar,int,VarRef7_5_7_7terminates
-assignVar,VarRef7_5_7_7terminates,VarRef7_5_7_71645
-return,VarRef7_5_7_7terminates
+createVar,int,VarRef6_4_6_61645
+setVarFromGlobal,int,VarRef6_4_6_61645,Variable2_0_2_10currentValue
+createVar,int,VarRef6_4_6_6terminates
+assignVar,VarRef6_4_6_6terminates,VarRef6_4_6_61645
+return,VarRef6_4_6_6terminates
 }" shape="ellipse" ];
-  "12" [label="12:terminatesVarRef7_5_7_7" shape="ellipse" ];
-  "13" [label="13:executeAssignment2StateModificationNode:
-void function13executeAssignment2(int resRight){
-createVar,int,Assignment7_0_7_72620
-assignVar,Assignment7_0_7_72620,resRight
-//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-                const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
-                (*((int*)sigma[\"Variable4_0_4_10currentValue\"])) = Assignment7_0_7_72620;
+  "12" [label="12:terminatesVarRef6_4_6_6" shape="ellipse" ];
+  "13" [label="13:choiceNodeVarRef6_4_6_6" shape="diamond" ];
+  "14" [label="14:startsBloc6_7_8_1" shape="ellipse" ];
+  "15" [label="15:terminatesBloc6_7_8_1" shape="ellipse" ];
+  "16" [label="16:startsarray7_4_7_11" shape="ellipse" ];
+  "17" [label="17:startsAssignment7_4_7_11" shape="ellipse" ];
+  "18" [label="18:terminatesAssignment7_4_7_11" shape="ellipse" ];
+  "19" [label="19:startsVarRef7_9_7_11:
+int function19accessVarRef(){
+lock,variableMutex
+createVar,int,VarRef7_9_7_111645
+setVarFromGlobal,int,VarRef7_9_7_111645,Variable4_0_4_10currentValue
+createVar,int,VarRef7_9_7_11terminates
+assignVar,VarRef7_9_7_11terminates,VarRef7_9_7_111645
+return,VarRef7_9_7_11terminates
 }" shape="ellipse" ];
-  "14" [label="14:terminatesarray2_0_2_10_4_0_4_10_7_0_7_7" shape="ellipse" ];
+  "20" [label="20:terminatesVarRef7_9_7_11" shape="ellipse" ];
+  "21" [label="21:executeAssignment2StateModificationNode:
+void function21executeAssignment2(int resRight){
+createVar,int,Assignment7_4_7_112620
+assignVar,Assignment7_4_7_112620,resRight
+setGlobalVar,int,Variable2_0_2_10currentValue,Assignment7_4_7_112620
+}" shape="ellipse" ];
+  "22" [label="22:terminatesarray7_4_7_11" shape="ellipse" ];
+  "23" [label="23:startsBloc8_5_11_1" shape="ellipse" ];
+  "24" [label="24:terminatesBloc8_5_11_1" shape="ellipse" ];
+  "25" [label="25:startsarray10_4_10_11" shape="ellipse" ];
+  "26" [label="26:startsAssignment10_4_10_11" shape="ellipse" ];
+  "27" [label="27:terminatesAssignment10_4_10_11" shape="ellipse" ];
+  "28" [label="28:startsVarRef10_9_10_11:
+int function28accessVarRef(){
+lock,variableMutex
+createVar,int,VarRef10_9_10_111645
+setVarFromGlobal,int,VarRef10_9_10_111645,Variable2_0_2_10currentValue
+createVar,int,VarRef10_9_10_11terminates
+assignVar,VarRef10_9_10_11terminates,VarRef10_9_10_111645
+return,VarRef10_9_10_11terminates
+}" shape="ellipse" ];
+  "29" [label="29:terminatesVarRef10_9_10_11" shape="ellipse" ];
+  "30" [label="30:executeAssignment2StateModificationNode:
+void function30executeAssignment2(int resRight){
+createVar,int,Assignment10_4_10_112620
+assignVar,Assignment10_4_10_112620,resRight
+setGlobalVar,int,Variable4_0_4_10currentValue,Assignment10_4_10_112620
+}" shape="ellipse" ];
+  "31" [label="31:terminatesarray10_4_10_11" shape="ellipse" ];
+  "32" [label="32:orJoinNodeBloc8_5_11_1" shape="invtriangle" ];
+  "33" [label="33:terminatesarray2_0_2_10_4_0_4_10_6_0_11_1" shape="ellipse" ];
   "0" -> "2" [label=""];
   "3" -> "5" [label=""];
   "5" -> "4" [label=""];
@@ -59,8 +93,28 @@ assignVar,Assignment7_0_7_72620,resRight
   "11" -> "12" [label=""];
   "9" -> "11" [label=""];
   "12" -> "13" [label=""];
-  "13" -> "10" [label=""];
+  "14" -> "16" [label=""];
+  "19" -> "20" [label=""];
+  "17" -> "19" [label=""];
+  "20" -> "21" [label=""];
+  "21" -> "18" [label=""];
+  "16" -> "17" [label=""];
+  "18" -> "22" [label=""];
+  "22" -> "15" [label=""];
+  "13" -> "14" [label="(bool)VarRef6_4_6_6terminates == true"];
+  "23" -> "25" [label=""];
+  "28" -> "29" [label=""];
+  "26" -> "28" [label=""];
+  "29" -> "30" [label=""];
+  "30" -> "27" [label=""];
+  "25" -> "26" [label=""];
+  "27" -> "31" [label=""];
+  "31" -> "24" [label=""];
+  "13" -> "23" [label="(bool)VarRef6_4_6_6terminates == false"];
+  "24" -> "32" [label=""];
+  "15" -> "32" [label=""];
+  "32" -> "10" [label=""];
   "7" -> "9" [label=""];
-  "10" -> "14" [label=""];
-  "14" -> "1" [label=""];
+  "10" -> "33" [label=""];
+  "33" -> "1" [label=""];
 }
