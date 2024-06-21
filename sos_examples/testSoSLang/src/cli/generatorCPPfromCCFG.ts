@@ -8,13 +8,14 @@ import { CCFG, Edge, Node, TypedElement } from '../ccfg/ccfglib';
 import chalk from 'chalk';
 
 const lock= "lock"
-const createVar = "createVar"
+const createVar = "createVar"   //createVar, type, name
 const assignVar = "assignVar"
 const setVarFromGlobal = "setVarFromGlobal"
 const createGlobalVar = "createGlobalVar"
 const setGlobalVar = "setGlobalVar"
 const operation = "operation"
 const ret ="return"
+const verifyEqual = "verifyEqual"
 let debug = false;
 export function generateCPPfromCCFG(model: Model, filePath: string, targetDirectory: string | undefined, doDebug: boolean|undefined): string {
     const data = extractDestinationAndName(filePath, targetDirectory);
@@ -387,6 +388,8 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
                 let ptn = ptns[0]
                 if(!createdQueueIds.includes(syncUID)){
                     createdQueueIds.push(syncUID);
+
+    // from here --------------------------------
                     codeFile.append(`
         LockingQueue<${(ptn.returnType!="void")?ptn.returnType : "Void"}> queue${syncUID};
             `);
@@ -398,11 +401,24 @@ function visitAllNodes(ccfg:CCFG, currentNode: Node, codeFile: CompositeGenerato
 
         addComparisonVariableDeclaration(codeFile, currentNode);
         let edgeToVisit: Edge[] = currentNode.outputEdges;
+        
+
+
         for(let edge of edgeToVisit){
             codeFile.append(`//Choice node`);
+            console.log(`if(${edge.guards.join(" && ")}){\n`)
+            let guards: string[] = []
+            for(let guard of edge.guards){
+            const guardList=guard.split(",");
+            if (guardList[0] === verifyEqual){
+                guards.push(`${guardList[1]} == ${guardList[2]}`)
+            }
+        }
             codeFile.append(`
-        if(${edge.guards.join(" && ")}){`
-                );
+        if(${guards.join(" && ")}){
+        // here we have a choice node
+        
+        `        );
                 addCorrespondingCode(codeFile, currentNode,ccfg);
                 visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ codeFile);                
                 

@@ -15,6 +15,7 @@ const setVarFromGlobal = "setVarFromGlobal"
 const setGlobalVar = "setGlobalVar"
 const operation = "operation"
 const ret ="return"
+const verifyEqual = "verifyEqual"
 
 
 // this function is used to generate the code for the visitor pattern of the specified compiler
@@ -1140,12 +1141,16 @@ function visitValuedEventRefComparison(valuedEventRefComparison: ValuedEventRefC
         // }else{
         //     varType = inferType(valuedEventRefComparison.literal, new Map())
         // }
+
+        //guardactionsactions
         if(valuedEventRefComparison.$type == "ImplicitValuedEventRefConstantComparison"){
-            res = res + `\`(bool)\${getASTNodeUID(node.${(valuedEventRefComparison.membercall as MemberCall).element?.$refText})}${"terminates"} == ${(typeof(v) == "string")?v:v.$cstNode?.text}\``
+            //res = res + `\`(bool)\${getASTNodeUID(node.${(valuedEventRefComparison.membercall as MemberCall).element?.$refText})}${"terminates"} == ${(typeof(v) == "string")?v:v.$cstNode?.text}\``
+            res = res + `\`${verifyEqual},\${getASTNodeUID(node.${(valuedEventRefComparison.membercall as MemberCall).element?.$refText})}${"terminates"},${(typeof(v) == "string")?v:v.$cstNode?.text}\``
         }
         if(valuedEventRefComparison.$type == "ExplicitValuedEventRefConstantComparison"){
             let prev = (valuedEventRefComparison.membercall as MemberCall)?.previous
-            res = res + `\`(bool)\${getASTNodeUID(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRefComparison.membercall as MemberCall).element?.$refText} == ${(typeof(v) == "string")?v:v.$cstNode?.text}\``
+            //res = res + `\`(bool)\${getASTNodeUID(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRefComparison.membercall as MemberCall).element?.$refText} == ${(typeof(v) == "string")?v:v.$cstNode?.text}\``
+            res = res + `\`${verifyEqual},\${getASTNodeUID(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRefComparison.membercall as MemberCall).element?.$refText},${(typeof(v) == "string")?v:v.$cstNode?.text}\``
         }
     }
     return res
