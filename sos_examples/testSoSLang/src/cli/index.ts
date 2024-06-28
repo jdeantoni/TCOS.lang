@@ -4,19 +4,23 @@ import { Model } from '../language-server/generated/ast';
 import { SimpleLLanguageMetaData } from '../language-server/generated/module';
 import { createSimpleLServices } from '../language-server/simple-l-module';
 import { extractAstNode } from './cli-util';
-import { generateCPPfromCCFG } from './generatorCPPfromCCFG';
-import { generatePythonfromCCFG } from './generatorPythonfromCCFG';
 import { NodeFileSystem } from 'langium/node';
+import { generatefromCCFG } from './AnonymousGenerator';
+import { IGenerator } from './GeneratorInterface';
+import { PythonGenerator } from './pythonGenerator';
+import { CppGenerator } from './cppGenerator';
 
 export const generateAction = async (fileName: string, opts: GenerateOptions): Promise<void> => {
     const services = createSimpleLServices(NodeFileSystem).SimpleL;
     const model = await extractAstNode<Model>(fileName, services);
     let generatedFilePath;
+    let generator:IGenerator;
     if (opts.python) {
-         generatedFilePath = generatePythonfromCCFG(model, fileName, opts.targetDirectory, opts.debug);
+        generator = new PythonGenerator();
     }else {
-         generatedFilePath = generateCPPfromCCFG(model, fileName, opts.targetDirectory, opts.debug);
+        generator = new CppGenerator();
     }
+    generatedFilePath = generatefromCCFG(model, fileName, opts.targetDirectory, opts.debug,generator);
     console.log(chalk.green(`CCFG and C++ Code generated successfully: ${generatedFilePath}`));
 };
 
