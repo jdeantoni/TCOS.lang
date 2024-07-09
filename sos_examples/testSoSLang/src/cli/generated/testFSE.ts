@@ -419,7 +419,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
             {
             let e = this.ccfg.addEdge(previousNode,thenStartsNodecondTrueStart)
-            e.guards = [...e.guards, ...[`verifyEqual,${getASTNodeUID(node.cond)}terminates,true`]] //FF
+            e.guards = [...e.guards, ...[`verifyEqual,${getASTNodeUID(node.cond)}terminate,true`]] //FF
             }
             
         previousNode.returnType = "void"
@@ -446,7 +446,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
             {
             let e = this.ccfg.addEdge(previousNode,elseStartsNodecondFalseStart)
-            e.guards = [...e.guards, ...[`verifyEqual,${getASTNodeUID(node.cond)}terminates,false`]] //FF
+            e.guards = [...e.guards, ...[`verifyEqual,${getASTNodeUID(node.cond)}terminate,false`]] //FF
             }
             
         previousNode.returnType = "void"
@@ -613,7 +613,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     }
     
         {let e = this.ccfg.addEdge(previousNode,ConjunctionOrJoinNode)
-        e.guards = [...e.guards, ...[`verifyEqual,${getASTNodeUID(node.lhs)}terminates,false`]] //EE
+        e.guards = [...e.guards, ...[`verifyEqual,${getASTNodeUID(node.lhs)}terminate,false`]] //EE
         }
         
         previousNode.returnType = "bool"
@@ -637,7 +637,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     }
     
         {let e = this.ccfg.addEdge(previousNode,ConjunctionOrJoinNode)
-        e.guards = [...e.guards, ...[`verifyEqual,${getASTNodeUID(node.rhs)}terminates,false`]] //EE
+        e.guards = [...e.guards, ...[`verifyEqual,${getASTNodeUID(node.rhs)}terminate,false`]] //EE
         }
         
         previousNode.returnType = "bool"
@@ -674,7 +674,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     }
     
         {let e = this.ccfg.addEdge(previousNode,ConjunctionOrJoinNode)
-        e.guards = [...e.guards, ...[`verifyEqual,${getASTNodeUID(node.lhs)}terminates,true`,`verifyEqual,${getASTNodeUID(node.rhs)}terminates,true`]] //EE
+        e.guards = [...e.guards, ...[`verifyEqual,${getASTNodeUID(node.lhs)}terminate,true`,`verifyEqual,${getASTNodeUID(node.rhs)}terminate,true`]] //EE
         }
         
         previousNode.returnType = "bool"
@@ -847,7 +847,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
             {
             let e = this.ccfg.addEdge(previousNode,bodyStartsNodewhileBodyStart)
-            e.guards = [...e.guards, ...[`verifyEqual,${getASTNodeUID(node.cond)}terminates,true`]] //FF
+            e.guards = [...e.guards, ...[`verifyEqual,${getASTNodeUID(node.cond)}terminate,true`]] //FF
             }
             
         previousNode.returnType = "void"
@@ -887,7 +887,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     }
     
         {let e = this.ccfg.addEdge(previousNode,terminatesWhileNode)
-        e.guards = [...e.guards, ...[`verifyEqual,${getASTNodeUID(node.cond)}terminates,false`]] //EE
+        e.guards = [...e.guards, ...[`verifyEqual,${getASTNodeUID(node.cond)}terminate,false`]] //EE
         }
         
         previousNode.returnType = "void"

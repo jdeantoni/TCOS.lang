@@ -16,20 +16,45 @@ def function8initializeVar():
 	global Variable4_0_4_10currentValue 
 	Variable4_0_4_10currentValue = Variable4_0_4_101430 
 def function11accessVarRef(): 
-	global Variable4_0_4_10currentValue 
-	VarRef6_5_6_71645 = Variable4_0_4_10currentValue 
-	VarRef6_5_6_7terminates = VarRef6_5_6_71645 
-	return VarRef6_5_6_7terminates 
-def function13executeAssignment2(resRight): 
-	Assignment6_0_6_72620 = resRight 
 	global Variable2_0_2_10currentValue 
-	Variable2_0_2_10currentValue = Assignment6_0_6_72620 
-if __name__ == "__main__": 
-	main() 
+	VarRef8_4_8_61645 = Variable2_0_2_10currentValue 
+	VarRef8_4_8_6terminates = VarRef8_4_8_61645 
+	return VarRef8_4_8_6terminates 
+def function19accessVarRef(): 
+	global Variable4_0_4_10currentValue 
+	VarRef9_9_9_111645 = Variable4_0_4_10currentValue 
+	VarRef9_9_9_11terminates = VarRef9_9_9_111645 
+	return VarRef9_9_9_11terminates 
+def function21executeAssignment2(resRight): 
+	Assignment9_4_9_112620 = resRight 
+	global Variable2_0_2_10currentValue 
+	Variable2_0_2_10currentValue = Assignment9_4_9_112620 
+def function28accessVarRef(): 
+	global Variable2_0_2_10currentValue 
+	VarRef11_7_11_91645 = Variable2_0_2_10currentValue 
+	VarRef11_7_11_9terminates = VarRef11_7_11_91645 
+	return VarRef11_7_11_9terminates 
+def function30executeAssignment2(resRight): 
+	Assignment11_4_11_92620 = resRight 
+	global Variable4_0_4_10currentValue 
+	Variable4_0_4_10currentValue = Assignment11_4_11_92620 
 def main(): 
 	functioninit3Variable(); 
 	function5initializeVar(); 
 	functioninit6Variable(); 
 	function8initializeVar(); 
 	result11accessVarRef = function11accessVarRef(); 
-	function13executeAssignment2(result11accessVarRef); 
+	sync32 = threading.Event() 
+	VarRef8_4_8_6terminate = result11accessVarRef 
+	if VarRef8_4_8_6terminate == True: 
+		result19accessVarRef = function19accessVarRef(); 
+		function21executeAssignment2(result19accessVarRef); 
+		sync32.set() 
+	if VarRef8_4_8_6terminate == False: 
+		result28accessVarRef = function28accessVarRef(); 
+		function30executeAssignment2(result28accessVarRef); 
+		sync32.set() 
+	sync32.wait() 
+	print("variable2: ", Variable2_0_2_10currentValue)
+if __name__ == "__main__": 
+	main() 

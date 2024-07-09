@@ -17,7 +17,7 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
     let generator:IGenerator;
     if (opts.python) {
         generator = new PythonGenerator();
-    }else {
+    } else {
         generator = new CppGenerator();
     }
     generatedFilePath = generatefromCCFG(model, fileName, opts.targetDirectory, opts.debug,generator);

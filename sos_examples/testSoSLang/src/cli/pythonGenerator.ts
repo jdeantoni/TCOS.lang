@@ -4,6 +4,13 @@ import { TypedElement } from "../ccfg/ccfglib";
 
 
 export class PythonGenerator implements IGenerator {
+    createEqualsVerif(firstValue: string, secondValue: string): string {
+        if (firstValue == "true" ) firstValue = "True";
+        if (firstValue == "false" ) firstValue = "False";
+        if (secondValue == "true" ) secondValue = "True";
+        if (secondValue == "false" ) secondValue = "False";
+        return firstValue + " == " + secondValue;
+    }
     nbTabs:number = 1;
     nameFile(filename: string): string {
         return `${filename}.py`;
@@ -21,13 +28,15 @@ export class PythonGenerator implements IGenerator {
         codeFile.append(`returnQueue = LifoQueue()\n`); 
         
     }
+    endFile(codeFile: CompositeGeneratorNode): void {
+        codeFile.append(`if __name__ == "__main__": \n`)
+        codeFile.append(`\tmain() \n`)
+    }
     createFunction(codeFile: CompositeGeneratorNode, fname: string, params: TypedElement[], returnType: string): void {
         codeFile.append(`def function${fname}(${params.map(p => (p as TypedElement).name).join(", ")}): \n`)
         this.nbTabs++;
     }
     createMainFunction(codeFile: CompositeGeneratorNode): void {
-        codeFile.append(`if __name__ == "__main__": \n`)
-        codeFile.append(`\tmain() \n`)
         codeFile.append(`def main(): \n`)
         this.nbTabs++;
     }
@@ -36,17 +45,28 @@ export class PythonGenerator implements IGenerator {
         else
             codeFile.append(Array(this.nbTabs).join("\t")+`result${fname} = function${fname}(${params.join(", ")}); \n`)
     }
-    createIf(codeFile: CompositeGeneratorNode, guards: string[]): unknown {
-        throw new Error("Method not implemented.");
+    createIf(codeFile: CompositeGeneratorNode, guards: string[]): void {
+        codeFile.append(Array(this.nbTabs).join("\t")+`if ${guards.join(" and ")}: \n`);
+        this.nbTabs++;
     }
-    createLockingQueue(codeFile: CompositeGeneratorNode, queueUID: number, typeName: string): unknown {
-        throw new Error("Method not implemented.");
+    createSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): void {
+        codeFile.append(Array(this.nbTabs).join("\t")+`sync${synchUID} = threading.Event() \n`);
     }
-    createAndOpenThread(codeFile: any, uid: number): unknown {
-        throw new Error("Method not implemented.");
+    waitForSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): void {
+        codeFile.append(Array(this.nbTabs).join("\t")+`sync${synchUID}.wait() \n`);
+    } 
+    activateSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): void 
+    {
+        codeFile.append(Array(this.nbTabs).join("\t")+`sync${synchUID}.set() \n`);
+        codeFile.append(Array(this.nbTabs).join("\t")+`sync${synchUID}.clear() \n`);
     }
-    endThread(codeFile: CompositeGeneratorNode, uid: number): unknown {
-        throw new Error("Method not implemented.");
+    createAndOpenThread(codeFile: any, uid: number): void {
+        codeFile.append(Array(this.nbTabs).join("\t")+`thread${uid} = threading.Thread(target=thread${uid}) \n`);
+        codeFile.append(Array(this.nbTabs).join("\t")+`thread${uid}.start() \n`);
+        codeFile.append(Array(this.nbTabs).join("\t")+`thread${uid}.join() \n`);
+    }
+    endThread(codeFile: CompositeGeneratorNode, uid: number): void {
+        codeFile.append(Array(this.nbTabs).join("\t")+`return \n`);
     }
     endSection(codeFile: CompositeGeneratorNode): void {
         this.nbTabs--;
@@ -54,10 +74,15 @@ export class PythonGenerator implements IGenerator {
     createQueue(codeFile: CompositeGeneratorNode, queueUID: number): void {
         codeFile.append(Array(this.nbTabs).join("\t")+`queue${queueUID} = Queue() \n`);
     }
+    createLockingQueue(codeFile: CompositeGeneratorNode, typeName: string, queueUID: number): void {
+        throw new Error("Method not implemented.");
+    }
     receiveFromQueue(codeFile: CompositeGeneratorNode, queueUID: number, typeName: string, varName: string): void{
         codeFile.append(Array(this.nbTabs).join("\t")+`${varName} = queue${queueUID}.get() \n`);
     }
-    
+    sendToQueue(codeFile: CompositeGeneratorNode, queueUID: number, typeName: string, varName: string): void {
+        codeFile.append(Array(this.nbTabs).join("\t")+`queue${queueUID}.put(${varName}) \n`);
+    }
     assignVar(codeFile: CompositeGeneratorNode, varName: string, value: string): void {
         codeFile.append(Array(this.nbTabs).join("\t")+`${varName} = ${value} \n`);
     }

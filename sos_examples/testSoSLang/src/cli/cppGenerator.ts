@@ -34,6 +34,8 @@ export class CppGenerator implements IGenerator {
         
         `);// global variables
     }
+    endFile(codeFile: CompositeGeneratorNode):void {
+    }
     createFunction(codeFile: CompositeGeneratorNode, fname: string, params: TypedElement[], returnType: string): void {
         codeFile.append(returnType + " function" + fname + `(${params.map(p => (p as TypedElement).toString()).join(", ")}){\n\t`)
     }
@@ -43,13 +45,10 @@ export class CppGenerator implements IGenerator {
     createFuncCall(codeFile: CompositeGeneratorNode, fname: string, params: string[], typeName: string): void {
         if (typeName == "void") codeFile.append(`function${fname}(${params.join(", ")});\n`);
         else
-            codeFile.append(typeName+ "result"+fname+" = function"+fname + `(${params.join(", ")});\n`)
+            codeFile.append(typeName+ " result"+fname+" = function"+fname + `(${params.join(", ")});\n`)
     }
-    createIf(codeFile: CompositeGeneratorNode, guards: string[]): unknown {
-        throw new Error("Method not implemented.");
-    }
-    createLockingQueue(codeFile: CompositeGeneratorNode, queueUID: number, typeName: string): unknown {
-        throw new Error("Method not implemented.");
+    createIf(codeFile: CompositeGeneratorNode, guards: string[]): void {
+        codeFile.append("if (" + guards.join(" && ") + "){\n")
     }
     createAndOpenThread(codefile: any, uid: number): unknown {
         throw new Error("Method not implemented.");
@@ -63,10 +62,30 @@ export class CppGenerator implements IGenerator {
     createQueue(codeFile: CompositeGeneratorNode, queueUID: number): void {
         throw new Error("Method not implemented.");
     }
+    createLockingQueue(codeFile: CompositeGeneratorNode, typeName: string, queueUID: number): void {
+        
+    }
     receiveFromQueue(codeFile: CompositeGeneratorNode, queueUID: number, typeName: string): void;
     receiveFromQueue(codeFile: CompositeGeneratorNode, queueUID: number, typeName: string, varName: string): void;
     receiveFromQueue(codeFile: unknown, queueUID: unknown, typeName: unknown, varName?: unknown): void {
         throw new Error("Method not implemented.");
+    }
+    sendToQueue(codeFile: CompositeGeneratorNode, queueUID: number, typeName: string, varName: string): void {
+        codeFile.append("queue" + queueUID + ".push(" + varName + ");\n")
+    }
+    createSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): void {
+        codeFile.append("lockingQueue<Void> synch" + synchUID + ";\n")
+    }
+    activateSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): void {
+        codeFile.append("Void fakeParam"+synchUID+";\n")
+        codeFile.append("synch" + synchUID + ".push(fakeParam"+synchUID+");")
+    }
+    waitForSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): void {
+        codeFile.append("Void joinPopped"+synchUID+";\n")
+        codeFile.append("synch" + synchUID + ".waitAndPop();\n")
+    }
+    createEqualsVerif(firstValue: string, secondValue: string): string {
+        return firstValue + " == " + secondValue;
     }
     assignVar(codeFile: CompositeGeneratorNode, varName: string, value: string): void {
         codeFile.append(varName + " = " + value + ";\n")
@@ -81,10 +100,10 @@ export class CppGenerator implements IGenerator {
         codeFile.append("sigma[\"" + varName + "\"] = new "+type+"();\n")
     }
     setVarFromGlobal(codeFile: CompositeGeneratorNode, type: string, varName: string, value: string): void {
-        codeFile.append(type + " " + value + " = *(" + type + "*)sigma[\"" + varName + "\"];\n")
+        codeFile.append( varName + " = *(" + type + "*)sigma[\"" + value + "\"];\n")
     }
     setGlobalVar(codeFile: CompositeGeneratorNode, type: string, varName: string, value: string): void {
-        codeFile.append("sigma[\"" + varName + "\"] = new " + type + "(" + value + ");\n")
+        codeFile.append("*(("+type+"*)sigma[\"" + varName + "\"]) = "+value +";\n")
     }
     operation(codeFile: CompositeGeneratorNode, varName: string, n1: string, op: string, n2: string): void {
         codeFile.append(varName + " = " + n1 + " " + op + " " + n2 + ";\n")
