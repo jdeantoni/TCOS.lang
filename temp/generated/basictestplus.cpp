@@ -1,24 +1,22 @@
 
-#include <string>
-#include <unordered_map>
-#include <thread>
-#include <mutex>
-#include <iostream>
-#include <chrono>
-#include "../utils/LockingQueue.hpp"
-
-using namespace std::chrono_literals;
-
-class Void
-{
-};
-
-std::unordered_map<std::string, void *> sigma;
-std::mutex sigma_mutex; // protects sigma
-
-void functioninit3Variable()
-{
-        sigma["Variable2_0_2_10currentValue"] = new int();
+        #include <string>
+        #include <unordered_map>
+        #include <thread>
+        #include <mutex>
+        #include <iostream>
+        #include <chrono>
+        #include "../utils/LockingQueue.hpp"
+        
+        using namespace std::chrono_literals;
+        
+        class Void{
+        };
+        
+        std::unordered_map<std::string, void*> sigma;
+        std::mutex sigma_mutex;  // protects sigma
+        
+        void functioninit3Variable(){
+	sigma["Variable2_0_2_10currentValue"] = new int();
 }
 void function5initializeVar()
 {

@@ -49,7 +49,7 @@ interface IGenerator {
      * @param guards the guards are a list of strings that represent the conditions of the if statement
      * @param insideOfIf the compositegeneratornode containing the code that will be inside the if statement
      */
-    createIf(codeFile: CompositeGeneratorNode, guards: string[]): void;  /// the guards are a list of strings that represent the conditions of the if statement
+    createIf(codeFile: CompositeGeneratorNode, guards: string[],insideOfIf: CompositeGeneratorNode): void;  /// the guards are a list of strings that represent the conditions of the if statement
     /**
      * createSynchronizer is a function that takes a the codeFile we write in and a unique identifier and writes in a synchronizer for the threads
      * @param codeFile this is the codefile to be written in
