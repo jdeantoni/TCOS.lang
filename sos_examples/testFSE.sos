@@ -42,10 +42,7 @@ open ParallelBloc {
     -----------------------------------------                  finishParallelBloc
             <this,σ> ~> terminates
 
-} 
-
-
-
+}
 
 open Variable {
 

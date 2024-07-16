@@ -9,14 +9,14 @@ import {IGenerator} from './GeneratorInterface';
 import chalk from 'chalk';
 
 
-const createVar = "createVar"   //createVar,type,name
-const assignVar = "assignVar"   //assignVar,name,value
-const setVarFromGlobal = "setVarFromGlobal" //setVarFromGlobal,type,varName,globalVarName
-const createGlobalVar = "createGlobalVar" //createGlobalVar,type,varName
-const setGlobalVar = "setGlobalVar" //setGlobalVar,type,varName,value
-const operation = "operation" //operation,varName,n1,op,n2
-const ret ="return" //return,varName
-const verifyEqual = "verifyEqual" //verifyEqual,varName1,varName2
+const createVar = "createVar"   //createVar, type, name
+const assignVar = "assignVar"
+const setVarFromGlobal = "setVarFromGlobal"
+const createGlobalVar = "createGlobalVar"
+const setGlobalVar = "setGlobalVar"
+const operation = "operation"
+const ret ="return"
+const verifyEqual = "verifyEqual"
 let debug = false;
 
 export function generatefromCCFG(model: Model, filePath: string, targetDirectory: string | undefined, doDebug: boolean|undefined, generator:IGenerator): string {
@@ -359,12 +359,10 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, codeFile: CompositeGenerat
                     guards.push(generator.createEqualsVerif(guardList[1],guardList[2]))
                 } 
             }
+            generator.createIf(codeFile,guards);
 
-            let insideOfIf:CompositeGeneratorNode= new CompositeGeneratorNode();
-
-            addCorrespondingCode(insideOfIf, currentNode,ccfg,generator);
-            visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ insideOfIf,generator); 
-                        
+            addCorrespondingCode(codeFile, currentNode,ccfg,generator);
+            visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ codeFile,generator);                
             
             //special case for choice node when directly linked to join node
             if((edge.to.getType() == "AndJoin" || edge.to.getType() == "OrJoin") && currentNode.functionsDefs.length == 0){
@@ -374,12 +372,12 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, codeFile: CompositeGenerat
                         console.log(chalk.red(currentNode.uid+" : multiple previous typed nodes not handled here"))
                     }
                     let ptn = ptns[0]     
-                    addQueuePushCode(edge.to.uid, ptn, ccfg, insideOfIf, ptn.functionsNames[0],generator);
+                    addQueuePushCode(edge.to.uid, ptn, ccfg, codeFile, ptn.functionsNames[0],generator);
                 }else{
-                    addQueuePushCode(edge.to.uid, currentNode, ccfg, insideOfIf, currentNode.functionsNames[0],generator);
+                    addQueuePushCode(edge.to.uid, currentNode, ccfg, codeFile, currentNode.functionsNames[0],generator);
                 }
             }
-            generator.createIf(codeFile,guards,insideOfIf);   
+            generator.endSection(codeFile);
         }
 
         break;
