@@ -47,8 +47,10 @@ export class CppGenerator implements IGenerator {
         else
             codeFile.append(typeName+ " result"+fname+" = function"+fname + `(${params.join(", ")});\n`)
     }
-    createIf(codeFile: CompositeGeneratorNode, guards: string[]): void {
+    createIf(codeFile: CompositeGeneratorNode, guards: string[],insideOfIf:CompositeGeneratorNode): void {
         codeFile.append("if (" + guards.join(" && ") + "){\n")
+        codeFile.append(insideOfIf.toString())
+        codeFile.append("}\n")
     }
     createAndOpenThread(codefile: any, uid: number): unknown {
         throw new Error("Method not implemented.");
