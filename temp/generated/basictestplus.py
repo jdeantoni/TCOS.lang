@@ -50,11 +50,12 @@ def main():
 		result19accessVarRef = function19accessVarRef(); 
 		function21executeAssignment2(result19accessVarRef); 
 		sync32.set() 
+		sync32.clear() 
 	if VarRef8_4_8_6terminate == False: 
 		result28accessVarRef = function28accessVarRef(); 
 		function30executeAssignment2(result28accessVarRef); 
 		sync32.set() 
+		sync32.clear() 
 	sync32.wait() 
-	print("variable2: ", Variable2_0_2_10currentValue)
 if __name__ == "__main__": 
 	main() 
