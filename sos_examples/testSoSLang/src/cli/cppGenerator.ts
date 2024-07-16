@@ -50,25 +50,29 @@ export class CppGenerator implements IGenerator {
     createIf(codeFile: CompositeGeneratorNode, guards: string[]): void {
         codeFile.append("if (" + guards.join(" && ") + "){\n")
     }
-    createAndOpenThread(codefile: any, uid: number): unknown {
-        throw new Error("Method not implemented.");
+    createAndOpenThread(codeFile: CompositeGeneratorNode, uid: number): void {
+        codeFile.append(`
+            std::thread thread${uid}([&](){\n`
+                );
     }
-    endThread(codeFile: CompositeGeneratorNode, uid: number): unknown {
-        throw new Error("Method not implemented.");
+    endThread(codeFile: CompositeGeneratorNode, uid: number): void {
+        codeFile.append(`
+        });
+        thread${uid}.detach();
+            `);
     }
     endSection(codeFile: CompositeGeneratorNode): void {
         codeFile.append("}\n")
     }
     createQueue(codeFile: CompositeGeneratorNode, queueUID: number): void {
-        throw new Error("Method not implemented.");
+        codeFile.append(`LockingQueue<Void> queue${queueUID};\n`)
     }
     createLockingQueue(codeFile: CompositeGeneratorNode, typeName: string, queueUID: number): void {
-        
+        codeFile.append(`
+LockingQueue<${typeName}> queue${queueUID};`);
     }
-    receiveFromQueue(codeFile: CompositeGeneratorNode, queueUID: number, typeName: string): void;
-    receiveFromQueue(codeFile: CompositeGeneratorNode, queueUID: number, typeName: string, varName: string): void;
-    receiveFromQueue(codeFile: unknown, queueUID: unknown, typeName: unknown, varName?: unknown): void {
-        throw new Error("Method not implemented.");
+    receiveFromQueue(codeFile: CompositeGeneratorNode, queueUID: number, typeName: string, varName: string): void {
+        codeFile.append("queue" + queueUID + ".waitAndPop("+varName+");\n")
     }
     sendToQueue(codeFile: CompositeGeneratorNode, queueUID: number, typeName: string, varName: string): void {
         codeFile.append("queue" + queueUID + ".push(" + varName + ");\n")

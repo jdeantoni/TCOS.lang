@@ -477,9 +477,13 @@ function addQueuePushCode(queueUID: number | undefined, currentNode: Node, ccfg:
             generator.sendToQueue(codeFile,queueUID,currentNode.returnType || "void",`result${f}`)
         }
         if(syncNode.isCycleInitiator){
-           codeFile.append(`
-           goto queue${syncNode.uid};
-            `);
+            if(currentNode.returnType == undefined || currentNode.returnType == "void" || f == undefined){
+                codeFile.append(`goto synch${syncNode.uid};\n`);
+            }else{
+                codeFile.append(`
+                goto queue${syncNode.uid};
+                 `);
+            }
         }
         //codeFile.append(`}\n`)
     }

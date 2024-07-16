@@ -4,6 +4,7 @@ import { TypedElement } from "../ccfg/ccfglib";
 
 
 export class PythonGenerator implements IGenerator {
+    
     createEqualsVerif(firstValue: string, secondValue: string): string {
         if (firstValue == "true" ) firstValue = "True";
         if (firstValue == "false" ) firstValue = "False";
@@ -54,13 +55,13 @@ export class PythonGenerator implements IGenerator {
     }
     waitForSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): void {
         codeFile.append(Array(this.nbTabs).join("\t")+`sync${synchUID}.wait() \n`);
+        codeFile.append(Array(this.nbTabs).join("\t")+`sync${synchUID}.clear() \n`);
     } 
     activateSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): void 
     {
         codeFile.append(Array(this.nbTabs).join("\t")+`sync${synchUID}.set() \n`);
-        codeFile.append(Array(this.nbTabs).join("\t")+`sync${synchUID}.clear() \n`);
     }
-    createAndOpenThread(codeFile: any, uid: number): void {
+    createAndOpenThread(codeFile: CompositeGeneratorNode, uid: number): void {
         codeFile.append(Array(this.nbTabs).join("\t")+`thread${uid} = threading.Thread(target=thread${uid}) \n`);
         codeFile.append(Array(this.nbTabs).join("\t")+`thread${uid}.start() \n`);
         codeFile.append(Array(this.nbTabs).join("\t")+`thread${uid}.join() \n`);
@@ -75,7 +76,7 @@ export class PythonGenerator implements IGenerator {
         codeFile.append(Array(this.nbTabs).join("\t")+`queue${queueUID} = Queue() \n`);
     }
     createLockingQueue(codeFile: CompositeGeneratorNode, typeName: string, queueUID: number): void {
-        throw new Error("Method not implemented.");
+        codeFile.append(Array(this.nbTabs).join("\t")+`queue${queueUID} = Queue() \n`);
     }
     receiveFromQueue(codeFile: CompositeGeneratorNode, queueUID: number, typeName: string, varName: string): void{
         codeFile.append(Array(this.nbTabs).join("\t")+`${varName} = queue${queueUID}.get() \n`);

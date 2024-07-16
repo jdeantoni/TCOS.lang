@@ -73,7 +73,7 @@ interface IGenerator {
      * @param codefile the codefile to be written in
      * @param uid the unique identifier of the thread
      */
-    createAndOpenThread(codefile: any, uid: number): void;
+    createAndOpenThread(codeFile: CompositeGeneratorNode, uid: number): void;
     /**
      * endThread is a function that takes a the codeFile we write in and a unique identifier and writes in a way to end a thread
      * @param codeFile the codefile to be written in
