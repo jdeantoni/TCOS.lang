@@ -50,7 +50,7 @@ export function generatefromCCFG(model: Model, filePath: string, targetDirectory
     
     if(ccfg.initialState){
         let currentNode = ccfg.initialState;
-        visitAllNodes(ccfg, currentNode, true, sigma, stack);
+        visitAllNodes(ccfg, currentNode, sigma, stack);
     }
     
 
@@ -79,7 +79,7 @@ function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model): CCFG {
 }
 
 
-function visitAllNodes(ccfg: CCFG, currentNode: Node, visitIsStarting: boolean = false,sigma: Map<string,any>, stack: Stack) {
+function visitAllNodes(ccfg: CCFG, currentNode: Node,sigma: Map<string,any>, stack: Stack) {
 
     if(ccfg.initialState){
         var currentNode : Node = ccfg.initialState;
@@ -115,7 +115,7 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, visitIsStarting: boolean =
                 //forkNode(currentNode,sigma,stack);  // visit children nodes
                 currentNode.outputEdges.forEach(element => {
                     let nextNode = element.to; 
-                    visitAllNodes(ccfg,nextNode,true,sigma,stack);
+                    visitAllNodes(ccfg,nextNode,sigma,stack);
                 });
                 
                 return;
