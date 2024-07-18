@@ -4,20 +4,29 @@ import path from 'path';
 import { Model } from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
 import { CCFGVisitor } from './generated/testFSE';
-import { CCFG, Edge, Node } from '../ccfg/ccfglib';
+import { CCFG, Edge, Node, TypedElement } from '../ccfg/ccfglib';
 import {IGenerator} from './GeneratorInterface';
-import chalk from 'chalk';
+//import chalk from 'chalk';
+import { TempValueList } from './TempValueList';
 
+class Stack {
+    fork: number[];                             //number of the fork children
+    resRight : number[];                        //value outside of a fork
+    forkName : number[];                        //node uid
+    tempValueList : TempValueList<number>;      //value inside of a fork
+    tempPromiseFunction :  TempValueList<(()=>Promise<void>)>;
+    tempCycle : TempValueList<number>;          //node.uid
+    
 
-const createVar = "createVar"   //createVar, type, name
-const assignVar = "assignVar"
-const setVarFromGlobal = "setVarFromGlobal"
-const createGlobalVar = "createGlobalVar"
-const setGlobalVar = "setGlobalVar"
-const operation = "operation"
-const ret ="return"
-const verifyEqual = "verifyEqual"
-let debug = false;
+    constructor() {
+        this.fork = [];
+        this.forkName = [];
+        this.resRight = [];
+        this.tempValueList = new TempValueList<number>();
+        this.tempPromiseFunction = new TempValueList<(()=>Promise<void>)>;
+        this.tempCycle = new TempValueList<number>;
+    }
+}
 
 export function generatefromCCFG(model: Model, filePath: string, targetDirectory: string | undefined, doDebug: boolean|undefined, generator:IGenerator): string {
     const data = extractDestinationAndName(filePath, targetDirectory);
@@ -29,46 +38,29 @@ export function generatefromCCFG(model: Model, filePath: string, targetDirectory
     
     let ccfg = doGenerateCCFG(dotFile, model);
 
-    const generatedCodeFilePath = generator.nameFile(`${path.join(data.destination, data.name)}`);
-    const codeFile = new CompositeGeneratorNode();
+    
+    const sigma: Map<string, any> = new Map<string, any>();
+    const stack= new Stack();
+    
     let debug: boolean = false;
+
+    debug = doDebug != undefined ? doDebug : false;
+
+    //doGenerateCode(codeFile, ccfg, debug, generator,sigma,stack);
+    
+    if(ccfg.initialState){
+        let currentNode = ccfg.initialState;
+        visitAllNodes(ccfg, currentNode, true, sigma, stack);
+    }
+    
 
     if (!fs.existsSync(data.destination)) {
         fs.mkdirSync(data.destination, { recursive: true });
     }
     fs.writeFileSync(generatedDotFilePath, toString(dotFile));
 
-
-    debug = doDebug != undefined ? doDebug : false;
-
-    doGenerateCode(codeFile, ccfg, debug, generator);
-
-    if (!fs.existsSync(data.destination)) {
-        fs.mkdirSync(data.destination, { recursive: true });
-    }
-    fs.writeFileSync(generatedCodeFilePath, toString(codeFile));
-
     return generatedDotFilePath;
 }
-function doGenerateCode(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: boolean, generator: IGenerator) {
-    let initNode = ccfg.initialState;
-    if (initNode == undefined) {
-        console.log("No initial state found");
-        return;
-    }
-
-    generator.createBase(codeFile,debug);
-    compileFunctionDefs(ccfg,generator,codeFile);
-
-    generator.createMainFunction(codeFile);
-    
-    let currentNode = initNode;
-    visitAllNodes(ccfg, currentNode, /*-1,*/ codeFile,generator, true);
-    generator.endSection(codeFile);
-
-    generator.endFile(codeFile);
-}
-
 
 
 function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model): CCFG {
@@ -86,480 +78,221 @@ function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model): CCFG {
     return ccfg;
 }
 
-function compileFunctionDefs(ccfg: CCFG,generator:IGenerator,codeFile:CompositeGeneratorNode): string {
-    let functionsDefs = "";
-    for (let node of ccfg.nodes) {
-        // if(node.getType() == "ContainerNode"){
-        //     functionsDefs += compileFunctionDefs((node as ContainerNode).internalccfg);
-        // }else{
-            if(!debug && node.functionsDefs.length == 0){
-                continue
-            }
-            if(node.returnType != undefined){
-                if(typeof node.functionsDefs[0] == "string"){
-                    for (let fname of node.functionsNames) {
-                    // console.log("function name: "+fname);
-                        generator.createFunction(codeFile,fname, node.params, node.returnType);
-                        for (let fdef of node.functionsDefs) {
-                            let b = fdef.split(",");
-                            if (b[0] == ret) {
-                                generator.returnVar(codeFile,b[1]);
-                            }else if (b[0]==createVar){
-                                generator.createVar(codeFile,b[1], b[2]);
-                            }else if (b[0]==assignVar){
-                                generator.assignVar(codeFile,b[1], b[2]);
-                            } else if (b[0]==setVarFromGlobal){
-                                generator.setVarFromGlobal(codeFile,b[1], b[2], b[3]);
-                            } else if (b[0]==createGlobalVar){
-                                generator.createGlobalVar(codeFile,b[1], b[2]);
-                            } else if (b[0]==setGlobalVar){
-                                generator.setGlobalVar(codeFile,b[1], b[2], b[3]);
-                            } else if (b[0]==operation){
-                                generator.operation(codeFile,b[1], b[2], b[3], b[4]);
-                            } else{
-                                console.log("Unknown function definition: "+b[0]);
-                            }
 
-                        }
-                        generator.endSection(codeFile);
+function visitAllNodes(ccfg: CCFG, currentNode: Node, visitIsStarting: boolean = false,sigma: Map<string,any>, stack: Stack) {
+
+    if(ccfg.initialState){
+        var currentNode : Node = ccfg.initialState;
+    }
+    
+    while(currentNode.outputEdges && ((currentNode.outputEdges[0] && currentNode.outputEdges[0].to) || (currentNode.outputEdges[1] && currentNode.outputEdges[1].to))){
+        switch(currentNode.getType()){
+            case "Step":{
+                console.log(currentNode.uid + ": (" + currentNode.getType() + ")->");
+                if((currentNode.uid == stack.forkName[stack.forkName.length - 1 ] -1 )){//end fork node
+                    if(stack.fork[stack.fork.length-1]==0){//have visited all children of the current fork
+                        stack.forkName.pop();                //get out of the current fork
+                        stack.fork.pop();                  //get out of the current fork
+                    }
+                    else{
+                        return;
                     }
                 }
-            }
-        // }
-    }
-    return functionsDefs;
-}
-
-let fifoThreadUid : MultiMap<number,number> = new MultiMap();
-let continuations: Node[] = []
-let continuationsRecursLevel: number[] = []
-let visitedUID: number[] = []
-let recursLevel = 0;
-let createdQueueIds: number[] = []
-function visitAllNodes(ccfg: CCFG, currentNode: Node, codeFile: CompositeGeneratorNode, generator: IGenerator, visitIsStarting: boolean = false) {
-    recursLevel = recursLevel + 1;
-    let currentUID:number = getCurrentUID(currentNode);
-
-    if (currentNode.outputEdges.length == 0 /*|| currentUID == untilUID*/) {
-        return
-    }
-
-
-
-    currentNode.numberOfVisits = currentNode.numberOfVisits + 1;
-
-    // console.log("try visit "+currentNode.uid  + " nbVisit = "+currentNode.numberOfVisits)
-    
-    if(currentNode.inputEdges.length > 1){
-        
-        if (visitIsStarting == false && currentNode.numberOfVisits < currentNode.inputEdges.length) {
-            if(currentNode.isCycleInitiator){
-                if(! continuations.includes(currentNode)){
-                    // console.log("add continuation "+currentNode.uid  + " nbVisit = "+currentNode.numberOfVisits)
-                    continuationsRecursLevel.push(recursLevel-1);
-                    currentNode.numberOfVisits = currentNode.inputEdges.length;
-                    continuations.push(currentNode);
+                if(currentNode.functionsDefs.length > 0){
+                    nodeCode(currentNode,sigma,stack);
                 }
-                return
+                currentNode = currentNode.outputEdges[0].to;
+                break;
             }
-            // console.log("do not visit "+currentNode.uid  + " nbVisit = "+currentNode.numberOfVisits + " inputEdges = "+currentNode.inputEdges.length)
-            return
-        }
-        
-        if (currentNode.numberOfVisits == currentNode.inputEdges.length){        
-            if(! continuations.includes(currentNode)){
-                if(currentNode.isCycleInitiator){
-                    continuationsRecursLevel.push(recursLevel-1);
-                    currentNode.numberOfVisits = currentNode.inputEdges.length;
-                }
-                continuations.push(currentNode);
-            }
-            return
-        }
-    }  
-    
-    if (visitedUID.includes(currentUID)){
-        return
-    }
-    visitedUID.push(currentUID);
-    // console.log("visit "+currentNode.uid  + " nbVisit = "+currentNode.numberOfVisits)
-
-
-    // if(currentNode.cycles.length > 0){
-    //     console.log("cycle detected in" + currentNode.uid+":"+currentNode.cycles.map(c => c.map(n => n.uid).join("->")).join(" | "))
-    // }
-    switch(currentNode.getType()){
-    case "Step":
-        {
-        addCorrespondingCode(codeFile, currentNode,ccfg,generator);
-        if(currentNode.outputEdges.length > 1){
-
-            let edgeToVisit: Edge[] = currentNode.outputEdges;
-            for(let edge of edgeToVisit){
-                continuationsRecursLevel.push(recursLevel-1);
-                ///todo  à quoi ce truc sert ? ------------------------------------------------------------------------------------------------
-                //codeFile.append(`
-                //{`)
-                visitAllNodes(ccfg, edge.to, /*untilUID,*/ codeFile,generator);
-                //codeFile.append(`
-                //}`);
-
-            }
-        }else{
-            let edge = currentNode.outputEdges[0];
-            visitAllNodes(ccfg,edge.to, /*untilUID,*/ codeFile,generator);
-        }
-        
-        break;
-        }
-    case "Fork":
-        {
-        let edgeToVisit: Edge[] = currentNode.outputEdges;
-        
-        for(let syncUID of currentNode.syncNodeIds){
-            let n = ccfg.getNodeByUID(syncUID);
-            if (n != undefined){
-                let ptns: Node[] = getPreviousTypedNodes(n.inputEdges[0]);
-                if(ptns.length > 1){
-                    throw new Error("multiple previous typed nodes not handled here")
-                }
-                let ptn = ptns[0]
-                if(ptn.returnType != undefined){
-                    if(!createdQueueIds.includes(syncUID)){
-                        createdQueueIds.push(syncUID);
-                        generator.createSynchronizer(codeFile,syncUID);
-                    }
-                }
-               
-            }
-        }
-
-        continuationsRecursLevel.push(recursLevel);
-
-        for(let edge of edgeToVisit){
-            //console.log("fork node cycles = "+currentNode.cycles.map(c => c.map(n => n.uid).join("->")).join(" | "))
-            if (edge.to.cycles.length > 0 && ! edge.to.cyclePossessAnAndJoin()){
-                //we have a cycle and no andJoin in the cycle
-                //console.log(edge.to.uid+": no andJoin in cycle ")
-                visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ codeFile,generator);
-                if(edge.to.isCycleInitiator){
-                    addQueuePushCode(edge.to.uid,edge.to,ccfg,codeFile,undefined,generator);
-                }
-            }else{
-                fifoThreadUid.add(currentNode.uid,edge.to.uid);
-                generator.createAndOpenThread(codeFile,edge.to.uid);
-                visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ codeFile,generator);
-                generator.endThread(codeFile,edge.to.uid);
-            }
-        }
-
-        break;
-        }
-    case "AndJoin":
-        {
-        // let paramNames = getParameterNames(currentNode);
-        for(let i of Array.from(Array(currentNode.inputEdges.length).keys())){            
-            let ptns :Node[] = getPreviousTypedNodes(currentNode.inputEdges[i]);
-            if(ptns.length > 1){
-                throw new Error("multiple previous typed nodes not handled here")
-            }
-            let ptn = ptns[0]
-            let paramType: string| undefined = ptn.returnType
-
-            let paramName = "AndJoinPopped_"+currentNode.uid+"_"+i;
-            if(currentNode.params.length > i && (currentNode.params[i].type != undefined)){
-                paramType = currentNode.params[i].type
-            }
-            
-            if(currentNode.functionsDefs.length == 0){
-                currentNode.params.push({name: paramName, type: paramType})
-                currentNode.returnType = paramType
-            }
-            if (paramType == "void"){
-                generator.waitForSynchronizer(codeFile,currentNode.uid);
-            } else {
-                generator.createVar(codeFile,paramType || "void",paramName);
-                generator.receiveFromQueue(codeFile,currentNode.uid,paramType||"void", paramName);
-            }
-        }
-        addCorrespondingCode(codeFile, currentNode,ccfg,generator);
-        let nextNode = currentNode.outputEdges[0].to
-        visitAllNodes(ccfg,nextNode, /*untilUID,*/ codeFile,generator);
-        break;
-        }
-    case "OrJoin":
-        {
-            // let paramNames = getParameterNames(currentNode);
-            let paramName = "OrJoinPopped_"+currentNode.uid;
-            let paramType: string| undefined = undefined
-            for(let e of currentNode.inputEdges){
-                let ptns: Node[] = getPreviousTypedNodes(e);
-                if(ptns.length > 1){
-                    throw new Error("multiple previous typed nodes not handled here")
-                }
-                let ptn = ptns[0]
-                paramType = ptn.returnType
-                if(paramType != undefined){
-                    break
-                }
-            }
-            if(currentNode.functionsDefs.length == 0){
-                currentNode.params.push({name: paramName, type: paramType})
-                currentNode.returnType = paramType
-            }
-            if(currentNode.isCycleInitiator){
-                generator.createQueue(codeFile,currentNode.uid);
-            }
-            if (paramType == "void" || paramType == undefined){
-                generator.waitForSynchronizer(codeFile,currentNode.uid);
-            } else {
-            generator.createVar(codeFile,paramType || "void",paramName);
-            generator.receiveFromQueue(codeFile,currentNode.uid,paramType||"void", paramName);
-            }
-            let nextNode = currentNode.outputEdges[0].to
-            visitAllNodes(ccfg,nextNode, /*untilUID,*/ codeFile,generator);
-            break;
-        }
-    case "Choice":
-        {
-        for(let syncUID of currentNode.syncNodeIds){
-            let n = ccfg.getNodeByUID(syncUID);
-            if (n != undefined){
-                let ptns: Node[] = getPreviousTypedNodes(n.inputEdges[0]);
-                if(ptns.length > 1){
-                    throw new Error("multiple previous typed nodes not handled here")
-                }
-                if(!createdQueueIds.includes(syncUID)){
-                    createdQueueIds.push(syncUID);
-                    
-
-    // from here --------------------------------
-                    
-                    generator.createSynchronizer(codeFile,syncUID);
-                }
-            }
-        }
-
-        continuationsRecursLevel.push(recursLevel);
-
-        addComparisonVariableDeclaration(codeFile, currentNode,generator);
-        let edgeToVisit: Edge[] = currentNode.outputEdges;
-        
-        
-
-
-        for(let edge of edgeToVisit){
-            
-            let guards: string[] = [];
-            for(let guard of edge.guards){
-                const guardList=guard.split(",")
-                console.log(guardList)
+            case "Fork":{//define forks' children
+                console.log(currentNode.uid + ": (" + currentNode.getType() + ")->");
+                let children = currentNode.outputEdges;
+                stack.tempValueList.addTempValue(children.length);         //reserve places in stack : value
+                stack.tempPromiseFunction.addTempValue(children.length);   //reserve places in stack : Promise
+                stack.fork.push(children.length);                          //get in the fork
+                stack.forkName.push(currentNode.uid);                               //start node's uid
+                //console.log("the length of the current fork:"+ forkList[forkList.length-1]); //nombre of the children which are not executed of the current fork
+                //forkNode(currentNode,sigma,stack);  // visit children nodes
+                currentNode.outputEdges.forEach(element => {
+                    let nextNode = element.to; 
+                    visitAllNodes(ccfg,nextNode,true,sigma,stack);
+                });
                 
-                if (guardList[0] === verifyEqual){
-                    guards.push(generator.createEqualsVerif(guardList[1],guardList[2]))
-                } 
+                return;
             }
-            generator.createIf(codeFile,guards);
-
-            addCorrespondingCode(codeFile, currentNode,ccfg,generator);
-            visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ codeFile,generator);                
-            
-            //special case for choice node when directly linked to join node
-            if((edge.to.getType() == "AndJoin" || edge.to.getType() == "OrJoin") && currentNode.functionsDefs.length == 0){
-                if(currentNode.returnType == undefined){
-                    let ptns: Node[] = getPreviousTypedNodes(currentNode.inputEdges[0]);
-                    if(ptns.length > 1){
-                        console.log(chalk.red(currentNode.uid+" : multiple previous typed nodes not handled here"))
+            case "AndJoin":{//reduce (fork children) & call function difined which are store in the stack
+                console.log(currentNode.uid + ": (" + currentNode.getType() + ")->");
+                let forkList : number[] = stack.fork;
+                forkList[forkList.length-1] --;
+                if(forkList[forkList.length-1]==0 ){//have visited all children of the current fork
+                    //stack.fork.pop();                           //get out of the current fork
+                    let promiseList = stack.tempPromiseFunction;
+                    defineAsyncFunction(promiseList);           //call promiseList 
+                    if(currentNode.functionsDefs.length!=0){
+                        nodeCode(currentNode,sigma,stack);
                     }
-                    let ptn = ptns[0]     
-                    addQueuePushCode(edge.to.uid, ptn, ccfg, codeFile, ptn.functionsNames[0],generator);
-                }else{
-                    addQueuePushCode(edge.to.uid, currentNode, ccfg, codeFile, currentNode.functionsNames[0],generator);
+                    stack.tempPromiseFunction.reduce();
+                    stack.tempValueList.reduce();
                 }
+                currentNode = currentNode.outputEdges[0].to; 
+                break;
             }
-            generator.endSection(codeFile);
-        }
-
-        break;
-        }
-    } 
-    
-    if(continuations.length > 0){
-        // console.log("recursLevel = "+recursLevel+" continuationsRecursLevel = "+continuationsRecursLevel.at(-1))
-        while (recursLevel == continuationsRecursLevel.at(-1)){
-            let toVisit = continuations.pop();
-            continuationsRecursLevel.pop();
-            if(toVisit != undefined){
-                // console.log("continuation of "+toVisit.uid + " from "+currentNode.uid + " nbVisit = "+toVisit.numberOfVisits)
-                visitAllNodes(ccfg, toVisit, /*nextUntilUID,*/ codeFile,generator);
-            }
-        }   
-    }
-    recursLevel = recursLevel - 1;
-    return;
-}
-function getCurrentUID(node: Node): number {
-    return node.uid;
-}
-
-function addCorrespondingCode(codeFile: CompositeGeneratorNode, currentNode: Node, ccfg: CCFG,generator:IGenerator) {
-    
-    if(!debug && currentNode.functionsDefs.length == 0){
-        return
-    }
-    if(debug){
-        /*codeFile.append(`
-        #if DEBUG
-            std::cout<<"${currentNode.uid} : ${currentNode.getType()}" <<std::endl;
-        #endif
-        `);*/
-    }
-
-    if(currentNode.returnType == undefined){
-        return
-    }
-
-    currentNode.functionsNames.forEach(f => {
-        let paramNames = getParameterNames(currentNode);
-        generator.createFuncCall(codeFile,f,paramNames,currentNode.returnType || "void");
-        if(currentNode.functionsDefs.length == 0){
-            return
-        }
-        
-
-        let queueUID = queueUidToPushIn(currentNode)
-        addQueuePushCode(queueUID, currentNode, ccfg, codeFile, f,generator);
-    });
-    if(currentNode.functionsNames.length == 0){
-        let queueUID = queueUidToPushIn(currentNode)
-        addQueuePushCode(queueUID, currentNode, ccfg, codeFile, undefined,generator);
-    }
-}
-
-
-
-function queueUidToPushIn(n: Node): number|undefined {
-    for(let e of n.outputEdges){
-        if (e.to.getType() == "AndJoin" || e.to.getType() == "OrJoin"){
-            return e.to.uid
-        }
-        if(e.to.functionsDefs.length == 0 && !(e.to.getType() == "Fork" || e.to.getType() == "Choice")){
-            let uid = queueUidToPushIn(e.to)
-            if(uid != undefined){
-                return uid
-            }
-        }
-    }
-    return undefined
-}
-/////   todo : add the code to push in the queue
-function addQueuePushCode(queueUID: number | undefined, currentNode: Node, ccfg: CCFG, codeFile: CompositeGeneratorNode, f: string|undefined, generator:IGenerator) {
-    if (queueUID != undefined) {
-
-        let syncNode = ccfg.getNodeByUID(queueUID);
-        if (syncNode == undefined) {
-            throw new Error("syncNode is undefined uid = " + queueUID);
-        }
-        let ptns = getPreviousTypedNodes(syncNode.inputEdges[0]);
-        if (ptns.length > 1) {
-            throw new Error("multiple previous typed nodes not handled here");
-        }
-//        let ptn = ptns[0];
-        if(!createdQueueIds.includes(queueUID)){
-            createdQueueIds.push(queueUID);
-            generator.createSynchronizer(codeFile,queueUID);
-        }
-        //codeFile.append(`{\n`)
-        if (currentNode.returnType == undefined || currentNode.returnType == "void" || f == undefined) {
-
-            generator.activateSynchronizer(codeFile,queueUID);
-        } else {
-            generator.sendToQueue(codeFile,queueUID,currentNode.returnType || "void",`result${f}`)
-        }
-        if(syncNode.isCycleInitiator){
-            if(currentNode.returnType == undefined || currentNode.returnType == "void" || f == undefined){
-                codeFile.append(`goto synch${syncNode.uid};\n`);
-            }else{
-                codeFile.append(`
-                goto queue${syncNode.uid};
-                 `);
-            }
-        }
-        //codeFile.append(`}\n`)
-    }
-}
-
-function getParameterNames(currentNode: Node): string[] {
-    let res: string[] = []
-    if(currentNode.params.length > 0){
-        if(currentNode.getType() == "AndJoin" ){
-            if(currentNode.functionsDefs.length == 0){ //take care parameters are actual parameters not the one added to be able to unpop
-                return res
-            }
-            for(let i: number = 0; i < currentNode.params.length; i = i +1){
-                res.push(`${currentNode.getType()}Popped_${currentNode.uid}_${i}`);
-            }
-            return res
-        }
-        if (currentNode.getType() == "OrJoin"){
-            if(currentNode.functionsDefs.length == 0){ //take care parameters are actual parameters not the one added to be able to unpop
-                return res
-            }
-            res.push(`${currentNode.getType()}Popped_${currentNode.uid}`);
-            return res
-        }
-        for(let ie of currentNode.inputEdges){
-            let ptns: Node[] = getPreviousTypedNodes(ie, true)
-            for(let ptn of ptns){
-                if((ptn.getType() == "AndJoin" || ptn.getType() == "OrJoin") && ptn.functionsDefs.length == 0){ 
-                    res.push(`${ptn.getType()}Popped_${ptn.uid}`);
-                }else{
-                    res.push(`result${ptn.functionsNames[0]}`);
+            case "Choice":{
+                console.log(currentNode.uid + ": (" + currentNode.getType() + ")->");
+                let nodeTrue : Node | undefined;
+                let nodeFalse : Node | undefined;
+                //get resRight
+                let resRight: number = stack.resRight[stack.resRight.length-1];
+                //evaluation of each edge of choice
+                currentNode.outputEdges.forEach(edge => {
+                    let bool: boolean = evaluateEdgeLable(edge,resRight);
+                    if (bool) {
+                        nodeTrue = edge.to;
+                    } 
+                    else {
+                        nodeFalse = edge.to;
+                    }
+                });
+                //decide what is the next node accroding to the value of resRight
+                if(nodeTrue && nodeFalse){
+                    if (stack.resRight[stack.resRight.length-1]){//if resRight
+                        currentNode = nodeTrue;//next node is the false node
+                    }
+                    else {
+                        currentNode = nodeFalse;//next node is the true node
+                    }
+                    stack.resRight.pop();
                 }
+                else{
+                    console.log("trueNode | flaseNode doesn't existe at node.uid ="+ currentNode.uid);
+                    return;
+                }
+                break;
             }
-        }
-    }
-    return res
-}
-function getPreviousTypedNodes(ie: Edge, stopAlsoOnNoCodeJoinNode = false): Node[] {
-    let ptn: Node = ie.from
-    let res : Node[] = []
-    if (ptn.returnType != undefined && stopAlsoOnNoCodeJoinNode){
-        res.push(ptn)
-        return res
-    }
-    if (ptn.returnType != undefined && ! stopAlsoOnNoCodeJoinNode && ptn.functionsDefs.length > 0){
-        res.push(ptn)
-        return res
-    }
-          
-    for(let e of ptn.inputEdges){
-        res = [...res, ...getPreviousTypedNodes(e,stopAlsoOnNoCodeJoinNode)]  
-    }
-    return res;
-}
-//////////// todo : add the code to do the comparison
-function addComparisonVariableDeclaration(codeFile: CompositeGeneratorNode, currentNode: Node,generator:IGenerator) {
-    for(let ie of currentNode.inputEdges){
-        let ptnsWithJoin = getPreviousTypedNodes(ie, true);
-        let realPtns = getPreviousTypedNodes(ie, false);
-        for (let i = 0; i < realPtns.length; i++) {
-            let realPtn = realPtns[i];
-            if(realPtn.returnType != "void"){
-                let lastDefStatement = realPtn.functionsDefs[realPtn.functionsDefs.length-1];
-                let lastDefStatementSplit = lastDefStatement.split(",");
-                let returnedVariableName = lastDefStatementSplit[lastDefStatementSplit.length-1];
-                returnedVariableName = returnedVariableName.substring(0, returnedVariableName.length-1); //remove semicolum
-                let ptn = ptnsWithJoin[0];
-                if(ptn.getType() == "AndJoin" || ptn.getType() == "OrJoin"){
-                    generator.createVar(codeFile,ptn.returnType || "void",returnedVariableName);
-                    generator.assignVar(codeFile,returnedVariableName,ptn.params[i].name);
-                }else{
-                    generator.createVar(codeFile,ptn.returnType || "void",returnedVariableName);
-                    generator.assignVar(codeFile,returnedVariableName,`result${ptn.functionsNames[0]}`);
+            case "OrJoin":{
+                console.log(currentNode.uid + ": (" + currentNode.getType() + ")->");
+                if(currentNode.cycles.length!=0){
                     
+                    //let cycle = node.cycles;
+                    //let begin = cycle[0];// begin.uid = 39
+                    //let end = cycle[cycle.length-1];//end.uid = 18
+
                 }
+                currentNode = currentNode.outputEdges[0].to;
+                break;
             }
         }
+    }//while
+}
+
+//evaluate the functions that are in the nodes
+//define function; the defined function takes sigma and a list of number as parametre.
+function defineFunction(functionName: string, functionParamList: TypedElement[], functionBody: string[], sigma: Map<any, any>): (...args: any[]) => any {
+    return new Function('sigma', 'liste', `return function ${functionName}(liste) {
+        ${functionParamList.reverse().map((param, index) => `let ${param.name} = liste[${index}];\n`).join('')}
+        ${functionBody.join('\n')}
+        \n}`)(sigma);
+}
+
+//define a async function for Fork (return type is not void): add value in stack
+function definePromise(stack : Stack , f: (param:number[]) => any , parm : number[] ): () => Promise<void>{
+    return () => new Promise<void>((resolve) => {
+        console.log("Promise created, it return " + f(parm));
+        stack.tempValueList.addValueLast(f(parm));
+        resolve();
+    });
+}
+
+//define a async function for Fork (return type is void): evaluation function
+function definePromiseVoid( f: (param:number[]) => void , parm : number[]): () => Promise<void>{
+    console.log("param valeur: " + parm);
+    let param = [...parm];
+    return () => new Promise<void>((resolve) => {
+        console.log("Promise created ");
+        console.log("param valeur in promise: " + param);
+        f(param);
+        resolve();
+    });
+}
+
+//lancer/call Promise obj(s) which are stored in a tempValueList
+async function defineAsyncFunction(functionList: TempValueList<(()=>Promise<void>)>) {
+    let promiseList = functionList.last().list;
+    console.log( promiseList.length + " Promise objects raised");
+    await Promise.all(promiseList.map(promiseFn => promiseFn()));
+    //return Promise.all(promiseList.map(promiseFn => promiseFn()));
+}
+
+//code: define function; decide where we store the value & how to call the functions : depends on (if node in a fork/ node is a joinNode)  
+function nodeCode(node:Node,sigma:Map<string,any>,stack:Stack):void{
+    let functionName="function" + node.functionsNames[0];
+    let f = defineFunction(functionName,node.params,node.functionsDefs,sigma);
+            if(node.returnType!= "void"){//store the Temp Value 
+                let tempValueL = stack.tempPromiseFunction;
+                if((stack.fork.length ==0) ){//when we are not in a fork   // && (stack.fork[stack.fork.length-1]==0)
+                    console.log(functionName + " return " + f());
+                    stack.resRight.push(f());
+                }
+                else if((tempValueL.getLength()!=0) && (!tempValueL.isWaiting())){//when we are in a fork, all the children are executed
+                    joinNode(node,sigma,stack);
+                }
+                
+                else{//when we are in the children of a fork
+                    let promise = definePromise(stack,f,[]);
+                    tempValueL.addValueLast(promise);
+                }
+            }
+            else{//return type is void
+                let tempValueL = stack.tempPromiseFunction;
+                if((stack.fork.length ==0) || (stack.fork[stack.fork.length-1]==0)){//when we are not in a fork
+                    let parm = stack.resRight;//get value list from stack
+                    console.log(f(parm));
+                    stack.resRight.pop();//clean stack
+                }
+                else if((tempValueL.getLength()!=0) && (!tempValueL.isWaiting())){//when we are in a fork, all the children are executed; node 31/46
+                    joinNode(node,sigma,stack);
+                }
+                else{//when we are in the children of a fork
+                    let parm = stack.resRight;//get value list from stack
+                    let promise = definePromiseVoid(f,parm);
+                    tempValueL.addValueLast(promise);
+                    stack.resRight.pop();//clean stack
+                }
+
+            }
+}
+
+//If the Andjoin node in a fork or not!**********************************************************************
+function joinNode(node:Node,sigma:Map<string,any>,stack:Stack):void{
+    if(node.functionsDefs.length!=0){
+        let functionName="function" + node.functionsNames[0];
+        let f = defineFunction(functionName,node.params,node.functionsDefs,sigma);
+        let l = stack.tempValueList.last().list;
+        console.log(functionName + " return " + f(l))
+        stack.resRight.push(f(l))
     }
+}
+
+function evaluateEdgeLable(edge : Edge, resRight:number):boolean{
+    //get code from: "(VarRef3_4_3_6terminates == true)"
+    let edgeLable: string = edge.guards[0];
+    let match = edgeLable.match(/\((.*?)\)/);    //"VarRef3_4_3_6terminates == true"
+    let code: string| null = match ? match[1] : null;
+    let varName: string | null = null;
+    //get variable name "VarRef3_4_3_6terminates"
+    if (code) {
+        let parts = code.split('==');
+        if (parts[0]){
+            varName = parts[0].trim();
+        }
+    }
+    let bool : boolean = eval(`
+        if(${resRight} > 0){
+        ${varName} = 1;\n
+        }else{
+            ${varName} = 0;\n
+        }\n
+        ${code};
+        `)
+    return bool;
 }
