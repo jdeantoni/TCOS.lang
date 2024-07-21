@@ -1,0 +1,12 @@
+{
+    "projectName": "ParLang",
+    "languages": [{
+        "id": "par-lang",
+        "grammar": "src/language/par-lang.langium",
+        "fileExtensions": [".parlang"],
+        "textMate": {
+            "out": "syntaxes/par-lang.tmLanguage.json"
+        }
+    }],
+    "out": "src/language/generated"
+}
