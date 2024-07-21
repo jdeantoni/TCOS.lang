@@ -630,4 +630,3 @@ export class AndJoin extends Join {
         super(value);
     }
 }
-

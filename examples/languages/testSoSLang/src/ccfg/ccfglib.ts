@@ -34,6 +34,8 @@ export abstract class Node {
     isCycleInitiator: boolean = false;
     cycles: Node[][] = []
 
+    isVisited: boolean = false;
+
     constructor(value: any, theActions: string[] = []) {
         this.uid = Node.uidCounter++;
         this.value = value;
@@ -45,18 +47,24 @@ export abstract class Node {
     }
 
     isBefore(n2: Node): boolean {
+        if(this.isVisited){
+            return false;
+        }
+        this.isVisited = true;
         if (this.outputEdges.length == 0){
+            this.isVisited = false;
             return false;
         }
         for (let e of this.outputEdges) {
             if (e.to === n2){
+                this.isVisited = false;
                 return true;
             }
         }
         for(let e of this.outputEdges){
             return e.to.isBefore(n2);
         }
-
+        this.isVisited = false;
         return false
     }
 
@@ -176,47 +184,48 @@ export class CCFG {
      */
     addEdge(from: Node, to: Node, label:string=""): Edge {
         let res : Edge | undefined = this.edges.find(e => e.from === from && e.to === to);
-        if (res == undefined) {
-            const edge = new Edge(from, to);
-            this.edges.push(edge);
-            from.outputEdges.push(edge);
+        if (res != undefined) {
+            console.log(chalk.grey("warning, edge already exists from "+from.uid+":"+from.value+" to "+to.uid+":"+to.value));
+            return res; 
+        }
+        const edge = new Edge(from, to);
+        this.edges.push(edge);
+        from.outputEdges.push(edge);
 
-            if(to.inputEdges.length == 0){
-                to.inputEdges.push(edge);
-                return edge;
-            }else{ //already an input edge. check if an orJoin Node
-                if (to.getType() == "OrJoin" || to.getType() == "AndJoin") {
-                    edge.to = to
-                    to.inputEdges.push(edge)
-                    return edge
+        if(to.inputEdges.length == 0){
+            to.inputEdges.push(edge);
+            return edge;
+        }else{ //already an input edge. check if an orJoin Node
+            if (to.getType() == "OrJoin" || to.getType() == "AndJoin") {
+                edge.to = to
+                to.inputEdges.push(edge)
+                return edge
+            }
+            if (to.inputEdges.length == 1 && (to.inputEdges[0].from.getType() == "OrJoin" || to.inputEdges[0].from.getType() == "AndJoin"))  {
+                // console.log(chalk.bgYellow("adding to an existing or join node: "+to.value+" -> "+to.inputEdges[0].from.value+" -> "+to.inputEdges[0].from.uid+" "+to.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges.length));
+                edge.to = to.inputEdges[0].from;
+                to.inputEdges[0].from.inputEdges.push(edge);                   
+                return edge
+            }else{
+                let toUID = to.value.startsWith("starts")?to.value.substring(6):to.value.startsWith("terminates")?to.value.substring(10):to.value;
+                // console.log(chalk.gray("creating a new or Join node: orJoinNode between "+from.uid+" and "+to.uid));
+                let orJoinNode = new OrJoin("orJoinNode"+toUID);
+                this.addNode(orJoinNode)
+                
+                edge.to = orJoinNode
+                for(let e of to.inputEdges){
+                    e.to = orJoinNode
+                    orJoinNode.inputEdges.push(e)
                 }
-                if (to.inputEdges.length == 1 && (to.inputEdges[0].from.getType() == "OrJoin" || to.inputEdges[0].from.getType() == "AndJoin"))  {
-                    console.log(chalk.bgYellow("adding to an existing or join node: "+to.value+" -> "+to.inputEdges[0].from.value+" -> "+to.inputEdges[0].from.uid+" "+to.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges.length));
-                    edge.to = to.inputEdges[0].from;
-                    to.inputEdges[0].from.inputEdges.push(edge);                   
-                    return edge
-                }else{
-                    let toUID = to.value.startsWith("starts")?to.value.substring(6):to.value.startsWith("terminates")?to.value.substring(10):to.value;
-                    console.log(chalk.gray("creating a new or Join node: orJoinNode between "+from.uid+" and "+to.uid));
-                    let orJoinNode = new OrJoin("orJoinNode"+toUID);
-                    this.addNode(orJoinNode)
-                    
-                    edge.to = orJoinNode
-                    for(let e of to.inputEdges){
-                        e.to = orJoinNode
-                        orJoinNode.inputEdges.push(e)
-                    }
-                    to.inputEdges = []
-                    let secondEdge = new Edge(orJoinNode, to)
-                    this.edges.push(secondEdge)
-                    to.inputEdges.push(secondEdge)
-                    orJoinNode.outputEdges.push(secondEdge)
-                    return edge
-                }
+                to.inputEdges = []
+                let secondEdge = new Edge(orJoinNode, to)
+                this.edges.push(secondEdge)
+                to.inputEdges.push(secondEdge)
+                orJoinNode.outputEdges.push(secondEdge)
+                return edge
             }
         }
-        console.log(chalk.grey("warning, edge already exists from "+from.uid+":"+from.value+" to "+to.uid+":"+to.value));
-        return res
+        
     }
 
     replaceNode(oldNode: Node, newNode: Node): void {
@@ -278,6 +287,59 @@ export class CCFG {
         
         return undefined
     }
+
+
+    computeCorrespondingNodes(): void {
+        for (const node of this.nodes) {
+            if (node.getType() === "Fork" || node.getType() === "Choice") {
+                const correspondingNode = this.findCorrespondingNode(node);
+                if (correspondingNode) {
+                    node.syncNodeIds.push(correspondingNode.uid);
+                    correspondingNode.syncNodeIds.push(node.uid);
+                }
+            }
+        }
+    }
+
+    private findCorrespondingNode(node: Node): Node | undefined {
+        const visited: Node[] = [];
+        const queue: Node[] = [];
+        queue.push(node);
+
+        var splitCounter: integer = -1;
+
+        while (queue.length > 0) {
+            const current = queue.shift();
+            if (current) {
+                
+                visited.push(current);
+                if ((current.getType() === "Fork" || current.getType() === "Choice")) {
+                    splitCounter = splitCounter + 1;
+                }
+                if ((current.getType() === "OrJoin" || current.getType() === "AndJoin")) {
+                    if (splitCounter > 0) {
+                        splitCounter = splitCounter - 1;
+                    }else{
+                        return current;
+                    }
+                }
+                const joinEdges = current.outputEdges.filter(edge => edge.to.getType() === "OrJoin" || edge.to.getType() === "AndJoin");
+                const otherEdges = current.outputEdges.filter(edge => edge.to.getType() !== "OrJoin" && edge.to.getType() !== "AndJoin");
+                const sortedEdges = [...joinEdges, ...otherEdges];
+                for (const edge of sortedEdges) {
+                    const nextNode = edge.to;
+                    if (!visited.includes(nextNode)) {
+                        if(! queue.includes(nextNode)){
+                            queue.push(nextNode);
+                        }
+                    }
+                }
+            }
+        }
+
+        return undefined;
+    }
+
 
     addSyncEdge(): void{
         for(let n of this.nodes){
@@ -476,9 +538,9 @@ export class CCFG {
 
     dotGetNodeLabel(node: Node): string {
         if(node.functionsDefs.length == 0){
-            return node.uid.toString()+":"+node.value;
+            return node.uid.toString()+"["+node.syncNodeIds.map(i =>i).join(',')+"]"+":"+node.value;
         }
-        return node.uid.toString()+":"+node.value+":\n"+node.returnType+" function"+node.functionsNames+"("+node.params.map(p => (p as TypedElement).toString()).join(", ")+"){\n"+node.functionsDefs.map(
+        return node.uid.toString()+"["+node.syncNodeIds.map(i =>i).join(',')+"]"+":"+node.value+":\n"+node.returnType+" function"+node.functionsNames+"("+node.params.map(p => (p as TypedElement).toString()).join(", ")+"){\n"+node.functionsDefs.map(
             a => a.replaceAll("\"","\\\"")).join("\n")+"\n}";
     }
 
@@ -568,4 +630,3 @@ export class AndJoin extends Join {
         super(value);
     }
 }
-
