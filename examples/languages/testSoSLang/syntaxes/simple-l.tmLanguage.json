@@ -1,0 +1,57 @@
+{
+  "name": "simple-l",
+  "scopeName": "source.simple-l",
+  "fileTypes": [
+    ".simple"
+  ],
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "name": "keyword.control.simple-l",
+      "match": "\\b(else|every|false|function|if|ms|true|var|while)\\b"
+    },
+    {
+      "name": "string.quoted.double.simple-l",
+      "begin": "\"",
+      "end": "\""
+    },
+    {
+      "name": "string.quoted.single.simple-l",
+      "begin": "'",
+      "end": "'"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.block.simple-l",
+          "begin": "/\\*",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.simple-l"
+            }
+          },
+          "end": "\\*/",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.simple-l"
+            }
+          }
+        },
+        {
+          "begin": "//",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.whitespace.comment.leading.simple-l"
+            }
+          },
+          "end": "(?=$)",
+          "name": "comment.line.simple-l"
+        }
+      ]
+    }
+  }
+}
