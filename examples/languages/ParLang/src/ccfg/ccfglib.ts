@@ -11,17 +11,24 @@ export class TypedElement {
     }
 }
 
+export enum NodeType {
+    starts = "starts",
+    terminates = "terminates",
+    multipleSynchro = "multipleSynchro",
+}
+
 export abstract class Node {
  
     static uidCounter: integer = 0;
     uid: integer;
     owningCCFG: CCFG | undefined = undefined;
 
-    value:any;  //unused so far
     astNode: AstNode | undefined; //unnused so far
-   
+
     outputEdges: Edge[] = [];
     inputEdges: Edge[] = [];
+
+    type: NodeType | undefined = undefined;
 
     syncNodeIds: integer[] = [];
     functionsNames: string[] = [];
@@ -36,9 +43,10 @@ export abstract class Node {
 
     isVisited: boolean = false;
 
-    constructor(value: any, theActions: string[] = []) {
+    constructor(astNode?:AstNode, type?: NodeType, theActions: string[] = []) {
         this.uid = Node.uidCounter++;
-        this.value = value;
+        this.astNode = astNode;
+        this.type = type;
         this.functionsDefs = theActions;
     }
 
@@ -81,51 +89,6 @@ export abstract class Node {
     
 
 }
-
-// export class ContainerNode extends Node {
-
-//     internalccfg: CCFG;
-
-//     constructor(value: any, theActions: string[] = []) {
-//         super(value, theActions);
-//         this.internalccfg = new CCFG();
-//     }
-
-//     addNode(node: Node): Node {
-//         return this.internalccfg.addNode(node);
-//     }
-
-//     addEdge(from: Node, to: Node, label:string=""): Edge {
-//         return this.internalccfg.addEdge(from, to, label);
-//     }
-
-//     toDot(): string {
-//         return this.internalccfg.toDot();
-//     }
-
-//     getNodeFromName(name: string): Node | undefined {
-//         let res = this.internalccfg.getNodeFromName(name);
-//         if(res == undefined){
-//             if(this.owningCCFG != undefined){
-//                 return this.owningCCFG.getNodeFromName(name);
-//             }
-//         }
-//         return res;
-//     }
-
-//     getNodeByUID(uid: integer): Node | undefined {
-//         if(this.owningCCFG != undefined){
-//             return this.owningCCFG.getNodeByUID(uid);
-//         }
-//         return this.internalccfg.getNodeByUID(uid);
-//     }
-
-//     replaceNode(oldNode: Node, newNode: Node): void {
-//         this.internalccfg.replaceNode(oldNode, newNode);
-//     }
-
-
-// }
 
 
 export class Edge {
@@ -185,7 +148,7 @@ export class CCFG {
     addEdge(from: Node, to: Node, label:string=""): Edge {
         let res : Edge | undefined = this.edges.find(e => e.from === from && e.to === to);
         if (res != undefined) {
-            console.log(chalk.grey("warning, edge already exists from "+from.uid+":"+from.value+" to "+to.uid+":"+to.value));
+            console.log(chalk.grey("warning, edge already exists from "+from.uid+":"+from.type+" to "+to.uid+":"+to.type));
             return res; 
         }
         const edge = new Edge(from, to);
@@ -207,9 +170,8 @@ export class CCFG {
                 to.inputEdges[0].from.inputEdges.push(edge);                   
                 return edge
             }else{
-                let toUID = to.value.startsWith("starts")?to.value.substring(6):to.value.startsWith("terminates")?to.value.substring(10):to.value;
                 // console.log(chalk.gray("creating a new or Join node: orJoinNode between "+from.uid+" and "+to.uid));
-                let orJoinNode = new OrJoin("orJoinNode"+toUID);
+                let orJoinNode = new OrJoin(to.astNode);
                 this.addNode(orJoinNode)
                 
                 edge.to = orJoinNode
@@ -272,19 +234,12 @@ export class CCFG {
         return undefined
     }
 
-    getNodeFromName(name: string): Node | undefined {
+    getNodeFromASTNode(astNode: AstNode, t:NodeType): Node | undefined {
         for(let n of this.nodes){
-            if(n.value === name){
+            if(n.astNode != undefined && n.astNode == astNode && n.type == t){
                 return n;
             }
-            // if(n.getType() == "ContainerNode"){
-            //     let res = (n as ContainerNode).internalccfg.getNodeFromName(name);
-            //     if(res != undefined){
-            //         return res;
-            //     }
-            // }
         }
-        
         return undefined
     }
 
@@ -380,7 +335,7 @@ export class CCFG {
 
     private detectCyclesRec(node: Node, visited: Node[], recursionStack: Node[]): boolean {
         if (recursionStack.includes(node)) {
-            console.log(chalk.gray("info: cycle detected on node #" + node.uid + " (" + node.value + ")"));
+            console.log(chalk.gray("info: cycle detected on node #" + node.uid + " (" + node.type + ")"));
             if (node.getType() == "OrJoin") {
                 node.isCycleInitiator = true;
             }
@@ -413,7 +368,7 @@ export class CCFG {
             const cycle = path.slice(cycleStartIndex);
             // if (! node.cycles.some( c => c == cycle)){
                // node.cycles.push(cycle);
-                console.log(chalk.gray("info: cycle detected on node #" + node.uid + " (" + node.value + ")\n\t" + cycle.map(n => n.uid).join(" -> ") + " -> " + node.uid ));                
+                console.log(chalk.gray("info: cycle detected on node #" + node.uid + " (" + node.type + ")\n\t" + cycle.map(n => n.uid).join(" -> ") + " -> " + node.uid ));                
                 for(const n of cycle){
                     if (! n.cycles.some(c => c === cycle)){    
                         n.cycles.push(cycle);
@@ -430,47 +385,7 @@ export class CCFG {
         }
         return;
     }
-    // detectCycles(): boolean {
-    //     const visited: Node[] = [];
-    //     const recursionStack: Node[] = [];
-
-    //     for (const node of this.nodes) {
-    //         if (this.detectCyclesRec(node, visited, recursionStack)) {
-    //             return true;
-    //         }
-    //     }
-
-    //     return false;
-    // }
-
-    // private detectCyclesRec(node: Node, visited: Node[], recursionStack: Node[]): boolean {
-    //     if (recursionStack.includes(node)) {
-    //         console.log(chalk.gray("info: cycle detected on node #"+node.uid+" ("+node.value+")"));
-    //         if(node.getType() == "OrJoin"){
-    //             node.isCycleInitiator = true;
-    //         }
-    //         return true;
-    //     }
-
-    //     if (visited.includes(node)) {
-    //         return false;
-    //     }
-
-    //     visited.push(node);
-    //     recursionStack.push(node);
-
-    //     for (const edge of node.outputEdges) {
-    //         if (this.detectCyclesRec(edge.to, visited, recursionStack)) {
-    //             return true;
-    //         }
-    //     }
-
-    //     recursionStack.pop();
-
-    //     return false;
-    // }
-  
-
+    
 
     toDot(): string {
         let wholeDot = 'digraph G {\n';
@@ -538,9 +453,9 @@ export class CCFG {
 
     dotGetNodeLabel(node: Node): string {
         if(node.functionsDefs.length == 0){
-            return node.uid.toString()+"["+node.syncNodeIds.map(i =>i).join(',')+"]"+":"+node.value;
+            return node.uid.toString()+"["+node.syncNodeIds.map(i =>i).join(',')+"]"+":"+node.type;
         }
-        return node.uid.toString()+"["+node.syncNodeIds.map(i =>i).join(',')+"]"+":"+node.value+":\n"+node.returnType+" function"+node.functionsNames+"("+node.params.map(p => (p as TypedElement).toString()).join(", ")+"){\n"+node.functionsDefs.map(
+        return node.uid.toString()+"["+node.syncNodeIds.map(i =>i).join(',')+"]"+":"+node.type+":\n"+node.returnType+" function"+node.functionsNames+"("+node.params.map(p => (p as TypedElement).toString()).join(", ")+"){\n"+node.functionsDefs.map(
             a => a.replaceAll("\"","\\\"")).join("\n")+"\n}";
     }
 
@@ -558,6 +473,8 @@ export class CCFG {
                 return "triangle";
             case "StartTimer":
                 return "parallelogram";
+            case "Hole":
+                return "cylinder";
             default:
                 return "box";
         }
@@ -576,32 +493,45 @@ export class SyncEdge extends Edge {
 
 export class Step extends Node {
     
-    constructor(value: any, theActions: string[] = []) {
-        super(value, theActions);
+    constructor(astNode?:AstNode, type?: NodeType, theActions: string[] = []) {
+        super(astNode, type, theActions);
     }
 }
 
 export class Choice extends Node {
-    constructor(value: any) {
-        super(value);
+    constructor() {
+        super(undefined);
     }
 }
 
 export class Join extends Node {
-    constructor(value: any) {
-        super(value);
+    constructor(astNode?:AstNode) {
+        super(astNode, NodeType.multipleSynchro);
     }
 }
 
 export class Fork extends Node {
-    constructor(value: any) {
-        super(value);
+    constructor(astNode?:AstNode) {
+        super(astNode);
     }
 }
 
 export class OrJoin extends Join {
-    constructor(value: any) {
-        super(value);
+    constructor(astNode?:AstNode) {
+        super(astNode);
+    }
+}
+
+
+export class AndJoin extends Join {
+    constructor(astNode?:AstNode) {
+        super(astNode);
+    }
+}
+
+export class Hole extends Node {
+    constructor(astNode:AstNode,) {
+        super(astNode);
     }
 }
 
@@ -625,8 +555,3 @@ export class OrJoin extends Join {
 //     }
 // }
 
-export class AndJoin extends Join {
-    constructor(value: any) {
-        super(value);
-    }
-}

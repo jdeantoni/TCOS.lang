@@ -3,7 +3,7 @@ import {  CompositeGeneratorNode, MultiMap, toString } from 'langium';
 import path from 'path';
 import { Program } from '../language/generated/ast';
 import { extractDestinationAndName } from './cli-util.js';
-import { CCFGVisitor } from './generated/parLang.js';
+import { CCFGVisitor } from './generated/parLang_saved.js';
 import { CCFG, Edge, Node, Step, TypedElement } from '../ccfg/ccfglib.js';
 import chalk from 'chalk';
 

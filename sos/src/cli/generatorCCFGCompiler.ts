@@ -1,10 +1,9 @@
 import fs from 'fs';
-import { CompositeGeneratorNode, Grammar,  NL, toString } from 'langium';
-import { Assignment, BinaryExpression, CollectionRuleSync, EventCombination, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, RWRule, RuleOpening, SingleRuleSync, SoSSpec, TypeReference, ValuedEventEmission, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration } from '../language-server/generated/ast.js'; //VariableDeclaration
+import { AstNode, CompositeGeneratorNode, Grammar,  NL, toString } from 'langium';
+import { Assignment, CollectionRuleSync, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, RWRule, RuleOpening, SingleRuleSync, SoSSpec, TypeReference, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration } from '../language-server/generated/ast.js'; //VariableDeclaration
 import { extractDestinationAndName, FilePathData } from './cli-util.js';
 import path from 'path';
 import { inferType } from '../language-server/type-system/infer.js';
-import chalk from 'chalk';
 
 
 const lock= "lock"
@@ -13,9 +12,9 @@ const createGlobalVar = "createGlobalVar"
 const assignVar = "assignVar"
 const setVarFromGlobal = "setVarFromGlobal"
 const setGlobalVar = "setGlobalVar"
-const operation = "operation"
-const ret ="return"
-const verifyEqual = "verifyEqual"
+// const operation = "operation"
+// const ret ="return"
+// const verifyEqual = "verifyEqual"
 
 
 // this function is used to generate the code for the visitor pattern of the specified compiler
@@ -34,14 +33,13 @@ export function generateStuffFromSoS(model: SoSSpec, grammar: Grammar[], filePat
             conceptNames.push(openedRule.onRule.ref.name)
         }
     }
-    file.append(`import { ${conceptNames.join(',')} } from "../../language-server/generated/ast";`, NL)
+    file.append(`import { ${conceptNames.join(',')} } from "../../language/generated/ast";`, NL)
     file.append(`
 export interface SimpleLVisitor {
-    visit(node: AstNode| Reference<AstNode>): [Node,Node];
-    
+    visit(node: AstNode| Reference<AstNode>): CCFG;
 `, NL)
     for (let name of conceptNames) {
-        file.append(`     visit${name}(node: ${name}): [Node,Node];`, NL)
+        file.append(`     visit${name}(node: ${name}): CCFG;`, NL)
     }
     file.append(`}`, NL)
 
@@ -82,7 +80,7 @@ export class CCFGVisitor implements SimpleLVisitor {
   
     
 
-    visit(node: AstNode | Reference<AstNode>): [Node,Node] {
+    visit(node: AstNode | Reference<AstNode>): CCFG {
         if(isReference(node)){
             if(node.ref === undefined){
                 throw new Error("not possible to visit an undefined AstNode")
@@ -112,46 +110,101 @@ export class CCFGVisitor implements SimpleLVisitor {
 
         
         file.append(`
-    visit${name}(node: ${name}): [Node,Node] {`)
+    /**
+     * returns the local CCFG of the ${name} node
+     * @param a ${name} node 
+     * @returns the local CCFG (with holes)
+     */
+    visit${name}(node: ${name}): CCFG {`)
+        
         visitVariableDeclaration(openedRule.runtimeState as VariableDeclaration[], file)
         file.append(`
-        let starts${name}Node: Node = new Step("starts"+getASTNodeUID(node),[${getVariableDeclarationCode(openedRule.runtimeState as VariableDeclaration[])}])
+        let localCCFG = new CCFG()
+        let starts${name}Node: Node = new Step(node,NodeType.starts,[${getVariableDeclarationCode(openedRule.runtimeState as VariableDeclaration[])}])
         if(starts${name}Node.functionsDefs.length>0){
             starts${name}Node.returnType = "void"
         }
         starts${name}Node.functionsNames = [\`init\${starts${name}Node.uid}${name}\`]
-        this.ccfg.addNode(starts${name}Node)
-        let terminates${name}Node: Node = new Step("terminates"+getASTNodeUID(node))
-        this.ccfg.addNode(terminates${name}Node)
+        localCCFG.addNode(starts${name}Node)
+        let terminates${name}Node: Node = new Step(node,NodeType.terminates)
+        localCCFG.addNode(terminates${name}Node)
         `);
-        let previousNodeName = `starts${name}Node`
-        let terminatesNodeName = `terminates${name}Node`
 
-        const rulesCF = createCCFGFromRules(file, openedRule)
+        const rulesCF: RuleControlFlow[] = extractRuleControlFlowsFromRules(file, openedRule)
+        const holes: TypedElement[][] = identifiesHoles(rulesCF)
+
+        for (let h of holes) {
+            file.append(`
+            let ${h.filter(p=>p.type != "event").map(p => p.name).join('_')}Hole: Hole = new Hole(node.${h.filter(p=>p.type != "event").map(p => p.name).join('.')})
+            localCCFG.addNode(${h.filter(p=>p.type != "event").map(p => p.name).join('_')}Hole)
+            `)
+        }
 
         const startingRules = retrieveStartingRules(rulesCF);
+        if(startingRules.length > 1){
+            throw new Error("multiple starting rules are not supported")
+        }
+
+        let startRule: RuleControlFlow = startingRules[0]
+        handleRuleConclusion(startRule, holes, file, `starts${name}Node`);
+
+
+        for (let ruleCF of rulesCF) {
+            if (ruleCF != startingRules[0]) {
+                //manage premise
+                if (ruleCF.premiseParticipants.length == 1) {
+                    let participants = ruleCF.premiseParticipants[0];
+                    handleRuleConclusion(ruleCF, holes, file, `${participants.filter(p=>p.type != "event").map(p => p.name).join('_')}Hole`);
+                }
+                if (ruleCF.premiseParticipants.length > 1) {
+                    file.append(`
+                let ${ruleCF.rule.name}OrJoinNode: Node = new OrJoin(node)
+                localCCFG.addNode(${ruleCF.rule.name}OrJoinNode)
+                `)
+                    for (let participants of ruleCF.premiseParticipants) {
+                        if (holes.some(h => areParticipantsEquals(h,participants))) {
+                            file.append(`
+                //mark a
+                localCCFG.addEdge(${participants.filter(p=>p.type != "event").map(p => p.name).join('_')}Hole,${ruleCF.rule.name}OrJoinNode)
+                            `);
+                        } else {
+                            file.append(`
+                //premise participants in parallel collection but not a hole: ${participants.map(p => p.toJSON())}
+                        `);
+                        }
+                    }
+                    
+                    handleRuleConclusion(ruleCF, holes, file, `${ruleCF.rule.name}OrJoinNode`);
+               }
+            }
+        }
+        
+        
+  
+        // handleConclusion(startingRules[0], file, rulesCF, previousNodeName, terminatesNodeName);
+        // for (let ruleCF of rulesCF) {
+        //     if (ruleCF != startingRules[0]) {
+        //         handleConclusion(ruleCF, file, rulesCF, previousNodeName, terminatesNodeName);
+        //     }
+        // }
+
         let hasMultipleTerminate = checkIfMultipleTerminate(rulesCF);
 
         if (hasMultipleTerminate) {
             file.append(`
-        let ${name}OrJoinNode: Node = new OrJoin("orJoin"+getASTNodeUID(node))
-        this.ccfg.addNode(${name}OrJoinNode)
-        this.ccfg.addEdge(${name}OrJoinNode,terminates${name}Node)
-        `)
-            terminatesNodeName = `${name}OrJoinNode`
+        let ${name}OrJoinNode: Node = new OrJoin(node)
+        localccfg.addNode(${name}OrJoinNode)
+        for (let input of terminates${name}Node.inputs) {
+            input.outputs = input.outputs.filter(o => o.to != terminates${name}Node)
+            localccfg.addEdge(input,${name}OrJoinNode)
         }
-        file.append(`
-        let previousNode =undefined
+        terminates${name}Node.inputs = []
+        localccfg.addEdge(${name}OrJoinNode,terminates${name}Node)
         `)
-        handleConclusion(startingRules[0], file, rulesCF, previousNodeName, terminatesNodeName);
-        for (let ruleCF of rulesCF) {
-            if (ruleCF != startingRules[0]) {
-                handleConclusion(ruleCF, file, rulesCF, previousNodeName, terminatesNodeName);
-            }
         }
 
         file.append(`
-        return [starts${name}Node,terminates${name}Node]
+        return localCCFG;
     }`, NL);
     }
 
@@ -170,15 +223,140 @@ export class CCFGVisitor implements SimpleLVisitor {
     return generatedFilePath;
 }
 
+function handleRuleConclusion(ruleCF: RuleControlFlow, holes: TypedElement[][], file: CompositeGeneratorNode, previousNodeName: string) {
+    let actionsString = ""
+    actionsString = visitStateModifications(ruleCF, actionsString);
+    if(actionsString.length>0){
+        file.append(`
+    {let ${ruleCF.rule.name}StateModificationNode: Node = new Step(node)
+    this.ccfg.addNode(${ruleCF.rule.name}StateModificationNode)
+    let e = this.ccfg.addEdge(${previousNodeName},${ruleCF.rule.name}StateModificationNode)
+    ${previousNodeName} = ${ruleCF.rule.name}StateModificationNode
+    `)
+    }
+
+    if (ruleCF.conclusionParticipants.length == 1 && isEventEmissionIsCollectionBased(ruleCF) == false) {
+        let participants = ruleCF.conclusionParticipants[0];
+        if (holes.includes(participants)) {
+            file.append(`
+            //mark 0
+            localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type != "event").map(p => p.name).join('_')}Hole)
+            `);
+        } else {
+            file.append(`
+            //mark 0'
+            localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type == "event").map(p => p.name).join('_')}${(ruleCF.rule.$container as RuleOpening)?.onRule?.ref?.name}Node)
+        `);
+    
+        }
+    }
+    //Several participants in the conclusion
+    if (ruleCF.conclusionParticipants.length == 1 && isEventEmissionIsCollectionBased(ruleCF) == true) {
+        let participants = ruleCF.conclusionParticipants[0];
+        file.append(`
+            //TODO: manage the case of a collection in the conclusion for ${ruleCF.rule.name}: ${participants.map(p => p.toJSON())}
+            // should we create holes for each element in the collection ?
+            `);
+    }
+    if (ruleCF.rule.conclusion.eventEmissionOperator == ";") {
+        for (let participants of ruleCF.conclusionParticipants) {
+            if (holes.includes(participants)) {
+                file.append(`
+                    //mark 1
+                    localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type != "event").map(p => p.name).join('_')}Hole)
+                    ${previousNodeName} = ${participants.filter(p=>p.type != "event").map(p => p.name).join('_')}Hole
+                    `);
+            } else {
+                file.append(`
+                //conclusion participants in sequential collection but not a hole: ${participants.map(p=>p.toJSON())}
+                `);
+            }
+        }
+    }
+    if (ruleCF.rule.conclusion.eventEmissionOperator == "||") {
+        file.append(`
+                let fork${ruleCF.rule.name}Node: Node = new Fork(node)
+                localCCFG.addNode(fork${ruleCF.rule.name}Node)
+                localCCFG.addEdge(${previousNodeName},fork${ruleCF.rule.name}Node)
+            `, NL);
+        for (let participants of ruleCF.conclusionParticipants) {
+            if (holes.includes(participants)) {
+                file.append(`
+                    //mark 2
+                    localCCFG.addEdge(fork${ruleCF.rule.name}Node,${participants.filter(p=>p.type != "event").map(p => p.name).join('_')}Hole)
+                    `);
+            } else {
+                file.append(`
+                //conclusion participants in parallel collection but not a hole: ${participants.map(p => p.toJSON())}
+                `);
+            }
+        }
+    }
+}
+
+/**
+ * traverse all the rules and identifies the holes. A hole is a participant that is the conclusion of a rule and the premise of another rule
+ * 
+ * @param rulesCF: the list of rules of the opened concept 
+ * @returns the list of holes, given as a list of TypedElements (the participants of a memberCall) without the ending event 
+ */
+function identifiesHoles(rulesCF: RuleControlFlow[]): TypedElement[][] {
+    let res: TypedElement[][] = []
+    for (let i = 0; i < rulesCF.length; i++) {
+        const currentRule = rulesCF[i];
+        const currentConclusionParticipants = currentRule.conclusionParticipants;
+        for (let j = 0; j < rulesCF.length; j++) {
+            if (i == j){
+                continue;   
+            }
+            const anotherRule = rulesCF[j];
+            const anotherRulePremiseParticipants = anotherRule.premiseParticipants;
+
+            for(let p of currentConclusionParticipants){
+                for(let anotherP of anotherRulePremiseParticipants){
+                    if(areParticipantsEquals(p, anotherP)){
+                        res.push(p)
+                    }
+                }
+            } 
+        }
+    }
+    return res
+}
+
+
+function areParticipantsEquals(p1: TypedElement[], p2: TypedElement[]): boolean {
+    if(p1.length != p2.length){
+        return false
+    }
+    for(let i = 0; i < p1.length-1; i++){
+        if(p1[i].name != p2[i].name || p1[i].type != p2[i].type){
+            return false
+        }
+    }
+    if( p1.length > 1 &&
+        ((p1[p1.length-1].name == "starts" &&  p2[p2.length-1].name == "terminates")
+        ||
+        (p1[p1.length-1].name == "terminates" &&  p2[p2.length-1].name == "starts"))
+    ){
+        return true
+    }else{
+        return false
+    }
+}
+
+
 /**  retrieves the starting rule of the concept
  * @param rulesCF: the rule to be analyzed
  * */
 function retrieveStartingRules(rulesCF: RuleControlFlow[]) {
     let startingRule = [];
     for (let r of rulesCF) {
-        for (let p of r.premiseParticipants) {
-            if (p.name != undefined && p.name == "starts") {
-                startingRule.push(r);
+        for (let participants of r.premiseParticipants) {
+            for (let p of participants) {
+                if (p.name != undefined && p.name == "starts") {
+                    startingRule.push(r);
+                }
             }
         }
     }
@@ -191,9 +369,11 @@ function retrieveStartingRules(rulesCF: RuleControlFlow[]) {
 function checkIfMultipleTerminate(rulesCF: RuleControlFlow[]) {
     let terminatingRules = [];
     for (let r of rulesCF) {
-        for (let p of r.conclusionParticipants) {
-            if (p.name != undefined && p.name == "terminates") {
-                terminatingRules.push(r);
+        for (let participants of r.conclusionParticipants) {
+            for (let p of participants) {
+                if (p.name != undefined && p.name == "terminates") {
+                    terminatingRules.push(r);
+                }
             }
         }
     }
@@ -201,545 +381,400 @@ function checkIfMultipleTerminate(rulesCF: RuleControlFlow[]) {
     return hasMultipleTerminate;
 }
 
-/**
- * generates nodes and edges corresponding to the conclusion of a rule. 
- * Require to retrieve the previous node name which itself construct the nodes and edges of the premise
- * @param ruleCF: the current rule
- * @param file : the file containing the generated compiler
- * @param rulesCF: all the rules of the opened concept 
- * @param previousNodeName 
- * @param terminatesNodeName 
- */
-function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode, rulesCF: RuleControlFlow[], previousNodeName: string, terminatesNodeName: string) {
+// /**
+//  * generates nodes and edges corresponding to the conclusion of a rule. 
+//  * Require to retrieve the previous node name which itself construct the nodes and edges of the premise
+//  * @param ruleCF: the current rule
+//  * @param file : the file containing the generated compiler
+//  * @param rulesCF: all the rules of the opened concept 
+//  * @param previousNodeName 
+//  * @param terminatesNodeName 
+//  */
+// function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode, rulesCF: RuleControlFlow[], previousNodeName: string, terminatesNodeName: string) {
 
-    let [previousNodePrefix, previousNodeParticipant, guardActions, param] = handlePreviousPremise(ruleCF, rulesCF, previousNodeName, file)
-    let nodeNameFromPreviousNode = (previousNodePrefix+previousNodeParticipant+ruleCF.rule.name).replace(/\./g,"_").replaceAll("(","_").replaceAll(")","_").replaceAll(")","_").replaceAll("\"","").replaceAll("+","")
+//     let [previousNodePrefix, previousNodeParticipant, guardActions, param] = handlePreviousPremise(ruleCF, rulesCF, previousNodeName, file)
+//     let nodeNameFromPreviousNode = (previousNodePrefix+previousNodeParticipant+ruleCF.rule.name).replace(/\./g,"_").replaceAll("(","_").replaceAll(")","_").replaceAll(")","_").replaceAll("\"","").replaceAll("+","")
     
-    file.append(`
-    {
-        let ${nodeNameFromPreviousNode} = this.retrieveNode("${previousNodePrefix}",${previousNodeParticipant}) //retrieve 1
-        previousNode = ${nodeNameFromPreviousNode}
-    }
-    `)
+//     file.append(`
+//     {
+//         let ${nodeNameFromPreviousNode} = this.retrieveNode("${previousNodePrefix}",${previousNodeParticipant}) //retrieve 1
+//         previousNode = ${nodeNameFromPreviousNode}
+//     }
+//     `)
 
-    let actionsString = ""
-    actionsString = visitStateModifications(ruleCF, actionsString);
-    if(actionsString.length>0){
-        file.append(`
-    {let ${ruleCF.rule.name}StateModificationNode: Node = new Step("${ruleCF.rule.name}StateModificationNode")
-    this.ccfg.addNode(${ruleCF.rule.name}StateModificationNode)
-    let e = this.ccfg.addEdge(previousNode,${ruleCF.rule.name}StateModificationNode)
-    e.guards = [...e.guards, ...[${guardActions}]]`)
+//     let actionsString = ""
+//     actionsString = visitStateModifications(ruleCF, actionsString);
+//     if(actionsString.length>0){
+//         file.append(`
+//     {let ${ruleCF.rule.name}StateModificationNode: Node = new Step("${ruleCF.rule.name}StateModificationNode")
+//     this.ccfg.addNode(${ruleCF.rule.name}StateModificationNode)
+//     let e = this.ccfg.addEdge(previousNode,${ruleCF.rule.name}StateModificationNode)
+//     e.guards = [...e.guards, ...[${guardActions}]]`)
     
-        if(param != undefined){
-            file.append(`
-    ${ruleCF.rule.name}StateModificationNode.params = [...${ruleCF.rule.name}StateModificationNode.params, ...[Object.assign( new TypedElement(), JSON.parse(\`${param.toJSON()}\`))]]
-    `)
-        }
+//         if(param != undefined){
+//             file.append(`
+//     ${ruleCF.rule.name}StateModificationNode.params = [...${ruleCF.rule.name}StateModificationNode.params, ...[Object.assign( new TypedElement(), JSON.parse(\`${param.toJSON()}\`))]]
+//     `)
+//         }
 
-        file.append(`
-    previousNode = ${ruleCF.rule.name}StateModificationNode
-    }`)
-        guardActions = ""
+//         file.append(`
+//     previousNode = ${ruleCF.rule.name}StateModificationNode
+//     }`)
+//         guardActions = ""
     
-        file.append(`
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[\`\${previousNode.uid}${ruleCF.rule.name}\`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[${actionsString}]] //AA
-    `);
-    }
+//         file.append(`
+//     previousNode.functionsNames = [...previousNode.functionsNames, ...[\`\${previousNode.uid}${ruleCF.rule.name}\`]] 
+//     previousNode.functionsDefs =[...previousNode.functionsDefs, ...[${actionsString}]] //AA
+//     `);
+//     }
     
-    let isMultipleEmission = ruleCF.rule.conclusion.eventemissions.length > 1;
-    if (isMultipleEmission) {
-        let isParallel = ruleCF.rule.conclusion.eventEmissionOperator != ";";
-        if (isParallel) {
-            handleParallelMultipleEmissions(file, ruleCF, guardActions, terminatesNodeName);
-        }else{
-            handleSequentialMultipleEmissions(file, ruleCF, guardActions, terminatesNodeName);
-        }
-    } else { //single emission
-        handleSingleEmission(ruleCF, file, guardActions, terminatesNodeName);
-    }
-    let eventEmissionActions = ""
-    let functionType = "void"
-    for(let emission of ruleCF.rule.conclusion.eventemissions){
-        if(emission.$type == "ValuedEventEmission"){
-            let [visitedEmission, returnType] =  visitValuedEventEmission(emission as ValuedEventEmission,file)
-            functionType = returnType
-            eventEmissionActions = eventEmissionActions + visitedEmission
-        }
-    }
-    file.append(`
-        previousNode.returnType = "${functionType}"
-        previousNode.functionsNames = [\`\${previousNode.uid}${ruleCF.rule.name}\`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[${eventEmissionActions}]] //GG
-    `);
+//     let isMultipleEmission = ruleCF.rule.conclusion.eventemissions.length > 1;
+//     if (isMultipleEmission) {
+//         let isParallel = ruleCF.rule.conclusion.eventEmissionOperator != ";";
+//         if (isParallel) {
+//             handleParallelMultipleEmissions(file, ruleCF, guardActions, terminatesNodeName);
+//         }else{
+//             handleSequentialMultipleEmissions(file, ruleCF, guardActions, terminatesNodeName);
+//         }
+//     } else { //single emission
+//         handleSingleEmission(ruleCF, file, guardActions, terminatesNodeName);
+//     }
+//     let eventEmissionActions = ""
+//     let functionType = "void"
+//     for(let emission of ruleCF.rule.conclusion.eventemissions){
+//         if(emission.$type == "ValuedEventEmission"){
+//             let [visitedEmission, returnType] =  visitValuedEventEmission(emission as ValuedEventEmission,file)
+//             functionType = returnType
+//             eventEmissionActions = eventEmissionActions + visitedEmission
+//         }
+//     }
+//     file.append(`
+//         previousNode.returnType = "${functionType}"
+//         previousNode.functionsNames = [\`\${previousNode.uid}${ruleCF.rule.name}\`] //overwrite existing name
+//         previousNode.functionsDefs =[...previousNode.functionsDefs, ...[${eventEmissionActions}]] //GG
+//     `);
 
-}
+// }
 
-/**
- * handles the conclusion of a rule with a single emission. It generates the code for the state modifications and the event emissions
- * @param ruleCF: the current rule
- * @param file: the file containing the generated compiler
- * @param guardActions: the guards of the rule
- * @param terminatesNodeName: the name of the node being terminated
- */
-function handleSingleEmission(ruleCF: RuleControlFlow, file: CompositeGeneratorNode, guardActions: string, terminatesNodeName: string) {
-    let isEventEmissionACollection: boolean = checkIfEventEmissionIsCollectionBased(ruleCF);
-    if (isEventEmissionACollection) {
-        let isConcurrent = (ruleCF.rule.conclusion.eventemissions[0] as CollectionRuleSync).order == "concurrent";
-        if (isConcurrent) {
-            file.append(`
-        let ${ruleCF.rule.name}ForkNode: Node = new Fork("${ruleCF.rule.name}ForkNode")
-        this.ccfg.addNode(${ruleCF.rule.name}ForkNode)
-        {let e = this.ccfg.addEdge(previousNode,${ruleCF.rule.name}ForkNode)
-        e.guards = [...e.guards, ...[${guardActions}]] //CC
-        }
+// /**
+//  * handles the conclusion of a rule with a single emission. It generates the code for the state modifications and the event emissions
+//  * @param ruleCF: the current rule
+//  * @param file: the file containing the generated compiler
+//  * @param guardActions: the guards of the rule
+//  * @param terminatesNodeName: the name of the node being terminated
+//  */
+// function handleSingleEmission(ruleCF: RuleControlFlow, file: CompositeGeneratorNode, guardActions: string, terminatesNodeName: string) {
+//     let isEventEmissionACollection: boolean = checkIfEventEmissionIsCollectionBased(ruleCF);
+//     if (isEventEmissionACollection) {
+//         let isConcurrent = (ruleCF.rule.conclusion.eventemissions[0] as CollectionRuleSync).order == "concurrent";
+//         if (isConcurrent) {
+//             file.append(`
+//         let ${ruleCF.rule.name}ForkNode: Node = new Fork("${ruleCF.rule.name}ForkNode")
+//         this.ccfg.addNode(${ruleCF.rule.name}ForkNode)
+//         {let e = this.ccfg.addEdge(previousNode,${ruleCF.rule.name}ForkNode)
+//         e.guards = [...e.guards, ...[${guardActions}]] //CC
+//         }
 
-        let ${ruleCF.rule.name}FakeNode: Node = new AndJoin("${ruleCF.rule.name}FakeNode")    
-        this.ccfg.addNode(${ruleCF.rule.name}FakeNode)    
-        for (var child of node.${ruleCF.conclusionParticipants[0].name}) {
-            let [childStartsNode,childTerminatesNode] = this.getOrVisitNode(child)
-            this.ccfg.addEdge(${ruleCF.rule.name}ForkNode,childStartsNode)
-            this.ccfg.addEdge(childTerminatesNode,${ruleCF.rule.name}FakeNode)
-        }
+//         let ${ruleCF.rule.name}FakeNode: Node = new AndJoin("${ruleCF.rule.name}FakeNode")    
+//         this.ccfg.addNode(${ruleCF.rule.name}FakeNode)    
+//         for (var child of node.${ruleCF.conclusionParticipants[0].name}) {
+//             let [childStartsNode,childTerminatesNode] = this.getOrVisitNode(child)
+//             this.ccfg.addEdge(${ruleCF.rule.name}ForkNode,childStartsNode)
+//             this.ccfg.addEdge(childTerminatesNode,${ruleCF.rule.name}FakeNode)
+//         }
 
-        `);
-        } else { //sequential collection emission
-            file.append(`
-        let ${ruleCF.rule.name}StepNode = new Step("starts"+getASTNodeUID(node.${ruleCF.conclusionParticipants[0].name}))
-        this.ccfg.addNode(${ruleCF.rule.name}StepNode)
-        let e = this.ccfg.addEdge(previousNode,${ruleCF.rule.name}StepNode)
-        e.guards = [...e.guards, ...[${guardActions}]] //DD
+//         `);
+//         } else { //sequential collection emission
+//             file.append(`
+//         let ${ruleCF.rule.name}StepNode = new Step("starts"+getASTNodeUID(node.${ruleCF.conclusionParticipants[0].name}))
+//         this.ccfg.addNode(${ruleCF.rule.name}StepNode)
+//         let e = this.ccfg.addEdge(previousNode,${ruleCF.rule.name}StepNode)
+//         e.guards = [...e.guards, ...[${guardActions}]] //DD
 
-        previousNode = ${ruleCF.rule.name}StepNode
-        for (var child of node.${ruleCF.conclusionParticipants[0].name}) {
-            let [childStartsNode,childTerminatesNode] = this.getOrVisitNode(child)
-            this.ccfg.addEdge(previousNode,childStartsNode)
-            previousNode = childTerminatesNode
-        }
-        let ${ruleCF.conclusionParticipants[0].name}TerminatesNode = new Step("terminates"+getASTNodeUID(node.${ruleCF.conclusionParticipants[0].name}))
-        this.ccfg.addNode(${ruleCF.conclusionParticipants[0].name}TerminatesNode)
-        this.ccfg.addEdge(previousNode,${ruleCF.conclusionParticipants[0].name}TerminatesNode)
-        `);
+//         previousNode = ${ruleCF.rule.name}StepNode
+//         for (var child of node.${ruleCF.conclusionParticipants[0].name}) {
+//             let [childStartsNode,childTerminatesNode] = this.getOrVisitNode(child)
+//             this.ccfg.addEdge(previousNode,childStartsNode)
+//             previousNode = childTerminatesNode
+//         }
+//         let ${ruleCF.conclusionParticipants[0].name}TerminatesNode = new Step("terminates"+getASTNodeUID(node.${ruleCF.conclusionParticipants[0].name}))
+//         this.ccfg.addNode(${ruleCF.conclusionParticipants[0].name}TerminatesNode)
+//         this.ccfg.addEdge(previousNode,${ruleCF.conclusionParticipants[0].name}TerminatesNode)
+//         `);
 
-        }
-    } else { //single emission, single event
-        if (ruleCF.conclusionParticipants.length == 0) {
-            file.append(`
-        // conclusion with no event emission
-                `);
-        }
+//         }
+//     } else { //single emission, single event
+//         if (ruleCF.conclusionParticipants.length == 0) {
+//             file.append(`
+//         // conclusion with no event emission
+//                 `);
+//         }
 
-        else if (ruleCF.conclusionParticipants[ruleCF.conclusionParticipants.length - 1].name != undefined && ruleCF.conclusionParticipants[ruleCF.conclusionParticipants.length - 1].name == "terminates") {
-            file.append(`
-        {let e = this.ccfg.addEdge(previousNode,${terminatesNodeName})
-        e.guards = [...e.guards, ...[${guardActions}]] //EE
-        }
-        `);
-        } else {
-            let toVisitName = ruleCF.conclusionParticipants[0].name;
-            let [extraPrefix, participant] = getExtraPrefix(ruleCF, toVisitName);
-            file.append(`
-        let ${toVisitName}StartsNode${ruleCF.rule.name} = this.retrieveNode("starts",${participant})
-        `);
-            if (extraPrefix.length != 0) {
-                if (ruleCF.conclusionParticipants[0].type != "Timer") {
-                    throw new Error("in " + ruleCF.rule.name + ", only timer (and event but not yet supported) can be started/stopped from a rule, was " + ruleCF.conclusionParticipants[0].type + "(" + toVisitName + ")\n\t extraPrefix is " + extraPrefix);
-                }
-                let duration = ((ruleCF.rule.$container as RuleOpening).runtimeState.filter(rs => rs.name == toVisitName)[0] as VariableDeclaration).value?.$cstNode?.text;
-                file.append(`
-            let ${toVisitName}TerminatesNode${ruleCF.rule.name} = this.retrieveNode("terminates",${participant})
-            ${toVisitName}StartsNode${ruleCF.rule.name} = new Step("starts${toVisitName}"+getASTNodeUID(node))
-            this.ccfg.addNode( ${toVisitName}StartsNode${ruleCF.rule.name})
-            ${toVisitName}StartsNode${ruleCF.rule.name}.functionsNames = [\`starts\${${toVisitName}StartsNode${ruleCF.rule.name}.uid}${toVisitName}\`]
-            ${toVisitName}StartsNode${ruleCF.rule.name}.returnType = "void"
-            ${toVisitName}StartsNode${ruleCF.rule.name}.functionsDefs = [...${toVisitName}StartsNode${ruleCF.rule.name}.functionsDefs, ...[\`std::this_thread::sleep_for(\${node.${duration}}ms);\`]] //GGG
-            ${toVisitName}TerminatesNode${ruleCF.rule.name} = new Step("terminates${toVisitName}"+getASTNodeUID(node))
-            this.ccfg.addNode(${toVisitName}TerminatesNode${ruleCF.rule.name})
+//         else if (ruleCF.conclusionParticipants[ruleCF.conclusionParticipants.length - 1].name != undefined && ruleCF.conclusionParticipants[ruleCF.conclusionParticipants.length - 1].name == "terminates") {
+//             file.append(`
+//         {let e = this.ccfg.addEdge(previousNode,${terminatesNodeName})
+//         e.guards = [...e.guards, ...[${guardActions}]] //EE
+//         }
+//         `);
+//         } else {
+//             let toVisitName = ruleCF.conclusionParticipants[0].name;
+//             let [extraPrefix, participant] = getExtraPrefix(ruleCF, toVisitName);
+//             file.append(`
+//         let ${toVisitName}StartsNode${ruleCF.rule.name} = this.retrieveNode("starts",${participant})
+//         `);
+//             if (extraPrefix.length != 0) {
+//                 if (ruleCF.conclusionParticipants[0].type != "Timer") {
+//                     throw new Error("in " + ruleCF.rule.name + ", only timer (and event but not yet supported) can be started/stopped from a rule, was " + ruleCF.conclusionParticipants[0].type + "(" + toVisitName + ")\n\t extraPrefix is " + extraPrefix);
+//                 }
+//                 let duration = ((ruleCF.rule.$container as RuleOpening).runtimeState.filter(rs => rs.name == toVisitName)[0] as VariableDeclaration).value?.$cstNode?.text;
+//                 file.append(`
+//             let ${toVisitName}TerminatesNode${ruleCF.rule.name} = this.retrieveNode("terminates",${participant})
+//             ${toVisitName}StartsNode${ruleCF.rule.name} = new Step("starts${toVisitName}"+getASTNodeUID(node))
+//             this.ccfg.addNode( ${toVisitName}StartsNode${ruleCF.rule.name})
+//             ${toVisitName}StartsNode${ruleCF.rule.name}.functionsNames = [\`starts\${${toVisitName}StartsNode${ruleCF.rule.name}.uid}${toVisitName}\`]
+//             ${toVisitName}StartsNode${ruleCF.rule.name}.returnType = "void"
+//             ${toVisitName}StartsNode${ruleCF.rule.name}.functionsDefs = [...${toVisitName}StartsNode${ruleCF.rule.name}.functionsDefs, ...[\`std::this_thread::sleep_for(\${node.${duration}}ms);\`]] //GGG
+//             ${toVisitName}TerminatesNode${ruleCF.rule.name} = new Step("terminates${toVisitName}"+getASTNodeUID(node))
+//             this.ccfg.addNode(${toVisitName}TerminatesNode${ruleCF.rule.name})
     
-            {
-            let e1 = this.ccfg.addEdge(previousNode, ${toVisitName}StartsNode${ruleCF.rule.name})
-            e1.guards = [...e1.guards, ...[]] //FFF
-            let e2 = this.ccfg.addEdge( ${toVisitName}StartsNode${ruleCF.rule.name},${toVisitName}TerminatesNode${ruleCF.rule.name})
-            e2.guards = [...e2.guards, ...[]] //FFF
-            }
+//             {
+//             let e1 = this.ccfg.addEdge(previousNode, ${toVisitName}StartsNode${ruleCF.rule.name})
+//             e1.guards = [...e1.guards, ...[]] //FFF
+//             let e2 = this.ccfg.addEdge( ${toVisitName}StartsNode${ruleCF.rule.name},${toVisitName}TerminatesNode${ruleCF.rule.name})
+//             e2.guards = [...e2.guards, ...[]] //FFF
+//             }
 
-            `);
-            } else {
-                file.append(`
-            {
-            let e = this.ccfg.addEdge(previousNode,${toVisitName}StartsNode${ruleCF.rule.name})
-            e.guards = [...e.guards, ...[${guardActions}]] //FF
-            }
-            `);
-            }
-        }
-    }
-}
+//             `);
+//             } else {
+//                 file.append(`
+//             {
+//             let e = this.ccfg.addEdge(previousNode,${toVisitName}StartsNode${ruleCF.rule.name})
+//             e.guards = [...e.guards, ...[${guardActions}]] //FF
+//             }
+//             `);
+//             }
+//         }
+//     }
+// }
 
-/**
- * handles the conclusion of a rule with multiple emission that occur concurently. It generates the code for the state modifications and the event emissions
- * @param ruleCF: the current rule
- * @param file: the file containing the generated compiler
- * @param guardActions: the guards of the rule
- * @param terminatesNodeName: the name of the node being terminated
- */
+// /**
+//  * handles the conclusion of a rule with multiple emission that occur concurently. It generates the code for the state modifications and the event emissions
+//  * @param ruleCF: the current rule
+//  * @param file: the file containing the generated compiler
+//  * @param guardActions: the guards of the rule
+//  * @param terminatesNodeName: the name of the node being terminated
+//  */
 
-function handleParallelMultipleEmissions(file: CompositeGeneratorNode, ruleCF: RuleControlFlow, guardActions: string, terminatesNodeName: string) {
-    file.append(`
-        let ${ruleCF.rule.name}ForkNode: Node = new Fork("${ruleCF.rule.name}ForkNode")
-        this.ccfg.addNode(${ruleCF.rule.name}ForkNode)
-        {let e = this.ccfg.addEdge(previousNode,${ruleCF.rule.name}ForkNode)
-        e.guards = [...e.guards, ...[${guardActions}]] //BB
-        }
-        `);
-    let splittedConclusionParticipants = splitArrayByParticipants(ruleCF.conclusionParticipants);
-    for (let emissionParticipant of splittedConclusionParticipants) {
-        const participantName = emissionParticipant[0].name;
-        let [extraPrefix, participant] = getExtraPrefix(ruleCF, participantName);
-        if (extraPrefix.length != 0) {
-            if (emissionParticipant[0].type != "Timer") {
-                throw new Error("only timer (and event but not yet supported) can be started/stopped from a rule, was " + emissionParticipant[0].type);
-            }
-            file.append(`
-    let ${participantName}StartsNode${ruleCF.rule.name} = this.retrieveNode("starts"+${extraPrefix},${participant})
-    let ${participantName}TerminatesNode${ruleCF.rule.name} = this.retrieveNode("terminates"+${extraPrefix},${participant})
-    {
-    //let e1 = this.ccfg.addEdge(previousNode, ${participantName}StartsNode${ruleCF.rule.name})
-    //e1.guards = [...e1.guards, ...[]] //FF22
-    let e2 = this.ccfg.addEdge( ${participantName}StartsNode${ruleCF.rule.name},${participantName}TerminatesNode${ruleCF.rule.name})
-    e2.guards = [...e2.guards, ...[]] //FF22
-    this.ccfg.addEdge(${ruleCF.rule.name}ForkNode,${participantName}StartsNode${ruleCF.rule.name})
-    }
-   `);
+// function handleParallelMultipleEmissions(file: CompositeGeneratorNode, ruleCF: RuleControlFlow, guardActions: string, terminatesNodeName: string) {
+//     file.append(`
+//         let ${ruleCF.rule.name}ForkNode: Node = new Fork("${ruleCF.rule.name}ForkNode")
+//         this.ccfg.addNode(${ruleCF.rule.name}ForkNode)
+//         {let e = this.ccfg.addEdge(previousNode,${ruleCF.rule.name}ForkNode)
+//         e.guards = [...e.guards, ...[${guardActions}]] //BB
+//         }
+//         `);
+//     let splittedConclusionParticipants = ruleCF.conclusionParticipants;
+//     for (let emissionParticipant of splittedConclusionParticipants) {
+//         const participantName = emissionParticipant[0].name;
+//         let [extraPrefix, participant] = getExtraPrefix(ruleCF, participantName);
+//         if (extraPrefix.length != 0) {
+//             if (emissionParticipant[0].type != "Timer") {
+//                 throw new Error("only timer (and event but not yet supported) can be started/stopped from a rule, was " + emissionParticipant[0].type);
+//             }
+//             file.append(`
+//     let ${participantName}StartsNode${ruleCF.rule.name} = this.retrieveNode("starts"+${extraPrefix},${participant})
+//     let ${participantName}TerminatesNode${ruleCF.rule.name} = this.retrieveNode("terminates"+${extraPrefix},${participant})
+//     {
+//     //let e1 = this.ccfg.addEdge(previousNode, ${participantName}StartsNode${ruleCF.rule.name})
+//     //e1.guards = [...e1.guards, ...[]] //FF22
+//     let e2 = this.ccfg.addEdge( ${participantName}StartsNode${ruleCF.rule.name},${participantName}TerminatesNode${ruleCF.rule.name})
+//     e2.guards = [...e2.guards, ...[]] //FF22
+//     this.ccfg.addEdge(${ruleCF.rule.name}ForkNode,${participantName}StartsNode${ruleCF.rule.name})
+//     }
+//    `);
 
-        } else {
-            if(participantName == "this" && emissionParticipant[1].name == "terminates") {
-                file.append(`
-        this.ccfg.addEdge(previousNode,${terminatesNodeName})
-        previousNode = ${terminatesNodeName}
-        `);
-            }else{
+//         } else {
+//             if(participantName == "this" && emissionParticipant[1].name == "terminates") {
+//                 file.append(`
+//         this.ccfg.addEdge(previousNode,${terminatesNodeName})
+//         previousNode = ${terminatesNodeName}
+//         `);
+//             }else{
 
-            file.append(`
-        let [${participantName}StartNode/*,${participantName}TerminatesNode*/] = this.getOrVisitNode(node.${participantName})
-        this.ccfg.addEdge(${ruleCF.rule.name}ForkNode,${participantName}StartNode)
-        `);
-            }
-        }
-    }
-}
-
-
-/**
- * handles the conclusion of a rule with multiple emission that occur sequentially. It generates the code for the state modifications and the event emissions
- * @param ruleCF: the current rule
- * @param file: the file containing the generated compiler
- * @param guardActions: the guards of the rule
- * @param terminatesNodeName: the name of the node being terminated
- */
-function handleSequentialMultipleEmissions(file: CompositeGeneratorNode, ruleCF: RuleControlFlow, guardActions: string, terminatesNodeName: string) {
-    let splittedConclusionParticipants = splitArrayByParticipants(ruleCF.conclusionParticipants);
-    //console.log(chalk.bgGreenBright("ruleCF.conclusionParticipants", ruleCF.conclusionParticipants.map(p => p.name)))
-    for (let emissionParticipant of splittedConclusionParticipants) {
-        //console.log(chalk.bgGreenBright("emissionParticipant", emissionParticipant.map(p => p.name)))
-        const participantName = emissionParticipant[0].name;
-        let [extraPrefix, participant] = getExtraPrefix(ruleCF, participantName);
-        if (extraPrefix.length != 0) {
-            if (emissionParticipant[0].type != "Timer") {
-                throw new Error("only timer (and event but not yet supported) can be started/stopped from a rule, was " + emissionParticipant[0].type);
-            }
-            file.append(`
-    let ${participantName}StartsNode${ruleCF.rule.name} = this.retrieveNode("starts"+${extraPrefix},${participant})
-    let ${participantName}TerminatesNode${ruleCF.rule.name} = this.retrieveNode("terminates"+${extraPrefix},${participant})
-    {
-    let e1 = this.ccfg.addEdge(previousNode, ${participantName}StartsNode${ruleCF.rule.name})
-    e1.guards = [...e1.guards, ...[]] //FF3
-    let e2 = this.ccfg.addEdge( ${participantName}StartsNode${ruleCF.rule.name},${participantName}TerminatesNode${ruleCF.rule.name})
-    e2.guards = [...e2.guards, ...[]] //FF3
-    }
-   `);
-
-        } else {
-            //console.log(chalk.bgGreenBright("participantName", participantName))
-            if(participantName == "this" && emissionParticipant[1].name == "terminates") {
-                file.append(`
-        this.ccfg.addEdge(previousNode,${terminatesNodeName})
-        previousNode = ${terminatesNodeName}
-        `);
-            }else{
-                file.append(`
-        let [${participantName}StartNode,${participantName}TerminatesNode] = this.getOrVisitNode(node.${participantName})
-        this.ccfg.addEdge(previousNode,${participantName}StartNode)
-        previousNode = ${participantName}TerminatesNode
-        `);
-            }
-        }
-
-    }
-}
-
-/**
- * 
- * @param ruleCF 
- * @param participantName 
- * @returns the extra prefix to be applied in case of a runtime state participant & the actual participant
- * note the participant is a runtime state if the prefix is not empty
- */
-function getExtraPrefix(ruleCF: RuleControlFlow, participantName: string|undefined) : [string, string] {
-    let elemToVisitIsARuntimeState = (ruleCF.rule.$container as RuleOpening).runtimeState.some(rs => (rs as NamedElement).name == participantName)
-    if (elemToVisitIsARuntimeState) {
-        return[`"${participantName}"`,"node"];
-    } else {
-        return["", `node.${participantName}`];
-    }
-}
-
-/**
- * returns the previous node name. May imply the creation of new nodes in case of multiple synchronizations that may require a decision or join node
- * @param ruleCF 
- * @param allRulesCF
- * @param previousNodeName 
- * @param file
- * 
- * @returns [the previous node prefix, the guards, the parameter typed element in json format]
- */
-function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow[], previousNodeName: string, file: CompositeGeneratorNode): [string,string,string, TypedElement|undefined] { 
-    let isStartingRule = ruleCF.premiseParticipants[0].name == "starts";
-    if (isStartingRule) {
-        return ["starts","node", "", undefined]
-    }
-
-    let isSimpleComparison = ruleCF.rule.premise.eventExpression.$type == "ExplicitValuedEventRefConstantComparison"
-                             || ruleCF.rule.premise.eventExpression.$type == "ImplicitValuedEventRefConstantComparison";
-    if (isSimpleComparison) {
-        return handlePremiseSimpleComparison(file, ruleCF);
-    }
-
-    let isMultipleSynchronization = ruleCF.rule.premise.eventExpression.$type == "EventConjunction"
-                                    || ruleCF.rule.premise.eventExpression.$type == "EventDisjunction"
-                                    || ruleCF.rule.premise.eventExpression.$type == "NaryEventExpression";
-    if (isMultipleSynchronization) {
-        return handlePremiseMultipleSynchronization(file, ruleCF, allRulesCF);
-    } 
-
-    //simple event synchro 
-    let [varActions,param] = visitValuedEventRef(ruleCF.rule.premise.eventExpression as ValuedEventRef)
-    if(varActions.length>0){
-        console.warn(chalk.gray(`in the context of ${ruleCF.rule.name}, these varActions have been disregarded: ${varActions}`))
-    }
-    let[extraPrefix, participant] = getExtraPrefix(ruleCF, ruleCF.premiseParticipants[0].name);
-    if(param.name != "NULL"){
-        return [`terminates${extraPrefix.replaceAll(`"`,``)}`, `${participant}`, "", param]
-    }
-    return [`terminates${extraPrefix.replaceAll(`"`,``)}`, `${participant}`, "", undefined]
-    
-}
-
-/**
- * returns the previous node name in case of multiple synchronizations that may require a join node. It generates the code for the state modifications and the event emissions
- * @param file 
- * @param ruleCF 
- * @param allRulesCF 
- * @returns [the previous node prefix, the guards, the parameter typed element in json format]
- */
-
-function handlePremiseMultipleSynchronization(file: CompositeGeneratorNode, ruleCF: RuleControlFlow, allRulesCF: RuleControlFlow[]) : [string,string,string, TypedElement|undefined]{
-    const indexRight = ruleCF.premiseParticipants.findIndex(p => p.type == "event") + 1
-    let multipleSynchroPrefix: string = ""
-    let multipleSynchroParticipant: string = ""
-    let premiseActions: string = ""
-    let premiseGuards: string = ""
-    let params: TypedElement[] = []
-    let leftParticipantName = ruleCF.premiseParticipants[0].name
-    let rightParticipantName = undefined
-    switch (ruleCF.rule.premise.eventExpression.$type) {
-        case "EventConjunction":
-            rightParticipantName = ruleCF.premiseParticipants[indexRight].name
-            file.append(`
-    let ${ruleCF.rule.name}AndJoinNode: Node = new AndJoin("andJoinNode"+getASTNodeUID(node.${leftParticipantName}))
-    this.ccfg.addNode(${ruleCF.rule.name}AndJoinNode)
-    let ${leftParticipantName}TerminatesNode${ruleCF.rule.name} = this.retrieveNode("terminates", node.${leftParticipantName})
-    let ${rightParticipantName}TerminatesNode${ruleCF.rule.name} = this.retrieveNode("terminates", node.${rightParticipantName})
-    this.ccfg.addEdge(${leftParticipantName}TerminatesNode${ruleCF.rule.name},${ruleCF.rule.name}AndJoinNode)
-    this.ccfg.addEdge(${rightParticipantName}TerminatesNode${ruleCF.rule.name},${ruleCF.rule.name}AndJoinNode)
-            `)
-            multipleSynchroPrefix=  "andJoinNode"
-            multipleSynchroParticipant = `node.${leftParticipantName}`
-            let [a, g, p] = visitMultipleSynchroEventRef(ruleCF.rule.premise.eventExpression.lhs, ruleCF.rule.premise.eventExpression.rhs);
-            premiseActions = a
-            premiseGuards = g
-            params = p
-            break
-        case "EventDisjunction":
-            rightParticipantName = ruleCF.premiseParticipants[indexRight].name
-            file.append(`
-    let ${ruleCF.rule.name}OrJoinNode: Node = new OrJoin("orJoinNode"+getASTNodeUID(node.${leftParticipantName}))
-    this.ccfg.addNode(${ruleCF.rule.name}OrJoinNode)
-    let ${leftParticipantName}TerminatesNode${ruleCF.rule.name} = this.retrieveNode("terminates", node.${leftParticipantName})
-    let ${rightParticipantName}TerminatesNode${ruleCF.rule.name} = this.retrieveNode("terminates", node.${rightParticipantName})
-    this.ccfg.addEdge(${leftParticipantName}TerminatesNode${ruleCF.rule.name},${ruleCF.rule.name}OrJoinNode)
-    this.ccfg.addEdge(${rightParticipantName}TerminatesNode${ruleCF.rule.name},${ruleCF.rule.name}OrJoinNode)
-            `)
-            multipleSynchroPrefix= "orJoinNode"
-            multipleSynchroParticipant = `node.${leftParticipantName}`
-            let [a2, g2,p2] = visitMultipleSynchroEventRef(ruleCF.rule.premise.eventExpression.lhs, ruleCF.rule.premise.eventExpression.rhs);
-            premiseActions = a2
-            premiseGuards = g2
-            params = p2
-            break
-        case "NaryEventExpression":
-            if (ruleCF.rule.premise.eventExpression.policy.operator == "lastOf") {
-                file.append(`
-    let ${ruleCF.rule.name}LastOfNode: Node = new AndJoin("lastOfNode"+getASTNodeUID(node.${ruleCF.premiseParticipants[0].name}))
-    this.ccfg.replaceNode(${getEmittingRuleName(ruleCF,allRulesCF)}FakeNode,${ruleCF.rule.name}LastOfNode)                    
-                `)
-                multipleSynchroPrefix= "lastOfNode"
-                multipleSynchroParticipant = `node.${ruleCF.premiseParticipants[0].name}`
-            } else {
-                file.append(`
-    let ${ruleCF.rule.name}FirstOfNode: Node = new OrJoin("firstOfNode"+getASTNodeUID(node.${ruleCF.premiseParticipants[0].name}))
-    this.ccfg.replaceNode(${getEmittingRuleName(ruleCF,allRulesCF)}FakeNode,${ruleCF.rule.name}FirstOfNode)
-                `)
-                multipleSynchroPrefix= "firstOfNode"
-                multipleSynchroParticipant = `node.${ruleCF.premiseParticipants[0].name}`
-                break
-            }
-    }
+//             file.append(`
+//         let [${participantName}StartNode/*,${participantName}TerminatesNode*/] = this.getOrVisitNode(node.${participantName})
+//         this.ccfg.addEdge(${ruleCF.rule.name}ForkNode,${participantName}StartNode)
+//         `);
+//             }
+//         }
+//     }
+// }
 
 
-    if (ruleCF.rule.premise.eventExpression.$type === "NaryEventExpression") {
-        //no premise actions ?
-        return [multipleSynchroPrefix,`${multipleSynchroParticipant}`,premiseGuards, undefined]
-    }
-    let ownsACondition = chekIfOwnsACondition(ruleCF.rule.premise.eventExpression as EventCombination)
-    if(ownsACondition){
-        file.append(`
-    let ${ruleCF.rule.name}ConditionNode: Node = new Choice("conditionNode"+getASTNodeUID(node.${ruleCF.premiseParticipants[0].name}))
-    this.ccfg.addNode(${ruleCF.rule.name}ConditionNode)
-    let tmpMultipleSynchroNode = this.ccfg.getNodeFromName("${multipleSynchroPrefix}"+getASTNodeUID(${multipleSynchroParticipant}))
-    if(tmpMultipleSynchroNode == undefined){
-        throw new Error("impossible to be there ${multipleSynchroPrefix}"+getASTNodeUID(${multipleSynchroParticipant}))
-    }
-    this.ccfg.addEdge(tmpMultipleSynchroNode,${ruleCF.rule.name}ConditionNode)
-        `)
-        multipleSynchroPrefix= "conditionNode"
-        multipleSynchroParticipant = `node.${ruleCF.premiseParticipants[0].name}`
-    }
+// /**
+//  * handles the conclusion of a rule with multiple emission that occur sequentially. It generates the code for the state modifications and the event emissions
+//  * @param ruleCF: the current rule
+//  * @param file: the file containing the generated compiler
+//  * @param guardActions: the guards of the rule
+//  * @param terminatesNodeName: the name of the node being terminated
+//  */
+// function handleSequentialMultipleEmissions(file: CompositeGeneratorNode, ruleCF: RuleControlFlow, guardActions: string, terminatesNodeName: string) {
+//     let splittedConclusionParticipants = ruleCF.conclusionParticipants;
+//     //console.log(chalk.bgGreenBright("ruleCF.conclusionParticipants", ruleCF.conclusionParticipants.map(p => p.name)))
+//     for (let emissionParticipant of splittedConclusionParticipants) {
+//         //console.log(chalk.bgGreenBright("emissionParticipant", emissionParticipant.map(p => p.name)))
+//         const participantName = emissionParticipant[0].name;
+//         let [extraPrefix, participant] = getExtraPrefix(ruleCF, participantName);
+//         if (extraPrefix.length != 0) {
+//             if (emissionParticipant[0].type != "Timer") {
+//                 throw new Error("only timer (and event but not yet supported) can be started/stopped from a rule, was " + emissionParticipant[0].type);
+//             }
+//             file.append(`
+//     let ${participantName}StartsNode${ruleCF.rule.name} = this.retrieveNode("starts"+${extraPrefix},${participant})
+//     let ${participantName}TerminatesNode${ruleCF.rule.name} = this.retrieveNode("terminates"+${extraPrefix},${participant})
+//     {
+//     let e1 = this.ccfg.addEdge(previousNode, ${participantName}StartsNode${ruleCF.rule.name})
+//     e1.guards = [...e1.guards, ...[]] //FF3
+//     let e2 = this.ccfg.addEdge( ${participantName}StartsNode${ruleCF.rule.name},${participantName}TerminatesNode${ruleCF.rule.name})
+//     e2.guards = [...e2.guards, ...[]] //FF3
+//     }
+//    `);
 
-    file.append(`
-    {
-        let multipleSynchroNode = this.ccfg.getNodeFromName("${multipleSynchroPrefix}"+getASTNodeUID(${multipleSynchroParticipant}))
-        if(multipleSynchroNode == undefined){
-            throw new Error("impossible to be there ${multipleSynchroPrefix}"+getASTNodeUID(${multipleSynchroParticipant}))
-        }
-        multipleSynchroNode.params = [...multipleSynchroNode.params, ...[${params.map(p => "Object.assign( new TypedElement(), JSON.parse(`"+p.toJSON()+"`))").join(",")}]]
-        multipleSynchroNode.functionsDefs = [...multipleSynchroNode.functionsDefs, ...[${premiseActions}]] //HH
-    }
-    `)
-    
-    return [multipleSynchroPrefix,`${multipleSynchroParticipant}`,premiseGuards, undefined]
-}
+//         } else {
+//             //console.log(chalk.bgGreenBright("participantName", participantName))
+//             if(participantName == "this" && emissionParticipant[1].name == "terminates") {
+//                 file.append(`
+//         this.ccfg.addEdge(previousNode,${terminatesNodeName})
+//         previousNode = ${terminatesNodeName}
+//         `);
+//             }else{
+//                 file.append(`
+//         let [${participantName}StartNode,${participantName}TerminatesNode] = this.getOrVisitNode(node.${participantName})
+//         this.ccfg.addEdge(previousNode,${participantName}StartNode)
+//         previousNode = ${participantName}TerminatesNode
+//         `);
+//             }
+//         }
 
+//     }
+// }
 
-/**
- * returns the previous node name in case of a comparison premise. It generates the code for the state modifications and the event emissions
- * @param file 
- * @param ruleCF 
- * @returns [the previous node prefix, the guards, the parameter typed element in json format]
- */
-function handlePremiseSimpleComparison(file: CompositeGeneratorNode, ruleCF: RuleControlFlow) : [string,string,string, TypedElement|undefined]{
-    let [extraPrefix, participant] = getExtraPrefix(ruleCF, ruleCF.premiseParticipants[0].name);
-    let participantName = ruleCF.premiseParticipants[0].name
-
-    file.append(`
-        let ${participantName}TerminatesNode${ruleCF.rule.name} = this.retrieveNode("terminates",${participant})
-        let ${participantName}ChoiceNode${ruleCF.rule.name} = this.ccfg.getNodeFromName("choiceNode"+getASTNodeUID(${participant}))
-        if (${participantName}ChoiceNode${ruleCF.rule.name} == undefined) {
-            let ${participantName}ChoiceNode = new Choice("choiceNode"+getASTNodeUID(${participant}))
-            this.ccfg.addNode(${participantName}ChoiceNode)
-            this.ccfg.addEdge(${participantName}TerminatesNode${ruleCF.rule.name},${participantName}ChoiceNode)
-            ${participantName}ChoiceNode${ruleCF.rule.name} = ${participantName}ChoiceNode
-        }else{
-            this.ccfg.addEdge(${participantName}TerminatesNode${ruleCF.rule.name},${participantName}ChoiceNode${ruleCF.rule.name})
-        }
-        `);
-    let guards: string = visitValuedEventRefComparison(ruleCF.rule.premise.eventExpression as ValuedEventRefConstantComparison);
-    return [`choiceNode`+extraPrefix, `${participant}`, guards, undefined];
-}
-
-
-/**
- * puts all the actions and the guards of the rule in strings 
- * @param lhs left hand side of the multiple synchronization
- * @param rhs right hand side of the multiple synchronization
- * @returns [the actions, the guards, the parameters]
- */
-function visitMultipleSynchroEventRef(lhs: EventExpression, rhs: EventExpression) :[string, string, TypedElement[]]{
-    let actions : string = ""
-    let guards : string = ""
-    let params : TypedElement[] = []
-    if (lhs.$type == "ExplicitValuedEventRef" || lhs.$type == "ImplicitValuedEventRef") {
-        let [leftActions, p] = visitValuedEventRef(lhs as ValuedEventRef);
-        params.push(p)
-        if(actions.length>0){
-            actions+=","      
-        }
-        actions+=leftActions 
-    }
-    if (rhs.$type == "ExplicitValuedEventRef" || rhs.$type == "ImplicitValuedEventRef") {
-        let [rightActions, p] = visitValuedEventRef(rhs as ValuedEventRef);
-        params.push(p)
-        if(actions.length>0){
-            actions+=","       
-        }
-        actions+=rightActions
-    }
-    if (lhs.$type == "ExplicitValuedEventRefConstantComparison" || lhs.$type == "ImplicitValuedEventRefConstantComparison") {
-        let leftGuards: string = visitValuedEventRefComparison(lhs as ValuedEventRefConstantComparison);
-        if(guards.length>0){
-            guards+="," 
-        }
-        guards+=leftGuards      
-    }
-    if (rhs.$type == "ExplicitValuedEventRefConstantComparison" || rhs.$type == "ImplicitValuedEventRefConstantComparison") {
-        let rightGuards: string = visitValuedEventRefComparison(rhs as ValuedEventRefConstantComparison);
-        if(guards.length>0){
-            guards+="," 
-        }
-        guards+=rightGuards
-    }
-    return [actions,guards,params]
-}
+// /**
+//  * 
+//  * @param ruleCF 
+//  * @param participantName 
+//  * @returns the extra prefix to be applied in case of a runtime state participant & the actual participant
+//  * note the participant is a runtime state if the prefix is not empty
+//  */
+// function getExtraPrefix(ruleCF: RuleControlFlow, participantName: string|undefined) : [string, string] {
+//     let elemToVisitIsARuntimeState = (ruleCF.rule.$container as RuleOpening).runtimeState.some(rs => (rs as NamedElement).name == participantName)
+//     if (elemToVisitIsARuntimeState) {
+//         return[`"${participantName}"`,"node"];
+//     } else {
+//         return["", `node.${participantName}`];
+//     }
+// }
 
 
-/**
- * checks if the event expression has a comparison on either side
- * @param comb the event expression
- * @returns true if the event expression has a comparison on either side
- */
-function chekIfOwnsACondition(comb: EventCombination): boolean {
-    return comb.lhs.$type == "ExplicitValuedEventRefConstantComparison" || comb.lhs.$type == "ImplicitValuedEventRefConstantComparison"
-            ||
-           comb.rhs.$type == "ExplicitValuedEventRefConstantComparison" || comb.rhs.$type == "ImplicitValuedEventRefConstantComparison"
-}
+
+// /**
+//  * returns the previous node name in case of a comparison premise. It generates the code for the state modifications and the event emissions
+//  * @param file 
+//  * @param ruleCF 
+//  * @returns [the previous node prefix, the guards, the parameter typed element in json format]
+//  */
+// function handlePremiseSimpleComparison(file: CompositeGeneratorNode, ruleCF: RuleControlFlow) : [string,string,string, TypedElement|undefined]{
+//     let [extraPrefix, participant] = getExtraPrefix(ruleCF, ruleCF.premiseParticipants[0].name);
+//     let participantName = ruleCF.premiseParticipants[0].name
+
+//     file.append(`
+//         let ${participantName}TerminatesNode${ruleCF.rule.name} = this.retrieveNode("terminates",${participant})
+//         let ${participantName}ChoiceNode${ruleCF.rule.name} = this.ccfg.getNodeFromName("choiceNode"+getASTNodeUID(${participant}))
+//         if (${participantName}ChoiceNode${ruleCF.rule.name} == undefined) {
+//             let ${participantName}ChoiceNode = new Choice("choiceNode"+getASTNodeUID(${participant}))
+//             this.ccfg.addNode(${participantName}ChoiceNode)
+//             this.ccfg.addEdge(${participantName}TerminatesNode${ruleCF.rule.name},${participantName}ChoiceNode)
+//             ${participantName}ChoiceNode${ruleCF.rule.name} = ${participantName}ChoiceNode
+//         }else{
+//             this.ccfg.addEdge(${participantName}TerminatesNode${ruleCF.rule.name},${participantName}ChoiceNode${ruleCF.rule.name})
+//         }
+//         `);
+//     let guards: string = visitValuedEventRefComparison(ruleCF.rule.premise.eventExpression as ValuedEventRefConstantComparison);
+//     return [`choiceNode`+extraPrefix, `${participant}`, guards, undefined];
+// }
 
 
-/**
- * returns the name of the rule emitting the event that starts this rule
- * @param ruleCF the current rule
- * @param allRulesCF all the rules of the opened concept
- * @returns the name of the rule emitting the event
- */
-function getEmittingRuleName(ruleCF: RuleControlFlow, allRulesCF: RuleControlFlow[]): string {
-    let premiseFirstParticipant = ruleCF.premiseParticipants[0]
-    for(let rule of allRulesCF){
-        if (rule.conclusionParticipants[0].name === premiseFirstParticipant.name){
-            return rule.rule.name
-        }
-    }
-    return "NotFound"+premiseFirstParticipant.name
-}
+// /**
+//  * puts all the actions and the guards of the rule in strings 
+//  * @param lhs left hand side of the multiple synchronization
+//  * @param rhs right hand side of the multiple synchronization
+//  * @returns [the actions, the guards, the parameters]
+//  */
+// function visitMultipleSynchroEventRef(lhs: EventExpression, rhs: EventExpression) :[string, string, TypedElement[]]{
+//     let actions : string = ""
+//     let guards : string = ""
+//     let params : TypedElement[] = []
+//     if (lhs.$type == "ExplicitValuedEventRef" || lhs.$type == "ImplicitValuedEventRef") {
+//         let [leftActions, p] = visitValuedEventRef(lhs as ValuedEventRef);
+//         params.push(p)
+//         if(actions.length>0){
+//             actions+=","      
+//         }
+//         actions+=leftActions 
+//     }
+//     if (rhs.$type == "ExplicitValuedEventRef" || rhs.$type == "ImplicitValuedEventRef") {
+//         let [rightActions, p] = visitValuedEventRef(rhs as ValuedEventRef);
+//         params.push(p)
+//         if(actions.length>0){
+//             actions+=","       
+//         }
+//         actions+=rightActions
+//     }
+//     if (lhs.$type == "ExplicitValuedEventRefConstantComparison" || lhs.$type == "ImplicitValuedEventRefConstantComparison") {
+//         let leftGuards: string = visitValuedEventRefComparison(lhs as ValuedEventRefConstantComparison);
+//         if(guards.length>0){
+//             guards+="," 
+//         }
+//         guards+=leftGuards      
+//     }
+//     if (rhs.$type == "ExplicitValuedEventRefConstantComparison" || rhs.$type == "ImplicitValuedEventRefConstantComparison") {
+//         let rightGuards: string = visitValuedEventRefComparison(rhs as ValuedEventRefConstantComparison);
+//         if(guards.length>0){
+//             guards+="," 
+//         }
+//         guards+=rightGuards
+//     }
+//     return [actions,guards,params]
+// }
+
+
+// /**
+//  * checks if the event expression has a comparison on either side
+//  * @param comb the event expression
+//  * @returns true if the event expression has a comparison on either side
+//  */
+// function chekIfOwnsACondition(comb: EventCombination): boolean {
+//     return comb.lhs.$type == "ExplicitValuedEventRefConstantComparison" || comb.lhs.$type == "ImplicitValuedEventRefConstantComparison"
+//             ||
+//            comb.rhs.$type == "ExplicitValuedEventRefConstantComparison" || comb.rhs.$type == "ImplicitValuedEventRefConstantComparison"
+// }
+
+
+// /**
+//  * returns the name of the rule emitting the event that starts this rule
+//  * @param ruleCF the current rule
+//  * @param allRulesCF all the rules of the opened concept
+//  * @returns the name of the rule emitting the event
+//  */
+// function getEmittingRuleName(ruleCF: RuleControlFlow, allRulesCF: RuleControlFlow[]): string {
+//     let premiseFirstParticipant = ruleCF.premiseParticipants[0]
+//     for(let rule of allRulesCF){
+//         if (rule.conclusionParticipants[0].name === premiseFirstParticipant.name){
+//             return rule.rule.name
+//         }
+//     }
+//     return "NotFound"+premiseFirstParticipant.name
+// }
 
 
 /**
@@ -747,11 +782,13 @@ function getEmittingRuleName(ruleCF: RuleControlFlow, allRulesCF: RuleControlFlo
  * @param ruleCF  the current rule
  * @returns a boolean indicating if the event emission is collection based
  */
-function checkIfEventEmissionIsCollectionBased(ruleCF: RuleControlFlow) {
+function isEventEmissionIsCollectionBased(ruleCF: RuleControlFlow) {
     let isEventEmissionACollection: boolean = false;
-    for (let p of ruleCF.conclusionParticipants) {
-        if (p.isCollection) {
-            isEventEmissionACollection = true;
+    for (let participant of ruleCF.conclusionParticipants) {
+        for (let p of participant) {
+            if (p.isCollection) {
+                isEventEmissionACollection = true;
+            }
         }
     }
     return isEventEmissionACollection;
@@ -765,7 +802,7 @@ function checkIfEventEmissionIsCollectionBased(ruleCF: RuleControlFlow) {
 function writePreambule(fileNode: CompositeGeneratorNode, data: FilePathData) {
     fileNode.append(`
 import { AstNode, Reference, isReference } from "langium";
-import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, TypedElement } from "../../ccfg/ccfglib";`, NL)
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, TypedElement,NodeType,Hole} from "../../ccfg/ccfglib";`, NL)
 }
 
 
@@ -826,18 +863,18 @@ function addUtilFunctions(fileNode: CompositeGeneratorNode) {
  * @param openedRule the rule
  * @returns a list of rule control flows
  */
-function createCCFGFromRules(fileNode: CompositeGeneratorNode, openedRule: RuleOpening): RuleControlFlow[] {
+function extractRuleControlFlowsFromRules(fileNode: CompositeGeneratorNode, openedRule: RuleOpening): RuleControlFlow[] {
     let res: RuleControlFlow[] = []
     for (var rwr of openedRule.rules) {
         if (rwr.$type == "RWRule") {
 
             fileNode.append(`// rule ${rwr.name}`, NL)
-            let premiseEventParticipants: TypedElement[] = getEventSynchronisationParticipants(rwr.premise.eventExpression);
-            fileNode.append(`   //premise: ${premiseEventParticipants.map(p => p.name + ":" + p.type + (p.isCollection ? "[]" : ""))}`, NL)
-            let conclusionEventParticipants: TypedElement[] = []
+            let premiseEventParticipants: TypedElement[][] = getEventSynchronisationParticipants(rwr.premise.eventExpression);
+            fileNode.append(`   //premise: ${premiseEventParticipants.map(pa => pa.map(p => p.name + ":" + p.type + (p.isCollection ? "[]" : "")).join("\n\t//"))}`, NL)
+            let conclusionEventParticipants: TypedElement[][] = []
             for (let emission of rwr.conclusion.eventemissions) {
                 conclusionEventParticipants = [...conclusionEventParticipants, ...getEventEmissionParticipants(emission)]
-                fileNode.append(`   //conclusion: ${conclusionEventParticipants.map(p => p.name + ":" + p.type + (p.isCollection ? "[]" : ""))}`, NL)
+                fileNode.append(`   //conclusion: ${conclusionEventParticipants.map(pa => pa.map(p => p.name + ":" + p.type + (p.isCollection ? "[]" : ""))).join("\n\t//")}`, NL)
             }
             let ruleControlFlow = new RuleControlFlow(rwr, premiseEventParticipants, conclusionEventParticipants)
             res.push(ruleControlFlow)
@@ -854,9 +891,9 @@ function createCCFGFromRules(fileNode: CompositeGeneratorNode, openedRule: RuleO
  */
 class RuleControlFlow {
     rule: RWRule
-    premiseParticipants: TypedElement[]
-    conclusionParticipants: TypedElement[]
-    constructor(rule: RWRule, premiseParticipants: TypedElement[], conclusionParticipants: TypedElement[]) {
+    premiseParticipants: TypedElement[][] 
+    conclusionParticipants: TypedElement[][]
+    constructor(rule: RWRule, premiseParticipants: TypedElement[][], conclusionParticipants: TypedElement[][]) {
         this.rule = rule
         this.premiseParticipants = premiseParticipants
         this.conclusionParticipants = conclusionParticipants
@@ -866,6 +903,7 @@ class RuleControlFlow {
 
 /**
  * a class representing a typed element
+ * @param astNode the ast node of the element
  * @param name the name of the element
  * @param type the type of the element
  * @param isCollection a boolean indicating if the element is a collection
@@ -874,14 +912,13 @@ class RuleControlFlow {
  */
 
 class TypedElement {
-    toJSON() {
-        return `{ "name": "${this.name}", "type": "${this.type}"}`
-    }
+    astNode: AstNode | undefined
     name: (string | undefined)
     type: (string | undefined)
     isCollection: boolean
 
-    constructor(name: string | undefined, type: string | undefined, isCollection: boolean = false) {
+    constructor(astNode: AstNode | undefined, name: string | undefined, type: string | undefined, isCollection: boolean = false) {
+        this.astNode = astNode
         this.name = name
         this.type = type
         this.isCollection = isCollection
@@ -891,7 +928,11 @@ class TypedElement {
         return this.name == other.name && this.type == other.type
     }
 
+    toJSON() {
+        return `{ "name": "${this.name}", "type": "${this.type}"}`
+    }
 }
+
 
 
 /**
@@ -899,18 +940,19 @@ class TypedElement {
  * @param eventEmission  the event emission
  * @returns a typed element list of the event emission participants
  */
-function getEventEmissionParticipants(eventEmission: EventEmission): TypedElement[] {
-    let res: TypedElement[] = []
+function getEventEmissionParticipants(eventEmission: EventEmission): TypedElement[][] {
+    let res: TypedElement[][] = []
     if (eventEmission.$type == "SimpleEventEmission") {
-        res = getExplicitEventExpressionParticipants(eventEmission.event as MemberCall)
+        res.push(getExplicitEventExpressionParticipants(eventEmission.event as MemberCall))
     }
     if (eventEmission.$type == "ValuedEventEmission") {
-        res = getExplicitEventExpressionParticipants(eventEmission.event as MemberCall)
+        res.push(getExplicitEventExpressionParticipants(eventEmission.event as MemberCall))
     }
     //SingleRuleSync | CollectionRuleSync
     if (eventEmission.$type == "SingleRuleSync") {
-        res = getSingleRuleSyncEventExpressionParticipants(eventEmission as SingleRuleSync)
-        res.push(new TypedElement("starts", "event")) //implicit in conclusion
+        let tmp = getSingleRuleSyncEventExpressionParticipants(eventEmission as SingleRuleSync)
+        tmp.push(new TypedElement(undefined,"starts", "event")) //implicit in conclusion
+        res.push(tmp)
     }
     if (eventEmission.$type == "CollectionRuleSync") {
         res = getCollectionRuleSyncEventExpressionParticipants(eventEmission as CollectionRuleSync)
@@ -925,33 +967,36 @@ function getEventEmissionParticipants(eventEmission: EventEmission): TypedElemen
  * @returns a typed element list of the event synchronisation participants
  */
 
-function getEventSynchronisationParticipants(eventExpression: EventExpression): TypedElement[] {
-    let res: TypedElement[] = []
+function getEventSynchronisationParticipants(eventExpression: EventExpression): TypedElement[][] {
+    let res: TypedElement[][] = []
     //explicit event ref
     if (eventExpression.$type == "ExplicitEventRef") {
         if ((eventExpression.membercall as MemberCall)?.element?.ref != undefined) {
-            res = getExplicitEventExpressionParticipants(eventExpression.membercall as MemberCall)
+            res.push(getExplicitEventExpressionParticipants(eventExpression.membercall as MemberCall))
         }
     }
     if (eventExpression.$type == "SingleRuleSync") {
-        res = getSingleRuleSyncEventExpressionParticipants(eventExpression)
-        res.push(new TypedElement("terminates", "event")) //implicit in premise
+        let tmp = getSingleRuleSyncEventExpressionParticipants(eventExpression)
+        tmp.push(new TypedElement(undefined,"terminates", "event")) //implicit in premise
+        res.push(tmp)
     }
 
     if (eventExpression.$type == "ExplicitValuedEventRef" || eventExpression.$type == "ImplicitValuedEventRef") {
         if ((eventExpression.membercall as MemberCall)?.element?.ref != undefined) {
-            res = getValuedEventRefParticipants(eventExpression as ValuedEventRef)
+            let tmp = getValuedEventRefParticipants(eventExpression as ValuedEventRef)
             if (eventExpression.$type == "ImplicitValuedEventRef") {
-                res.push(new TypedElement("terminates", "event")) //implicit in premise
+                tmp.push(new TypedElement(undefined,"terminates", "event")) //implicit in premise
             }
+            res.push(tmp)
         }
     }
     if (eventExpression.$type == "ExplicitValuedEventRefConstantComparison" || eventExpression.$type == "ImplicitValuedEventRefConstantComparison") {
         if ((eventExpression.membercall as MemberCall)?.element?.ref != undefined) {
-            res = getValuedEventRefConstantComparisonParticipants(eventExpression as ValuedEventRefConstantComparison)
+            let tmp = getValuedEventRefConstantComparisonParticipants(eventExpression as ValuedEventRefConstantComparison)
             if (eventExpression.$type == "ImplicitValuedEventRefConstantComparison") {
-                res.push(new TypedElement("terminates", "event")) //implicit in premise
+                tmp.push(new TypedElement(undefined,"terminates", "event")) //implicit in premise
             }
+            res.push(tmp)
         }
     }
 
@@ -962,7 +1007,7 @@ function getEventSynchronisationParticipants(eventExpression: EventExpression): 
     }
 
     if (eventExpression.$type == "NaryEventExpression") {
-        res = getExplicitEventExpressionParticipants(eventExpression.collection as MemberCall)
+        res.push(getExplicitEventExpressionParticipants(eventExpression.collection as MemberCall))
     }
 
 
@@ -1013,12 +1058,12 @@ function getSingleRuleSyncEventExpressionParticipants(rule: SingleRuleSync): Typ
  * @param rule an event expression in the shape of a collection rule sync
  * @returns a typed element list of the participants to the event expression
  */
-function getCollectionRuleSyncEventExpressionParticipants(rule: CollectionRuleSync): TypedElement[] {
-    let res: TypedElement[] = []
+function getCollectionRuleSyncEventExpressionParticipants(rule: CollectionRuleSync): TypedElement[][] {
+    let res: TypedElement[][] = []
     if ((rule.collection as MemberCall)?.element?.ref != undefined) {
-        res = getExplicitEventExpressionParticipants(rule.collection as MemberCall)
-        res.forEach((p) => p.isCollection = true)
-        res = [...res, ...getEventEmissionParticipants(rule.singleRule)]
+        res.push(getExplicitEventExpressionParticipants(rule.collection as MemberCall))
+        res[0].forEach((p) => p.isCollection = true)
+        res[0] = [...res[0], ...getEventEmissionParticipants(rule.singleRule)[0]]
     }
     return res
 }
@@ -1028,7 +1073,7 @@ function getCollectionRuleSyncEventExpressionParticipants(rule: CollectionRuleSy
  * @param membercall a member call
  * @returns a typed element list of the event expression participants
  */
-function getExplicitEventExpressionParticipants(membercall: MemberCall): (TypedElement)[] {
+function getExplicitEventExpressionParticipants(membercall: MemberCall): TypedElement[] {
     let res: TypedElement[] = []
 
     if (membercall?.element?.ref != undefined) {
@@ -1039,6 +1084,7 @@ function getExplicitEventExpressionParticipants(membercall: MemberCall): (TypedE
                 type = type.substring(1, ass.terminal.$cstNode.text.length - 1)
             }
             let typedElement: TypedElement = new TypedElement(
+                membercall,
                 ass.feature,
                 type,
                 ass.operator == "+="
@@ -1050,6 +1096,7 @@ function getExplicitEventExpressionParticipants(membercall: MemberCall): (TypedE
             let [name, type] = getNameAndTypeOfElement(namedElem);
 
             let typedElement: TypedElement = new TypedElement(
+                namedElem,
                 name,
                 type
             )
@@ -1087,104 +1134,104 @@ function getNameAndTypeOfElement(namedElem: NamedElement): [(string | undefined)
 }
 
 
-/**
- *  splits a list of typed elements by participants
- * @param elements a list of typed elements
- * @returns a 2d list of typed element separated by participants
- */
+// /**
+//  *  splits a list of typed elements by participants
+//  * @param elements a list of typed elements
+//  * @returns a 2d list of typed element separated by participants
+//  */
 
-function splitArrayByParticipants(elements: TypedElement[]): TypedElement[][] {
-    const result: TypedElement[][] = [];
-    let currentArray: TypedElement[] = [];
+// function splitArrayByParticipants(elements: TypedElement[]): TypedElement[][] {
+//     const result: TypedElement[][] = [];
+//     let currentArray: TypedElement[] = [];
     
-    for (const element of elements) {
-        // console.log(chalk.bgGreenBright("element", element.name, "type", element.type))
-        if (element.type === 'event') {
-            if (currentArray.length > 0) {
-                result.push(currentArray);
-                currentArray = [];
-            }
-            if(element.name == "terminates"){
-                currentArray.push(new TypedElement("this", undefined));
-                currentArray.push(element);
-                result.push(currentArray);
-                currentArray = [];
-            }
-        } else {
-            currentArray.push(element);
-        }
-    }
+//     for (const element of elements) {
+//         // console.log(chalk.bgGreenBright("element", element.name, "type", element.type))
+//         if (element.type === 'event') {
+//             if (currentArray.length > 0) {
+//                 result.push(currentArray);
+//                 currentArray = [];
+//             }
+//             if(element.name == "terminates"){
+//                 // currentArray.push(new TypedElement("this", undefined));
+//                 currentArray.push(element);
+//                 result.push(currentArray);
+//                 currentArray = [];
+//             }
+//         } else {
+//             currentArray.push(element);
+//         }
+//     }
     
-    if (currentArray.length > 0) {
-        result.push(currentArray);
-    }
+//     if (currentArray.length > 0) {
+//         result.push(currentArray);
+//     }
     
-    return result;
-}
+//     return result;
+// }
 
 
-/**
- * 
- * for now in c++ like form but should be an interface to the target language
- * @param runtimeState
- * @returns
- */
-function visitValuedEventRefComparison(valuedEventRefComparison: ValuedEventRefConstantComparison | undefined): string {
-    var res : string = ""
+// /**
+//  * 
+//  * for now in c++ like form but should be an interface to the target language
+//  * @param runtimeState
+//  * @returns
+//  */
+// function visitValuedEventRefComparison(valuedEventRefComparison: ValuedEventRefConstantComparison | undefined): string {
+//     var res : string = ""
     
-    if (valuedEventRefComparison != undefined) {
-        let v = valuedEventRefComparison.literal
-        // let varType: TypeDescription
+//     if (valuedEventRefComparison != undefined) {
+//         let v = valuedEventRefComparison.literal
+//         // let varType: TypeDescription
 
-        // if(typeof(valuedEventRefComparison.literal) == "string"){
-        //     varType = createStringType(undefined)
-        // }else{
-        //     varType = inferType(valuedEventRefComparison.literal, new Map())
-        // }
+//         // if(typeof(valuedEventRefComparison.literal) == "string"){
+//         //     varType = createStringType(undefined)
+//         // }else{
+//         //     varType = inferType(valuedEventRefComparison.literal, new Map())
+//         // }
 
-        //guardactionsactions
-        if(valuedEventRefComparison.$type == "ImplicitValuedEventRefConstantComparison"){
-            //res = res + `\`(bool)\${getASTNodeUID(node.${(valuedEventRefComparison.membercall as MemberCall).element?.$refText})}${"terminates"} == ${(typeof(v) == "string")?v:v.$cstNode?.text}\``
-            res = res + `\`${verifyEqual},\${getASTNodeUID(node.${(valuedEventRefComparison.membercall as MemberCall).element?.$refText})}${"terminate"},${(typeof(v) == "string")?v:v.$cstNode?.text}\``
-        }
-        if(valuedEventRefComparison.$type == "ExplicitValuedEventRefConstantComparison"){
-            let prev = (valuedEventRefComparison.membercall as MemberCall)?.previous
-            //res = res + `\`(bool)\${getASTNodeUID(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRefComparison.membercall as MemberCall).element?.$refText} == ${(typeof(v) == "string")?v:v.$cstNode?.text}\``
-            res = res + `\`${verifyEqual},\${getASTNodeUID(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRefComparison.membercall as MemberCall).element?.$refText},${(typeof(v) == "string")?v:v.$cstNode?.text}\``
-        }
+//         //guardactionsactions
+//         if(valuedEventRefComparison.$type == "ImplicitValuedEventRefConstantComparison"){
+//             //res = res + `\`(bool)\${getASTNodeUID(node.${(valuedEventRefComparison.membercall as MemberCall).element?.$refText})}${"terminates"} == ${(typeof(v) == "string")?v:v.$cstNode?.text}\``
+//             res = res + `\`${verifyEqual},\${getASTNodeUID(node.${(valuedEventRefComparison.membercall as MemberCall).element?.$refText})}${"terminate"},${(typeof(v) == "string")?v:v.$cstNode?.text}\``
+//         }
+//         if(valuedEventRefComparison.$type == "ExplicitValuedEventRefConstantComparison"){
+//             let prev = (valuedEventRefComparison.membercall as MemberCall)?.previous
+//             //res = res + `\`(bool)\${getASTNodeUID(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRefComparison.membercall as MemberCall).element?.$refText} == ${(typeof(v) == "string")?v:v.$cstNode?.text}\``
+//             res = res + `\`${verifyEqual},\${getASTNodeUID(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRefComparison.membercall as MemberCall).element?.$refText},${(typeof(v) == "string")?v:v.$cstNode?.text}\``
+//         }
         
-    }
-    return res
-}
+//     }
+//     return res
+// }
 
 
-/**
- * writes out the code for 
- * for now in c++ like form but should be an interface to the target language
- * @param runtimeState
- * @returns
- */
-function visitValuedEventRef(valuedEventRef: ValuedEventRef | undefined): [string, TypedElement] {
-    var res : string = ""
-    if (valuedEventRef != undefined) {
-        let v = valuedEventRef.tempVar
-        let varType = inferType(v, new Map())
-        let typeName = getCPPVariableTypeName(varType.$type)
-        if(v != undefined && valuedEventRef.$type == "ImplicitValuedEventRef"){
-            res = res + `\`${typeName} \${getASTNodeUID(node)}${v.$cstNode?.offset} = ${v.name};\``//valuedEventRef  \${getName(node.${(valuedEventRef.membercall as MemberCall).element?.$refText})}${"terminates"}\``
-            let param:TypedElement = new TypedElement(v.name, typeName)
-            return [res, param]
-        }
-        if(v != undefined && valuedEventRef.$type == "ExplicitValuedEventRef"){
-            // let prev = (valuedEventRef.membercall as MemberCall)?.previous
-            res = res + `\`${typeName} \${getASTNodeUID(node)}${v.$cstNode?.offset} = ${v.name};\`` //valuedEventRef \${getName(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRef.membercall as MemberCall).element?.$refText};\``
-            let param:TypedElement = new TypedElement(v.name, typeName)
-            return [res, param]
-        }
+// /**
+//  * writes out the code for 
+//  * for now in c++ like form but should be an interface to the target language
+//  * @param runtimeState
+//  * @returns
+//  */
+// function visitValuedEventRef(valuedEventRef: ValuedEventRef | undefined): [string, TypedElement] {
+//     var res : string = ""
+//     if (valuedEventRef != undefined) {
+//         let v = valuedEventRef.tempVar
+//         let varType = inferType(v, new Map())
+//         let typeName = getCPPVariableTypeName(varType.$type)
+//         if(v != undefined && valuedEventRef.$type == "ImplicitValuedEventRef"){
+//             res = res + `\`${typeName} \${getASTNodeUID(node)}${v.$cstNode?.offset} = ${v.name};\``//valuedEventRef  \${getName(node.${(valuedEventRef.membercall as MemberCall).element?.$refText})}${"terminates"}\``
+//             let param:TypedElement = new TypedElement(v,v.name, typeName)
+//             return [res, param]
+//         }
+//         if(v != undefined && valuedEventRef.$type == "ExplicitValuedEventRef"){
+//             // let prev = (valuedEventRef.membercall as MemberCall)?.previous
+//             res = res + `\`${typeName} \${getASTNodeUID(node)}${v.$cstNode?.offset} = ${v.name};\`` //valuedEventRef \${getName(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRef.membercall as MemberCall).element?.$refText};\``
+//             let param:TypedElement = new TypedElement(v,v.name, typeName)
+//             return [res, param]
+//         }
     
-    }
-    return ["", new TypedElement("NULL", undefined)]
-}
+//     }
+//     return ["", new TypedElement(undefined,"NULL", undefined)]
+// }
 
 
 /**
@@ -1240,65 +1287,65 @@ function getVariableDeclarationCode(runtimeState: VariableDeclaration[] | undefi
     return res
 }
 
-/**
- * for now in c++ like form but should be an interface to the target language
- * @param runtimeState 
- * @returns 
- */
-function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefined,file:CompositeGeneratorNode): [string, string] {
-    var res : string = ""
-    if (valuedEmission != undefined) {
-        let varType = inferType(valuedEmission.data, new Map())
-        let typeName = getCPPVariableTypeName(varType.$type)
+// /**
+//  * for now in c++ like form but should be an interface to the target language
+//  * @param runtimeState 
+//  * @returns 
+//  */
+// function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefined,file:CompositeGeneratorNode): [string, string] {
+//     var res : string = ""
+//     if (valuedEmission != undefined) {
+//         let varType = inferType(valuedEmission.data, new Map())
+//         let typeName = getCPPVariableTypeName(varType.$type)
 
-        if(valuedEmission.data != undefined && valuedEmission.data.$type == "MemberCall"){
+//         if(valuedEmission.data != undefined && valuedEmission.data.$type == "MemberCall"){
             
-            //todo write a node that saves the variable
-            res = createVariableFromMemberCall(valuedEmission.data as MemberCall, typeName)
-            console.log(res)
-        }
-        if(valuedEmission.data != undefined && valuedEmission.data.$type == "BinaryExpression"){
-            //todo write a node that joins the two variable nodes and saves the result
-            let lhs = (valuedEmission.data as BinaryExpression).left
-            let lhsType = inferType(lhs, new Map())
-            let lhsTypeName = getCPPVariableTypeName(lhsType.$type)
-            let leftRes: string = ""; // Declare the variable rightRes
-            leftRes = createVariableFromMemberCall(lhs as MemberCall, lhsTypeName);
-            res = res + leftRes+","
-            let rhs = (valuedEmission.data as BinaryExpression).right
-            let rhsType = inferType(rhs, new Map())
-            let rhsTypeName = getCPPVariableTypeName(rhsType.$type)
-            let rightRes: string = ""; // Declare the variable rightRes
-            rightRes  = createVariableFromMemberCall(rhs as MemberCall, rhsTypeName);
-            res = res + rightRes+","
-            let applyOp = (valuedEmission.data as BinaryExpression).operator
-            //res = res + `\`${typeName} \${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset} = \${getASTNodeUID(node)}${lhs.$cstNode?.offset} ${applyOp} \${getASTNodeUID(node)}${rhs.$cstNode?.offset};\``
-            res = res + `\`${createVar},\${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,`
-            res = res + `\`${operation},\${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset},\${getASTNodeUID(node)}${lhs.$cstNode?.offset},${applyOp},\${getASTNodeUID(node)}${rhs.$cstNode?.offset}\``
-        }
-        if(valuedEmission.data != undefined && valuedEmission.data.$type == "BooleanExpression" || valuedEmission.data.$type == "NumberExpression" || valuedEmission.data.$type == "StringExpression"){
-            // write a node that sends the value specified 
-            //res = `\`${typeName} \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  ${valuedEmission.data.$cstNode?.text};\``
-            //res = res + "," +`\`return \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name};\``
-            res = res  +`\`${createVar},${typeName},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\``+ ","
-            res = res  +`\`${assignVar},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name},${valuedEmission.data.$cstNode?.text}\``+ ","
-            res = res  +`\`${ret},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\``+ ","
-            return [res, typeName]
-        }
-        if(res.length > 0){
-            res = res + ","
-        }
-        console.log(res)
-        //res = res + `\`${typeName} \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  \${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset};\``
-        //res = res + "," +`\`return \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name};\``
-        res = res+ `\`${createVar},${typeName},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\`,`
-        res = res+ `\`${assignVar},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name},\${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,`
-        res = res+ `\`${ret},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\``
+//             //todo write a node that saves the variable
+//             res = createVariableFromMemberCall(valuedEmission.data as MemberCall, typeName)
+//             console.log(res)
+//         }
+//         if(valuedEmission.data != undefined && valuedEmission.data.$type == "BinaryExpression"){
+//             //todo write a node that joins the two variable nodes and saves the result
+//             let lhs = (valuedEmission.data as BinaryExpression).left
+//             let lhsType = inferType(lhs, new Map())
+//             let lhsTypeName = getCPPVariableTypeName(lhsType.$type)
+//             let leftRes: string = ""; // Declare the variable rightRes
+//             leftRes = createVariableFromMemberCall(lhs as MemberCall, lhsTypeName);
+//             res = res + leftRes+","
+//             let rhs = (valuedEmission.data as BinaryExpression).right
+//             let rhsType = inferType(rhs, new Map())
+//             let rhsTypeName = getCPPVariableTypeName(rhsType.$type)
+//             let rightRes: string = ""; // Declare the variable rightRes
+//             rightRes  = createVariableFromMemberCall(rhs as MemberCall, rhsTypeName);
+//             res = res + rightRes+","
+//             let applyOp = (valuedEmission.data as BinaryExpression).operator
+//             //res = res + `\`${typeName} \${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset} = \${getASTNodeUID(node)}${lhs.$cstNode?.offset} ${applyOp} \${getASTNodeUID(node)}${rhs.$cstNode?.offset};\``
+//             res = res + `\`${createVar},\${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,`
+//             res = res + `\`${operation},\${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset},\${getASTNodeUID(node)}${lhs.$cstNode?.offset},${applyOp},\${getASTNodeUID(node)}${rhs.$cstNode?.offset}\``
+//         }
+//         if(valuedEmission.data != undefined && valuedEmission.data.$type == "BooleanExpression" || valuedEmission.data.$type == "NumberExpression" || valuedEmission.data.$type == "StringExpression"){
+//             // write a node that sends the value specified 
+//             //res = `\`${typeName} \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  ${valuedEmission.data.$cstNode?.text};\``
+//             //res = res + "," +`\`return \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name};\``
+//             res = res  +`\`${createVar},${typeName},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\``+ ","
+//             res = res  +`\`${assignVar},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name},${valuedEmission.data.$cstNode?.text}\``+ ","
+//             res = res  +`\`${ret},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\``+ ","
+//             return [res, typeName]
+//         }
+//         if(res.length > 0){
+//             res = res + ","
+//         }
+//         console.log(res)
+//         //res = res + `\`${typeName} \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  \${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset};\``
+//         //res = res + "," +`\`return \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name};\``
+//         res = res+ `\`${createVar},${typeName},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\`,`
+//         res = res+ `\`${assignVar},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name},\${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,`
+//         res = res+ `\`${ret},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\``
         
-        return [res, typeName]
-    }
-    return [res , "void"]
-}
+//         return [res, typeName]
+//     }
+//     return [res , "void"]
+// }
 
 function createVariableFromMemberCall(data: MemberCall, typeName: string): string {
     let res: string = ""
@@ -1419,3 +1466,5 @@ function getVariableType(type: TypeReference | undefined) {
     }
     return "unknown"
 }
+
+
