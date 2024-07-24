@@ -109,6 +109,10 @@ export class Edge {
     }
 }
 
+/**
+ * Represents a Control Flow Graph (CCFG).
+ * A CCFG consists of nodes and edges that represent the control flow of a program.
+ */
 export class CCFG {
     nodes: Node[];
     edges: Edge[];
@@ -122,6 +126,9 @@ export class CCFG {
         this.edges = [];
     }
 
+    /**
+     * add a node to the CCFG if not already in it. Change the owningCCFG of the node to this CCFG idf necessary
+     */
     addNode(node: Node): Node {
         if(this.nodes.length == 0){
             this.initialState = node;
@@ -190,6 +197,11 @@ export class CCFG {
         
     }
 
+    /**
+     * replace the oldNode by the newNode in the CCFG. reroute the edges accordingly
+     * @param oldNode 
+     * @param newNode 
+     */
     replaceNode(oldNode: Node, newNode: Node): void {
         let index = this.nodes.findIndex(n => n.uid === oldNode.uid);
         if (index != -1) {
@@ -219,21 +231,27 @@ export class CCFG {
         }
     }
 
+    /**
+     * returns the node with the given uid
+     * 
+     * @param uid: integer
+     * @returns the node with the given uid or undefined if not found
+     */
     getNodeByUID(uid: integer): Node | undefined  {
         for(let n of this.nodes){
             if(n.uid === uid){
                 return n;
             }
-            // if(n.getType() == "ContainerNode"){
-            //     let res = (n as ContainerNode).internalccfg.getNodeByUID(uid);
-            //     if(res != undefined){
-            //         return res;
-            //     }
-            // }
         }
         return undefined
     }
 
+    /**
+     * returns the node with the given astNode and type
+     * @param astNode 
+     * @param t 
+     * @returns the node with the given astNode and type or undefined if not found
+     */
     getNodeFromASTNode(astNode: AstNode, t:NodeType): Node | undefined {
         for(let n of this.nodes){
             if(n.astNode != undefined && n.astNode == astNode && n.type == t){
@@ -481,6 +499,26 @@ export class CCFG {
     }
 
 
+    fillHole(h: Hole, ccfg: CCFG): void {
+        if(h.inputEdges.length == 0 && h.outputEdges.length == 0){
+            console.log(chalk.red("error: hole has no input and no output edge"));
+            return;
+        }
+        for (let inputEdge of h.inputEdges) {
+            inputEdge.to = ccfg.initialState as Node;
+        }
+        let terminalNode = ccfg.nodes.find(n => n.getType() == "terminates");
+        if (terminalNode == undefined) {
+           throw new Error("no terminal node found in the ccfg");
+        }
+        for (let outputEdge of h.outputEdges) {
+            outputEdge.from = terminalNode as Node;
+        }
+        this.nodes = this.nodes.filter(n => n.uid !== h.uid);
+        this.nodes = [...this.nodes, ...ccfg.nodes];
+        this.edges = [...this.edges, ...ccfg.edges];
+
+    }
 
 
 }
@@ -530,8 +568,18 @@ export class AndJoin extends Join {
 }
 
 export class Hole extends Node {
-    constructor(astNode:AstNode,) {
+    constructor(astNode:AstNode) {
         super(astNode);
+    }
+}
+
+export class TimerHole extends Hole {
+
+    duration: integer = 0;
+
+    constructor(astNode:AstNode, d:integer) {
+        super(astNode);
+        this.duration = d;
     }
 }
 
