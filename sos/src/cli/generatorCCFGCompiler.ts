@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { AstNode, CompositeGeneratorNode, Grammar,  NL, toString } from 'langium';
-import { Assignment, CollectionRuleSync, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, RWRule, RuleOpening, SingleRuleSync, SoSSpec, TypeReference, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration } from '../language-server/generated/ast.js'; //VariableDeclaration
+import { Assignment, BinaryExpression, CollectionRuleSync, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, NaryEventExpression, RWRule, RuleOpening, SingleRuleSync, SoSSpec, TypeReference, ValuedEventEmission, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration } from '../language-server/generated/ast.js'; //VariableDeclaration
 import { extractDestinationAndName, FilePathData } from './cli-util.js';
 import path from 'path';
 import { inferType } from '../language-server/type-system/infer.js';
@@ -13,13 +13,13 @@ const createGlobalVar = "createGlobalVar"
 const assignVar = "assignVar"
 const setVarFromGlobal = "setVarFromGlobal"
 const setGlobalVar = "setGlobalVar"
-// const operation = "operation"
-// const ret ="return"
+const operation = "operation"
+const ret ="return"
 // const verifyEqual = "verifyEqual"
 
 const DEBUG = true
 
-var conceptNameToHoles: Map<string, TypedElement[][]> = new Map()
+var conceptNameToHoles: Map<string, HoleSpecifier[]> = new Map()
 var conceptNameToRulesCF: Map<string, RuleControlFlow[]> = new Map()
 
 // this function is used to generate the code for the visitor pattern of the specified compiler
@@ -53,13 +53,6 @@ export interface CompilerFrontEnd {
     file.append(`
     generateCCFG(node: AstNode): CCFG;
     `,NL)
-    
-//     file.append(`\n\n
-//     visit(node: AstNode| Reference<AstNode>): CCFG;
-// `, NL)
-//     for (let name of conceptNames) {
-//         file.append(`     visit${name}(node: ${name}): CCFG;`, NL)
-//     }
 
     file.append(`}`, NL)
 
@@ -94,27 +87,6 @@ export class ${langName}CompilerFrontEnd implements CompilerFrontEnd {
     }
     `,NL);
 
-    // file.append(`
-    // visit(node: AstNode | Reference<AstNode>): CCFG {
-    //     if(isReference(node)){
-    //         if(node.ref === undefined){
-    //             throw new Error("not possible to visit an undefined AstNode")
-    //         }
-    //         node = node.ref
-    //     }`);
-
-    // for (let name of conceptNames) {
-    //     file.append(`
-    //     if(node.$type == "${name}"){
-    //         return this.visit${name}(node as ${name});
-    //     }`)
-    // }
-
-    // file.append(`
-    //     throw new Error("Not implemented: " + node.$type);
-    // }
-    // `);
-
     for (var openedRule of model.rtdAndRules) {
         let name: string = ""
         if (openedRule.onRule?.ref != undefined) {
@@ -123,16 +95,14 @@ export class ${langName}CompilerFrontEnd implements CompilerFrontEnd {
 
         const rulesCF: RuleControlFlow[] = extractRuleControlFlowsFromRules(file, openedRule);
         conceptNameToRulesCF.set(name, rulesCF)
-        const holes: TypedElement[][] = identifiesHolesAndSemiHoles(rulesCF);
+        const holes: HoleSpecifier[] = identifiesHolesAndSemiHoles(rulesCF);
         conceptNameToHoles.set(name, holes)
-        console.log(chalk.green("holes", holes.map(h => h.map(p => p.toJSON()))))
 
         generateCreateLocalCCFGFunctions(file, name, openedRule);
-       // generateVisitFunctions(file, name, openedRule);
     }
 
 
-    addUtilFunctions(file);
+    addUtilFunctions(file,model.rtdAndRules[0].onRule?.ref?.$container.rules[0]?.name as string);
 
     file.append(`
 }`, NL)
@@ -145,58 +115,71 @@ export class ${langName}CompilerFrontEnd implements CompilerFrontEnd {
     return generatedFilePath;
 }
 
-function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, name: string, openedRule: RuleOpening) {
+function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptName: string, openedRule: RuleOpening) {
     file.append(`
     /**
-     * returns the local CCFG of the ${name} node
-     * @param a ${name} node 
+     * returns the local CCFG of the ${conceptName} node
+     * @param a ${conceptName} node 
      * @returns the local CCFG (with holes)
      */
-    create${name}LocalCCFG(node: ${name}): CCFG {`);
+    create${conceptName}LocalCCFG(node: ${conceptName}): CCFG {`);
 
     visitVariableDeclaration(openedRule.runtimeState as VariableDeclaration[], file);
     file.append(`
         let localCCFG = new CCFG()
-        let starts${name}Node: Node = new Step(node,NodeType.starts,[${getVariableDeclarationCode(openedRule.runtimeState as VariableDeclaration[])}])
-        if(starts${name}Node.functionsDefs.length>0){
-            starts${name}Node.returnType = "void"
+        let starts${conceptName}Node: Node = new Step(node,NodeType.starts,[${getVariableDeclarationCode(openedRule.runtimeState as VariableDeclaration[])}])
+        if(starts${conceptName}Node.functionsDefs.length>0){
+            starts${conceptName}Node.returnType = "void"
         }
-        starts${name}Node.functionsNames = [\`init\${starts${name}Node.uid}${name}\`]
-        localCCFG.addNode(starts${name}Node)
-        localCCFG.initialState = starts${name}Node
-        let terminates${name}Node: Node = new Step(node,NodeType.terminates)
-        localCCFG.addNode(terminates${name}Node)
+        starts${conceptName}Node.functionsNames = [\`init\${starts${conceptName}Node.uid}${conceptName}\`]
+        localCCFG.addNode(starts${conceptName}Node)
+        localCCFG.initialState = starts${conceptName}Node
+        let terminates${conceptName}Node: Node = new Step(node,NodeType.terminates)
+        localCCFG.addNode(terminates${conceptName}Node)
         `);
 
-    let tempHole = conceptNameToHoles.get(name)
+    let tempHole = conceptNameToHoles.get(conceptName)
     if (tempHole == undefined) {
-        throw new Error("holes not found: "+name)
+        throw new Error("holes not found: "+conceptName)
     }
-    const holes : TypedElement[][] = tempHole;
-    let tempRulesCF = conceptNameToRulesCF.get(name)
+    const holes : HoleSpecifier[] = tempHole;
+    let tempRulesCF = conceptNameToRulesCF.get(conceptName)
     if (tempRulesCF == undefined) {
-        throw new Error("rulesCF not found: "+name)
+        throw new Error("rulesCF not found: "+conceptName)
     }
     const rulesCF: RuleControlFlow[] = tempRulesCF
 
+    //creates hole nodes
     for (let h of holes) {
         
-        if (isATimerHole(h)){
+        if (isATimerHole(h.startingParticipants)){
             let refNode = `node`
-            let duration = ((openedRule.runtimeState as VariableDeclaration[]).filter(rs => rs.name == h[h.length-2 >= 0 ? h.length-2:0].name)[0] as VariableDeclaration).value?.$cstNode?.text;
+            let duration = ((openedRule.runtimeState as VariableDeclaration[]).filter(rs => rs.name == h.startingParticipants[h.startingParticipants.length-2 >= 0 ? h.startingParticipants.length-2:0].name)[0] as VariableDeclaration).value?.$cstNode?.text;
             file.append(`
-        let ${h.filter(p => p.type != "event").map(p => p.name).join('_')}Hole: Hole = new TimerHole(${refNode},node.${duration}) //timer hole to ease specific filling
-            `)
+        let ${h.startingParticipants.filter(p => p.type != "event").map(p => p.name).join('_')}Hole: Hole = new TimerHole(${refNode},node.${duration}) //timer hole to ease specific filling
+        localCCFG.addNode(${h.startingParticipants.filter(p => p.type != "event").map(p => p.name).join('_')}Hole)
+        `)
+        }else
+        if (isACollectionHole(h)){
+            let refNode : string = `node.${h.startingParticipants.slice(0,h.startingParticipants.length-2).filter(p => p.type != "event").map(p => p.name).join('.')}`
+            file.append(`
+        let ${h.startingParticipants.slice(0,h.startingParticipants.length-2).filter(p => p.type != "event").map(p => p.name).join('_')}Hole: CollectionHole = new CollectionHole(${refNode})
+        ${h.startingParticipants.slice(0,h.startingParticipants.length-2).filter(p => p.type != "event").map(p => p.name).join('_')}Hole.isSequential = ${(h as CollectionHoleSpecifier).isSequential}
+        ${h.startingParticipants.slice(0,h.startingParticipants.length-2).filter(p => p.type != "event").map(p => p.name).join('_')}Hole.parallelSyncPolicy = "${(h as CollectionHoleSpecifier).parallelSyncPolicy}"
+        localCCFG.addNode(${h.startingParticipants.slice(0,h.startingParticipants.length-2).filter(p => p.type != "event").map(p => p.name).join('_')}Hole)
+        `)
+
         }else{
-            let refNode : String = `node.${h.filter(p => p.type != "event").map(p => p.name).join('.')}`
+            let refNode : string = `node.${h.startingParticipants.filter(p => p.type != "event").map(p => p.name).join('.')}`
+            if (isReferenceBased(h.startingParticipants)){
+                refNode = refNode + ".ref"
+            }
             file.append(`
-        let ${h.filter(p => p.type != "event").map(p => p.name).join('_')}Hole: Hole = new Hole(${refNode})
-            `)
+        let ${h.startingParticipants.filter(p => p.type != "event").map(p => p.name).join('_')}Hole: Hole = new Hole(${refNode})
+        localCCFG.addNode(${h.startingParticipants.filter(p => p.type != "event").map(p => p.name).join('_')}Hole)
+        `)
+
         }
-        file.append(`
-        localCCFG.addNode(${h.filter(p => p.type != "event").map(p => p.name).join('_')}Hole)
-            `);
-       
     }
 
     const startingRules = retrieveStartingRules(rulesCF);
@@ -205,15 +188,15 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, name: st
     }
 
     let startRule: RuleControlFlow = startingRules[0];
-    handleRuleConclusion(startRule, holes, file, `starts${name}Node`);
+    handleRuleConclusion(startRule, holes, file, `starts${conceptName}Node`);
 
 
     for (let ruleCF of rulesCF) {
         if (ruleCF != startingRules[0]) {
-            //manage premise
+            //manage premise (most of the time the premise's node is already existing since a hole.)
             if (ruleCF.premiseParticipants.length == 1) {
-                let participants = ruleCF.premiseParticipants[0];
-                handleRuleConclusion(ruleCF, holes, file, `${participants.filter(p => p.type != "event").map(p => p.name).join('_')}Hole`);
+                let previousNodeName : string= getPreviousNodeNameFromPremiseParticipants(ruleCF, conceptName)                   
+                handleRuleConclusion(ruleCF, holes, file, previousNodeName);
             }
             if (ruleCF.premiseParticipants.length > 1) {
                 file.append(`
@@ -221,8 +204,8 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, name: st
         localCCFG.addNode(${ruleCF.rule.name}OrJoinNode)
                 `);
                 for (let participants of ruleCF.premiseParticipants) {
-                    if (holes.some(h => areParticipantsEqualsOrCoupled(h, participants))) {
-                        if (DEBUG) file.append(`             //mark a`, NL);
+                    if (holes.map(h => h.startingParticipants).some(p => areParticipantsEqualsOrCoupled(p, participants))) {
+                        if (DEBUG) file.append(`             //mark a`);
                         file.append(`
         localCCFG.addEdge(${participants.filter(p => p.type != "event").map(p => p.name).join('_')}Hole,${ruleCF.rule.name}OrJoinNode)
                             `);
@@ -239,56 +222,86 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, name: st
     }
 
 
-
-    // handleConclusion(startingRules[0], file, rulesCF, previousNodeName, terminatesNodeName);
-    // for (let ruleCF of rulesCF) {
-    //     if (ruleCF != startingRules[0]) {
-    //         handleConclusion(ruleCF, file, rulesCF, previousNodeName, terminatesNodeName);
-    //     }
-    // }
-    let hasMultipleTerminate = checkIfMultipleTerminate(rulesCF);
-
-    if (hasMultipleTerminate) {
-        file.append(`
-        let ${name}OrJoinNode: Node = new OrJoin(node)
-        localccfg.addNode(${name}OrJoinNode)
-        for (let input of terminates${name}Node.inputs) {
-            input.outputs = input.outputs.filter(o => o.to != terminates${name}Node)
-            localccfg.addEdge(input,${name}OrJoinNode)
-        }
-        terminates${name}Node.inputs = []
-        localccfg.addEdge(${name}OrJoinNode,terminates${name}Node)
-        `);
-    }
-
     file.append(`
         return localCCFG;
     }`, NL);
 }
 
-function handleRuleConclusion(ruleCF: RuleControlFlow, holes: TypedElement[][], file: CompositeGeneratorNode, previousNodeName: string) {
-    let actionsString = ""
-    actionsString = visitStateModifications(ruleCF, actionsString);
-    if(actionsString.length>0){
+function isReferenceBased(participants: TypedElement[]): boolean {
+    return participants.some(p => p.type != undefined && p.type[0] == "[")
+}
+
+function getPreviousNodeNameFromPremiseParticipants(ruleCF: RuleControlFlow, conceptName: string) : string{
+    if (ruleCF.premiseParticipants.length == 1) {
+        let participants = ruleCF.premiseParticipants[0];
+        if (participants.length == 1) { //simple event
+            return participants[0].name+conceptName+"Hole"
+        }
+        if (isParticipantCollectionBased(participants)) {
+            if (ruleCF.rule.premise.eventExpression.$type == "NaryEventExpression") { //parallel sync premise on collection
+                return participants.filter(p => p.type != "event").map(p => p.name).join('_') + "Hole"
+            }
+
+            //sequential collection based premise
+            let participantsNoEvent = participants.filter(p => p.type != "event")
+            return participantsNoEvent.slice(0,participants.length-2).map(p => p.name).join('_') + "Hole"
+        }
+
+        return participants.filter(p => p.type != "event").map(p => p.name).join('_') + "Hole"
+    }
+    if (ruleCF.premiseParticipants.length > 1) {
+        if (ruleCF.rule.premise.eventExpression.$type == "EventConjunction"){
+            return ruleCF.rule.name + "AndJoinNode"
+        } 
+        if(ruleCF.rule.premise.eventExpression.$type == "EventDisjunction"){
+            return ruleCF.rule.name + "OrJoinNode"
+        }
+    }
+
+    console.log(chalk.red("missing case #2 in getPreviousNodeNameFromPremiseParticipants. Use default"))
+    return ruleCF.premiseParticipants[0].filter(p => p.type != "event").map(p => p.name).join('_') + "Hole"
+    
+}
+
+function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], file: CompositeGeneratorNode, previousNodeName: string) {
+    let actionsstring = ""
+    actionsstring = visitStateModifications(ruleCF, actionsstring);
+    if(actionsstring.length>0){
         file.append(`
         {
         let ${ruleCF.rule.name}StateModificationNode: Node = new Step(node)
-        this.ccfg.addNode(${ruleCF.rule.name}StateModificationNode)
-        let e = this.ccfg.addEdge(${previousNodeName},${ruleCF.rule.name}StateModificationNode)
+        localCCFG.addNode(${ruleCF.rule.name}StateModificationNode)
+        let e = localCCFG.addEdge(${previousNodeName},${ruleCF.rule.name}StateModificationNode)
         ${previousNodeName} = ${ruleCF.rule.name}StateModificationNode
         }
     `)
     }
 
-    if (ruleCF.conclusionParticipants.length == 1 && isEventEmissionIsCollectionBased(ruleCF) == false) {
+    let eventEmissionActions = ""
+    let functionType = "void"
+    for(let emission of ruleCF.rule.conclusion.eventemissions){
+        if(emission.$type == "ValuedEventEmission"){
+            let [visitedEmission, returnType] =  visitValuedEventEmission(emission as ValuedEventEmission,file)
+            functionType = returnType
+            eventEmissionActions = eventEmissionActions + visitedEmission
+        }
+    }
+    file.append(`
+        ${previousNodeName}.returnType = "${functionType}"
+        ${previousNodeName}.functionsNames = [\`\${${previousNodeName}.uid}${ruleCF.rule.name}\`] //overwrite existing name
+        ${previousNodeName}.functionsDefs =[...${previousNodeName}.functionsDefs, ...[${eventEmissionActions}]] //GG
+    `);
+
+
+    if (ruleCF.conclusionParticipants.length == 1 && isRuleConclusionCollectionBased(ruleCF) == false) {
         let participants = ruleCF.conclusionParticipants[0];
-        if (holes.includes(participants)) {
-            if(DEBUG) file.append(`            //mark 0`,NL);
+        if (holes.map(h => h.startingParticipants).some(p => areParticipantsEqualsOrCoupled(p,participants))) {
+            if(DEBUG) file.append(`            //mark 0`);
             file.append(`
-        localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type != "event").map(p => p.name).join('_')}Hole)
+        localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type != "event").map(p => p.name?.replace(/\(\)/,"")).join('_')}Hole)
             `);
         } else {
-            if(DEBUG) file.append(`            //mark 0'`,NL);
+            if(DEBUG) file.append(`            //mark 1 ${participants.map(p=>p.toJSON())}`);
             file.append(`
         localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type == "event").map(p => p.name).join('_')}${(ruleCF.rule.$container as RuleOpening)?.onRule?.ref?.name}Node)
         `);
@@ -296,17 +309,27 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: TypedElement[][], 
         }
     }
     //Several participants in the conclusion
-    if (ruleCF.conclusionParticipants.length == 1 && isEventEmissionIsCollectionBased(ruleCF) == true) {
-        let participants = ruleCF.conclusionParticipants[0];
+    
+        //collection based conclusion are handles as special holes
+    if (isRuleConclusionCollectionBased(ruleCF)) {
+        let nodeName : string = ""
+        if (ruleCF.rule.premise.eventExpression.$type == "NaryEventExpression") { //parallel sync premise on collection
+            nodeName = ruleCF.conclusionParticipants[0].filter(p => p.type != "event").map(p => p.name).join('_') + "Hole"
+        }
+
+        //sequential collection based premise
+        let participantsNoEvent = ruleCF.conclusionParticipants[0].filter(p => p.type != "event")
+        nodeName =  participantsNoEvent.slice(0,ruleCF.conclusionParticipants[0].length-2).map(p => p.name).join('_') + "Hole"
+        if(DEBUG) file.append(`            //mark 1.5`);
         file.append(`
-            //TODO: manage the case of a collection in the conclusion for ${ruleCF.rule.name}: ${participants.map(p => p.toJSON())}
-            // should we create holes for each element in the collection ?
-            `);
+        localCCFG.addEdge(${previousNodeName},${nodeName})
+        `)
     }
+
     if (ruleCF.rule.conclusion.eventEmissionOperator == ";") {
         for (let participants of ruleCF.conclusionParticipants) {
-            if (holes.includes(participants)) {
-                if(DEBUG) file.append(`                    //mark 1`,NL);
+            if (holes.map(h => h.startingParticipants).some(p => areParticipantsEquals(p,participants))) {
+                if(DEBUG) file.append(`                    //mark 2`);
                 file.append(`
         localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type != "event").map(p => p.name).join('_')}Hole)
                     ${previousNodeName} = ${participants.filter(p=>p.type != "event").map(p => p.name).join('_')}Hole
@@ -325,8 +348,8 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: TypedElement[][], 
         localCCFG.addEdge(${previousNodeName},fork${ruleCF.rule.name}Node)
             `, NL);
         for (let participants of ruleCF.conclusionParticipants) {
-            if (holes.some(p => areParticipantsEqualsOrCoupled(p,participants))) {
-                if(DEBUG) file.append(`                    //mark 2`,NL);
+            if (holes.map(h => h.startingParticipants).some(p => areParticipantsEqualsOrCoupled(p,participants))) {
+                if(DEBUG) file.append(`                    //mark 3`);
                 file.append(`
         localCCFG.addEdge(fork${ruleCF.rule.name}Node,${participants.filter(p=>p.type != "event").map(p => p.name).join('_')}Hole)
                     `);
@@ -357,34 +380,45 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: TypedElement[][], 
 // }
     
 
-// /**
-//  * traverse all the rules and identifies the holes. A hole is a participant that is the conclusion of a rule and the premise of another rule
-//  * 
-//  * @param rulesCF: the list of rules of the opened concept 
-//  * @returns the list of holes, given as a list of TypedElements (the participants of a memberCall) (the ending event is not relevant) 
-//  */
-// function identifiesHoles(rulesCF: RuleControlFlow[]): TypedElement[][] {
-//     let res: TypedElement[][] = []
-//     for (let i = 0; i < rulesCF.length; i++) {
-//         const currentRule = rulesCF[i];
-//         const currentConclusionParticipants = currentRule.conclusionParticipants;
-//         for (let j = 0; j < rulesCF.length; j++) {
-//             const anotherRule = rulesCF[j];
-//             const anotherRulePremiseParticipants = anotherRule.premiseParticipants;
+/**
+ * traverse all the rules and identifies the holes. A hole is a participant that is the conclusion of a rule and the premise of another rule
+ * 
+ * @param rulesCF: the list of rules of the opened concept 
+ * @returns the list of holes, given as a list of TypedElements (the participants of a memberCall) (the ending event is not relevant) 
+ */
+function identifiesHoles(rulesCF: RuleControlFlow[]): HoleSpecifier[] {
+    let res: HoleSpecifier[] = []
+    for (let i = 0; i < rulesCF.length; i++) {
+        const currentRule = rulesCF[i];
+        const currentConclusionParticipants = currentRule.conclusionParticipants;
+        for (let j = 0; j < rulesCF.length; j++) {
+            const anotherRule = rulesCF[j];
+            const anotherRulePremiseParticipants = anotherRule.premiseParticipants;
 
-//             for(let p of currentConclusionParticipants){
-//                 for(let anotherP of anotherRulePremiseParticipants){
-//                     if(areParticipantsCoupled(p, anotherP)){
-//                         if (!res.some(h => areParticipantsEquals(h, p))) {
-//                             res.push(p)
-//                         }
-//                     }
-//                 }
-//             } 
-//         }
-//     }
-//     return res
-// }
+            for(let conclusionP of currentConclusionParticipants){
+                for(let premiseP of anotherRulePremiseParticipants){
+                    if(areParticipantsCoupled(conclusionP, premiseP)){
+                        if(conclusionP.some(te => te.isCollection)){
+                            let holeSpecifier = new CollectionHoleSpecifier(conclusionP, premiseP)
+                            holeSpecifier.isSequential = currentRule.rule.conclusion.eventemissions[0].$type == "CollectionRuleSync" && (currentRule.rule.conclusion.eventemissions[0] as CollectionRuleSync).order == "sequential"
+                            holeSpecifier.parallelSyncPolicy = (anotherRule.rule.premise.eventExpression.$type == "NaryEventExpression") ?(anotherRule.rule.premise.eventExpression as NaryEventExpression).policy.operator+"" : "undefined"
+                            if(res.map(h => h.startingParticipants).some(p => areParticipantsEquals(p, holeSpecifier.startingParticipants)) == false){
+                                res.push(holeSpecifier)
+                            }
+                        }
+                        else{
+                            let holeSpecifier = new HoleSpecifier(conclusionP, premiseP)
+                            if(res.map(h => h.startingParticipants).some(p => areParticipantsEquals(p, holeSpecifier.startingParticipants)) == false){
+                                res.push(holeSpecifier)
+                            }
+                        }                        
+                    }
+                }
+            } 
+        }
+    }
+    return res
+}
 
 
 
@@ -394,55 +428,80 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: TypedElement[][], 
  * @param rulesCF: the list of rules of the opened concept 
  * @returns the list of holes and semi holes, given as a list of TypedElements (the participants of a memberCall) (the ending event is not relevant)
  */
-function identifiesHolesAndSemiHoles(rulesCF: RuleControlFlow[]): TypedElement[][] {
-    let res: TypedElement[][] = []
+function identifiesHolesAndSemiHoles(rulesCF: RuleControlFlow[]): HoleSpecifier[] {
+    let res: HoleSpecifier[] = identifiesHoles(rulesCF)
     for (let i = 0; i < rulesCF.length; i++) {
         const currentRule = rulesCF[i];
         const currentConclusionParticipants = currentRule.conclusionParticipants;
         for (let p of currentConclusionParticipants) {
             if (p[p.length - 1].name == "starts") {
-                if (!res.some(h => areParticipantsEqualsOrCoupled(h, p))) {
-                    res.push(p)
+                if (!res.some(h => areParticipantsEquals(h.startingParticipants, p))) {
+                    res.push(new HoleSpecifier(p, undefined))
                 }
             }
         }
-          
     }
     return res
 }
 
 
-// function areParticipantsEquals(p1: TypedElement[], p2: TypedElement[]): boolean {
-//     if(p1.length != p2.length){
-//         return false
-//     }
-//     for(let i = 0; i < p1.length; i++){
-//         if(p1[i].name != p2[i].name || p1[i].type != p2[i].type){
-//             return false
-//         }
-//     }
-//     return true
-// }
+function areParticipantsEquals(p1: TypedElement[], p2: TypedElement[]): boolean {
+    if(p1.length != p2.length){
+        return false
+    }
+    for(let i = 0; i < p1.length; i++){
+        if(p1[i].name != p2[i].name || p1[i].type != p2[i].type){
+            return false
+        }
+    }
+    return true
+}
 
-// function areParticipantsCoupled(p1: TypedElement[], p2: TypedElement[]): boolean {
-//     if(p1.length != p2.length){
-//         return false
-//     }
-//     for(let i = 0; i < p1.length-1; i++){
-//         if(p1[i].name != p2[i].name || p1[i].type != p2[i].type){
-//             return false
-//         }
-//     }
-//     if( p1.length > 1 &&
-//         ((p1[p1.length-1].name == "starts" &&  p2[p2.length-1].name == "terminates")
-//         ||
-//         (p1[p1.length-1].name == "terminates" &&  p2[p2.length-1].name == "starts"))
-//     ){
-//         return true
-//     }else{
-//         return false
-//     }
-// }
+function areParticipantsCoupled(p1: TypedElement[], p2: TypedElement[]): boolean {
+    
+    if(isParticipantCollectionBased(p1) && isParticipantCollectionBased(p2)){
+        //sanitize collection based participants
+        let p1Copy = []
+        for(let p of p1){
+            if(p.isCollection){
+                p1Copy.push(p)
+                break
+            }
+            p1Copy.push(p)
+        }
+        p1Copy.push(p1[p1.length-1])
+        p1= p1Copy
+        let p2Copy = []
+        for(let p of p2){
+            if(p.isCollection){
+                p2Copy.push(p)
+                break
+            }
+            p2Copy.push(p)
+        }
+        p2Copy.push(p2[p2.length-1])
+        p2 = p2Copy
+    }
+
+
+    if(p1.length != p2.length){
+        return false
+    }
+    for(let i = 0; i < p1.length-1; i++){
+        if(p1[i].name != p2[i].name || p1[i].type != p2[i].type){
+            return false
+        }
+    }
+    if( p1.length > 1 &&
+        ((p1[p1.length-1].name == "starts" &&  p2[p2.length-1].name == "terminates")
+        ||
+        (p1[p1.length-1].name == "terminates" &&  p2[p2.length-1].name == "starts"))
+    ){
+        return true
+    }else{
+        return false
+    }
+}
 
 function areParticipantsEqualsOrCoupled(p1: TypedElement[], p2: TypedElement[]): boolean {
     if(p1.length != p2.length){
@@ -480,23 +539,23 @@ function retrieveStartingRules(rulesCF: RuleControlFlow[]) {
     return startingRule;
 }
 
-/**creates checks how many possible termination rules are in the concept
- * @param rulesCF: the list of rules of the concept 
- */
-function checkIfMultipleTerminate(rulesCF: RuleControlFlow[]) {
-    let terminatingRules = [];
-    for (let r of rulesCF) {
-        for (let participants of r.conclusionParticipants) {
-            for (let p of participants) {
-                if (p.name != undefined && p.name == "terminates") {
-                    terminatingRules.push(r);
-                }
-            }
-        }
-    }
-    let hasMultipleTerminate = terminatingRules.length > 1;
-    return hasMultipleTerminate;
-}
+// /**checks how many possible termination rules are in the concept
+//  * @param rulesCF: the list of rules of the concept 
+//  */
+// function checkIfMultipleTerminate(rulesCF: RuleControlFlow[]): boolean {
+//     let terminatingRules = [];
+//     for (let r of rulesCF) {
+//         for (let participants of r.conclusionParticipants) {
+//             for (let p of participants) {
+//                 if (p.name != undefined && p.name == "terminates") {
+//                     terminatingRules.push(r);
+//                 }
+//             }
+//         }
+//     }
+//     let hasMultipleTerminate = terminatingRules.length > 1;
+//     return hasMultipleTerminate;
+// }
 
 // /**
 //  * generates nodes and edges corresponding to the conclusion of a rule. 
@@ -519,9 +578,9 @@ function checkIfMultipleTerminate(rulesCF: RuleControlFlow[]) {
 //     }
 //     `)
 
-//     let actionsString = ""
-//     actionsString = visitStateModifications(ruleCF, actionsString);
-//     if(actionsString.length>0){
+//     let actionsstring = ""
+//     actionsstring = visitStateModifications(ruleCF, actionsstring);
+//     if(actionsstring.length>0){
 //         file.append(`
 //     {let ${ruleCF.rule.name}StateModificationNode: Node = new Step("${ruleCF.rule.name}StateModificationNode")
 //     this.ccfg.addNode(${ruleCF.rule.name}StateModificationNode)
@@ -541,7 +600,7 @@ function checkIfMultipleTerminate(rulesCF: RuleControlFlow[]) {
     
 //         file.append(`
 //     previousNode.functionsNames = [...previousNode.functionsNames, ...[\`\${previousNode.uid}${ruleCF.rule.name}\`]] 
-//     previousNode.functionsDefs =[...previousNode.functionsDefs, ...[${actionsString}]] //AA
+//     previousNode.functionsDefs =[...previousNode.functionsDefs, ...[${actionsstring}]] //AA
 //     `);
 //     }
     
@@ -899,16 +958,15 @@ function checkIfMultipleTerminate(rulesCF: RuleControlFlow[]) {
  * @param ruleCF  the current rule
  * @returns a boolean indicating if the event emission is collection based
  */
-function isEventEmissionIsCollectionBased(ruleCF: RuleControlFlow) {
+function isRuleConclusionCollectionBased(ruleCF: RuleControlFlow) {
     let isEventEmissionACollection: boolean = false;
     for (let participant of ruleCF.conclusionParticipants) {
-        for (let p of participant) {
-            if (p.isCollection) {
-                isEventEmissionACollection = true;
-            }
+        isEventEmissionACollection = isParticipantCollectionBased(participant);
+        if (isEventEmissionACollection) {
+            return true;
         }
     }
-    return isEventEmissionACollection;
+    return false;
 }
 
 /**
@@ -920,7 +978,7 @@ function writePreambule(fileNode: CompositeGeneratorNode, data: FilePathData) {
     fileNode.append(`
 import fs from 'fs';
 import { AstNode, Reference, isReference, streamAst } from "langium";
-import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType,Hole, TimerHole} from "../../ccfg/ccfglib.js";`, NL)
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType,Hole, TimerHole,CollectionHole} from "../../ccfg/ccfglib.js";`, NL)
 }
 
 
@@ -928,22 +986,18 @@ import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType,Hole, TimerHo
  * writes the basic functions of the visitor file of the compiler
  * @param fileNode the file
  */
-function addUtilFunctions(fileNode: CompositeGeneratorNode) {
+function addUtilFunctions(fileNode: CompositeGeneratorNode,rootTypeName: string) {
     fileNode.append(`
-    generateCCFG(root: Program): CCFG {
+    generateCCFG(root: ${rootTypeName}, debug: boolean = false): CCFG {
 
         //pass 1: create local CCFGs for all nodes
         console.log("pass 1: create local CCFGs for all nodes")
         let astNodeToLocalCCFG = new Map<AstNode, CCFG>()
-        let i = 0
         for (let n of streamAst(root)){
             let localCCFG = this.createLocalCCFG(n)
-            
-            let dotContent = localCCFG.toDot();
-            fs.writeFileSync(\`./localCCFG\${i}.dot\`, dotContent);
-            i = i+1
             if(debug){
-                console.log("debug !")
+                let dotContent = localCCFG.toDot();
+                fs.writeFileSync(\`./generated/localCCFGs/localCCFG\${localCCFG.initialState?.functionsNames[0].replace(/init\d+/g,"")}.dot\`, dotContent);
             }
             astNodeToLocalCCFG.set(n, localCCFG)
         }
@@ -954,24 +1008,70 @@ function addUtilFunctions(fileNode: CompositeGeneratorNode) {
         let holeNodes : Hole[] = this.retrieveHoles(globalCCFG)
         //fix point loop until all holes are filled
         while (holeNodes.length > 0) {
-            console.log("holes to fill: "+holeNodes.length)
+            if (debug) console.log("holes to fill: "+holeNodes.length)
             for (let holeNode of holeNodes) {
                 if (holeNode.getType() == "TimerHole") {
-                    console.log("filling timer hole: "+holeNode.uid)
+                    if (debug) console.log("filling timer hole: "+holeNode.uid)
                     this.fillTimerHole(holeNode as TimerHole, globalCCFG)
                     continue
+                }if (holeNode.getType() == "CollectionHole") {
+                    if (debug) console.log("filling timer hole: "+holeNode.uid)
+                        this.fillCollectionHole(holeNode as CollectionHole, globalCCFG)
+                        continue
+                }else{
+                    if (debug) console.log("filling hole: "+holeNode.uid)
+                    if (holeNode.astNode === undefined) {
+                        throw new Error("Hole has undefined astNode :"+holeNode.uid)
+                    }
+                    let holeNodeLocalCCFG = astNodeToLocalCCFG.get(holeNode.astNode) as CCFG
+                    globalCCFG.fillHole(holeNode, holeNodeLocalCCFG)
                 }
-                console.log("filling hole: "+holeNode.uid)
-                if (holeNode.astNode === undefined) {
-                    throw new Error("Hole has undefined astNode :"+holeNode.uid)
-                }
-                let holeNodeLocalCCFG = astNodeToLocalCCFG.get(holeNode.astNode) as CCFG
-                globalCCFG.fillHole(holeNode, holeNodeLocalCCFG)
             }
             holeNodes = this.retrieveHoles(globalCCFG)
         }
 
-        return this.globalCCFG
+        return globalCCFG
+    }
+
+    fillCollectionHole(hole: CollectionHole, ccfg: CCFG) {
+        let holeNodeLocalCCFG = new CCFG()
+        let startsCollectionHoleNode: Node = new Step(hole.astNode,NodeType.starts,[])
+        holeNodeLocalCCFG.addNode(startsCollectionHoleNode)
+        holeNodeLocalCCFG.initialState = startsCollectionHoleNode
+        let terminatesCollectionHoleNode: Node = new Step(hole.astNode,NodeType.terminates)
+        holeNodeLocalCCFG.addNode(terminatesCollectionHoleNode)
+        if(hole.isSequential){
+            let previousNode = startsCollectionHoleNode
+            for (let e of hole.astNodeCollection){
+                let collectionHole : Hole = new Hole(e)
+                holeNodeLocalCCFG.addNode(collectionHole)
+                holeNodeLocalCCFG.addEdge(previousNode,collectionHole)
+                previousNode = collectionHole
+            }
+            holeNodeLocalCCFG.addEdge(previousNode,terminatesCollectionHoleNode)
+            ccfg.fillHole(hole, holeNodeLocalCCFG)
+        }
+        else{
+            let forkNode = new Fork(hole.astNode)
+            holeNodeLocalCCFG.addNode(forkNode)
+            holeNodeLocalCCFG.addEdge(startsCollectionHoleNode,forkNode)
+            let joinNode = undefined
+            if(hole.parallelSyncPolicy == "lastOF"){
+                joinNode = new AndJoin(hole.astNode)
+            }else{
+                joinNode = new OrJoin(hole.astNode)
+            } 
+            holeNodeLocalCCFG.addNode(joinNode)
+            holeNodeLocalCCFG.addEdge(joinNode,terminatesCollectionHoleNode)
+            for (let e of hole.astNodeCollection){
+                let collectionHole : Hole = new Hole(e)
+                holeNodeLocalCCFG.addNode(collectionHole)
+                holeNodeLocalCCFG.addEdge(forkNode,collectionHole)
+                holeNodeLocalCCFG.addEdge(collectionHole,joinNode)
+            }
+            ccfg.fillHole(hole, holeNodeLocalCCFG)
+        }
+        return
     }
 
     fillTimerHole(hole: TimerHole, ccfg: CCFG) {
@@ -1146,6 +1246,28 @@ class TypedElement {
     }
 }
 
+class HoleSpecifier{
+
+    startingParticipants: TypedElement[] = []
+    terminatingParticipants: TypedElement[] | undefined = [] //if undefined -> semi hole
+
+    constructor(startingParticipants: TypedElement[], terminatingParticipants: TypedElement[] | undefined) {
+        this.startingParticipants = startingParticipants
+        this.terminatingParticipants = terminatingParticipants
+    }
+   
+}
+
+class CollectionHoleSpecifier extends HoleSpecifier{
+
+    constructor(startingParticipants: TypedElement[], terminatingParticipants: TypedElement[] | undefined) {
+        super(startingParticipants, terminatingParticipants)
+    }
+
+    isSequential: boolean = true
+    parallelSyncPolicy: string = "lastOF"
+    
+}
 
 
 /**
@@ -1410,7 +1532,7 @@ function getNameAndTypeOfElement(namedElem: NamedElement): [(string | undefined)
 //         // let varType: TypeDescription
 
 //         // if(typeof(valuedEventRefComparison.literal) == "string"){
-//         //     varType = createStringType(undefined)
+//         //     varType = createstringType(undefined)
 //         // }else{
 //         //     varType = inferType(valuedEventRefComparison.literal, new Map())
 //         // }
@@ -1473,10 +1595,10 @@ function visitVariableDeclaration(runtimeState: VariableDeclaration[] | undefine
             if(vardDecl.type != undefined && vardDecl.type.$cstNode?.text == "Event"){
                 file.append(`
                 let starts${vardDecl.name}Node: Node = new Step("starts${vardDecl.name}"+getASTNodeUID(node))\n
-                this.ccfg.addNode(starts${vardDecl.name}Node)
+                localCCFG.addNode(starts${vardDecl.name}Node)
                 let terminates${vardDecl.name}Node: Node = new Step("terminates${vardDecl.name}"+getASTNodeUID(node))\n
-                this.ccfg.addNode(terminates${vardDecl.name}Node)
-                this.ccfg.addEdge(starts${vardDecl.name}Node,terminates${vardDecl.name}Node)
+                localCCFG.addNode(terminates${vardDecl.name}Node)
+                localCCFG.addEdge(starts${vardDecl.name}Node,terminates${vardDecl.name}Node)
                 `)
             }
         }
@@ -1513,65 +1635,65 @@ function getVariableDeclarationCode(runtimeState: VariableDeclaration[] | undefi
     return res
 }
 
-// /**
-//  * for now in c++ like form but should be an interface to the target language
-//  * @param runtimeState 
-//  * @returns 
-//  */
-// function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefined,file:CompositeGeneratorNode): [string, string] {
-//     var res : string = ""
-//     if (valuedEmission != undefined) {
-//         let varType = inferType(valuedEmission.data, new Map())
-//         let typeName = getCPPVariableTypeName(varType.$type)
+/**
+ * for now in c++ like form but should be an interface to the target language
+ * @param runtimeState 
+ * @returns 
+ */
+function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefined,file:CompositeGeneratorNode): [string, string] {
+    var res : string = ""
+    if (valuedEmission != undefined) {
+        let varType = inferType(valuedEmission.data, new Map())
+        let typeName = getCPPVariableTypeName(varType.$type)
 
-//         if(valuedEmission.data != undefined && valuedEmission.data.$type == "MemberCall"){
+        if(valuedEmission.data != undefined && valuedEmission.data.$type == "MemberCall"){
             
-//             //todo write a node that saves the variable
-//             res = createVariableFromMemberCall(valuedEmission.data as MemberCall, typeName)
-//             console.log(res)
-//         }
-//         if(valuedEmission.data != undefined && valuedEmission.data.$type == "BinaryExpression"){
-//             //todo write a node that joins the two variable nodes and saves the result
-//             let lhs = (valuedEmission.data as BinaryExpression).left
-//             let lhsType = inferType(lhs, new Map())
-//             let lhsTypeName = getCPPVariableTypeName(lhsType.$type)
-//             let leftRes: string = ""; // Declare the variable rightRes
-//             leftRes = createVariableFromMemberCall(lhs as MemberCall, lhsTypeName);
-//             res = res + leftRes+","
-//             let rhs = (valuedEmission.data as BinaryExpression).right
-//             let rhsType = inferType(rhs, new Map())
-//             let rhsTypeName = getCPPVariableTypeName(rhsType.$type)
-//             let rightRes: string = ""; // Declare the variable rightRes
-//             rightRes  = createVariableFromMemberCall(rhs as MemberCall, rhsTypeName);
-//             res = res + rightRes+","
-//             let applyOp = (valuedEmission.data as BinaryExpression).operator
-//             //res = res + `\`${typeName} \${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset} = \${this.getASTNodeUID(node)}${lhs.$cstNode?.offset} ${applyOp} \${this.getASTNodeUID(node)}${rhs.$cstNode?.offset};\``
-//             res = res + `\`${createVar},\${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,`
-//             res = res + `\`${operation},\${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset},\${this.getASTNodeUID(node)}${lhs.$cstNode?.offset},${applyOp},\${this.getASTNodeUID(node)}${rhs.$cstNode?.offset}\``
-//         }
-//         if(valuedEmission.data != undefined && valuedEmission.data.$type == "BooleanExpression" || valuedEmission.data.$type == "NumberExpression" || valuedEmission.data.$type == "StringExpression"){
-//             // write a node that sends the value specified 
-//             //res = `\`${typeName} \${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  ${valuedEmission.data.$cstNode?.text};\``
-//             //res = res + "," +`\`return \${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name};\``
-//             res = res  +`\`${createVar},${typeName},\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\``+ ","
-//             res = res  +`\`${assignVar},\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name},${valuedEmission.data.$cstNode?.text}\``+ ","
-//             res = res  +`\`${ret},\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\``+ ","
-//             return [res, typeName]
-//         }
-//         if(res.length > 0){
-//             res = res + ","
-//         }
-//         console.log(res)
-//         //res = res + `\`${typeName} \${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  \${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset};\``
-//         //res = res + "," +`\`return \${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name};\``
-//         res = res+ `\`${createVar},${typeName},\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\`,`
-//         res = res+ `\`${assignVar},\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name},\${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,`
-//         res = res+ `\`${ret},\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\``
+            //todo write a node that saves the variable
+            res = createVariableFromMemberCall(valuedEmission.data as MemberCall, typeName)
+            console.log(res)
+        }
+        if(valuedEmission.data != undefined && valuedEmission.data.$type == "BinaryExpression"){
+            //todo write a node that joins the two variable nodes and saves the result
+            let lhs = (valuedEmission.data as BinaryExpression).left
+            let lhsType = inferType(lhs, new Map())
+            let lhsTypeName = getCPPVariableTypeName(lhsType.$type)
+            let leftRes: string = ""; // Declare the variable rightRes
+            leftRes = createVariableFromMemberCall(lhs as MemberCall, lhsTypeName);
+            res = res + leftRes+","
+            let rhs = (valuedEmission.data as BinaryExpression).right
+            let rhsType = inferType(rhs, new Map())
+            let rhsTypeName = getCPPVariableTypeName(rhsType.$type)
+            let rightRes: string = ""; // Declare the variable rightRes
+            rightRes  = createVariableFromMemberCall(rhs as MemberCall, rhsTypeName);
+            res = res + rightRes+","
+            let applyOp = (valuedEmission.data as BinaryExpression).operator
+            //res = res + `\`${typeName} \${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset} = \${this.getASTNodeUID(node)}${lhs.$cstNode?.offset} ${applyOp} \${this.getASTNodeUID(node)}${rhs.$cstNode?.offset};\``
+            res = res + `\`${createVar},\${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,`
+            res = res + `\`${operation},\${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset},\${this.getASTNodeUID(node)}${lhs.$cstNode?.offset},${applyOp},\${this.getASTNodeUID(node)}${rhs.$cstNode?.offset}\``
+        }
+        if(valuedEmission.data != undefined && valuedEmission.data.$type == "BooleanExpression" || valuedEmission.data.$type == "NumberExpression" || valuedEmission.data.$type == "StringExpression"){
+            // write a node that sends the value specified 
+            //res = `\`${typeName} \${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  ${valuedEmission.data.$cstNode?.text};\``
+            //res = res + "," +`\`return \${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name};\``
+            res = res  +`\`${createVar},${typeName},\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\``+ ","
+            res = res  +`\`${assignVar},\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name},${valuedEmission.data.$cstNode?.text}\``+ ","
+            res = res  +`\`${ret},\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\``+ ","
+            return [res, typeName]
+        }
+        if(res.length > 0){
+            res = res + ","
+        }
+        console.log(res)
+        //res = res + `\`${typeName} \${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  \${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset};\``
+        //res = res + "," +`\`return \${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name};\``
+        res = res+ `\`${createVar},${typeName},\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\`,`
+        res = res+ `\`${assignVar},\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name},\${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,`
+        res = res+ `\`${ret},\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\``
         
-//         return [res, typeName]
-//     }
-//     return [res , "void"]
-// }
+        return [res, typeName]
+    }
+    return [res , "void"]
+}
 
 function createVariableFromMemberCall(data: MemberCall, typeName: string): string {
     let res: string = ""
@@ -1616,12 +1738,12 @@ function createVariableFromMemberCall(data: MemberCall, typeName: string): strin
 /**
  * for now in c++ like form but should be an interface to the target language
  * @param ruleCF 
- * @param actionsString 
+ * @param actionsstring 
  * @returns 
  */
-function visitStateModifications(ruleCF: RuleControlFlow, actionsString: string) {
+function visitStateModifications(ruleCF: RuleControlFlow, actionsstring: string) {
     let sep = ""
-    if(actionsString.length > 0){
+    if(actionsstring.length > 0){
         sep = ","
     }
     for (let action of ruleCF.rule.conclusion.statemodifications) {
@@ -1638,31 +1760,31 @@ function visitStateModifications(ruleCF: RuleControlFlow, actionsString: string)
         // let rhsPrev = ((action.rhs as MemberCall).previous as MemberCall)?.element
         let rhsElem = (action.rhs as MemberCall).element?.ref
         if (rhsElem == undefined) {
-            return actionsString
+            return actionsstring
         }
         let lhsPrev = ((action.lhs as MemberCall).previous as MemberCall)?.element
         let lhsElem = (action.lhs as MemberCall).element?.ref
         if (lhsElem == undefined) {
-            return actionsString
+            return actionsstring
         }
 
-        actionsString = actionsString + sep + createVariableFromMemberCall(action.rhs as MemberCall, typeName)
+        actionsstring = actionsstring + sep + createVariableFromMemberCall(action.rhs as MemberCall, typeName)
         sep = ","
         
         if(rhsElem.$type == "TemporaryVariable"){
-            //actionsString = actionsString + sep + `\`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
+            //actionsstring = actionsstring + sep + `\`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
             //    const std::lock_guard<std::mutex> lock(sigma_mutex);\``;                              
-            //actionsString = actionsString + sep + `(*((${typeName}*)sigma[\"\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"])) = \${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset};\``;
-            actionsString = actionsString + sep + `\`${setGlobalVar},${typeName},\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name},\${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset}\``
+            //actionsstring = actionsstring + sep + `(*((${typeName}*)sigma[\"\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"])) = \${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset};\``;
+            actionsstring = actionsstring + sep + `\`${setGlobalVar},${typeName},\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name},\${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset}\``
         }else{
-            /*actionsString = actionsString + sep + `\`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
+            /*actionsstring = actionsstring + sep + `\`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);
                 (*((${typeName}*)sigma[\"\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"])) = \${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset};\``;
             */
-           actionsString = actionsString + sep + `\`${setGlobalVar},${typeName},\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name},\${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset}\``
+           actionsstring = actionsstring + sep + `\`${setGlobalVar},${typeName},\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name},\${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset}\``
         }
     }
-    return actionsString;
+    return actionsstring;
 }
 
 function getCPPVariableTypeName(typeName: string): string {
@@ -1707,4 +1829,26 @@ function isATimerHole(p: TypedElement[]): boolean {
     }
     return false;
 }
+
+
+/**
+ * determines if the participant (TypedElement[]) is a Collection or not
+ * @param p a list of typed elements
+ * @returns 
+ */
+function isACollectionHole(h: HoleSpecifier): boolean {
+    return isParticipantCollectionBased(h.startingParticipants);
+}
+
+
+function isParticipantCollectionBased(participant: TypedElement[]): boolean {
+    for (let p of participant) {
+        if (p.isCollection) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 

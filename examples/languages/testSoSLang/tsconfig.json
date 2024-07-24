@@ -7,14 +7,13 @@
     "sourceMap": true,
     "outDir": "out",
     "strict": true,
-    "noUnusedLocals": true,
+    "noUnusedLocals": false,
     "noImplicitReturns": true,
     "noImplicitOverride": true,
     "moduleResolution": "node",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "importsNotUsedAsValues": "preserve"
+    "forceConsistentCasingInFileNames": true
   },
   "include": [
      "src/**/*.ts"

@@ -171,7 +171,7 @@ open While {
       <this,σ> ~> <body,σ>
                  
 
-      when <body,σ> -> terminates
+            when <body,σ>
     ---------------------------------                         whileBodyEnd
           <this,σ> ~> <cond,σ>
 
@@ -229,7 +229,7 @@ open FunctionDef{
         ----------------------------------------------------     functionDefArgsStart
                     <this,σ> ~> <body,σ>
   
-                when <body,σ> -> terminates
-        -------------------------------------------------         functionDefEnd
-                  <this,σ> ~> terminates
+                when <body,σ>
+        -------------------------------                          functionDefEnd
+            <this,σ> ~> terminates
 }

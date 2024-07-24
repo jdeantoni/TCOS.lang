@@ -17,14 +17,14 @@ class Void{
 std::unordered_map<std::string, void*> sigma;
 std::mutex sigma_mutex;  // protects sigma
 
-void functioninit3Variable(){
-	createGlobalVar,int,Variable0_0_0_10currentValue
+void functioninit3Perio(){
+	createGlobalVar,int1000,Perio0_0_2_1blocTrigger
 }
-void functioninit6Variable(){
-	createGlobalVar,int,Variable1_0_1_10currentValue
+void functioninit19Stmt1(){
+	createGlobalVar,int0,Stmt11_6_1_11fakeState
 }
-void functioninit9Variable(){
-	createGlobalVar,int,Variable2_0_2_11currentValue
+void functioninit21Stmt1(){
+	createGlobalVar,int0,Stmt11_14_1_19fakeState
 }
 
 int main() {
@@ -34,16 +34,22 @@ int main() {
         #endif
         
         #if DEBUG
-            std::cout<<"34 : Step" <<std::endl;
-        #endif
-        
-        #if DEBUG
             std::cout<<"3 : Step" <<std::endl;
         #endif
-        functioninit3Variable();
+        functioninit3Perio();
 
+        LockingQueue<Void> queue8; //queue 2
+            {
+
+            Void fakeParam8;
+            queue8.push(fakeParam8);
+                }
+ //or join node
+        Void OrJoinPopped_8;
+        queue8.waitAndPop(OrJoinPopped_8);
+        
         #if DEBUG
-            std::cout<<"5 : Step" <<std::endl;
+            std::cout<<"31 : Step" <<std::endl;
         #endif
         
     //WARNING !! temporary code to test

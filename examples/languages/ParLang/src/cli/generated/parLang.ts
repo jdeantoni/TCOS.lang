@@ -300,20 +300,16 @@ export class ParLangSemanticsCompilerFrontEnd implements CompilerFrontEnd {
         return localCCFG;
     }
 
-    generateCCFG(root: Program): CCFG {
+    generateCCFG(root: Program, debug: boolean = false): CCFG {
 
         //pass 1: create local CCFGs for all nodes
         console.log("pass 1: create local CCFGs for all nodes")
         let astNodeToLocalCCFG = new Map<AstNode, CCFG>()
-        let i = 0
         for (let n of streamAst(root)){
             let localCCFG = this.createLocalCCFG(n)
-            
-            let dotContent = localCCFG.toDot();
-            fs.writeFileSync(`./localCCFG${i}.dot`, dotContent);
-            i = i+1
             if(debug){
-                console.log("debug !")
+                let dotContent = localCCFG.toDot();
+                fs.writeFileSync(`./generated/localCCFGs/localCCFG${localCCFG.initialState?.functionsNames[0].replace(/init\d+/g,"")}.dot`, dotContent);
             }
             astNodeToLocalCCFG.set(n, localCCFG)
         }
@@ -324,14 +320,14 @@ export class ParLangSemanticsCompilerFrontEnd implements CompilerFrontEnd {
         let holeNodes : Hole[] = this.retrieveHoles(globalCCFG)
         //fix point loop until all holes are filled
         while (holeNodes.length > 0) {
-            console.log("holes to fill: "+holeNodes.length)
+            if (debug) console.log("holes to fill: "+holeNodes.length)
             for (let holeNode of holeNodes) {
                 if (holeNode.getType() == "TimerHole") {
-                    console.log("filling timer hole: "+holeNode.uid)
+                    if (debug) console.log("filling timer hole: "+holeNode.uid)
                     this.fillTimerHole(holeNode as TimerHole, globalCCFG)
                     continue
                 }else{
-                    console.log("filling hole: "+holeNode.uid)
+                    if (debug) console.log("filling hole: "+holeNode.uid)
                     if (holeNode.astNode === undefined) {
                         throw new Error("Hole has undefined astNode :"+holeNode.uid)
                     }
@@ -341,8 +337,6 @@ export class ParLangSemanticsCompilerFrontEnd implements CompilerFrontEnd {
             }
             holeNodes = this.retrieveHoles(globalCCFG)
         }
-
-        console.log("global CCFG: "+globalCCFG.toDot()) 
 
         return globalCCFG
     }
