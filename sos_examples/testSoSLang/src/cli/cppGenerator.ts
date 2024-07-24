@@ -36,82 +36,97 @@ export class CppGenerator implements IGenerator {
     }
     endFile(codeFile: CompositeGeneratorNode):void {
     }
-    createFunction(codeFile: CompositeGeneratorNode, fname: string, params: TypedElement[], returnType: string): void {
-        codeFile.append(returnType + " function" + fname + `(${params.map(p => (p as TypedElement).toString()).join(", ")}){\n\t`)
+    createFunction(codeFile: CompositeGeneratorNode, fname: string, params: TypedElement[], returnType: string,insideFunction:string[]): void {
+        codeFile.append(returnType + " function" + fname + `(${params.map(p => (p as TypedElement).toString()).join(", ")}){\n`)
+
+        for (let i = 0; i < insideFunction.length; i++) {
+            codeFile.append(insideFunction[i])
+        }
+        codeFile.append("}\n")
     }
     createMainFunction(codeFile: CompositeGeneratorNode): void {
         codeFile.append("int main(){\n\t")
     }
-    createFuncCall(codeFile: CompositeGeneratorNode, fname: string, params: string[], typeName: string): void {
-        if (typeName == "void") codeFile.append(`function${fname}(${params.join(", ")});\n`);
-        else
-            codeFile.append(typeName+ " result"+fname+" = function"+fname + `(${params.join(", ")});\n`)
+    createFuncCall(codeFile: CompositeGeneratorNode, fname: string, params: string[], typeName: string): string[] {
+        if (typeName == "void"){
+            return [`function${fname}(${params.join(", ")});\n`]
+        }
+        
+        return [typeName+ " result"+fname+" = function"+fname + `(${params.join(", ")});\n`]
     }
-    createIf(codeFile: CompositeGeneratorNode, guards: string[],insideOfIf:CompositeGeneratorNode): void {
-        codeFile.append("if (" + guards.join(" && ") + "){\n")
-        codeFile.append(insideOfIf.toString())
-        codeFile.append("}\n")
+    createIf(codeFile: CompositeGeneratorNode, guards: string[],insideOfIf:string[]): string[] {
+        let createIfString:string[] = []
+
+        createIfString.push("if (" + guards.join(" && ") + "){\n")
+        insideOfIf.forEach(element => {
+            createIfString.push(element)
+        });
+        createIfString.push("}\n")
+        return createIfString
     }
     createAndOpenThread(codeFile: CompositeGeneratorNode, uid: number): void {
         codeFile.append(`
             std::thread thread${uid}([&](){\n`
                 );
     }
-    endThread(codeFile: CompositeGeneratorNode, uid: number): void {
+    endThread(codeFile: CompositeGeneratorNode, uid: number): string[] {
         codeFile.append(`
         });
         thread${uid}.detach();
             `);
+        return [`
+        });
+        thread${uid}.detach();
+            `];
+        
     }
     endSection(codeFile: CompositeGeneratorNode): void {
         codeFile.append("}\n")
     }
-    createQueue(codeFile: CompositeGeneratorNode, queueUID: number): void {
-        codeFile.append(`LockingQueue<Void> queue${queueUID};\n`)
+    createQueue(codeFile: CompositeGeneratorNode, queueUID: number): string[] {
+        return [`LockingQueue<Void> queue${queueUID};\n`]
     }
-    createLockingQueue(codeFile: CompositeGeneratorNode, typeName: string, queueUID: number): void {
-        codeFile.append(`
-LockingQueue<${typeName}> queue${queueUID};`);
+    createLockingQueue(codeFile: CompositeGeneratorNode, typeName: string, queueUID: number): string[] {
+        return [`LockingQueue<${typeName}> queue${queueUID};`]
     }
-    receiveFromQueue(codeFile: CompositeGeneratorNode, queueUID: number, typeName: string, varName: string): void {
-        codeFile.append("queue" + queueUID + ".waitAndPop("+varName+");\n")
+    receiveFromQueue(codeFile: CompositeGeneratorNode, queueUID: number, typeName: string, varName: string): string[] {
+        return ["queue" + queueUID + ".waitAndPop("+varName+");\n"]
     }
-    sendToQueue(codeFile: CompositeGeneratorNode, queueUID: number, typeName: string, varName: string): void {
-        codeFile.append("queue" + queueUID + ".push(" + varName + ");\n")
+    sendToQueue(codeFile: CompositeGeneratorNode, queueUID: number, typeName: string, varName: string): string[] {
+        return ["queue" + queueUID + ".push(" + varName + ");\n"]
+
     }
-    createSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): void {
-        codeFile.append("lockingQueue<Void> synch" + synchUID + ";\n")
+    createSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): string[] {
+        return ["lockingQueue<Void> synch" + synchUID + ";\n"]
     }
-    activateSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): void {
-        codeFile.append("Void fakeParam"+synchUID+";\n")
-        codeFile.append("synch" + synchUID + ".push(fakeParam"+synchUID+");")
+    activateSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): string[] {
+        return ["Void fakeParam"+synchUID+";\n " ,"synch" + synchUID + ".push(fakeParam"+synchUID+");\n"]
     }
-    waitForSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): void {
-        codeFile.append("Void joinPopped"+synchUID+";\n")
-        codeFile.append("synch" + synchUID + ".waitAndPop();\n")
+    waitForSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): string[] {
+        return ["Void joinPopped"+synchUID+";\n " ,"synch" + synchUID + ".waitAndPop();\n"]
     }
     createEqualsVerif(firstValue: string, secondValue: string): string {
-        return firstValue + " == " + secondValue;
+        return firstValue + " == " + secondValue
     }
-    assignVar(codeFile: CompositeGeneratorNode, varName: string, value: string): void {
-        codeFile.append(varName + " = " + value + ";\n")
+    assignVar(codeFile: CompositeGeneratorNode, varName: string, value: string): string[] {
+        return [varName + " = " + value + ";\n"]
     }
-    returnVar(codeFile: CompositeGeneratorNode, varName: string): void {
-        codeFile.append("return " + varName + ";\n")
+    returnVar(codeFile: CompositeGeneratorNode, varName: string): string[] {
+        return ["return " + varName + ";\n"]
     }
-    createVar(codeFile: CompositeGeneratorNode, type: string, varName: string): void {
-        codeFile.append(type + " " + varName + ";\n")
+    createVar(codeFile: CompositeGeneratorNode, type: string, varName: string): string[] {
+        return [type + " " + varName + ";\n"]
     }
-    createGlobalVar(codeFile: CompositeGeneratorNode, type: string, varName: string): void {
-        codeFile.append("sigma[\"" + varName + "\"] = new "+type+"();\n")
+    createGlobalVar(codeFile: CompositeGeneratorNode, type: string, varName: string): string[] {
+        return ["sigma[\"" + varName + "\"] = new "+type+"();\n"]
     }
-    setVarFromGlobal(codeFile: CompositeGeneratorNode, type: string, varName: string, value: string): void {
-        codeFile.append( varName + " = *(" + type + "*)sigma[\"" + value + "\"];\n")
+    setVarFromGlobal(codeFile: CompositeGeneratorNode, type: string, varName: string, value: string): string[] {
+        return [varName + " = *(" + type + "*)sigma[\"" + value + "\"];\n"]
     }
-    setGlobalVar(codeFile: CompositeGeneratorNode, type: string, varName: string, value: string): void {
-        codeFile.append("*(("+type+"*)sigma[\"" + varName + "\"]) = "+value +";\n")
+    setGlobalVar(codeFile: CompositeGeneratorNode, type: string, varName: string, value: string): string[] {
+        return ["*(("+type+"*)sigma[\"" + varName + "\"]) = "+value +";\n"]
     }
-    operation(codeFile: CompositeGeneratorNode, varName: string, n1: string, op: string, n2: string): void {
-        codeFile.append(varName + " = " + n1 + " " + op + " " + n2 + ";\n")
+    operation(codeFile: CompositeGeneratorNode, varName: string, n1: string, op: string, n2: string): string[] {
+        return [varName + " = " + n1 + " " + op + " " + n2 + ";\n"]
     }
 }

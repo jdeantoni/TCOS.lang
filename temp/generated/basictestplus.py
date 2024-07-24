@@ -47,15 +47,8 @@ def main():
 	sync32 = threading.Event() 
 	VarRef8_4_8_6terminate = result11accessVarRef 
 	if VarRef8_4_8_6terminate == True: 
-		result19accessVarRef = function19accessVarRef(); 
-		function21executeAssignment2(result19accessVarRef); 
-		sync32.set() 
-		sync32.clear() 
-	if VarRef8_4_8_6terminate == False: 
-		result28accessVarRef = function28accessVarRef(); 
-		function30executeAssignment2(result28accessVarRef); 
-		sync32.set() 
-		sync32.clear() 
-	sync32.wait() 
+		if VarRef8_4_8_6terminate == False: 
+			sync32.wait() 
+			sync32.clear() 
 if __name__ == "__main__": 
 	main() 
