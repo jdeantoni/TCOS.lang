@@ -4,6 +4,7 @@ import { TypedElement } from "../ccfg/ccfglib";
 
 
 export class CppGenerator implements IGenerator {
+    
     nameFile(filename: string): string {
         return `${filename}.cpp`;
     }
@@ -44,8 +45,13 @@ export class CppGenerator implements IGenerator {
         }
         codeFile.append("}\n")
     }
-    createMainFunction(codeFile: CompositeGeneratorNode): void {
+    createMainFunction(codeFile: CompositeGeneratorNode,insideMain:string[]): void {
         codeFile.append("int main(){\n\t")
+        for (let i = 0; i < insideMain.length; i++) {
+            codeFile.append("\t"+insideMain[i])
+        }
+        codeFile.append("for(auto entry : sigma){ std::cout << entry.first << \" : \" << *((int*)entry.second) << std::endl;}");
+        codeFile.append("}\n")
     }
     createFuncCall(codeFile: CompositeGeneratorNode, fname: string, params: string[], typeName: string): string[] {
         if (typeName == "void"){
@@ -64,24 +70,16 @@ export class CppGenerator implements IGenerator {
         createIfString.push("}\n")
         return createIfString
     }
-    createAndOpenThread(codeFile: CompositeGeneratorNode, uid: number): void {
-        codeFile.append(`
-            std::thread thread${uid}([&](){\n`
-                );
-    }
-    endThread(codeFile: CompositeGeneratorNode, uid: number): string[] {
-        codeFile.append(`
-        });
-        thread${uid}.detach();
-            `);
-        return [`
-        });
-        thread${uid}.detach();
-            `];
-        
-    }
-    endSection(codeFile: CompositeGeneratorNode): void {
-        codeFile.append("}\n")
+    createAndOpenThread(codeFile: CompositeGeneratorNode, uid: number,insideThreadCode:string[]): string[] {
+        let threadCode:string[] = []
+        threadCode = [...threadCode,`std::thread thread${uid}([&](){\n`]
+        for (let i = 0; i < insideThreadCode.length; i++) {
+            threadCode = [...threadCode, insideThreadCode[i]]
+        }
+        threadCode = [...threadCode,`});\n`, `thread${uid}.detach();\n`]
+        return threadCode
+
+
     }
     createQueue(codeFile: CompositeGeneratorNode, queueUID: number): string[] {
         return [`LockingQueue<Void> queue${queueUID};\n`]
@@ -103,7 +101,13 @@ export class CppGenerator implements IGenerator {
         return ["Void fakeParam"+synchUID+";\n " ,"synch" + synchUID + ".push(fakeParam"+synchUID+");\n"]
     }
     waitForSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): string[] {
-        return ["Void joinPopped"+synchUID+";\n " ,"synch" + synchUID + ".waitAndPop();\n"]
+        return ["Void joinPopped"+synchUID+";\n " ,"synch" + synchUID + ".waitAndPop(joinPopped"+synchUID+");\n"]
+    }
+    createFlagToGoBackTo(codeFile: CompositeGeneratorNode, uid:number): string[] {
+        return ["flag"+uid+ " :\n"]
+    }
+    goToFlag(codeFile: CompositeGeneratorNode, uid:number): string[] {
+        return ["goto flag"+uid+ ";\n"]
     }
     createEqualsVerif(firstValue: string, secondValue: string): string {
         return firstValue + " == " + secondValue

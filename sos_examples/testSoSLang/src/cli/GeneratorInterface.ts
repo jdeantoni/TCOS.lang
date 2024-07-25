@@ -41,13 +41,13 @@ interface IGenerator {
      * @param codefile the codefile to be written in
      * @param uid the unique identifier of the thread
      */
-    createAndOpenThread(codeFile: CompositeGeneratorNode, uid: number): void;
+    createAndOpenThread(codeFile: CompositeGeneratorNode, uid: number,insideThreadCode:string[]): string[];
     /**
      * createMainFunction is a function that takes a the codeFile we write in and writes in the main function declaration and opening bracket
      * @param codeFile the codefile to be written in
      */
     
-    createMainFunction(codeFile:CompositeGeneratorNode): void;
+    createMainFunction(codeFile:CompositeGeneratorNode,insideMain:string[]): void;
     /**
      * createFuncCall is a function that takes a the codeFile we write in, a function name, a list of parameters, and a return type and writes in the function call
      * you should use this function to call functions that you have already declared
@@ -58,6 +58,20 @@ interface IGenerator {
      * @param typeName the type of the return of the function
      */
     createFuncCall(codeFile: CompositeGeneratorNode,fname:string,params:string[],typeName:string): string[];
+    
+    
+    /**
+     * generate a goto statement to go back to a specific point in the code 
+     * @param codeFile the codefile to be written in
+     * @param queueUID the unique identifier of the flag
+     */
+    goToFlag(codeFile: CompositeGeneratorNode, UID: number): string[];
+    /**
+     * generate a flag to go back to this specific point in the code
+     * @param codeFile the codefile to be written in
+     * @param uid the unique identifier of the flag
+     */
+    createFlagToGoBackTo(codeFile: CompositeGeneratorNode, uid: number): string[];
     /**
      * createSynchronizer is a function that takes a the codeFile we write in and a unique identifier and writes in a synchronizer for the threads
      * @param codeFile this is the codefile to be written in
@@ -76,17 +90,7 @@ interface IGenerator {
      * @param synchUID the unique identifier of the synchronizer
      */
     waitForSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): string[];
-    /**
-     * endThread is a function that takes a the codeFile we write in and a unique identifier and writes in a way to end a thread
-     * @param codeFile the codefile to be written in
-     * @param uid the unique identifier of the thread
-     */
-    endThread(codeFile: CompositeGeneratorNode, uid: number): string[];
-    /**
-     * endSection is a function that takes a the codeFile we write in and writes in a way to end a section of code (e.g. a function or if statement)
-     * @param codeFile the codefile to be written in
-     */
-    endSection(codeFile: CompositeGeneratorNode): void;
+    
     /**
      * createQueue is a function that takes a the codeFile we write in and a unique identifier and writes in a way to create a queue
      * @param codeFile the codefile to be written in

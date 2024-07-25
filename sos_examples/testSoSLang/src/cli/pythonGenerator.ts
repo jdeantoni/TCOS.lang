@@ -4,6 +4,12 @@ import { TypedElement } from "../ccfg/ccfglib";
 
 
 export class PythonGenerator implements IGenerator {
+    goToFlag(codeFile: CompositeGeneratorNode, queueUID: number): string[] {
+        throw new Error("Method not implemented.");
+    }
+    createFlagToGoBackTo(codeFile: CompositeGeneratorNode, uid: number): string[] {
+        throw new Error("Method not implemented.");
+    }
     
     createEqualsVerif(firstValue: string, secondValue: string): string {
         if (firstValue == "true" ) firstValue = "True";
@@ -47,12 +53,11 @@ export class PythonGenerator implements IGenerator {
         this.nbTabs++;
     }
     createFuncCall(codeFile: CompositeGeneratorNode, fname: string, params: string[], typeName: string): string[] {
-        if (typeName == "void"){ codeFile.append(Array(this.nbTabs).join("\t")+`function${fname}(${params.join(", ")}); \n`);
-    return [`function${fname}(${params.join(", ")}); \n`]
-    }else
-            codeFile.append(Array(this.nbTabs).join("\t")+`result${fname} = function${fname}(${params.join(", ")}); \n`)
+        if (typeName == "void"){ 
+            return [`function${fname}(${params.join(", ")}); \n`]
+        }else
             return [`result${fname} = function${fname}(${params.join(", ")}); \n`]
-    }
+        }
     createIf(codeFile: CompositeGeneratorNode, guards: string[],insideOfIf:string[]): string[] {
         let createIfString:string[] = []
 

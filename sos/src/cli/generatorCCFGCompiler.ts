@@ -7,7 +7,6 @@ import { inferType } from '../language-server/type-system/infer.js';
 import chalk from 'chalk';
 
 
-const lock= "lock"
 const createVar = "createVar"
 const createGlobalVar = "createGlobalVar"
 const assignVar = "assignVar"
@@ -1313,7 +1312,6 @@ function createVariableFromMemberCall(data: MemberCall, typeName: string): strin
     if (elem?.$type == "VariableDeclaration") {
         //res = res +`\`const std::lock_guard<std::mutex> lock(sigma_mutex); \`,`
         //res = res + `\`${typeName} \${getASTNodeUID(node)}${data.$cstNode?.offset} = *(${typeName} *) sigma["\${getASTNodeUID(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name}"];//${elem.name}}\``
-        res = res+ `\`${lock},variableMutex\`,`
         res = res+ `\`${createVar},${typeName},\${getASTNodeUID(node)}${data.$cstNode?.offset}\`,`
         res = res+ `\`${setVarFromGlobal},${typeName},\${getASTNodeUID(node)}${data.$cstNode?.offset},\${getASTNodeUID(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name}\``
     } 
