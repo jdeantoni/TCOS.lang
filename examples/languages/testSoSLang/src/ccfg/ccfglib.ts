@@ -252,7 +252,7 @@ export class CCFG {
      * @param t 
      * @returns the node with the given astNode and type or undefined if not found
      */
-    getNodeFromASTNode(astNode: AstNode, t:NodeType): Node | undefined {
+    getNodeFromASTNode(astNode: AstNode, t?:NodeType): Node | undefined {
         for(let n of this.nodes){
             if(n.astNode != undefined && n.astNode == astNode && n.type == t){
                 return n;
@@ -539,8 +539,8 @@ export class Step extends Node {
 }
 
 export class Choice extends Node {
-    constructor() {
-        super(undefined);
+    constructor(astNode?:AstNode) {
+        super(astNode);
     }
 }
 

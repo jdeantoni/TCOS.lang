@@ -128,7 +128,8 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         statementsHole.functionsNames = [`${statementsHole.uid}finishModel`] //overwrite existing name
         statementsHole.functionsDefs =[...statementsHole.functionsDefs, ...[]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
-        localCCFG.addEdge(statementsHole,terminatesModelNode)
+        {let e = localCCFG.addEdge(statementsHole,terminatesModelNode)
+        e.guards = [...e.guards, ...[]]}
         
         return localCCFG;
     }
@@ -171,7 +172,8 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         statementsHole.functionsNames = [`${statementsHole.uid}finishBloc`] //overwrite existing name
         statementsHole.functionsDefs =[...statementsHole.functionsDefs, ...[]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
-        localCCFG.addEdge(statementsHole,terminatesBlocNode)
+        {let e = localCCFG.addEdge(statementsHole,terminatesBlocNode)
+        e.guards = [...e.guards, ...[]]}
         
         return localCCFG;
     }
@@ -214,7 +216,8 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         statementsHole.functionsNames = [`${statementsHole.uid}finishParallelBloc`] //overwrite existing name
         statementsHole.functionsDefs =[...statementsHole.functionsDefs, ...[]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
-        localCCFG.addEdge(statementsHole,terminatesParallelBlocNode)
+        {let e = localCCFG.addEdge(statementsHole,terminatesParallelBlocNode)
+        e.guards = [...e.guards, ...[]]}
         
         return localCCFG;
     }
@@ -240,9 +243,10 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         localCCFG.addNode(terminatesVariableNode)
         
         {
-        let initializeVarStateModificationNode: Node = new Step(node)
+        let initializeVarStateModificationNode: Node = new Step(node, undefined, [`createVar,int,${this.getASTNodeUID(node)}1377`,`assignVar,${this.getASTNodeUID(node)}1377,${node.initialValue}`,`setGlobalVar,int,${this.getASTNodeUID(node)}currentValue,${this.getASTNodeUID(node)}1377`])
         localCCFG.addNode(initializeVarStateModificationNode)
-        let e = localCCFG.addEdge(startsVariableNode,initializeVarStateModificationNode)
+        {let e = localCCFG.addEdge(startsVariableNode,initializeVarStateModificationNode)
+        e.guards = [...e.guards, ...[]]}
         startsVariableNode = initializeVarStateModificationNode
         }
     
@@ -250,7 +254,8 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         startsVariableNode.functionsNames = [`${startsVariableNode.uid}initializeVar`] //overwrite existing name
         startsVariableNode.functionsDefs =[...startsVariableNode.functionsDefs, ...[]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
-        localCCFG.addEdge(startsVariableNode,terminatesVariableNode)
+        {let e = localCCFG.addEdge(startsVariableNode,terminatesVariableNode)
+        e.guards = [...e.guards, ...[]]}
         
         return localCCFG;
     }
@@ -279,7 +284,8 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         startsVarRefNode.functionsNames = [`${startsVarRefNode.uid}accessVarRef`] //overwrite existing name
         startsVarRefNode.functionsDefs =[...startsVarRefNode.functionsDefs, ...[`lock,variableMutex`,`createVar,int,${this.getASTNodeUID(node)}1583`,`setVarFromGlobal,int,${this.getASTNodeUID(node)}1583,${this.getASTNodeUID(node.theVar)}currentValue`,`createVar,int,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,${this.getASTNodeUID(node)}1583`,`return,${this.getASTNodeUID(node)}terminates`]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
-        localCCFG.addEdge(startsVarRefNode,terminatesVarRefNode)
+        {let e = localCCFG.addEdge(startsVarRefNode,terminatesVarRefNode)
+        e.guards = [...e.guards, ...[]]}
         
         return localCCFG;
     }
@@ -327,19 +333,40 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         startsIfNode.functionsNames = [`${startsIfNode.uid}condStart`] //overwrite existing name
         startsIfNode.functionsDefs =[...startsIfNode.functionsDefs, ...[]] //GG
                 //mark 0
-        localCCFG.addEdge(startsIfNode,condHole)
+        {let e = localCCFG.addEdge(startsIfNode,condHole)
+        e.guards = [...e.guards, ...[]]}
             
-        condHole.returnType = "void"
-        condHole.functionsNames = [`${condHole.uid}condTrueStart`] //overwrite existing name
-        condHole.functionsDefs =[...condHole.functionsDefs, ...[]] //GG
+        let condTrueStartChoiceNode = undefined
+        if(condHole.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
+            condTrueStartChoiceNode = condHole.outputEdges.filter(e => e.to.getType() == "Choice")[0].to
+        }else{
+            condTrueStartChoiceNode = new Choice(node.cond)
+            localCCFG.addNode(condTrueStartChoiceNode)
+        }
+        localCCFG.addEdge(condHole,condTrueStartChoiceNode)
+                
+        condTrueStartChoiceNode.returnType = "void"
+        condTrueStartChoiceNode.functionsNames = [`${condTrueStartChoiceNode.uid}condTrueStart`] //overwrite existing name
+        condTrueStartChoiceNode.functionsDefs =[...condTrueStartChoiceNode.functionsDefs, ...[]] //GG
                 //mark 0
-        localCCFG.addEdge(condHole,thenHole)
+        {let e = localCCFG.addEdge(condTrueStartChoiceNode,thenHole)
+        e.guards = [...e.guards, ...[`verifyEqual,${this.getASTNodeUID(node.cond)}terminate,true`]]}
             
-        condHole.returnType = "void"
-        condHole.functionsNames = [`${condHole.uid}condFalseStart`] //overwrite existing name
-        condHole.functionsDefs =[...condHole.functionsDefs, ...[]] //GG
+        let condFalseStartChoiceNode = undefined
+        if(condHole.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
+            condFalseStartChoiceNode = condHole.outputEdges.filter(e => e.to.getType() == "Choice")[0].to
+        }else{
+            condFalseStartChoiceNode = new Choice(node.cond)
+            localCCFG.addNode(condFalseStartChoiceNode)
+        }
+        localCCFG.addEdge(condHole,condFalseStartChoiceNode)
+                
+        condFalseStartChoiceNode.returnType = "void"
+        condFalseStartChoiceNode.functionsNames = [`${condFalseStartChoiceNode.uid}condFalseStart`] //overwrite existing name
+        condFalseStartChoiceNode.functionsDefs =[...condFalseStartChoiceNode.functionsDefs, ...[]] //GG
                 //mark 0
-        localCCFG.addEdge(condHole,elseHole)
+        {let e = localCCFG.addEdge(condFalseStartChoiceNode,elseHole)
+        e.guards = [...e.guards, ...[`verifyEqual,${this.getASTNodeUID(node.cond)}terminate,false`]]}
             
         let condStopOrJoinNode: Node = new OrJoin(node)
         localCCFG.addNode(condStopOrJoinNode)
@@ -352,7 +379,8 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         condStopOrJoinNode.functionsNames = [`${condStopOrJoinNode.uid}condStop`] //overwrite existing name
         condStopOrJoinNode.functionsDefs =[...condStopOrJoinNode.functionsDefs, ...[]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
-        localCCFG.addEdge(condStopOrJoinNode,terminatesIfNode)
+        {let e = localCCFG.addEdge(condStopOrJoinNode,terminatesIfNode)
+        e.guards = [...e.guards, ...[]]}
         
         return localCCFG;
     }
@@ -387,12 +415,14 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         startsAssignmentNode.functionsNames = [`${startsAssignmentNode.uid}executeAssignment`] //overwrite existing name
         startsAssignmentNode.functionsDefs =[...startsAssignmentNode.functionsDefs, ...[]] //GG
                 //mark 0
-        localCCFG.addEdge(startsAssignmentNode,exprHole)
+        {let e = localCCFG.addEdge(startsAssignmentNode,exprHole)
+        e.guards = [...e.guards, ...[]]}
             
         {
-        let executeAssignment2StateModificationNode: Node = new Step(node)
+        let executeAssignment2StateModificationNode: Node = new Step(node, undefined, [`createVar,int,${this.getASTNodeUID(node)}2524`,`assignVar,${this.getASTNodeUID(node)}2524,resRight`,`setGlobalVar,int,${this.getASTNodeUID(node.variable)}currentValue,${this.getASTNodeUID(node)}2524`])
         localCCFG.addNode(executeAssignment2StateModificationNode)
-        let e = localCCFG.addEdge(exprHole,executeAssignment2StateModificationNode)
+        {let e = localCCFG.addEdge(exprHole,executeAssignment2StateModificationNode)
+        e.guards = [...e.guards, ...[]]}
         exprHole = executeAssignment2StateModificationNode
         }
     
@@ -400,7 +430,8 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         exprHole.functionsNames = [`${exprHole.uid}executeAssignment2`] //overwrite existing name
         exprHole.functionsDefs =[...exprHole.functionsDefs, ...[]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
-        localCCFG.addEdge(exprHole,terminatesAssignmentNode)
+        {let e = localCCFG.addEdge(exprHole,terminatesAssignmentNode)
+        e.guards = [...e.guards, ...[]]}
         
         return localCCFG;
     }
@@ -455,30 +486,60 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
                                         //mark 3
         localCCFG.addEdge(forkevaluateConjunctionNode,rhsHole)
                     
-        lhsHole.returnType = "bool"
-        lhsHole.functionsNames = [`${lhsHole.uid}evaluateConjunction2`] //overwrite existing name
-        lhsHole.functionsDefs =[...lhsHole.functionsDefs, ...[`createVar,bool,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,false`,`return,${this.getASTNodeUID(node)}terminates`,]] //GG
+        let evaluateConjunction2ChoiceNode = undefined
+        if(lhsHole.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
+            evaluateConjunction2ChoiceNode = lhsHole.outputEdges.filter(e => e.to.getType() == "Choice")[0].to
+        }else{
+            evaluateConjunction2ChoiceNode = new Choice(node.lhs)
+            localCCFG.addNode(evaluateConjunction2ChoiceNode)
+        }
+        localCCFG.addEdge(lhsHole,evaluateConjunction2ChoiceNode)
+                
+        evaluateConjunction2ChoiceNode.returnType = "bool"
+        evaluateConjunction2ChoiceNode.functionsNames = [`${evaluateConjunction2ChoiceNode.uid}evaluateConjunction2`] //overwrite existing name
+        evaluateConjunction2ChoiceNode.functionsDefs =[...evaluateConjunction2ChoiceNode.functionsDefs, ...[`createVar,bool,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,false`,`return,${this.getASTNodeUID(node)}terminates`,]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
-        localCCFG.addEdge(lhsHole,terminatesConjunctionNode)
+        {let e = localCCFG.addEdge(evaluateConjunction2ChoiceNode,terminatesConjunctionNode)
+        e.guards = [...e.guards, ...[`verifyEqual,${this.getASTNodeUID(node.lhs)}terminate,false`]]}
         
-        rhsHole.returnType = "bool"
-        rhsHole.functionsNames = [`${rhsHole.uid}evaluateConjunction3`] //overwrite existing name
-        rhsHole.functionsDefs =[...rhsHole.functionsDefs, ...[`createVar,bool,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,false`,`return,${this.getASTNodeUID(node)}terminates`,]] //GG
+        let evaluateConjunction3ChoiceNode = undefined
+        if(rhsHole.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
+            evaluateConjunction3ChoiceNode = rhsHole.outputEdges.filter(e => e.to.getType() == "Choice")[0].to
+        }else{
+            evaluateConjunction3ChoiceNode = new Choice(node.rhs)
+            localCCFG.addNode(evaluateConjunction3ChoiceNode)
+        }
+        localCCFG.addEdge(rhsHole,evaluateConjunction3ChoiceNode)
+                
+        evaluateConjunction3ChoiceNode.returnType = "bool"
+        evaluateConjunction3ChoiceNode.functionsNames = [`${evaluateConjunction3ChoiceNode.uid}evaluateConjunction3`] //overwrite existing name
+        evaluateConjunction3ChoiceNode.functionsDefs =[...evaluateConjunction3ChoiceNode.functionsDefs, ...[`createVar,bool,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,false`,`return,${this.getASTNodeUID(node)}terminates`,]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
-        localCCFG.addEdge(rhsHole,terminatesConjunctionNode)
+        {let e = localCCFG.addEdge(evaluateConjunction3ChoiceNode,terminatesConjunctionNode)
+        e.guards = [...e.guards, ...[`verifyEqual,${this.getASTNodeUID(node.rhs)}terminate,false`]]}
         
-        let evaluateConjunction4OrJoinNode: Node = new OrJoin(node)
-        localCCFG.addNode(evaluateConjunction4OrJoinNode)
+        let evaluateConjunction4AndJoinNode: Node = new AndJoin(node)
+        localCCFG.addNode(evaluateConjunction4AndJoinNode)
                              //mark a
-        localCCFG.addEdge(lhsHole,evaluateConjunction4OrJoinNode)
+        localCCFG.addEdge(lhsHole,evaluateConjunction4AndJoinNode)
                                          //mark a
-        localCCFG.addEdge(rhsHole,evaluateConjunction4OrJoinNode)
+        localCCFG.addEdge(rhsHole,evaluateConjunction4AndJoinNode)
                             
-        evaluateConjunction4OrJoinNode.returnType = "bool"
-        evaluateConjunction4OrJoinNode.functionsNames = [`${evaluateConjunction4OrJoinNode.uid}evaluateConjunction4`] //overwrite existing name
-        evaluateConjunction4OrJoinNode.functionsDefs =[...evaluateConjunction4OrJoinNode.functionsDefs, ...[`createVar,bool,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,true`,`return,${this.getASTNodeUID(node)}terminates`,]] //GG
+        let evaluateConjunction4ChoiceNode = undefined
+        if(evaluateConjunction4AndJoinNode.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
+            evaluateConjunction4ChoiceNode = evaluateConjunction4AndJoinNode.outputEdges.filter(e => e.to.getType() == "Choice")[0].to
+        }else{
+            evaluateConjunction4ChoiceNode = new Choice(node.lhs)
+            localCCFG.addNode(evaluateConjunction4ChoiceNode)
+        }
+        localCCFG.addEdge(evaluateConjunction4AndJoinNode,evaluateConjunction4ChoiceNode)
+                
+        evaluateConjunction4ChoiceNode.returnType = "bool"
+        evaluateConjunction4ChoiceNode.functionsNames = [`${evaluateConjunction4ChoiceNode.uid}evaluateConjunction4`] //overwrite existing name
+        evaluateConjunction4ChoiceNode.functionsDefs =[...evaluateConjunction4ChoiceNode.functionsDefs, ...[`createVar,bool,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,true`,`return,${this.getASTNodeUID(node)}terminates`,]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
-        localCCFG.addEdge(evaluateConjunction4OrJoinNode,terminatesConjunctionNode)
+        {let e = localCCFG.addEdge(evaluateConjunction4ChoiceNode,terminatesConjunctionNode)
+        e.guards = [...e.guards, ...[`verifyEqual,${this.getASTNodeUID(node.lhs)}terminate,true`,`verifyEqual,${this.getASTNodeUID(node.rhs)}terminate,true`]]}
         
         return localCCFG;
     }
@@ -527,18 +588,19 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
                                         //mark 3
         localCCFG.addEdge(forkstartPlusNode,leftHole)
                     
-        let finishPlusOrJoinNode: Node = new OrJoin(node)
-        localCCFG.addNode(finishPlusOrJoinNode)
+        let finishPlusAndJoinNode: Node = new AndJoin(node)
+        localCCFG.addNode(finishPlusAndJoinNode)
                              //mark a
-        localCCFG.addEdge(rightHole,finishPlusOrJoinNode)
+        localCCFG.addEdge(rightHole,finishPlusAndJoinNode)
                                          //mark a
-        localCCFG.addEdge(leftHole,finishPlusOrJoinNode)
+        localCCFG.addEdge(leftHole,finishPlusAndJoinNode)
                             
-        finishPlusOrJoinNode.returnType = "int"
-        finishPlusOrJoinNode.functionsNames = [`${finishPlusOrJoinNode.uid}finishPlus`] //overwrite existing name
-        finishPlusOrJoinNode.functionsDefs =[...finishPlusOrJoinNode.functionsDefs, ...[`createVar,int,${this.getASTNodeUID(node)}4387`,`assignVar,${this.getASTNodeUID(node)}4387,n1`,`createVar,int,${this.getASTNodeUID(node)}4392`,`assignVar,${this.getASTNodeUID(node)}4392,n2`,`createVar,${this.getASTNodeUID(node)}4386`,`operation,${this.getASTNodeUID(node)}4386,${this.getASTNodeUID(node)}4387,+,${this.getASTNodeUID(node)}4392`,`createVar,int,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,${this.getASTNodeUID(node)}4386`,`return,${this.getASTNodeUID(node)}terminates`]] //GG
+        finishPlusAndJoinNode.returnType = "int"
+        finishPlusAndJoinNode.functionsNames = [`${finishPlusAndJoinNode.uid}finishPlus`] //overwrite existing name
+        finishPlusAndJoinNode.functionsDefs =[...finishPlusAndJoinNode.functionsDefs, ...[`createVar,int,${this.getASTNodeUID(node)}4387`,`assignVar,${this.getASTNodeUID(node)}4387,n1`,`createVar,int,${this.getASTNodeUID(node)}4392`,`assignVar,${this.getASTNodeUID(node)}4392,n2`,`createVar,${this.getASTNodeUID(node)}4386`,`operation,${this.getASTNodeUID(node)}4386,${this.getASTNodeUID(node)}4387,+,${this.getASTNodeUID(node)}4392`,`createVar,int,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,${this.getASTNodeUID(node)}4386`,`return,${this.getASTNodeUID(node)}terminates`]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
-        localCCFG.addEdge(finishPlusOrJoinNode,terminatesPlusNode)
+        {let e = localCCFG.addEdge(finishPlusAndJoinNode,terminatesPlusNode)
+        e.guards = [...e.guards, ...[]]}
         
         return localCCFG;
     }
@@ -567,7 +629,8 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         startsBooleanConstNode.functionsNames = [`${startsBooleanConstNode.uid}evalBooleanConst`] //overwrite existing name
         startsBooleanConstNode.functionsDefs =[...startsBooleanConstNode.functionsDefs, ...[`lock,variableMutex`,`createVar,bool,${this.getASTNodeUID(node)}4606`,`setVarFromGlobal,bool,${this.getASTNodeUID(node)}4606,${this.getASTNodeUID(node)}constantValue`,`createVar,bool,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,${this.getASTNodeUID(node)}4606`,`return,${this.getASTNodeUID(node)}terminates`]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
-        localCCFG.addEdge(startsBooleanConstNode,terminatesBooleanConstNode)
+        {let e = localCCFG.addEdge(startsBooleanConstNode,terminatesBooleanConstNode)
+        e.guards = [...e.guards, ...[]]}
         
         return localCCFG;
     }
@@ -611,25 +674,47 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         startsWhileNode.functionsNames = [`${startsWhileNode.uid}whileStart`] //overwrite existing name
         startsWhileNode.functionsDefs =[...startsWhileNode.functionsDefs, ...[]] //GG
                 //mark 0
-        localCCFG.addEdge(startsWhileNode,condHole)
+        {let e = localCCFG.addEdge(startsWhileNode,condHole)
+        e.guards = [...e.guards, ...[]]}
             
-        condHole.returnType = "void"
-        condHole.functionsNames = [`${condHole.uid}whileBodyStart`] //overwrite existing name
-        condHole.functionsDefs =[...condHole.functionsDefs, ...[]] //GG
+        let whileBodyStartChoiceNode = undefined
+        if(condHole.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
+            whileBodyStartChoiceNode = condHole.outputEdges.filter(e => e.to.getType() == "Choice")[0].to
+        }else{
+            whileBodyStartChoiceNode = new Choice(node.cond)
+            localCCFG.addNode(whileBodyStartChoiceNode)
+        }
+        localCCFG.addEdge(condHole,whileBodyStartChoiceNode)
+                
+        whileBodyStartChoiceNode.returnType = "void"
+        whileBodyStartChoiceNode.functionsNames = [`${whileBodyStartChoiceNode.uid}whileBodyStart`] //overwrite existing name
+        whileBodyStartChoiceNode.functionsDefs =[...whileBodyStartChoiceNode.functionsDefs, ...[]] //GG
                 //mark 0
-        localCCFG.addEdge(condHole,bodyHole)
+        {let e = localCCFG.addEdge(whileBodyStartChoiceNode,bodyHole)
+        e.guards = [...e.guards, ...[`verifyEqual,${this.getASTNodeUID(node.cond)}terminate,true`]]}
             
         bodyHole.returnType = "void"
         bodyHole.functionsNames = [`${bodyHole.uid}whileBodyEnd`] //overwrite existing name
         bodyHole.functionsDefs =[...bodyHole.functionsDefs, ...[]] //GG
                 //mark 0
-        localCCFG.addEdge(bodyHole,condHole)
+        {let e = localCCFG.addEdge(bodyHole,condHole)
+        e.guards = [...e.guards, ...[]]}
             
-        condHole.returnType = "void"
-        condHole.functionsNames = [`${condHole.uid}whileEnd`] //overwrite existing name
-        condHole.functionsDefs =[...condHole.functionsDefs, ...[]] //GG
+        let whileEndChoiceNode = undefined
+        if(condHole.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
+            whileEndChoiceNode = condHole.outputEdges.filter(e => e.to.getType() == "Choice")[0].to
+        }else{
+            whileEndChoiceNode = new Choice(node.cond)
+            localCCFG.addNode(whileEndChoiceNode)
+        }
+        localCCFG.addEdge(condHole,whileEndChoiceNode)
+                
+        whileEndChoiceNode.returnType = "void"
+        whileEndChoiceNode.functionsNames = [`${whileEndChoiceNode.uid}whileEnd`] //overwrite existing name
+        whileEndChoiceNode.functionsDefs =[...whileEndChoiceNode.functionsDefs, ...[]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
-        localCCFG.addEdge(condHole,terminatesWhileNode)
+        {let e = localCCFG.addEdge(whileEndChoiceNode,terminatesWhileNode)
+        e.guards = [...e.guards, ...[`verifyEqual,${this.getASTNodeUID(node.cond)}terminate,false`]]}
         
         return localCCFG;
     }
@@ -668,7 +753,8 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         startsPeriodicBlocNode.functionsNames = [`${startsPeriodicBlocNode.uid}periodicStart`] //overwrite existing name
         startsPeriodicBlocNode.functionsDefs =[...startsPeriodicBlocNode.functionsDefs, ...[]] //GG
                 //mark 0
-        localCCFG.addEdge(startsPeriodicBlocNode,blocTriggerHole)
+        {let e = localCCFG.addEdge(startsPeriodicBlocNode,blocTriggerHole)
+        e.guards = [...e.guards, ...[]]}
             
         blocTriggerHole.returnType = "void"
         blocTriggerHole.functionsNames = [`${blocTriggerHole.uid}periodicBodyStart`] //overwrite existing name
@@ -730,13 +816,15 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         argsHole.functionsNames = [`${argsHole.uid}functionCallStarts`] //overwrite existing name
         argsHole.functionsDefs =[...argsHole.functionsDefs, ...[]] //GG
                 //mark 0
-        localCCFG.addEdge(argsHole,theFunctionHole)
+        {let e = localCCFG.addEdge(argsHole,theFunctionHole)
+        e.guards = [...e.guards, ...[]]}
             
         theFunctionHole.returnType = "void"
         theFunctionHole.functionsNames = [`${theFunctionHole.uid}functionCallEnd`] //overwrite existing name
         theFunctionHole.functionsDefs =[...theFunctionHole.functionsDefs, ...[]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
-        localCCFG.addEdge(theFunctionHole,terminatesFunctionCallNode)
+        {let e = localCCFG.addEdge(theFunctionHole,terminatesFunctionCallNode)
+        e.guards = [...e.guards, ...[]]}
         
         return localCCFG;
     }
@@ -771,13 +859,15 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         startsFunctionDefNode.functionsNames = [`${startsFunctionDefNode.uid}functionDefArgsStart`] //overwrite existing name
         startsFunctionDefNode.functionsDefs =[...startsFunctionDefNode.functionsDefs, ...[]] //GG
                 //mark 0
-        localCCFG.addEdge(startsFunctionDefNode,bodyHole)
+        {let e = localCCFG.addEdge(startsFunctionDefNode,bodyHole)
+        e.guards = [...e.guards, ...[]]}
             
         bodyHole.returnType = "void"
         bodyHole.functionsNames = [`${bodyHole.uid}functionDefEnd`] //overwrite existing name
         bodyHole.functionsDefs =[...bodyHole.functionsDefs, ...[]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
-        localCCFG.addEdge(bodyHole,terminatesFunctionDefNode)
+        {let e = localCCFG.addEdge(bodyHole,terminatesFunctionDefNode)
+        e.guards = [...e.guards, ...[]]}
         
         return localCCFG;
     }

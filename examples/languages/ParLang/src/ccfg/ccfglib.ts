@@ -252,7 +252,7 @@ export class CCFG {
      * @param t 
      * @returns the node with the given astNode and type or undefined if not found
      */
-    getNodeFromASTNode(astNode: AstNode, t:NodeType): Node | undefined {
+    getNodeFromASTNode(astNode: AstNode, t?:NodeType): Node | undefined {
         for(let n of this.nodes){
             if(n.astNode != undefined && n.astNode == astNode && n.type == t){
                 return n;
@@ -493,6 +493,8 @@ export class CCFG {
                 return "parallelogram";
             case "Hole":
                 return "cylinder";
+            case "CollectionHole":
+                return "cylinder";
             default:
                 return "box";
         }
@@ -507,7 +509,7 @@ export class CCFG {
         for (let inputEdge of h.inputEdges) {
             inputEdge.to = ccfg.initialState as Node;
         }
-        let terminalNode = ccfg.nodes.find(n => n.getType() == "terminates");
+        let terminalNode = ccfg.nodes.find(n => n.type == "terminates");
         if (terminalNode == undefined) {
            throw new Error("no terminal node found in the ccfg");
         }
@@ -537,8 +539,8 @@ export class Step extends Node {
 }
 
 export class Choice extends Node {
-    constructor() {
-        super(undefined);
+    constructor(astNode?:AstNode) {
+        super(astNode);
     }
 }
 
@@ -568,7 +570,7 @@ export class AndJoin extends Join {
 }
 
 export class Hole extends Node {
-    constructor(astNode:AstNode) {
+    constructor(astNode?:AstNode) {
         super(astNode);
     }
 }
@@ -581,6 +583,16 @@ export class TimerHole extends Hole {
         super(astNode);
         this.duration = d;
     }
+}
+
+export class CollectionHole extends Hole {
+    astNodeCollection: AstNode[];
+    constructor(astNode:AstNode[]) {
+        super(undefined);
+        this.astNodeCollection = astNode;
+    }
+    isSequential: boolean = false;
+    parallelSyncPolicy: string = "lastOf";
 }
 
 // export class Timer extends Node {

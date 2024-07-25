@@ -24,19 +24,25 @@ void functioninit3Variable(){
 	createGlobalVar,int,Variable0_0_0_10currentValue
 }
 void function5initializeVar(){
-	
+	createVar,int,Variable0_0_0_101377
+	assignVar,Variable0_0_0_101377,1
+	setGlobalVar,int,Variable0_0_0_10currentValue,Variable0_0_0_101377
 }
 void functioninit6Variable(){
 	createGlobalVar,int,Variable1_0_1_10currentValue
 }
 void function8initializeVar(){
-	
+	createVar,int,Variable1_0_1_101377
+	assignVar,Variable1_0_1_101377,4
+	setGlobalVar,int,Variable1_0_1_10currentValue,Variable1_0_1_101377
 }
 void functioninit9Variable(){
 	createGlobalVar,int,Variable2_0_2_10currentValue
 }
 void function11initializeVar(){
-	
+	createVar,int,Variable2_0_2_101377
+	assignVar,Variable2_0_2_101377,0
+	setGlobalVar,int,Variable2_0_2_10currentValue,Variable2_0_2_101377
 }
 void function12startsParallelBloc(){
 	
@@ -44,16 +50,21 @@ void function12startsParallelBloc(){
 void function43condStart(){
 	
 }
-void function48condStop(){
+void function48condFalseStart(){
 	
 }
-void function85executeAssignment(){
+void function49condStop(){
 	
 }
-void function88executeAssignment2(){
+void function86executeAssignment(){
 	
 }
-int function49accessVarRef(){
+void function89executeAssignment2(){
+	createVar,int,Assignment16_0_16_202524
+	assignVar,Assignment16_0_16_202524,resRight
+	setGlobalVar,int,Variable2_0_2_10currentValue,Assignment16_0_16_202524
+}
+int function50accessVarRef(){
 	lock,variableMutex
 	createVar,int,VarRef7_4_7_61583
 	setVarFromGlobal,int,VarRef7_4_7_61583,Variable0_0_0_10currentValue
@@ -61,16 +72,26 @@ int function49accessVarRef(){
 	assignVar,VarRef7_4_7_6terminates,VarRef7_4_7_61583
 	return,VarRef7_4_7_6terminates
 }
-void function51startsBloc(){
+void function52startsBloc(){
 	
 }
-void function68startsBloc(){
+void function69startsBloc(){
 	
 }
-void function89evaluateConjunction(){
+void function90evaluateConjunction(){
 	
 }
-bool function95evaluateConjunction4(){
+bool function95evaluateConjunction2(){
+	createVar,bool,Conjunction16_5_16_20terminates
+	assignVar,Conjunction16_5_16_20terminates,false
+	return,Conjunction16_5_16_20terminates
+}
+bool function96evaluateConjunction3(){
+	createVar,bool,Conjunction16_5_16_20terminates
+	assignVar,Conjunction16_5_16_20terminates,false
+	return,Conjunction16_5_16_20terminates
+}
+bool function99evaluateConjunction4(){
 	createVar,bool,Conjunction16_5_16_20terminates
 	assignVar,Conjunction16_5_16_20terminates,true
 	return,Conjunction16_5_16_20terminates
@@ -79,15 +100,19 @@ void function15executeAssignment(){
 	
 }
 void function18executeAssignment2(){
-	
+	createVar,int,Assignment4_7_4_212524
+	assignVar,Assignment4_7_4_212524,resRight
+	setGlobalVar,int,Variable1_0_1_10currentValue,Assignment4_7_4_212524
 }
 void function29executeAssignment(){
 	
 }
 void function32executeAssignment2(){
-	
+	createVar,int,Assignment5_7_5_212524
+	assignVar,Assignment5_7_5_212524,resRight
+	setGlobalVar,int,Variable1_0_1_10currentValue,Assignment5_7_5_212524
 }
-bool function96evalBooleanConst(){
+bool function100evalBooleanConst(){
 	createGlobalVar,booltrue,BooleanConst16_6_16_10constantValue
 	lock,variableMutex
 	createVar,bool,BooleanConst16_6_16_104606
@@ -96,7 +121,7 @@ bool function96evalBooleanConst(){
 	assignVar,BooleanConst16_6_16_10terminates,BooleanConst16_6_16_104606
 	return,BooleanConst16_6_16_10terminates
 }
-bool function98evalBooleanConst(){
+bool function102evalBooleanConst(){
 	createGlobalVar,boolfalse,BooleanConst16_14_16_19constantValue
 	lock,variableMutex
 	createVar,bool,BooleanConst16_14_16_194606
@@ -133,17 +158,21 @@ int function38finishPlus(){
 	assignVar,Plus5_12_5_21terminates,Plus5_12_5_214386
 	return,Plus5_12_5_21terminates
 }
-void function54executeAssignment(){
+void function55executeAssignment(){
 	
 }
-void function57executeAssignment2(){
+void function58executeAssignment2(){
+	createVar,int,Assignment9_4_9_182524
+	assignVar,Assignment9_4_9_182524,resRight
+	setGlobalVar,int,Variable1_0_1_10currentValue,Assignment9_4_9_182524
+}
+void function72executeAssignment(){
 	
 }
-void function71executeAssignment(){
-	
-}
-void function74executeAssignment2(){
-	
+void function75executeAssignment2(){
+	createVar,int,Assignment12_4_12_182524
+	assignVar,Assignment12_4_12_182524,resRight
+	setGlobalVar,int,Variable0_0_0_10currentValue,Assignment12_4_12_182524
 }
 int function27accessVarRef(){
 	lock,variableMutex
@@ -177,10 +206,10 @@ int function39accessVarRef(){
 	assignVar,VarRef5_13_5_15terminates,VarRef5_13_5_151583
 	return,VarRef5_13_5_15terminates
 }
-void function58startPlus(){
+void function59startPlus(){
 	
 }
-int function63finishPlus(){
+int function64finishPlus(){
 	createVar,int,Plus9_9_9_184387
 	assignVar,Plus9_9_9_184387,n1
 	createVar,int,Plus9_9_9_184392
@@ -191,10 +220,10 @@ int function63finishPlus(){
 	assignVar,Plus9_9_9_18terminates,Plus9_9_9_184386
 	return,Plus9_9_9_18terminates
 }
-void function75startPlus(){
+void function76startPlus(){
 	
 }
-int function80finishPlus(){
+int function81finishPlus(){
 	createVar,int,Plus12_9_12_184387
 	assignVar,Plus12_9_12_184387,n1
 	createVar,int,Plus12_9_12_184392
@@ -205,7 +234,7 @@ int function80finishPlus(){
 	assignVar,Plus12_9_12_18terminates,Plus12_9_12_184386
 	return,Plus12_9_12_18terminates
 }
-int function66accessVarRef(){
+int function67accessVarRef(){
 	lock,variableMutex
 	createVar,int,VarRef9_15_9_171583
 	setVarFromGlobal,int,VarRef9_15_9_171583,Variable0_0_0_10currentValue
@@ -213,7 +242,7 @@ int function66accessVarRef(){
 	assignVar,VarRef9_15_9_17terminates,VarRef9_15_9_171583
 	return,VarRef9_15_9_17terminates
 }
-int function64accessVarRef(){
+int function65accessVarRef(){
 	lock,variableMutex
 	createVar,int,VarRef9_10_9_121583
 	setVarFromGlobal,int,VarRef9_10_9_121583,Variable1_0_1_10currentValue
@@ -221,7 +250,7 @@ int function64accessVarRef(){
 	assignVar,VarRef9_10_9_12terminates,VarRef9_10_9_121583
 	return,VarRef9_10_9_12terminates
 }
-int function83accessVarRef(){
+int function84accessVarRef(){
 	lock,variableMutex
 	createVar,int,VarRef12_15_12_171583
 	setVarFromGlobal,int,VarRef12_15_12_171583,Variable0_0_0_10currentValue
@@ -229,7 +258,7 @@ int function83accessVarRef(){
 	assignVar,VarRef12_15_12_17terminates,VarRef12_15_12_171583
 	return,VarRef12_15_12_17terminates
 }
-int function81accessVarRef(){
+int function82accessVarRef(){
 	lock,variableMutex
 	createVar,int,VarRef12_10_12_121583
 	setVarFromGlobal,int,VarRef12_10_12_121583,Variable1_0_1_10currentValue
@@ -246,7 +275,7 @@ int main() {
         function0statementsInOrder1();
 
         #if DEBUG
-            std::cout<<"100 : Step" <<std::endl;
+            std::cout<<"104 : Step" <<std::endl;
         #endif
         
         #if DEBUG

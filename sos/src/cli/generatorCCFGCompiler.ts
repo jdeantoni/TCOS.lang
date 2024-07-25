@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { AstNode, CompositeGeneratorNode, Grammar,  NL, toString } from 'langium';
-import { Assignment, BinaryExpression, CollectionRuleSync, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, NaryEventExpression, RWRule, RuleOpening, SingleRuleSync, SoSSpec, TypeReference, ValuedEventEmission, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration } from '../language-server/generated/ast.js'; //VariableDeclaration
+import { Assignment, BinaryExpression, CollectionRuleSync, EventCombination, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, NaryEventExpression, RWRule, RuleOpening, SingleRuleSync, SoSSpec, TypeReference, ValuedEventEmission, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration } from '../language-server/generated/ast.js'; //VariableDeclaration
 import { extractDestinationAndName, FilePathData } from './cli-util.js';
 import path from 'path';
 import { inferType } from '../language-server/type-system/infer.js';
@@ -15,7 +15,7 @@ const setVarFromGlobal = "setVarFromGlobal"
 const setGlobalVar = "setGlobalVar"
 const operation = "operation"
 const ret ="return"
-// const verifyEqual = "verifyEqual"
+const verifyEqual = "verifyEqual"
 
 const DEBUG = true
 
@@ -38,7 +38,7 @@ export function generateStuffFromSoS(model: SoSSpec, grammar: Grammar[], filePat
             conceptNames.push(openedRule.onRule.ref.name)
         }
     }
-    file.append(`import { ${conceptNames.join(',')} } from "../../language/generated/ast.js";`, NL)
+    file.append(`import { ${conceptNames.join(',')} } from "../../language-server/generated/ast.js";`, NL)
     file.append(`
 var debug = false
 
@@ -193,21 +193,19 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
 
     for (let ruleCF of rulesCF) {
         if (ruleCF != startingRules[0]) {
+            let premiseNodeName : string= getPreviousNodeNameFromPremiseParticipants(ruleCF, conceptName)
             //manage premise (most of the time the premise's node is already existing since a hole.)
-            if (ruleCF.premiseParticipants.length == 1) {
-                let previousNodeName : string= getPreviousNodeNameFromPremiseParticipants(ruleCF, conceptName)                   
-                handleRuleConclusion(ruleCF, holes, file, previousNodeName);
-            }
+            
             if (ruleCF.premiseParticipants.length > 1) {
                 file.append(`
-        let ${ruleCF.rule.name}OrJoinNode: Node = new OrJoin(node)
-        localCCFG.addNode(${ruleCF.rule.name}OrJoinNode)
+        let ${premiseNodeName}: Node = new ${premiseNodeName.endsWith("OrJoinNode")?"OrJoin":"AndJoin"}(node)
+        localCCFG.addNode(${premiseNodeName})
                 `);
                 for (let participants of ruleCF.premiseParticipants) {
                     if (holes.map(h => h.startingParticipants).some(p => areParticipantsEqualsOrCoupled(p, participants))) {
                         if (DEBUG) file.append(`             //mark a`);
                         file.append(`
-        localCCFG.addEdge(${participants.filter(p => p.type != "event").map(p => p.name).join('_')}Hole,${ruleCF.rule.name}OrJoinNode)
+        localCCFG.addEdge(${participants.filter(p => p.type != "event").map(p => p.name).join('_')}Hole,${premiseNodeName})
                             `);
                     } else {
                         file.append(`
@@ -215,9 +213,28 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
                         `);
                     }
                 }
-
-                handleRuleConclusion(ruleCF, holes, file, `${ruleCF.rule.name}OrJoinNode`);
             }
+
+
+            let allEventValuedComparisons = getValuedEventRefConstantComparison(ruleCF.rule.premise.eventExpression)
+            
+            if (allEventValuedComparisons.length > 0) {
+                    let refNode = `node.${ruleCF.premiseParticipants[0].filter(p => p.type != "event").map(p => p.name).join('.')}`
+                    file.append(`
+        let ${ruleCF.rule.name}ChoiceNode = undefined
+        if(${premiseNodeName}.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
+            ${ruleCF.rule.name}ChoiceNode = ${premiseNodeName}.outputEdges.filter(e => e.to.getType() == "Choice")[0].to
+        }else{
+            ${ruleCF.rule.name}ChoiceNode = new Choice(${refNode})
+            localCCFG.addNode(${ruleCF.rule.name}ChoiceNode)
+        }
+        localCCFG.addEdge(${premiseNodeName},${ruleCF.rule.name}ChoiceNode)
+                `);
+                    premiseNodeName = `${ruleCF.rule.name}ChoiceNode`
+                }
+
+            handleRuleConclusion(ruleCF, holes, file, premiseNodeName);
+
         }
     }
 
@@ -225,6 +242,19 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
     file.append(`
         return localCCFG;
     }`, NL);
+}
+
+
+function getValuedEventRefConstantComparison(eventExpression : EventExpression): ValuedEventRefConstantComparison[] {
+    let res: ValuedEventRefConstantComparison[] = []
+    if (eventExpression.$type == "ExplicitValuedEventRefConstantComparison" || eventExpression.$type == "ImplicitValuedEventRefConstantComparison") {
+        res.push(eventExpression as ValuedEventRefConstantComparison)
+    } else if (eventExpression.$type == "EventConjunction" || eventExpression.$type == "EventDisjunction") {
+        let lhsRes = getValuedEventRefConstantComparison((eventExpression as EventCombination).lhs)
+        let rhsRes = getValuedEventRefConstantComparison((eventExpression as EventCombination).rhs)
+        res = res.concat(lhsRes).concat(rhsRes)
+    }
+    return res
 }
 
 function isReferenceBased(participants: TypedElement[]): boolean {
@@ -266,12 +296,21 @@ function getPreviousNodeNameFromPremiseParticipants(ruleCF: RuleControlFlow, con
 function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], file: CompositeGeneratorNode, previousNodeName: string) {
     let actionsstring = ""
     actionsstring = visitStateModifications(ruleCF, actionsstring);
+    let guardString = ""
+    let allEventValuedComparisons = getValuedEventRefConstantComparison(ruleCF.rule.premise.eventExpression)
+    let sep = ""
+    for(let comparison of allEventValuedComparisons){
+        guardString = guardString + sep + visitValuedEventRefComparison(comparison)
+        sep =","
+    }
+    
     if(actionsstring.length>0){
         file.append(`
         {
-        let ${ruleCF.rule.name}StateModificationNode: Node = new Step(node)
+        let ${ruleCF.rule.name}StateModificationNode: Node = new Step(node, undefined, [${actionsstring}])
         localCCFG.addNode(${ruleCF.rule.name}StateModificationNode)
-        let e = localCCFG.addEdge(${previousNodeName},${ruleCF.rule.name}StateModificationNode)
+        {let e = localCCFG.addEdge(${previousNodeName},${ruleCF.rule.name}StateModificationNode)
+        e.guards = [...e.guards, ...[${guardString}]]}
         ${previousNodeName} = ${ruleCF.rule.name}StateModificationNode
         }
     `)
@@ -298,12 +337,14 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
         if (holes.map(h => h.startingParticipants).some(p => areParticipantsEqualsOrCoupled(p,participants))) {
             if(DEBUG) file.append(`            //mark 0`);
             file.append(`
-        localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type != "event").map(p => p.name?.replace(/\(\)/,"")).join('_')}Hole)
+        {let e = localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type != "event").map(p => p.name?.replace(/\(\)/,"")).join('_')}Hole)
+        e.guards = [...e.guards, ...[${guardString}]]}
             `);
         } else {
             if(DEBUG) file.append(`            //mark 1 ${participants.map(p=>p.toJSON())}`);
             file.append(`
-        localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type == "event").map(p => p.name).join('_')}${(ruleCF.rule.$container as RuleOpening)?.onRule?.ref?.name}Node)
+        {let e = localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type == "event").map(p => p.name).join('_')}${(ruleCF.rule.$container as RuleOpening)?.onRule?.ref?.name}Node)
+        e.guards = [...e.guards, ...[${guardString}]]}
         `);
     
         }
@@ -1518,39 +1559,30 @@ function getNameAndTypeOfElement(namedElem: NamedElement): [(string | undefined)
 // }
 
 
-// /**
-//  * 
-//  * for now in c++ like form but should be an interface to the target language
-//  * @param runtimeState
-//  * @returns
-//  */
-// function visitValuedEventRefComparison(valuedEventRefComparison: ValuedEventRefConstantComparison | undefined): string {
-//     var res : string = ""
+/**
+ * 
+ * for now in c++ like form but should be an interface to the target language
+ * @param runtimeState
+ * @returns
+ */
+function visitValuedEventRefComparison(valuedEventRefComparison: ValuedEventRefConstantComparison | undefined): string {
+    var res : string = ""
     
-//     if (valuedEventRefComparison != undefined) {
-//         let v = valuedEventRefComparison.literal
-//         // let varType: TypeDescription
+    if (valuedEventRefComparison != undefined) {
+        let v = valuedEventRefComparison.literal
 
-//         // if(typeof(valuedEventRefComparison.literal) == "string"){
-//         //     varType = createstringType(undefined)
-//         // }else{
-//         //     varType = inferType(valuedEventRefComparison.literal, new Map())
-//         // }
-
-//         //guardactionsactions
-//         if(valuedEventRefComparison.$type == "ImplicitValuedEventRefConstantComparison"){
-//             //res = res + `\`(bool)\${this.getASTNodeUID(node.${(valuedEventRefComparison.membercall as MemberCall).element?.$refText})}${"terminates"} == ${(typeof(v) == "string")?v:v.$cstNode?.text}\``
-//             res = res + `\`${verifyEqual},\${this.getASTNodeUID(node.${(valuedEventRefComparison.membercall as MemberCall).element?.$refText})}${"terminate"},${(typeof(v) == "string")?v:v.$cstNode?.text}\``
-//         }
-//         if(valuedEventRefComparison.$type == "ExplicitValuedEventRefConstantComparison"){
-//             let prev = (valuedEventRefComparison.membercall as MemberCall)?.previous
-//             //res = res + `\`(bool)\${this.getASTNodeUID(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRefComparison.membercall as MemberCall).element?.$refText} == ${(typeof(v) == "string")?v:v.$cstNode?.text}\``
-//             res = res + `\`${verifyEqual},\${this.getASTNodeUID(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRefComparison.membercall as MemberCall).element?.$refText},${(typeof(v) == "string")?v:v.$cstNode?.text}\``
-//         }
+        //guardactions
+        if(valuedEventRefComparison.$type == "ImplicitValuedEventRefConstantComparison"){
+            res = res + `\`${verifyEqual},\${this.getASTNodeUID(node.${(valuedEventRefComparison.membercall as MemberCall).element?.$refText})}${"terminate"},${(typeof(v) == "string")?v:v.$cstNode?.text}\``
+        }
+        if(valuedEventRefComparison.$type == "ExplicitValuedEventRefConstantComparison"){
+            let prev = (valuedEventRefComparison.membercall as MemberCall)?.previous
+            res = res + `\`${verifyEqual},\${this.getASTNodeUID(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRefComparison.membercall as MemberCall).element?.$refText},${(typeof(v) == "string")?v:v.$cstNode?.text}\``
+        }
         
-//     }
-//     return res
-// }
+    }
+    return res
+}
 
 
 // /**
