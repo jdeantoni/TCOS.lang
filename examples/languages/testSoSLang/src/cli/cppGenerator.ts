@@ -101,7 +101,7 @@ export class CppGenerator implements IGenerator {
         return ["Void fakeParam"+synchUID+";\n " ,"synch" + synchUID + ".push(fakeParam"+synchUID+");\n"]
     }
     waitForSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): string[] {
-        return ["Void joinPopped"+synchUID+";\n " ,"synch" + synchUID + ".waitAndPop(joinPopped"+synchUID+");\n"]
+        return ["{Void joinPopped"+synchUID+";\n " ,"synch" + synchUID + ".waitAndPop(joinPopped"+synchUID+");}\n"]
     }
     createFlagToGoBackTo(codeFile: CompositeGeneratorNode, uid:number): string[] {
         return ["flag"+uid+ " :\n"]
