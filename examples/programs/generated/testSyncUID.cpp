@@ -77,8 +77,8 @@ int main(){
  	synch12.push(fakeParam12);
 	});
 	thread18.detach();
-	Void joinPopped12;
- 	synch12.waitAndPop(joinPopped12);
-	Void joinPopped12;
- 	synch12.waitAndPop(joinPopped12);
+	{Void joinPopped12;
+ 	synch12.waitAndPop(joinPopped12);}
+	{Void joinPopped12;
+ 	synch12.waitAndPop(joinPopped12);}
 for(auto entry : sigma){ std::cout << entry.first << " : " << *((int*)entry.second) << std::endl;}}
