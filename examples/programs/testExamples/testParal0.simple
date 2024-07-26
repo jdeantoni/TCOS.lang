@@ -1,0 +1,6 @@
+var v1 = 1          //v1Decl
+var v2 = 10          //v2Decl
+     |                          //parBloc1
+     | v2 = ( v1 + v1 )        //v2Assg
+     | v1 = ( v2 + v2 )        //v2Assg
+     |

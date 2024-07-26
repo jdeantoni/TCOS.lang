@@ -1,0 +1,3 @@
+var v1 = 1          //v1Decl
+var v2 = 4          //v2Decl
+v1 = ( v2 + v2 )

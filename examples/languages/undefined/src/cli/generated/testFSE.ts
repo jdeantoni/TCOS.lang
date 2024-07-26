@@ -315,7 +315,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     previousNode = initializeVarStateModificationNode
     }
     previousNode.functionsNames = [...previousNode.functionsNames, ...[`${previousNode.uid}initializeVar`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}1377`,`assignVar,${getASTNodeUID(node)}1377,${node.initialValue}`,`setGlobalVar,int,${getASTNodeUID(node)}currentValue,${getASTNodeUID(node)}1377`]] //AA
+    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}1381`,`assignVar,${getASTNodeUID(node)}1381,${node.initialValue}`,`setGlobalVar,int,${getASTNodeUID(node)}currentValue,${getASTNodeUID(node)}1381`]] //AA
     
         {let e = this.ccfg.addEdge(previousNode,terminatesVariableNode)
         e.guards = [...e.guards, ...[]] //EE
@@ -354,7 +354,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "int"
         previousNode.functionsNames = [`${previousNode.uid}accessVarRef`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`lock,variableMutex`,`createVar,int,${getASTNodeUID(node)}1583`,`setVarFromGlobal,int,${getASTNodeUID(node)}1583,${getASTNodeUID(node.theVar)}currentValue`,`createVar,int,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,${getASTNodeUID(node)}1583`,`return,${getASTNodeUID(node)}terminates`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`lock,variableMutex`,`createVar,int,${getASTNodeUID(node)}1587`,`setVarFromGlobal,int,${getASTNodeUID(node)}1587,${getASTNodeUID(node.theVar)}currentValue`,`createVar,int,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,${getASTNodeUID(node)}1587`,`return,${getASTNodeUID(node)}terminates`]] //GG
     
         return [startsVarRefNode,terminatesVarRefNode]
     }
@@ -533,7 +533,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     previousNode = executeAssignment2StateModificationNode
     }
     previousNode.functionsNames = [...previousNode.functionsNames, ...[`${previousNode.uid}executeAssignment2`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}2524`,`assignVar,${getASTNodeUID(node)}2524,resRight`,`setGlobalVar,int,${getASTNodeUID(node.variable)}currentValue,${getASTNodeUID(node)}2524`]] //AA
+    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}2528`,`assignVar,${getASTNodeUID(node)}2528,resRight`,`setGlobalVar,int,${getASTNodeUID(node.variable)}currentValue,${getASTNodeUID(node)}2528`]] //AA
     
         {let e = this.ccfg.addEdge(previousNode,terminatesAssignmentNode)
         e.guards = [...e.guards, ...[]] //EE
@@ -737,7 +737,7 @@ export class CCFGVisitor implements SimpleLVisitor {
             throw new Error("impossible to be there andJoinNode"+getASTNodeUID(node.right))
         }
         multipleSynchroNode.params = [...multipleSynchroNode.params, ...[Object.assign( new TypedElement(), JSON.parse(`{ "name": "n2", "type": "int"}`)),Object.assign( new TypedElement(), JSON.parse(`{ "name": "n1", "type": "int"}`))]]
-        multipleSynchroNode.functionsDefs = [...multipleSynchroNode.functionsDefs, ...[`int ${getASTNodeUID(node)}4243 = n2;`,`int ${getASTNodeUID(node)}4268 = n1;`]] //HH
+        multipleSynchroNode.functionsDefs = [...multipleSynchroNode.functionsDefs, ...[`int ${getASTNodeUID(node)}4247 = n2;`,`int ${getASTNodeUID(node)}4272 = n1;`]] //HH
     }
     
     {
@@ -751,7 +751,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "int"
         previousNode.functionsNames = [`${previousNode.uid}finishPlus`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}4387`,`assignVar,${getASTNodeUID(node)}4387,n1`,`createVar,int,${getASTNodeUID(node)}4392`,`assignVar,${getASTNodeUID(node)}4392,n2`,`createVar,${getASTNodeUID(node)}4386`,`operation,${getASTNodeUID(node)}4386,${getASTNodeUID(node)}4387,+,${getASTNodeUID(node)}4392`,`createVar,int,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,${getASTNodeUID(node)}4386`,`return,${getASTNodeUID(node)}terminates`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}4391`,`assignVar,${getASTNodeUID(node)}4391,n1`,`createVar,int,${getASTNodeUID(node)}4396`,`assignVar,${getASTNodeUID(node)}4396,n2`,`createVar,${getASTNodeUID(node)}4390`,`operation,${getASTNodeUID(node)}4390,${getASTNodeUID(node)}4391,+,${getASTNodeUID(node)}4396`,`createVar,int,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,${getASTNodeUID(node)}4390`,`return,${getASTNodeUID(node)}terminates`]] //GG
     
         return [startsPlusNode,terminatesPlusNode]
     }
@@ -782,7 +782,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "bool"
         previousNode.functionsNames = [`${previousNode.uid}evalBooleanConst`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`lock,variableMutex`,`createVar,bool,${getASTNodeUID(node)}4606`,`setVarFromGlobal,bool,${getASTNodeUID(node)}4606,${getASTNodeUID(node)}constantValue`,`createVar,bool,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,${getASTNodeUID(node)}4606`,`return,${getASTNodeUID(node)}terminates`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`lock,variableMutex`,`createVar,bool,${getASTNodeUID(node)}4610`,`setVarFromGlobal,bool,${getASTNodeUID(node)}4610,${getASTNodeUID(node)}constantValue`,`createVar,bool,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,${getASTNodeUID(node)}4610`,`return,${getASTNodeUID(node)}terminates`]] //GG
     
         return [startsBooleanConstNode,terminatesBooleanConstNode]
     }
