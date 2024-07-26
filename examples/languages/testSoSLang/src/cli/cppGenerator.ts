@@ -95,7 +95,7 @@ export class CppGenerator implements IGenerator {
 
     }
     createSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): string[] {
-        return ["lockingQueue<Void> synch" + synchUID + ";\n"]
+        return ["LockingQueue<Void> synch" + synchUID + ";\n"]
     }
     activateSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): string[] {
         return ["Void fakeParam"+synchUID+";\n " ,"synch" + synchUID + ".push(fakeParam"+synchUID+");\n"]
