@@ -619,9 +619,6 @@ async function visitAllNodesInterpret(initialState : Node , sigma: Map<string, a
     var currentNode : Node = initialState;
     while(currentNode.outputEdges && ((currentNode.outputEdges[0] && currentNode.outputEdges[0].to) || (currentNode.outputEdges[1] && currentNode.outputEdges[1].to))){
         let node = currentNode;
-        if(node.uid == 16){
-            console.log("hihi");
-        }
         switch(node.getType()){
             case "Step":{
                 console.log(node.uid + ": (" + node.getType() + ")->");
