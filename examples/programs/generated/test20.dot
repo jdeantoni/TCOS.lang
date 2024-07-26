@@ -40,8 +40,8 @@ setGlobalVar,int,Variable2_0_2_10currentValue,Variable2_0_2_101377
   "13" [label="13[]:terminates" shape="ellipse" ];
   "43" [label="43[]:starts" shape="ellipse" ];
   "44" [label="44[]:terminates" shape="ellipse" ];
-  "48" [label="48[]:undefined" shape="diamond" ];
-  "49" [label="49[]:multipleSynchro" shape="invtriangle" ];
+  "48" [label="48[49]:undefined" shape="diamond" ];
+  "49" [label="49[48,80]:multipleSynchro" shape="invtriangle" ];
   "86" [label="86[]:starts" shape="ellipse" ];
   "87" [label="87[]:terminates" shape="ellipse" ];
   "89" [label="89[]:undefined:
@@ -229,7 +229,7 @@ return,Plus9_9_9_18terminates
 }" shape="invtriangle" ];
   "76" [label="76[]:starts" shape="ellipse" ];
   "77" [label="77[]:terminates" shape="ellipse" ];
-  "80" [label="80[]:undefined" shape="triangle" ];
+  "80" [label="80[49]:undefined" shape="triangle" ];
   "81" [label="81[]:multipleSynchro:
 int function81finishPlus(int n2, int n1){
 createVar,int,Plus12_9_12_184387

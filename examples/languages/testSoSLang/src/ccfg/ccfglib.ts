@@ -60,16 +60,19 @@ export abstract class Node {
         }
         this.isVisited = true;
         if (this.outputEdges.length == 0){
+            console.log(chalk.gray("ending node reached"));
             this.isVisited = false;
             return false;
         }
         for (let e of this.outputEdges) {
             if (e.to === n2){
+                console.log(chalk.gray("info: "+this.uid+" is before "+n2.uid));
                 this.isVisited = false;
                 return true;
             }
         }
         for(let e of this.outputEdges){
+            console.log(chalk.gray("info: moving to node"+e.to.uid));
             return e.to.isBefore(n2);
         }
         this.isVisited = false;
@@ -321,7 +324,9 @@ export class CCFG {
                     if((n2.getType() == "Fork" || n2.getType() == "Choice")
                         &&
                         n2.outputEdges.length > 1){
+                            console.log(chalk.gray("info: checking sync edge between "+n2.uid+" and "+n.uid));
                         if(n2.isBefore(n)){
+                            console.log(chalk.gray("info: adding sync edge between "+n2.uid+" and "+n.uid));
                             n2.syncNodeIds.push(n.uid);
                             n.syncNodeIds.push(n2.uid);
                             this.syncEdges.push(new SyncEdge(n, n2, "sync"));
@@ -508,6 +513,7 @@ export class CCFG {
         }
         for (let inputEdge of h.inputEdges) {
             inputEdge.to = ccfg.initialState as Node;
+            ccfg.initialState?.inputEdges.push(inputEdge);
         }
         let terminalNode = ccfg.nodes.find(n => n.type == "terminates");
         if (terminalNode == undefined) {
@@ -515,6 +521,7 @@ export class CCFG {
         }
         for (let outputEdge of h.outputEdges) {
             outputEdge.from = terminalNode as Node;
+            terminalNode.outputEdges.push(outputEdge);
         }
         this.nodes = this.nodes.filter(n => n.uid !== h.uid);
         this.nodes = [...this.nodes, ...ccfg.nodes];
