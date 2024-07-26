@@ -617,7 +617,7 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         finishPlusAndJoinNode.params = [...finishPlusAndJoinNode.params, ...[Object.assign( new TypedElement(), JSON.parse(`{ "name": "n2", "type": "int"}`)),Object.assign( new TypedElement(), JSON.parse(`{ "name": "n1", "type": "int"}`))]]
         finishPlusAndJoinNode.returnType = "int"
         finishPlusAndJoinNode.functionsNames = [`${finishPlusAndJoinNode.uid}finishPlus`] //overwrite existing name
-        finishPlusAndJoinNode.functionsDefs =[...finishPlusAndJoinNode.functionsDefs, ...[`createVar,int,${this.getASTNodeUID(node)}4387`,`assignVar,${this.getASTNodeUID(node)}4387,n1`,`createVar,int,${this.getASTNodeUID(node)}4392`,`assignVar,${this.getASTNodeUID(node)}4392,n2`,`createVar,${this.getASTNodeUID(node)}4386`,`operation,${this.getASTNodeUID(node)}4386,${this.getASTNodeUID(node)}4387,+,${this.getASTNodeUID(node)}4392`,`createVar,int,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,${this.getASTNodeUID(node)}4386`,`return,${this.getASTNodeUID(node)}terminates`]] //GG
+        finishPlusAndJoinNode.functionsDefs =[...finishPlusAndJoinNode.functionsDefs, ...[`createVar,int,${this.getASTNodeUID(node)}4387`,`assignVar,${this.getASTNodeUID(node)}4387,n1`,`createVar,int,${this.getASTNodeUID(node)}4392`,`assignVar,${this.getASTNodeUID(node)}4392,n2`,`createVar,int,${this.getASTNodeUID(node)}4386`,`operation,${this.getASTNodeUID(node)}4386,${this.getASTNodeUID(node)}4387,+,${this.getASTNodeUID(node)}4392`,`createVar,int,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,${this.getASTNodeUID(node)}4386`,`return,${this.getASTNodeUID(node)}terminates`]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
         {let e = localCCFG.addEdge(finishPlusAndJoinNode,terminatesPlusNode)
         e.guards = [...e.guards, ...[]]}
@@ -972,7 +972,7 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
             holeNodeLocalCCFG.addNode(forkNode)
             holeNodeLocalCCFG.addEdge(startsCollectionHoleNode,forkNode)
             let joinNode = undefined
-            if(hole.parallelSyncPolicy == "lastOf"){
+            if(hole.parallelSyncPolicy == "lastOF"){
                 joinNode = new AndJoin(hole.astNode)
             }else{
                 joinNode = new OrJoin(hole.astNode)
@@ -1040,48 +1040,5 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         var r = node.$cstNode?.range
         return node.$type+r?.start.line+"_"+r?.start.character+"_"+r?.end.line+"_"+r?.end.character;
     }
-
-    // getOrVisitNode(node:AstNode | Reference<AstNode> |undefined): [Node,Node]{
-    //     if(node === undefined){
-    //         throw new Error("not possible to get or visit an undefined AstNode")
-    //     }     
-    //     if(isReference(node)){
-    //         if(node.ref === undefined){
-    //             throw new Error("not possible to visit an undefined AstNode")
-    //         }
-    //         node = node.ref
-    //     }
-
-    //     let startsNode = this.ccfg.getNodeFromName("starts"+getASTNodeUID(node))
-    //     if(startsNode !== undefined){
-    //         let terminatesNode = this.ccfg.getNodeFromName("terminates"+getASTNodeUID(node))
-    //         if(terminatesNode === undefined){
-    //             throw new Error("impossible to be there")
-    //         }
-    //         return [startsNode,terminatesNode]
-    //     }
-    //     let [starts,terminates] = this.visit(node)
-    //     return [starts,terminates]
-    // }
-
-    // retrieveNode(prefix: string, node: AstNode | AstNode[] | Reference<AstNode> | Reference<AstNode>[] | undefined): Node {
-    //     if(node === undefined){
-    //         throw new Error("not possible to retrieve a node from an undefined AstNode")
-    //     }
-    //     if(Array.isArray(node) || (prefix != "starts" && prefix != "terminates")){
-    //         let n = this.ccfg.getNodeFromName(prefix+getASTNodeUID(node))
-    //         if(n === undefined){
-    //             throw new Error("impossible to retrieve "+prefix+getASTNodeUID(node)+ "from the ccfg")
-    //         }
-    //         return n
-    //     }
-    //     if(prefix == "starts"){
-    //         return this.getOrVisitNode(node)[0]
-    //     }
-    //     if(prefix == "terminates"){
-    //         return this.getOrVisitNode(node)[1]
-    //     }       
-    //     throw new Error("not possible to retrieve the node given as parameter: "+prefix+getASTNodeUID(node))
-    // }
-    // 
+    
 }
