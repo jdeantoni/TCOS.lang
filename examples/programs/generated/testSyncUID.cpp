@@ -62,7 +62,7 @@ int main(){
 	function5initializeVar();
 	functioninit6Variable();
 	function8initializeVar();
-	LockingQueue<Void> synch32;
+	lockingQueue<Void> synch32;
 	std::thread thread12([&](){
 	int result16accessVarRef = function16accessVarRef();
 	function15executeAssignment2(result16accessVarRef);
@@ -77,6 +77,8 @@ int main(){
  	synch32.push(fakeParam32);
 	});
 	thread18.detach();
+	Void joinPopped32;
+ 	synch32.waitAndPop(joinPopped32);
 	Void joinPopped32;
  	synch32.waitAndPop(joinPopped32);
 for(auto entry : sigma){ std::cout << entry.first << " : " << *((int*)entry.second) << std::endl;}}

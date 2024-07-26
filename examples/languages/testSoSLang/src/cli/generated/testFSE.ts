@@ -972,7 +972,7 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
             holeNodeLocalCCFG.addNode(forkNode)
             holeNodeLocalCCFG.addEdge(startsCollectionHoleNode,forkNode)
             let joinNode = undefined
-            if(hole.parallelSyncPolicy == "lastOF"){
+            if(hole.parallelSyncPolicy == "lastOf"){
                 joinNode = new AndJoin(hole.astNode)
             }else{
                 joinNode = new OrJoin(hole.astNode)
