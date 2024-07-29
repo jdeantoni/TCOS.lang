@@ -1170,13 +1170,16 @@ function visitValuedEventRef(valuedEventRef: ValuedEventRef | undefined): [strin
         let varType = inferType(v, new Map())
         let typeName = getCPPVariableTypeName(varType.$type)
         if(v != undefined && valuedEventRef.$type == "ImplicitValuedEventRef"){
-            res = res + `\`${typeName} \${getASTNodeUID(node)}${v.$cstNode?.offset} = ${v.name};\``//valuedEventRef  \${getName(node.${(valuedEventRef.membercall as MemberCall).element?.$refText})}${"terminates"}\``
+            res = res + `\`${createVar},${typeName},\${getASTNodeUID(node)}${v.$cstNode?.offset}\``//valuedEventRef  \${getName(node.${(valuedEventRef.membercall as MemberCall).element?.$refText})}${"terminates"}\``
+            res = res + `\`${assignVar},\${getASTNodeUID(node)}${v.$cstNode?.offset},${v.name}\``
             let param:TypedElement = new TypedElement(v.name, typeName)
             return [res, param]
         }
         if(v != undefined && valuedEventRef.$type == "ExplicitValuedEventRef"){
             // let prev = (valuedEventRef.membercall as MemberCall)?.previous
-            res = res + `\`${typeName} \${getASTNodeUID(node)}${v.$cstNode?.offset} = ${v.name};\`` //valuedEventRef \${getName(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRef.membercall as MemberCall).element?.$refText};\``
+            //valuedEventRef \${getName(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRef.membercall as MemberCall).element?.$refText};\``
+            res = res + `\`${createVar},${typeName},\${getASTNodeUID(node)}${v.$cstNode?.offset}\``
+            res = res + `\`${assignVar},\${getASTNodeUID(node)}${v.$cstNode?.offset},${v.name}\``
             let param:TypedElement = new TypedElement(v.name, typeName)
             return [res, param]
         }
