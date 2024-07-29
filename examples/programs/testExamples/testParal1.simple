@@ -1,7 +1,7 @@
 var v1 = 1          //v1Decl
 var v2 = 4          //v2Decl
+var v3
      |               //parBloc1
-     | var v3
-     | var v4
-     | var v5
+     | v3 = v1
+     | v3 = v2
      |

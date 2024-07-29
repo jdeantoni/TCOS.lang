@@ -4,10 +4,11 @@ import path from 'path';
 import { Model } from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
 import { CCFGVisitor } from './generated/testFSE';
-import { CCFG,/* Edge,*/ Node } from '../ccfg/ccfglib';
-import {IGenerator} from './GeneratorInterface';
-import {  TempValueList/*,TempValue,StackTempList*/ } from './TempValueList';
+import { CCFG, Edge, Node } from '../ccfg/ccfglib';
+import { IGenerator } from './GeneratorInterface';
+import { TempList } from './TempValueList';
 import { TypedElement } from "../ccfg/ccfglib";
+/*import { get } from 'http';*/
 
 
 
@@ -54,8 +55,6 @@ async function interpretfromCCFG(ccfg:CCFG, generator:IGenerator):Promise<void>{
 }
 
 
-
-
 function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model): CCFG {
     var visitor = new CCFGVisitor();
     visitor.visit(model);
@@ -81,7 +80,6 @@ function compileFunctionDefs(ccfg: CCFG,generator:IGenerator,sigma:Map<string,an
                 continue
             }
             if(node.returnType != undefined){
-                
                     for (let fname of node.functionsNames) {
                     // console.log("function name: "+fname);
                         let allFDefs:string[] = [];
@@ -109,7 +107,8 @@ function compileFunctionDefs(ccfg: CCFG,generator:IGenerator,sigma:Map<string,an
                         }
                         //console.log("function name: "+fname+ " allFDefs = "+allFDefs);
                         //generator.createFunction(codeFile,fname, node.params, node.returnType,allFDefs);
-                        functionsDefs.set(fname,defineFunction(fname,node.params, allFDefs,sigma))
+                        let fnamestring:string = "function" + fname;
+                        functionsDefs.set(fnamestring,defineFunction(fnamestring, node.params, allFDefs, sigma))
                 }
             }
         // }
@@ -123,21 +122,36 @@ function compileFunctionDefs(ccfg: CCFG,generator:IGenerator,sigma:Map<string,an
 
 
 
-/******************************************************************************INTERPRETER******************************************************/
+/****************************************************************************** INTERPRETER ******************************************************/
 class Stack {
     fork: number[];                             //number of the fork children
-    forkNode : Node[];                        //node uid
-    tempValueList : TempValueList<number>;      //value inside of a fork
-    tempChildren : TempValueList<Node>;          //node.uid
-    tempFunction : TempValueList<Function>;
+    forkNode : Node[];                          //ForkNode : when finish visiting sub-branch, go back to forkNode 
+    tempValue : Array<TempList<number>>;      //temporary value
+    tempChildren : Array<TempList<Node>>;         //children node of a ForkNode 
+    tempFunction : Array<TempList<Function>>;     //callback functions list
     
 
     constructor() {
         this.fork = [];
         this.forkNode = [];
-        this.tempValueList = new TempValueList<number>();
-        this.tempChildren = new TempValueList<Node>();
-        this.tempFunction = new TempValueList<Function>();
+        this.tempValue = new Array();
+        this.tempChildren = new Array();
+        this.tempFunction = new Array();
+    }
+
+    addTempValue() : void {
+        let newTempList = new TempList<number>();
+        this.tempValue.push(newTempList);
+    }
+
+    addTempChildren() : void {
+        let newTempList = new TempList<Node>();
+        this.tempChildren.push(newTempList);
+    }
+
+    addTempFunction() : void {
+        let newTempList = new TempList<Function>();
+        this.tempFunction.push(newTempList);
     }
 }
 
@@ -153,15 +167,16 @@ async function visitAllNodesInterpret(initialState : Node , sigma: Map<string, a
                     nodeCode(node,sigma,stack);//define function written in node; call function & store function value
                 }
                 currentNode = node.outputEdges[0].to;
-                if((stack.forkNode.length!=0) && (node.uid == stack.forkNode[stack.forkNode.length-1].uid -1)){ //the end point of a fork
-                    stack.tempChildren.last().list.pop();
-                    if(stack.tempChildren.last().list.length > 0){//check if we have visited all children of the current fork
-                        //if no, go back to fork node
+
+                if((stack.forkNode.length!=0) && (node.uid == stack.forkNode[stack.forkNode.length-1].uid -1)){ //the last node of the subtree of the current ForkNode
+                    stack.tempChildren[stack.tempChildren.length-1].getList().pop();
+                    if(stack.tempChildren[stack.tempChildren.length-1].getList().length > 0){//check if we have visited all children of the current fork
+                        //if no, go back to the current ForkNode
                         currentNode = stack.forkNode[stack.forkNode.length-1];
-                    }else{//check if we have visited all children of the current fork
-                        stack.forkNode.pop();                       //if yes, get out of the current fork
+                    }else{//if yes, get out of the current fork
+                        stack.forkNode.pop();                       
                         stack.fork.pop();
-                        stack.tempChildren.reduce();
+                        stack.tempChildren.pop();
                     }
                 }
                 /*
@@ -175,30 +190,29 @@ async function visitAllNodesInterpret(initialState : Node , sigma: Map<string, a
             }
             case "Fork":{//define forks' children
                 console.log(node.uid + ": (" + node.getType() + ")->");
-                
                 //console.log("the length of the current fork:"+ forkList[forkList.length-1]); //nombre of the children which are not executed of the current fork
-                let forklist = stack.forkNode;
-                if( forklist[forklist.length-1] == undefined || stack.forkNode[forklist.length-1].uid != node.uid ){ //the 1st time to visit this fork node
+                if( stack.forkNode[stack.forkNode.length-1] == undefined || stack.forkNode[stack.forkNode.length-1].uid != node.uid ){ //the 1st time to visit this fork node
                     let children = currentNode.outputEdges;
-                    stack.tempValueList.addTempValue(children.length);         //reserve places in stack : value
-                    stack.tempFunction.addTempValue(children.length);          //reserve places in stack : Function
-                    stack.tempChildren.addTempValue(children.length);          //reserve places in stack : Function
-                    stack.fork.push(children.length);                          //get in the fork
-                    stack.forkNode.push(node);                                 //start node's uid  
+                    stack.fork.push(children.length);                             //get in the fork
+                    stack.forkNode.push(node);                                      //start node's uid
 
-                    children.forEach(element => {                               //copy chidren list
-                        let nextNode = element.to; 
-                        stack.tempChildren.addValueLast(nextNode);
+                    stack.addTempValue();                    //reserve places in stack : value
+                    stack.addTempChildren();                 //reserve places in stack : Children list
+                    
+                    children.forEach(element => {            //copy chidren list
+                        let nextNode : Node = element.to; 
+                        let tempList : TempList<Node> = stack.tempChildren[stack.tempChildren.length-1];
+                        tempList.addValue(nextNode);
                     });
                 }
 
                 //visit children (sub-tree)
-                if(stack.tempChildren.last().list.length != 0){
-                    currentNode = stack.tempChildren.last().list[stack.tempChildren.last().list.length-1];
+                if(stack.tempChildren[stack.tempChildren.length-1].getList().length != 0){
+                    stack.addTempFunction()                  //reserve places in stack for each sub-tree
+                    currentNode = stack.tempChildren[stack.tempChildren.length-1].last();
                 }else{
                     return;
                 }
-
                 break;
             }
             case "AndJoin":{//reduce (fork children) & call function difined which are store in the stack
@@ -209,13 +223,13 @@ async function visitAllNodesInterpret(initialState : Node , sigma: Map<string, a
                 break;
             }
             
-            /*
             case "Choice":{
                 console.log(node.uid + ": (" + node.getType() + ")->");
                 let nodeTrue : Node | undefined;
                 let nodeFalse : Node | undefined;
                 //get resRight
-                let resRight: number = stack.resRight[stack.resRight.length-1];
+                let resRight: number[] = [...stack.tempValue[stack.tempValue.length-1].getList()];
+                stack.tempValue.pop();
                 //evaluation of each edge of choice
                 node.outputEdges.forEach(edge => {
                     let bool: boolean = evaluateEdgeLable(edge,resRight);
@@ -228,13 +242,12 @@ async function visitAllNodesInterpret(initialState : Node , sigma: Map<string, a
                 });
                 //decide what is the next node accroding to the value of resRight
                 if(nodeTrue && nodeFalse){
-                    if (stack.resRight[stack.resRight.length-1]){//if resRight
+                    if (resRight[0]){//if resRight
                         currentNode = nodeTrue;//next node is the false node
                     }
                     else {
                         currentNode = nodeFalse;//next node is the true node
                     }
-                    stack.resRight.pop();
                 }
                 else{
                     console.log("trueNode | flaseNode doesn't existe at node.uid ="+ node.uid);
@@ -245,7 +258,7 @@ async function visitAllNodesInterpret(initialState : Node , sigma: Map<string, a
 
             case "OrJoin":{
                 console.log(node.uid + ": (" + node.getType() + ")->");
-                let promiseList = stack.tempPromiseFunction;
+                /*let promiseList = stack.tempPromiseFunction;
                 if(node.cycles.length!=0 && promiseList.getLength()!=0){
                     //let cycle = node.cycles;
                     //let next = cycle[0][1];// begin.uid = 39
@@ -257,10 +270,10 @@ async function visitAllNodesInterpret(initialState : Node , sigma: Map<string, a
 
                     stack.tempPromiseFunction.addTempValue(stack.fork[stack.fork.length-1]);
                     stack.tempValueList.addTempValue(stack.fork[stack.fork.length-1]);
-                }
+                }*/
                 currentNode = node.outputEdges[0].to;
                 break;
-            }*/
+            }
         }
 
     }
@@ -271,8 +284,8 @@ async function visitAllNodesInterpret(initialState : Node , sigma: Map<string, a
 //evaluate the functions that are in the nodes
 //define function; the defined function takes sigma and a list of number as parametre.
 function defineFunction(functionName: string, functionParamList: TypedElement[], functionBody: string[], sigma: Map<any, any>): Function {
-    return new Function('sigma', 'liste', `return function ${functionName}(liste) {
-        ${functionParamList.reverse().map((param, index) => `let ${param.name} = liste[${index}];\n`).join('')}
+    return new Function('sigma', 'list', `return function ${functionName}(list) {
+        ${functionParamList.reverse().map((param, index) => `let ${param.name} = list[${index}];\n`).join('')}
         ${functionBody.join('\n')}
         \n}`)(sigma);
 }
@@ -280,48 +293,36 @@ function defineFunction(functionName: string, functionParamList: TypedElement[],
 function nodeCode(node:Node,sigma:Map<string,any>,stack:Stack):void{
     let functionName="function" + node.functionsNames[0];
     let f = allFunctions.get(functionName)  as Function;
-    let tempValueL = stack.tempFunction;
+    let tempF = stack.tempFunction;
 
-    if((stack.fork.length != 0) ){
-        tempValueL.addValueLast(f);
-        if(node.params.length == 0){
-            stack.tempValueList.addTempValue(1);//add an empty list
-        }
+    /*************************************************************** in a fork, call function directly ***************************************/
+    if((stack.fork.length != 0) ){//we are in a fork
+        tempF[tempF.length-1].addValue(f);
     }else{
-        //not in a fork, call function 
+        /************************************************************ not in a fork, call function directly ***************************************/
         if(node.params.length < 1){         //call function without params
             if(node.returnType == "void" ){
                 console.log(f());
+            }else{//store value in stack
+                stack.addTempValue();//add an empty list
+                stack.tempValue[stack.tempValue.length-1].addValue(f());
             }
         }
         else{                               //call function with params
+            let param = [...stack.tempValue[stack.tempValue.length-1].getList()];
             if(node.returnType == "void"){
-                let param = stack.tempValueList.last().list;
                 console.log(f(param));
-                stack.tempValueList.reduce();
-            }else{//store returned value
-                stack.tempValueList.addTempValue(1);
-                let param = stack.tempValueList.last();
-                stack.tempValueList.addValueLast(f(param));
-                stack.tempValueList.reduce();
             }
+            else{//store returned value
+                stack.addTempValue();//add an empty list
+                stack.tempValue[stack.tempValue.length-1].addValue(f(param));
+            }
+            stack.tempValue.pop();
         }
     }
 }
 
-//If the Andjoin node in a fork or not!**********************************************************************
-/*
-function joinNode(node:Node,sigma:Map<string,any>,stack:Stack):void{
-    if(node.functionsDefs.length!=0){
-        let functionName="function" + node.functionsNames[0];
-        let f = defineFunction(functionName,node.params,node.functionsDefs,sigma);
-        let l = stack.tempValueList.last().list;
-        console.log(functionName + " return " + f(l))
-        stack.tempValueList.addValueLast(f(l))
-    }
-}
-
-function evaluateEdgeLable(edge : Edge, resRight:number):boolean{
+function evaluateEdgeLable(edge : Edge, resRight:number[]):boolean{
     //get code from: "(VarRef3_4_3_6terminates == true)"
     let edgeLable: string = edge.guards[0];
     let match = edgeLable.match(/\((.*?)\)/);    //"VarRef3_4_3_6terminates == true"
@@ -334,49 +335,83 @@ function evaluateEdgeLable(edge : Edge, resRight:number):boolean{
             varName = parts[0].trim();
         }
     }
-    let bool : boolean = eval(`
-        if(${resRight} > 0){
-        ${varName} = 1;\n
-        }else{
-            ${varName} = 0;\n
-        }\n
-        ${code};
+    if(resRight.length>1){
+        throw Error("number of parametre is not correct");
+    }
+    else{
+        var bool : boolean = eval(`
+            if(${resRight} > 0){
+            ${varName} = 1;\n
+            }else{
+                ${varName} = 0;\n
+            }\n
+            ${code};
         `)
+    }
+    
     return bool;
 }
-*/
+
 
 /**************************************Asycn********************************************/
 
-function waitParam(fList:Array<Function>, tempfunctionValue:TempValueList<number>) {
-    let paramListPromise:number[][]= [];//copy value destination
-        //count nombre of the function, and take the same number of the value list from the end of the tempvaleurList
-        let nombreOfFunction : number = fList.length;
-        let numberOfValueList : number = tempfunctionValue.getLength();
-            
-        for(let i = numberOfValueList-nombreOfFunction; i < numberOfValueList ; i++){
-            let list : number[] = [...tempfunctionValue.last().list];
-            paramListPromise.push(list);
-            tempfunctionValue.reduce();
-        }
-        
-
+function waitParam(tempFunctionList:Array<TempList<Function>>, stack:Stack) {//call the functions stored in the list;
     return new Promise<void>(function(resolve) {
         console.log("yes0");
-        paramListPromise=getMirror(paramListPromise);
-        fList.map((f, index) => {
-            if(f(paramListPromise[index]) != undefined){
-                tempfunctionValue.addValueLast(f(paramListPromise[index]));
-                console.log("yes1 : function return "+ f(paramListPromise[index]));
-            }else{
-                console.log(f(paramListPromise[index]));
-                console.log("yes2 : function type void");
-            }   
-        }
-        );
+        tempFunctionList.forEach(functionList => {
+            functionList.getList().forEach(f => {//ele is a Function
+                let param : number[]|undefined = stack.tempValue.pop()?.getList()
+                if(f(param)!= undefined){
+                    stack.addTempValue();
+                    stack.tempValue[stack.tempValue.length-1].addValue(f(param));
+                    //console.log("yes1 : function return "+ f(param));
+                    console.log(`yes1 : ${f.name} return ${f(param)}`);
+                }else{
+                    console.log(f(param));
+                    console.log(`yes2 : ${f.name} return type void`);
+                }
+            });
+        });
         resolve();
     });
+
+
 }
+
+/*function wait(fList:Array<Function>, tempfunctionValue:TempValueList<number>){
+    return new Promise<void>(function(resolve) {
+        let paramList:number[]=tempfunctionValue.getlastList();
+
+        fList.map(f => {
+            if(node.params.length < 1){         //call function without params
+                if(node.returnType == "void" ){
+                    console.log(f());
+                }else{
+                    stack.tempValueList.reserveTempList(1);
+                    stack.tempValueList.addValueAtLastTempList(f());
+                }
+            }
+            else{                               //call function with params
+                let param = [...stack.tempValueList.getlastList()];
+                if(node.returnType == "void"){
+                    console.log(f(param));
+                }
+                else{//store returned value
+                    stack.tempValueList.reserveTempList(1);
+                    stack.tempValueList.addValueAtLastTempList(f(param));
+                }
+                stack.tempValueList.reduce();
+            }
+
+        });
+        resolve();
+    });
+    
+}
+*/
+
+
+
 
 
 //with function list
@@ -385,29 +420,45 @@ async function handleJoinNode(stack:Stack,node:Node,sigma:Map<string,any>) {
     forkList[forkList.length - 1]--;
     
     if(forkList[forkList.length-1]==0 ){//have visited all children of the current fork
-        await waitParam(stack.tempFunction.last().list, stack.tempValueList).then(function(){//call children s fonctions; resultat stroed in stack
+        //numbre of the list of functions should be as the same as the number of the inputedges of the JoindNode 
+        let numInput : number = node.inputEdges.length;
+        let functionList : Array<TempList<Function>> = [];//copy of list
+
+        //extract the function list of the current sub-tree only.
+        for(let i=0 ;i<numInput;i++){
+            //let l: TempList<Function>|undefined = stack.tempFunction?.pop();
+            let l: TempList<Function> = stack.tempFunction[stack.tempFunction.length-1];
+            if(l!=undefined){
+                functionList.push(l);
+                stack.tempFunction.pop();
+            }else{
+                throw Error("Number of function list is not enough");
+            }
+        }
+
+        await waitParam(functionList, stack).then(function(){//call children s fonctions; resultat stroed in stack
             console.log("yes3");
-            stack.tempFunction.reduce();
             //code in AndJoin Node
             if (node.functionsDefs.length != 0){
                 let functionName="function" + node.functionsNames[0];
+                //let functionName=node.functionsNames;
                 let f = allFunctions.get(functionName) as Function;
-                let paramList = [...stack.tempValueList.last().list];
-                stack.tempValueList.reduce();
+                let paramList = [...stack.tempValue[stack.tempValue.length-1].getList()];
+                stack.tempValue.pop();
                 if(f(paramList) != undefined){
-                    stack.tempValueList.addTempValue(1);
-                    stack.tempValueList.addValueLast(f(paramList));
+                    stack.addTempValue();
+                    stack.tempValue[stack.addTempValue.length-1].addValue(f(paramList));
                 }else{
                     console.log(f(paramList));
                 }
             }else{
-                stack.tempValueList.reduce();
+                stack.tempValue.pop();
             }
         });
     } 
 }
 
-
+/*
 function getMirror(list: number[][]): number[][] {
     let listMirror: number[][] = [];
     while (list.length > 0) {
@@ -417,4 +468,4 @@ function getMirror(list: number[][]): number[][] {
         }
     }
     return listMirror;
-}
+}*/

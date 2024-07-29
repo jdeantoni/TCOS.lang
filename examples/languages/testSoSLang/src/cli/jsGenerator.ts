@@ -24,7 +24,7 @@ export class JsGenerator implements IGenerator {
             return [`function${fname}(${params.join(", ")});\n`]
         }
         
-        return [typeName+ " result"+fname+" = function"+fname + `(${params.join(", ")});\n`]
+        return [typeName+ " result"+fname+" = function" + fname + `(${params.join(", ")});\n`]
     }
     createIf( guards: string[],insideOfIf:string[]): string[] {
         let createIfString:string[] = []
@@ -88,10 +88,21 @@ export class JsGenerator implements IGenerator {
 
     }
     createGlobalVar( type: string, varName: string): string[] {
-        return ["sigma.set(\"" + varName + "\", new "+ type +"());\n"]
+        var typeJS:string = type;
+        switch (type){
+            case "int" :
+                typeJS = "Number";
+                break;
+            case "string" :
+                typeJS = "String";
+                break;
+        }
+        return ["sigma.set(\"" + varName + "\", new "+ typeJS +"());\n"]
     }
     setVarFromGlobal( type: string, varName: string, value: string): string[] {
-        return ["sigma.set(\"" + varName + "\", " + value + ");\n"]
+        return [`let tempVariable = sigma.get("${value}");\n
+            ${varName }= tempVariable;\n
+            `]
     }
     setGlobalVar( type: string, varName: string, value: string): string[] {
         return ["sigma.set(\"" + varName + "\",  " + value + ");\n"]

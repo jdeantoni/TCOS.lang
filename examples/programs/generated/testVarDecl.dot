@@ -9,9 +9,9 @@ createGlobalVar,int,Variable0_0_0_10currentValue
   "4" [label="4:terminatesVariable0_0_0_10" shape="ellipse" ];
   "5" [label="5:initializeVarStateModificationNode:
 void function5initializeVar(){
-createVar,int,Variable0_0_0_101430
-assignVar,Variable0_0_0_101430,1
-setGlobalVar,int,Variable0_0_0_10currentValue,Variable0_0_0_101430
+createVar,int,Variable0_0_0_101437
+assignVar,Variable0_0_0_101437,1
+setGlobalVar,int,Variable0_0_0_10currentValue,Variable0_0_0_101437
 }" shape="ellipse" ];
   "6" [label="6:startsVariable1_0_1_10:
 void functioninit6Variable(){
@@ -20,27 +20,26 @@ createGlobalVar,int,Variable1_0_1_10currentValue
   "7" [label="7:terminatesVariable1_0_1_10" shape="ellipse" ];
   "8" [label="8:initializeVarStateModificationNode:
 void function8initializeVar(){
-createVar,int,Variable1_0_1_101430
-assignVar,Variable1_0_1_101430,4
-setGlobalVar,int,Variable1_0_1_10currentValue,Variable1_0_1_101430
+createVar,int,Variable1_0_1_101437
+assignVar,Variable1_0_1_101437,4
+setGlobalVar,int,Variable1_0_1_10currentValue,Variable1_0_1_101437
 }" shape="ellipse" ];
   "9" [label="9:startsAssignment2_0_2_7" shape="ellipse" ];
   "10" [label="10:terminatesAssignment2_0_2_7" shape="ellipse" ];
   "11" [label="11:startsVarRef2_5_2_7:
 int function11accessVarRef(){
-lock,variableMutex
-createVar,int,VarRef2_5_2_71645
-setVarFromGlobal,int,VarRef2_5_2_71645,Variable0_0_0_10currentValue
+createVar,int,VarRef2_5_2_71652
+setVarFromGlobal,int,VarRef2_5_2_71652,Variable0_0_0_10currentValue
 createVar,int,VarRef2_5_2_7terminates
-assignVar,VarRef2_5_2_7terminates,VarRef2_5_2_71645
+assignVar,VarRef2_5_2_7terminates,VarRef2_5_2_71652
 return,VarRef2_5_2_7terminates
 }" shape="ellipse" ];
   "12" [label="12:terminatesVarRef2_5_2_7" shape="ellipse" ];
   "13" [label="13:executeAssignment2StateModificationNode:
 void function13executeAssignment2(int resRight){
-createVar,int,Assignment2_0_2_72620
-assignVar,Assignment2_0_2_72620,resRight
-setGlobalVar,int,Variable1_0_1_10currentValue,Assignment2_0_2_72620
+createVar,int,Assignment2_0_2_72627
+assignVar,Assignment2_0_2_72627,resRight
+setGlobalVar,int,Variable1_0_1_10currentValue,Assignment2_0_2_72627
 }" shape="ellipse" ];
   "14" [label="14:terminatesarray0_0_0_10_1_0_1_10_2_0_2_7" shape="ellipse" ];
   "0" -> "2" [label=""];
