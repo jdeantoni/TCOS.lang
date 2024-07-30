@@ -4,7 +4,7 @@ grammar StructuralOperationalSemantics
 import "../../node_modules/langium/src/grammar/langium-grammar";
 
 entry SoSSpec:
-   name=ID
+   ('semantics')? name=ID
    imports=ImportStatement
    rtdAndRules+=(RuleOpening)+
    ;
