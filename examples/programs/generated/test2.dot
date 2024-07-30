@@ -240,7 +240,8 @@ setGlobalVar,int,Variable0_0_0_10currentValue,Assignment12_4_12_182528
   "80" [label="80:evaluateConjunctionForkNode" shape="triangle" ];
   "81" [label="81:startsBooleanConst16_6_16_10:
 bool function81evalBooleanConst(){
-createGlobalVar,booltrue,BooleanConst16_6_16_10constantValue
+createGlobalVar,bool,BooleanConst16_6_16_10constantValue
+setGlobalVar,bool,BooleanConst16_6_16_10constantValue,true
 createVar,bool,BooleanConst16_6_16_104610
 setVarFromGlobal,bool,BooleanConst16_6_16_104610,BooleanConst16_6_16_10constantValue
 createVar,bool,BooleanConst16_6_16_10terminates
@@ -250,7 +251,8 @@ return,BooleanConst16_6_16_10terminates
   "82" [label="82:terminatesBooleanConst16_6_16_10" shape="ellipse" ];
   "83" [label="83:startsBooleanConst16_14_16_19:
 bool function83evalBooleanConst(){
-createGlobalVar,boolfalse,BooleanConst16_14_16_19constantValue
+createGlobalVar,bool,BooleanConst16_14_16_19constantValue
+setGlobalVar,bool,BooleanConst16_14_16_19constantValue,false
 createVar,bool,BooleanConst16_14_16_194610
 setVarFromGlobal,bool,BooleanConst16_14_16_194610,BooleanConst16_14_16_19constantValue
 createVar,bool,BooleanConst16_14_16_19terminates

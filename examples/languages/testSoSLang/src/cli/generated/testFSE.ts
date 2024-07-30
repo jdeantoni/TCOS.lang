@@ -757,7 +757,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     }
 
     visitBooleanConst(node: BooleanConst): [Node,Node] {
-        let startsBooleanConstNode: Node = new Step("starts"+getASTNodeUID(node),[`createGlobalVar,bool${node.value},${getASTNodeUID(node)}constantValue`])
+        let startsBooleanConstNode: Node = new Step("starts"+getASTNodeUID(node),[`createGlobalVar,bool,${getASTNodeUID(node)}constantValue`,`setGlobalVar,bool,${getASTNodeUID(node)}constantValue,${node.value}`])
         if(startsBooleanConstNode.functionsDefs.length>0){
             startsBooleanConstNode.returnType = "void"
         }
@@ -898,7 +898,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     }
 
     visitPeriodicBloc(node: PeriodicBloc): [Node,Node] {
-        let startsPeriodicBlocNode: Node = new Step("starts"+getASTNodeUID(node),[`createGlobalVar,int${node.time},${getASTNodeUID(node)}blocTrigger`])
+        let startsPeriodicBlocNode: Node = new Step("starts"+getASTNodeUID(node),[`createGlobalVar,int,${getASTNodeUID(node)}blocTrigger`,`setGlobalVar,int,${getASTNodeUID(node)}blocTrigger,${node.time}`])
         if(startsPeriodicBlocNode.functionsDefs.length>0){
             startsPeriodicBlocNode.returnType = "void"
         }

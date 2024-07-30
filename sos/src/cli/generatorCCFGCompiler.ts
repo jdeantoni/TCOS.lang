@@ -1227,10 +1227,18 @@ function getVariableDeclarationCode(runtimeState: VariableDeclaration[] | undefi
             }else{
                  if(vardDecl.value != undefined && vardDecl.value.$type == "MemberCall"){
                    //res = res + sep + `\`sigma["\${getASTNodeUID(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?`\${node.${(vardDecl.value as MemberCall).element?.$refText}}`:""});\``
-                   res = res + sep + `\`${createGlobalVar},${getVariableType(vardDecl.type)}${(vardDecl.value != undefined)?`\${node.${(vardDecl.value as MemberCall).element?.$refText}}`:""},\${getASTNodeUID(node)}${vardDecl.name}\``
+                   res = res + sep + `\`${createGlobalVar},${getVariableType(vardDecl.type)},\${getASTNodeUID(node)}${vardDecl.name}\``
+                   sep = ","
+                   res = res + sep + `\`${setGlobalVar},${getVariableType(vardDecl.type)},\${getASTNodeUID(node)}${vardDecl.name},${(vardDecl.value != undefined)?`\${node.${(vardDecl.value as MemberCall).element?.$refText}}`:""}\`` 
+                   
+                //    `\`${assignVar},\${getASTNodeUID(node)}${vardDecl.name},${(vardDecl.value != undefined)?(vardDecl.value as MemberCall).element?.$refText:""}\``
                 }else{
                     //res = res + sep + `\`sigma["\${getASTNodeUID(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?vardDecl.value.$cstNode?.text:""});\``
                     res = res + sep + `\`${createGlobalVar},${getVariableType(vardDecl.type)}${(vardDecl.value != undefined)?vardDecl.value.$cstNode?.text:""},\${getASTNodeUID(node)}${vardDecl.name}\``
+                    sep = ","
+                    if (vardDecl.value != undefined){
+                        res = res + sep + `\`${setGlobalVar},${getVariableType(vardDecl.type)},\${getASTNodeUID(node)}${vardDecl.name},${(vardDecl.value != undefined)?vardDecl.value.$cstNode?.text:""}\`` 
+                    }
                 }
                 sep= ","
             }
