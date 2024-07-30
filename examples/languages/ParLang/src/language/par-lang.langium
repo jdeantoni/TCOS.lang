@@ -21,6 +21,8 @@ Stmt1:
 Stmt2: 
     {infer Stmt2} 'stmt2';
 
+
+
 hidden terminal WS: /\s+/;
 terminal ID: /[_a-zA-Z][\w_]*/;
 terminal INT returns number: /[0-9]+/;
