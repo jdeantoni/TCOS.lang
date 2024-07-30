@@ -1,107 +1,105 @@
 digraph G {
-  "0" [label="0[]:starts" shape="ellipse" ];
-  "1" [label="1[]:terminates" shape="ellipse" ];
-  "38" [label="38[]:starts" shape="ellipse" ];
-  "39" [label="39[]:terminates" shape="ellipse" ];
-  "3" [label="3[]:starts:
+  "0" [label="0[]:Step_starts" shape="ellipse" ];
+  "1" [label="1[]:Step_terminates" shape="ellipse" ];
+  "38" [label="38[]:Step_starts" shape="ellipse" ];
+  "39" [label="39[]:Step_terminates" shape="ellipse" ];
+  "3" [label="3[]:Step_starts:
 void functioninit3Variable(){
 createGlobalVar,int,Variable0_0_0_10currentValue
 }" shape="ellipse" ];
-  "4" [label="4[]:terminates" shape="ellipse" ];
-  "5" [label="5[]:undefined:
+  "4" [label="4[]:Step_terminates" shape="ellipse" ];
+  "5" [label="5[]:Step:
 void function5initializeVar(){
 createVar,int,Variable0_0_0_101377
 assignVar,Variable0_0_0_101377,1
 setGlobalVar,int,Variable0_0_0_10currentValue,Variable0_0_0_101377
 }" shape="ellipse" ];
-  "6" [label="6[]:starts:
+  "6" [label="6[]:Step_starts:
 void functioninit6Variable(){
 createGlobalVar,int,Variable1_0_1_10currentValue
 }" shape="ellipse" ];
-  "7" [label="7[]:terminates" shape="ellipse" ];
-  "8" [label="8[]:undefined:
+  "7" [label="7[]:Step_terminates" shape="ellipse" ];
+  "8" [label="8[]:Step:
 void function8initializeVar(){
 createVar,int,Variable1_0_1_101377
 assignVar,Variable1_0_1_101377,0
 setGlobalVar,int,Variable1_0_1_10currentValue,Variable1_0_1_101377
 }" shape="ellipse" ];
-  "9" [label="9[]:starts:
+  "9" [label="9[]:Step_starts:
 void function9periodicStart(){
-createGlobalVar,int1000,PeriodicBloc3_0_5_3blocTrigger
+createGlobalVar,int,PeriodicBloc3_0_5_3blocTrigger
+setGlobalVar,int,PeriodicBloc3_0_5_3blocTrigger,1000
 }" shape="ellipse" ];
-  "10" [label="10[]:terminates" shape="ellipse" ];
-  "13" [label="13[14]:undefined" shape="triangle" ];
-  "14" [label="14[13]:multipleSynchro" shape="invtriangle" ];
-  "32" [label="32[]:starts" shape="ellipse" ];
-  "33" [label="33[]:terminates" shape="ellipse" ];
-  "35" [label="35[]:undefined:
-void function35executeAssignment2(){
+  "10" [label="10[]:Step_terminates" shape="ellipse" ];
+  "13" [label="13[14,27]:Fork" shape="triangle" ];
+  "14" [label="14[13]:OrJoin" shape="invtriangle" style="filled" fillcolor="lightblue"];
+  "32" [label="32[]:Step_starts" shape="ellipse" ];
+  "33" [label="33[]:Step_terminates" shape="ellipse" ];
+  "35" [label="35[]:Step:
+void function35executeAssignment2(int resRight){
 createVar,int,Assignment7_0_7_72524
 assignVar,Assignment7_0_7_72524,resRight
 setGlobalVar,int,Variable1_0_1_10currentValue,Assignment7_0_7_72524
 }" shape="ellipse" ];
-  "44" [label="44[]:starts:
-undefined function(){
+  "44" [label="44[]:Step_starts:
+void functioninit44Timer(){
 std::this_thread::sleep_for(1000ms);
 }" shape="ellipse" ];
-  "45" [label="45[]:terminates" shape="ellipse" ];
-  "15" [label="15[]:starts" shape="ellipse" ];
-  "16" [label="16[]:terminates" shape="ellipse" ];
-  "36" [label="36[]:starts:
+  "45" [label="45[]:Step_terminates" shape="ellipse" ];
+  "15" [label="15[]:Step_starts" shape="ellipse" ];
+  "16" [label="16[]:Step_terminates" shape="ellipse" ];
+  "36" [label="36[]:Step_starts:
 int function36accessVarRef(){
-lock,variableMutex
 createVar,int,VarRef7_5_7_71583
 setVarFromGlobal,int,VarRef7_5_7_71583,Variable0_0_0_10currentValue
 createVar,int,VarRef7_5_7_7terminates
 assignVar,VarRef7_5_7_7terminates,VarRef7_5_7_71583
 return,VarRef7_5_7_7terminates
 }" shape="ellipse" ];
-  "37" [label="37[]:terminates" shape="ellipse" ];
-  "46" [label="46[]:starts" shape="ellipse" ];
-  "47" [label="47[]:terminates" shape="ellipse" ];
-  "18" [label="18[]:starts" shape="ellipse" ];
-  "19" [label="19[]:terminates" shape="ellipse" ];
-  "21" [label="21[]:undefined:
-void function21executeAssignment2(){
+  "37" [label="37[]:Step_terminates" shape="ellipse" ];
+  "46" [label="46[]:Step_starts" shape="ellipse" ];
+  "47" [label="47[]:Step_terminates" shape="ellipse" ];
+  "18" [label="18[]:Step_starts" shape="ellipse" ];
+  "19" [label="19[]:Step_terminates" shape="ellipse" ];
+  "21" [label="21[]:Step:
+void function21executeAssignment2(int resRight){
 createVar,int,Assignment4_4_4_162524
 assignVar,Assignment4_4_4_162524,resRight
 setGlobalVar,int,Variable0_0_0_10currentValue,Assignment4_4_4_162524
 }" shape="ellipse" ];
-  "22" [label="22[]:starts" shape="ellipse" ];
-  "23" [label="23[]:terminates" shape="ellipse" ];
-  "26" [label="26[]:undefined" shape="triangle" ];
-  "27" [label="27[]:multipleSynchro:
-int function27finishPlus(){
+  "22" [label="22[]:Step_starts" shape="ellipse" ];
+  "23" [label="23[]:Step_terminates" shape="ellipse" ];
+  "26" [label="26[27]:Fork" shape="triangle" ];
+  "27" [label="27[13,26]:AndJoin:
+int function27finishPlus(int n2, int n1){
 createVar,int,Plus4_9_4_164387
 assignVar,Plus4_9_4_164387,n1
 createVar,int,Plus4_9_4_164392
 assignVar,Plus4_9_4_164392,n2
-createVar,Plus4_9_4_164386
+createVar,int,Plus4_9_4_164386
 operation,Plus4_9_4_164386,Plus4_9_4_164387,+,Plus4_9_4_164392
 createVar,int,Plus4_9_4_16terminates
 assignVar,Plus4_9_4_16terminates,Plus4_9_4_164386
 return,Plus4_9_4_16terminates
 }" shape="invtriangle" ];
-  "30" [label="30[]:starts:
+  "30" [label="30[]:Step_starts:
 int function30accessVarRef(){
-lock,variableMutex
 createVar,int,VarRef4_13_4_151583
 setVarFromGlobal,int,VarRef4_13_4_151583,Variable0_0_0_10currentValue
 createVar,int,VarRef4_13_4_15terminates
 assignVar,VarRef4_13_4_15terminates,VarRef4_13_4_151583
 return,VarRef4_13_4_15terminates
 }" shape="ellipse" ];
-  "31" [label="31[]:terminates" shape="ellipse" ];
-  "28" [label="28[]:starts:
+  "31" [label="31[]:Step_terminates" shape="ellipse" ];
+  "28" [label="28[]:Step_starts:
 int function28accessVarRef(){
-lock,variableMutex
 createVar,int,VarRef4_10_4_121583
 setVarFromGlobal,int,VarRef4_10_4_121583,Variable0_0_0_10currentValue
 createVar,int,VarRef4_10_4_12terminates
 assignVar,VarRef4_10_4_12terminates,VarRef4_10_4_121583
 return,VarRef4_10_4_12terminates
 }" shape="ellipse" ];
-  "29" [label="29[]:terminates" shape="ellipse" ];
+  "29" [label="29[]:Step_terminates" shape="ellipse" ];
   "0" -> "38" [label=""];
   "39" -> "1" [label=""];
   "38" -> "3" [label=""];

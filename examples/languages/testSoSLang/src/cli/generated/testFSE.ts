@@ -635,7 +635,7 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
      */
     createBooleanConstLocalCCFG(node: BooleanConst): CCFG {
         let localCCFG = new CCFG()
-        let startsBooleanConstNode: Node = new Step(node,NodeType.starts,[`createGlobalVar,bool${node.value},${this.getASTNodeUID(node)}constantValue`])
+        let startsBooleanConstNode: Node = new Step(node,NodeType.starts,[`createGlobalVar,bool,${this.getASTNodeUID(node)}constantValue`,`setGlobalVar,bool,${this.getASTNodeUID(node)}constantValue,${node.value}`])
         if(startsBooleanConstNode.functionsDefs.length>0){
             startsBooleanConstNode.returnType = "void"
         }
@@ -758,7 +758,7 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
      */
     createPeriodicBlocLocalCCFG(node: PeriodicBloc): CCFG {
         let localCCFG = new CCFG()
-        let startsPeriodicBlocNode: Node = new Step(node,NodeType.starts,[`createGlobalVar,int${node.time},${this.getASTNodeUID(node)}blocTrigger`])
+        let startsPeriodicBlocNode: Node = new Step(node,NodeType.starts,[`createGlobalVar,int,${this.getASTNodeUID(node)}blocTrigger`,`setGlobalVar,int,${this.getASTNodeUID(node)}blocTrigger,${node.time}`])
         if(startsPeriodicBlocNode.functionsDefs.length>0){
             startsPeriodicBlocNode.returnType = "void"
         }
@@ -994,6 +994,8 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         let node = hole.astNode as AstNode
         let timerHoleLocalCCFG = new CCFG()
         let startsTimerHoleNode: Node = new Step(node,NodeType.starts,[`std::this_thread::sleep_for(${hole.duration}ms);`])
+        startsTimerHoleNode.returnType = "void"
+        startsTimerHoleNode.functionsNames = [`init${startsTimerHoleNode.uid}Timer`]
         timerHoleLocalCCFG.addNode(startsTimerHoleNode)
         timerHoleLocalCCFG.initialState = startsTimerHoleNode
         let terminatesTimerHoleNode: Node = new Step(node,NodeType.terminates)

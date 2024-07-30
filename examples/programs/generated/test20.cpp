@@ -79,7 +79,8 @@ Assignment5_7_5_212524 = resRight;
 {const std::lock_guard<std::mutex> lock(sigma_mutex);*((int*)sigma["Variable1_0_1_10currentValue"]) = Assignment5_7_5_212524;
 }}
 bool function100evalBooleanConst(){
-{const std::lock_guard<std::mutex> lock(sigma_mutex);sigma["BooleanConst16_6_16_10constantValue"] = new bool(true);
+{const std::lock_guard<std::mutex> lock(sigma_mutex);sigma["BooleanConst16_6_16_10constantValue"] = new bool();
+}{const std::lock_guard<std::mutex> lock(sigma_mutex);*((bool*)sigma["BooleanConst16_6_16_10constantValue"]) = true;
 }bool BooleanConst16_6_16_104606;
 {const std::lock_guard<std::mutex> lock(sigma_mutex);BooleanConst16_6_16_104606 = *(bool*)sigma["BooleanConst16_6_16_10constantValue"];
 }bool BooleanConst16_6_16_10terminates;
@@ -87,7 +88,8 @@ BooleanConst16_6_16_10terminates = BooleanConst16_6_16_104606;
 return BooleanConst16_6_16_10terminates;
 }
 bool function102evalBooleanConst(){
-{const std::lock_guard<std::mutex> lock(sigma_mutex);sigma["BooleanConst16_14_16_19constantValue"] = new bool(false);
+{const std::lock_guard<std::mutex> lock(sigma_mutex);sigma["BooleanConst16_14_16_19constantValue"] = new bool();
+}{const std::lock_guard<std::mutex> lock(sigma_mutex);*((bool*)sigma["BooleanConst16_14_16_19constantValue"]) = false;
 }bool BooleanConst16_14_16_194606;
 {const std::lock_guard<std::mutex> lock(sigma_mutex);BooleanConst16_14_16_194606 = *(bool*)sigma["BooleanConst16_14_16_19constantValue"];
 }bool BooleanConst16_14_16_19terminates;
