@@ -54,7 +54,7 @@ open Perio{
   
           when <blocTrigger,σ>
       -------------------------------------------   perioExpires
-        <this,σ> ~> <blocTrigger,σ> || <stmt,σ>
+        <this,σ> ~> <stmt,σ> || <blocTrigger,σ>
                   
 }
 
