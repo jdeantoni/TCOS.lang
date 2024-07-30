@@ -1,47 +1,50 @@
 digraph G {
-  "0" [label="0[]:starts" shape="ellipse" ];
-  "1" [label="1[]:terminates" shape="ellipse" ];
-  "3" [label="3[]:starts:
-void functioninit3Perio(){
-createGlobalVar,int1000,Perio0_0_2_1blocTrigger
+  "0" [label="0[]:Step_starts" shape="ellipse" ];
+  "1" [label="1[]:Step_terminates" shape="ellipse" ];
+  "3" [label="3[]:Step_starts:
+void function3perioStart(){
+createGlobalVar,int,Perio0_0_2_1blocTrigger
+setGlobalVar,int,Perio0_0_2_1blocTrigger,1000
 }" shape="ellipse" ];
-  "4" [label="4[]:terminates" shape="ellipse" ];
-  "7" [label="7[8]:undefined" shape="triangle" ];
-  "8" [label="8[7]:multipleSynchro" shape="invtriangle" ];
-  "31" [label="31[]:starts:
-undefined function(){
+  "4" [label="4[]:Step_terminates" shape="ellipse" ];
+  "7" [label="7[8,14]:Fork" shape="triangle" ];
+  "8" [label="8[7]:OrJoin" shape="invtriangle" style="filled" fillcolor="lightblue"];
+  "31" [label="31[]:Step_starts:
+void functioninit31Timer(){
 std::this_thread::sleep_for(1000ms);
 }" shape="ellipse" ];
-  "32" [label="32[]:terminates" shape="ellipse" ];
-  "9" [label="9[]:starts" shape="ellipse" ];
-  "10" [label="10[]:terminates" shape="ellipse" ];
-  "13" [label="13[]:undefined" shape="triangle" ];
-  "14" [label="14[]:multipleSynchro" shape="invtriangle" ];
-  "15" [label="15[]:starts" shape="ellipse" ];
-  "16" [label="16[]:terminates" shape="ellipse" ];
-  "23" [label="23[]:starts" shape="ellipse" ];
-  "24" [label="24[]:terminates" shape="ellipse" ];
-  "19" [label="19[]:starts:
-void functioninit19Stmt1(){
-createGlobalVar,int0,Stmt11_6_1_11fakeState
+  "32" [label="32[]:Step_terminates" shape="ellipse" ];
+  "9" [label="9[]:Step_starts" shape="ellipse" ];
+  "10" [label="10[]:Step_terminates" shape="ellipse" ];
+  "13" [label="13[14]:Fork" shape="triangle" ];
+  "14" [label="14[7,13]:AndJoin" shape="invtriangle" ];
+  "15" [label="15[]:Step_starts" shape="ellipse" ];
+  "16" [label="16[]:Step_terminates" shape="ellipse" ];
+  "23" [label="23[]:Step_starts" shape="ellipse" ];
+  "24" [label="24[]:Step_terminates" shape="ellipse" ];
+  "19" [label="19[]:Step_starts:
+void function19fugaceStmt1(){
+createGlobalVar,int,Stmt11_6_1_11fakeState
+setGlobalVar,int,Stmt11_6_1_11fakeState,0
 }" shape="ellipse" ];
-  "20" [label="20[]:terminates" shape="ellipse" ];
-  "21" [label="21[]:starts:
-void functioninit21Stmt1(){
-createGlobalVar,int0,Stmt11_14_1_19fakeState
+  "20" [label="20[]:Step_terminates" shape="ellipse" ];
+  "21" [label="21[]:Step_starts:
+void function21fugaceStmt1(){
+createGlobalVar,int,Stmt11_14_1_19fakeState
+setGlobalVar,int,Stmt11_14_1_19fakeState,0
 }" shape="ellipse" ];
-  "22" [label="22[]:terminates" shape="ellipse" ];
-  "27" [label="27[]:starts" shape="ellipse" ];
-  "28" [label="28[]:terminates" shape="ellipse" ];
-  "29" [label="29[]:starts" shape="ellipse" ];
-  "30" [label="30[]:terminates" shape="ellipse" ];
+  "22" [label="22[]:Step_terminates" shape="ellipse" ];
+  "27" [label="27[]:Step_starts" shape="ellipse" ];
+  "28" [label="28[]:Step_terminates" shape="ellipse" ];
+  "29" [label="29[]:Step_starts" shape="ellipse" ];
+  "30" [label="30[]:Step_terminates" shape="ellipse" ];
   "0" -> "3" [label=""];
   "4" -> "1" [label=""];
   "3" -> "8" [label=""];
   "32" -> "7" [label=""];
+  "7" -> "9" [label=""];
   "7" -> "8" [label=""];
   "8" -> "31" [label=""];
-  "7" -> "9" [label=""];
   "31" -> "32" [label=""];
   "9" -> "13" [label=""];
   "13" -> "15" [label=""];

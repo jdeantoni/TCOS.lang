@@ -8,7 +8,10 @@ import { NodeFileSystem } from 'langium/node';
 import * as url from 'node:url';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { generateCPPfromCCFG } from './generatorCPPfromCCFG.js';
+import { generatefromCCFG } from './compilerBackend.js';
+import { IGenerator } from './GeneratorInterface.js';
+import { PythonGenerator } from './pythonGenerator.js';
+import { CppGenerator } from './cppGenerator.js';
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 const packagePath = path.resolve(__dirname, '..', '..', 'package.json');
@@ -17,13 +20,20 @@ const packageContent = await fs.readFile(packagePath, 'utf-8');
 export const generateAction = async (fileName: string, opts: GenerateOptions): Promise<void> => {
     const services = createParLangServices(NodeFileSystem).ParLang;
     const model = await extractAstNode<Program>(fileName, services);
-    const generatedFilePath = generateCPPfromCCFG(model, fileName, opts.targetDirectory, opts.debug);
+    let generator:IGenerator;
+    // if (opts.python != undefined && opts.python) {
+    //     generator = new PythonGenerator();
+    // } else {
+        generator = new CppGenerator();
+    // }
+    const generatedFilePath = generatefromCCFG(model, fileName, opts.targetDirectory, opts.debug,generator);
     console.log(chalk.green(`CCFG and code generated successfully: ${generatedFilePath}`));
 };
 
 export type GenerateOptions = {
     targetDirectory ?: string;
     debug ?: boolean;
+    python ?: boolean;
 }
 
 export default function(): void {
@@ -37,6 +47,7 @@ export default function(): void {
     .argument('<file>', `source file (possible file extensions: ${fileExtensions})`)
     .option('-t, --targetDirectory <dir>', 'destination directory of generating', 'generated')
     .option('-d, --debug ', 'ask for debugging message during execution of the generated code')
+    .option('--python', 'compile into python', 'output.cpp')
     .description('generates the concurrent control flow graph representation of the given source file')
     .action(generateAction);
 

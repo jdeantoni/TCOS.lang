@@ -54,27 +54,30 @@ export abstract class Node {
         return this.constructor.name;
     }
 
+
     isBefore(n2: Node): boolean {
         if(this.isVisited){
+            // console.log(chalk.red("error: already visited"+this.uid));
             return false;
         }
         this.isVisited = true;
         if (this.outputEdges.length == 0){
-            console.log(chalk.gray("ending node reached"));
+            // console.log(chalk.gray("ending node reached"));
             this.isVisited = false;
             return false;
         }
         for (let e of this.outputEdges) {
             if (e.to === n2){
-                console.log(chalk.gray("info: "+this.uid+" is before "+n2.uid));
+                // console.log(chalk.gray("info: "+this.uid+" is before "+n2.uid));
                 this.isVisited = false;
                 return true;
             }
         }
         for(let e of this.outputEdges){
-            console.log(chalk.gray("info: moving to node"+e.to.uid));
+            // console.log(chalk.gray("info: moving to node"+e.to.uid));
             return e.to.isBefore(n2);
         }
+        // console.log(chalk.green("info: no path found from "+this.uid+" to "+n2.uid));
         this.isVisited = false;
         return false
     }
@@ -127,6 +130,12 @@ export class CCFG {
     constructor() {
         this.nodes = [];
         this.edges = [];
+    }
+
+    cleanVisit(): void {
+        for(let n of this.nodes){
+            n.isVisited = false;
+        }
     }
 
     /**
@@ -317,16 +326,21 @@ export class CCFG {
     }
 
 
+    /**
+     * this old version tried to be smart... it seems we can exploit thread uid like in the next version
+     */
     addSyncEdge(): void{
         for(let n of this.nodes){
+            this.cleanVisit();
             if(n.getType() == "OrJoin" || n.getType() == "AndJoin"){
                 for(let n2 of this.nodes){
+                    this.cleanVisit();
                     if((n2.getType() == "Fork" || n2.getType() == "Choice")
                         &&
                         n2.outputEdges.length > 1){
-                            console.log(chalk.gray("info: checking sync edge between "+n2.uid+" and "+n.uid));
+                            // console.log(chalk.gray("info: checking sync edge between "+n2.uid+" and "+n.uid));
                         if(n2.isBefore(n)){
-                            console.log(chalk.gray("info: adding sync edge between "+n2.uid+" and "+n.uid));
+                            // console.log(chalk.gray("info: adding sync edge between "+n2.uid+" and "+n.uid));
                             n2.syncNodeIds.push(n.uid);
                             n.syncNodeIds.push(n2.uid);
                             this.syncEdges.push(new SyncEdge(n, n2, "sync"));
@@ -340,6 +354,54 @@ export class CCFG {
         }
 
     }
+
+        // /**
+        //  * this version takes into account the fact that the fork/join nodes where always successives in the list of nodes uid...
+        //  * should be even smarter since it may be more complex than that
+        //  */
+        // addSyncEdge(): void{
+        //     for(let n of this.nodes){
+        //         this.cleanVisit();
+        //         if(n.getType() == "OrJoin" || n.getType() == "AndJoin"){
+        //             console.log(chalk.red("info: checking sync edge for "+n.getType()+":"+n.uid));
+        //             let previousUid = n.uid-1;
+        //             let potentialSyncNode = this.nodes.find(n2 => n2.uid == previousUid);
+        //             if(potentialSyncNode == undefined){
+        //                 console.log(chalk.red("error: no potential sync node found for "+n.getType()+":"+n.uid));
+        //             }
+        //             if(potentialSyncNode != undefined && (potentialSyncNode.getType() == "Fork" || potentialSyncNode.getType() == "Choice")){
+        //                 if(potentialSyncNode.isBefore(n)){
+        //                     console.log(chalk.gray("info: adding sync edge between "+potentialSyncNode.uid+" and "+n.uid));
+        //                     potentialSyncNode.syncNodeIds.push(n.uid);
+        //                     n.syncNodeIds.push(potentialSyncNode.uid);
+        //                     this.syncEdges.push(new SyncEdge(n, potentialSyncNode, "sync"));
+        //                 }else{
+        //                     console.log(chalk.red("error: potential sync node is not before "+n.getType()+":"+n.uid+"(outputEdges: "+potentialSyncNode.outputEdges.length+")"));
+        //                 }
+        //             }else{
+        //                 let currentUid = previousUid - 1;
+        //                 tq: while(currentUid > 0){
+        //                     let potentialSyncNode = this.nodes.find(n2 => n2.uid == currentUid);
+        //                     if(potentialSyncNode != undefined && (potentialSyncNode.getType() == "Fork" || potentialSyncNode.getType() == "Choice")){
+        //                         if (potentialSyncNode.isBefore(n)){
+        //                             console.log(chalk.gray("info2: adding sync edge between "+potentialSyncNode.uid+" and "+n.uid));
+        //                             potentialSyncNode.syncNodeIds.push(n.uid);
+        //                             n.syncNodeIds.push(potentialSyncNode.uid);
+        //                             this.syncEdges.push(new SyncEdge(n, potentialSyncNode, "sync"));
+        //                             break tq;
+        //                         }
+        //                     }
+        //                     currentUid = currentUid - 1;
+        //                 }
+        //             }
+        //         }
+        //         // if(n.getType() == "ContainerNode"){
+        //         //     (n as ContainerNode).internalccfg.addSyncEdge();
+        //         // }
+        //     }
+    
+        // }
+    
 
 
 
@@ -476,9 +538,9 @@ export class CCFG {
 
     dotGetNodeLabel(node: Node): string {
         if(node.functionsDefs.length == 0){
-            return node.uid.toString()+"["+node.syncNodeIds.map(i =>i).join(',')+"]"+":"+node.type;
+            return node.uid.toString()+"["+node.syncNodeIds.map(i =>i).join(',')+"]"+":"+node.getType()+((node.type==undefined || node.type == NodeType.multipleSynchro)?"":"_"+node.type);
         }
-        return node.uid.toString()+"["+node.syncNodeIds.map(i =>i).join(',')+"]"+":"+node.type+":\n"+node.returnType+" function"+node.functionsNames+"("+node.params.map(p => (p as TypedElement).toString()).join(", ")+"){\n"+node.functionsDefs.map(
+        return node.uid.toString()+"["+node.syncNodeIds.map(i =>i).join(',')+"]"+":"+node.getType()+((node.type==undefined || node.type == NodeType.multipleSynchro)?"":"_"+node.type)+":\n"+node.returnType+" function"+node.functionsNames+"("+node.params.map(p => (p as TypedElement).toString()).join(", ")+"){\n"+node.functionsDefs.map(
             a => a.replaceAll("\"","\\\"")).join("\n")+"\n}";
     }
 

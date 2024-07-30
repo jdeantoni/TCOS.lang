@@ -3,7 +3,9 @@
     "description": "Please enter a brief description here",
     "version": "0.0.1",
     "files": [
-        "bin"
+        "bin",
+        "out",
+        "src"
     ],
     "type": "module",
     "scripts": {
@@ -34,9 +36,8 @@
     },
     "displayName": "ParLang",
     "engines": {
-        "vscode": "^1.67.0",
-        "node": ">=16.0.0"
-    },
+        "vscode": "^1.67.0"
+        },
     "categories": [
         "Programming Languages"
     ],
