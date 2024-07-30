@@ -24,6 +24,7 @@ void function5initializeVar(){
 int Variable0_0_0_101377;
 Variable0_0_0_101377 = 1;
 {const std::lock_guard<std::mutex> lock(sigma_mutex);*((int*)sigma["Variable0_0_0_10currentValue"]) = Variable0_0_0_101377;}
+
 }
 void functioninit6Variable(){
 {const std::lock_guard<std::mutex> lock(sigma_mutex);sigma["Variable1_0_1_10currentValue"] = new int();}
@@ -32,6 +33,7 @@ void function8initializeVar(){
 int Variable1_0_1_101377;
 Variable1_0_1_101377 = 0;
 {const std::lock_guard<std::mutex> lock(sigma_mutex);*((int*)sigma["Variable1_0_1_10currentValue"]) = Variable1_0_1_101377;}
+
 }
 void function9periodicStart(){
 {const std::lock_guard<std::mutex> lock(sigma_mutex);sigma["PeriodicBloc3_0_5_3blocTrigger"] = new int();}
@@ -41,6 +43,7 @@ void function35executeAssignment2(int resRight){
 int Assignment7_0_7_72524;
 Assignment7_0_7_72524 = resRight;
 {const std::lock_guard<std::mutex> lock(sigma_mutex);*((int*)sigma["Variable1_0_1_10currentValue"]) = Assignment7_0_7_72524;}
+
 }
 void functioninit44Timer(){
 std::this_thread::sleep_for(1000ms);}
@@ -79,6 +82,7 @@ int VarRef4_10_4_121583;
 {const std::lock_guard<std::mutex> lock(sigma_mutex);VarRef4_10_4_121583 = *(int*)sigma["Variable0_0_0_10currentValue"];}
 int VarRef4_10_4_12terminates;
 VarRef4_10_4_12terminates = VarRef4_10_4_121583;
+
 return VarRef4_10_4_12terminates;
 }
 int main(){

@@ -70,9 +70,7 @@ function doGenerateCode(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: boo
 
 function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model): CCFG {
     var compilerFrontEnd = new TestSimpleLCompilerFrontEnd();
-    var ccfg = compilerFrontEnd.generateCCFG(model);
-
-    
+    var ccfg = compilerFrontEnd.generateCCFG(model,debug);
    
     ccfg.addSyncEdge()
 
@@ -570,3 +568,4 @@ function addComparisonVariableDeclaration(codeFile: CompositeGeneratorNode, curr
     }
     return []
 }
+

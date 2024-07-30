@@ -70,6 +70,7 @@ int VarRef7_9_7_111583;
 {const std::lock_guard<std::mutex> lock(sigma_mutex);VarRef7_9_7_111583 = *(int*)sigma["Variable2_0_2_11currentValue"];}
 int VarRef7_9_7_11terminates;
 VarRef7_9_7_11terminates = VarRef7_9_7_111583;
+
 return VarRef7_9_7_11terminates;
 }
 int main(){
@@ -82,6 +83,7 @@ int main(){
 	LockingQueue<Void> synch17;
 	{Void fakeParam17;
  	synch17.push(fakeParam17);}
+
 	goto flag17;
 	flag17 :
 	{Void joinPopped17;
@@ -96,6 +98,7 @@ int main(){
 	function32executeAssignment2(result33accessVarRef);
 	{Void fakeParam17;
  	synch17.push(fakeParam17);}
+
 	goto flag17;
 	}
 	if (VarRef4_7_4_9terminate == false){
