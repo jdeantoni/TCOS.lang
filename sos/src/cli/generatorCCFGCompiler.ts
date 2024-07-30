@@ -1272,7 +1272,7 @@ function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefine
             res = res + rightRes+","
             let applyOp = (valuedEmission.data as BinaryExpression).operator
             //res = res + `\`${typeName} \${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset} = \${getASTNodeUID(node)}${lhs.$cstNode?.offset} ${applyOp} \${getASTNodeUID(node)}${rhs.$cstNode?.offset};\``
-            res = res + `\`${createVar},\${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,`
+            res = res + `\`${createVar},${typeName},\${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,`
             res = res + `\`${operation},\${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset},\${getASTNodeUID(node)}${lhs.$cstNode?.offset},${applyOp},\${getASTNodeUID(node)}${rhs.$cstNode?.offset}\``
         }
         if(valuedEmission.data != undefined && valuedEmission.data.$type == "BooleanExpression" || valuedEmission.data.$type == "NumberExpression" || valuedEmission.data.$type == "StringExpression"){

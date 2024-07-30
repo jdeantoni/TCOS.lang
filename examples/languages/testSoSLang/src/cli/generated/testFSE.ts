@@ -24,7 +24,6 @@ export interface SimpleLVisitor {
 }
 
 
-
     function getASTNodeUID(node: AstNode | AstNode[] | Reference<AstNode> | Reference<AstNode>[] | undefined ): any {
         if(node === undefined){
             throw new Error("not possible to get the UID of an undefined AstNode")
@@ -316,7 +315,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     previousNode = initializeVarStateModificationNode
     }
     previousNode.functionsNames = [...previousNode.functionsNames, ...[`${previousNode.uid}initializeVar`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}1437`,`assignVar,${getASTNodeUID(node)}1437,${node.initialValue}`,`setGlobalVar,int,${getASTNodeUID(node)}currentValue,${getASTNodeUID(node)}1437`]] //AA
+    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}1381`,`assignVar,${getASTNodeUID(node)}1381,${node.initialValue}`,`setGlobalVar,int,${getASTNodeUID(node)}currentValue,${getASTNodeUID(node)}1381`]] //AA
     
         {let e = this.ccfg.addEdge(previousNode,terminatesVariableNode)
         e.guards = [...e.guards, ...[]] //EE
@@ -355,7 +354,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "int"
         previousNode.functionsNames = [`${previousNode.uid}accessVarRef`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}1652`,`setVarFromGlobal,int,${getASTNodeUID(node)}1652,${getASTNodeUID(node.theVar)}currentValue`,`createVar,int,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,${getASTNodeUID(node)}1652`,`return,${getASTNodeUID(node)}terminates`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}1587`,`setVarFromGlobal,int,${getASTNodeUID(node)}1587,${getASTNodeUID(node.theVar)}currentValue`,`createVar,int,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,${getASTNodeUID(node)}1587`,`return,${getASTNodeUID(node)}terminates`]] //GG
     
         return [startsVarRefNode,terminatesVarRefNode]
     }
@@ -534,7 +533,7 @@ export class CCFGVisitor implements SimpleLVisitor {
     previousNode = executeAssignment2StateModificationNode
     }
     previousNode.functionsNames = [...previousNode.functionsNames, ...[`${previousNode.uid}executeAssignment2`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}2627`,`assignVar,${getASTNodeUID(node)}2627,resRight`,`setGlobalVar,int,${getASTNodeUID(node.variable)}currentValue,${getASTNodeUID(node)}2627`]] //AA
+    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}2528`,`assignVar,${getASTNodeUID(node)}2528,resRight`,`setGlobalVar,int,${getASTNodeUID(node.variable)}currentValue,${getASTNodeUID(node)}2528`]] //AA
     
         {let e = this.ccfg.addEdge(previousNode,terminatesAssignmentNode)
         e.guards = [...e.guards, ...[]] //EE
@@ -738,7 +737,7 @@ export class CCFGVisitor implements SimpleLVisitor {
             throw new Error("impossible to be there andJoinNode"+getASTNodeUID(node.right))
         }
         multipleSynchroNode.params = [...multipleSynchroNode.params, ...[Object.assign( new TypedElement(), JSON.parse(`{ "name": "n2", "type": "int"}`)),Object.assign( new TypedElement(), JSON.parse(`{ "name": "n1", "type": "int"}`))]]
-        multipleSynchroNode.functionsDefs = [...multipleSynchroNode.functionsDefs, ...[`int ${getASTNodeUID(node)}4398 = n2;`,`int ${getASTNodeUID(node)}4423 = n1;`]] //HH
+        multipleSynchroNode.functionsDefs = [...multipleSynchroNode.functionsDefs, ...[`int ${getASTNodeUID(node)}4247 = n2;`,`int ${getASTNodeUID(node)}4272 = n1;`]] //HH
     }
     
     {
@@ -752,7 +751,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "int"
         previousNode.functionsNames = [`${previousNode.uid}finishPlus`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}4544`,`assignVar,${getASTNodeUID(node)}4544,n1`,`createVar,int,${getASTNodeUID(node)}4549`,`assignVar,${getASTNodeUID(node)}4549,n2`,`createVar,${getASTNodeUID(node)}4543`,`operation,${getASTNodeUID(node)}4543,${getASTNodeUID(node)}4544,+,${getASTNodeUID(node)}4549`,`createVar,int,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,${getASTNodeUID(node)}4543`,`return,${getASTNodeUID(node)}terminates`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}4391`,`assignVar,${getASTNodeUID(node)}4391,n1`,`createVar,int,${getASTNodeUID(node)}4396`,`assignVar,${getASTNodeUID(node)}4396,n2`,`createVar,int,${getASTNodeUID(node)}4390`,`operation,${getASTNodeUID(node)}4390,${getASTNodeUID(node)}4391,+,${getASTNodeUID(node)}4396`,`createVar,int,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,${getASTNodeUID(node)}4390`,`return,${getASTNodeUID(node)}terminates`]] //GG
     
         return [startsPlusNode,terminatesPlusNode]
     }
@@ -783,7 +782,7 @@ export class CCFGVisitor implements SimpleLVisitor {
         
         previousNode.returnType = "bool"
         previousNode.functionsNames = [`${previousNode.uid}evalBooleanConst`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,bool,${getASTNodeUID(node)}4772`,`setVarFromGlobal,bool,${getASTNodeUID(node)}4772,${getASTNodeUID(node)}constantValue`,`createVar,bool,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,${getASTNodeUID(node)}4772`,`return,${getASTNodeUID(node)}terminates`]] //GG
+        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,bool,${getASTNodeUID(node)}4610`,`setVarFromGlobal,bool,${getASTNodeUID(node)}4610,${getASTNodeUID(node)}constantValue`,`createVar,bool,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,${getASTNodeUID(node)}4610`,`return,${getASTNodeUID(node)}terminates`]] //GG
     
         return [startsBooleanConstNode,terminatesBooleanConstNode]
     }
