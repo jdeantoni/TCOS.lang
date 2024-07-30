@@ -164,19 +164,19 @@ async function visitAllNodesInterpret(initialState : Node , sigma: Map<string, a
             case "Step":{
                 console.log(node.uid + ": (" + node.getType() + ")->");
                 if(node.functionsDefs.length > 0){
-                    nodeCode(node,sigma,stack);//define function written in node; call function & store function value
+                    nodeCode(node,sigma,stack);//retrieve the corresponding function from the node; store function | call function
                 }
                 currentNode = node.outputEdges[0].to;
 
-                if((stack.forkNode.length!=0) && (node.uid == stack.forkNode[stack.forkNode.length-1].uid -1)){ //the last node of the subtree of the current ForkNode
+                if((stack.forkNode.length!=0) && (node.uid == stack.forkNode[stack.forkNode.length-1].uid -1)){ //the end node of the current ForkNode
                     stack.tempChildren[stack.tempChildren.length-1].getList().pop();
                     if(stack.tempChildren[stack.tempChildren.length-1].getList().length > 0){//check if we have visited all children of the current fork
                         //if no, go back to the current ForkNode
                         currentNode = stack.forkNode[stack.forkNode.length-1];
                     }else{//if yes, get out of the current fork
-                        stack.forkNode.pop();                       
-                        stack.fork.pop();
-                        stack.tempChildren.pop();
+                        stack.forkNode.pop();     //the element we pop(), is the current ForkNode              
+                        stack.fork.pop();         //the element we pop(), is a 0
+                        stack.tempChildren.pop(); //the element we pop(), is a empty list
                     }
                 }
                 /*
@@ -188,27 +188,29 @@ async function visitAllNodesInterpret(initialState : Node , sigma: Map<string, a
                 */
                 break;
             }
-            case "Fork":{//define forks' children
+            case "Fork":{
                 console.log(node.uid + ": (" + node.getType() + ")->");
                 //console.log("the length of the current fork:"+ forkList[forkList.length-1]); //nombre of the children which are not executed of the current fork
-                if( stack.forkNode[stack.forkNode.length-1] == undefined || stack.forkNode[stack.forkNode.length-1].uid != node.uid ){ //the 1st time to visit this fork node
-                    let children = currentNode.outputEdges;
+                
+                //the 1st time to visit this fork node
+                if( stack.forkNode[stack.forkNode.length-1] == undefined || stack.forkNode[stack.forkNode.length-1].uid != node.uid ){ 
+                    let children : Edge[] = currentNode.outputEdges;
                     stack.fork.push(children.length);                             //get in the fork
-                    stack.forkNode.push(node);                                      //start node's uid
+                    stack.forkNode.push(node);                                    //start node's uid
 
-                    stack.addTempValue();                    //reserve places in stack : value
+                    stack.addTempValue();                    //reserve places in stack : Value
                     stack.addTempChildren();                 //reserve places in stack : Children list
                     
                     children.forEach(element => {            //copy chidren list
                         let nextNode : Node = element.to; 
                         let tempList : TempList<Node> = stack.tempChildren[stack.tempChildren.length-1];
-                        tempList.addValue(nextNode);
+                        tempList.addElement(nextNode);
                     });
                 }
 
                 //visit children (sub-tree)
                 if(stack.tempChildren[stack.tempChildren.length-1].getList().length != 0){
-                    stack.addTempFunction()                  //reserve places in stack for each sub-tree
+                    stack.addTempFunction();                  //reserve places in stack for each sub-tree
                     currentNode = stack.tempChildren[stack.tempChildren.length-1].last();
                 }else{
                     return;
@@ -224,15 +226,17 @@ async function visitAllNodesInterpret(initialState : Node , sigma: Map<string, a
             }
             
             case "Choice":{
+                // in js: 0 represent false; 1 represent true
                 console.log(node.uid + ": (" + node.getType() + ")->");
                 let nodeTrue : Node | undefined;
                 let nodeFalse : Node | undefined;
                 //get resRight
-                let resRight: number[] = [...stack.tempValue[stack.tempValue.length-1].getList()];
+                let param: number[] = [...stack.tempValue[stack.tempValue.length-1].getList()];
                 stack.tempValue.pop();
                 //evaluation of each edge of choice
                 node.outputEdges.forEach(edge => {
-                    let bool: boolean = evaluateEdgeLable(edge,resRight);
+                    let f: Function = creatFunctionForEdge(edge,sigma);
+                    let bool: boolean = f(param);
                     if (bool) {
                         nodeTrue = edge.to;
                     } 
@@ -240,15 +244,12 @@ async function visitAllNodesInterpret(initialState : Node , sigma: Map<string, a
                         nodeFalse = edge.to;
                     }
                 });
-                //decide what is the next node accroding to the value of resRight
-                if(nodeTrue && nodeFalse){
-                    if (resRight[0]){//if resRight
-                        currentNode = nodeTrue;//next node is the false node
-                    }
-                    else {
-                        currentNode = nodeFalse;//next node is the true node
-                    }
+
+                //go to the next node which evoluation of the guard is true 
+                if(nodeTrue){
+                    currentNode = nodeTrue;
                 }
+                
                 else{
                     console.log("trueNode | flaseNode doesn't existe at node.uid ="+ node.uid);
                     return;
@@ -297,7 +298,7 @@ function nodeCode(node:Node,sigma:Map<string,any>,stack:Stack):void{
 
     /*************************************************************** in a fork, call function directly ***************************************/
     if((stack.fork.length != 0) ){//we are in a fork
-        tempF[tempF.length-1].addValue(f);
+        tempF[tempF.length-1].addElement(f);
     }else{
         /************************************************************ not in a fork, call function directly ***************************************/
         if(node.params.length < 1){         //call function without params
@@ -305,7 +306,7 @@ function nodeCode(node:Node,sigma:Map<string,any>,stack:Stack):void{
                 console.log(f());
             }else{//store value in stack
                 stack.addTempValue();//add an empty list
-                stack.tempValue[stack.tempValue.length-1].addValue(f());
+                stack.tempValue[stack.tempValue.length-1].addElement(f());
             }
         }
         else{                               //call function with params
@@ -315,41 +316,30 @@ function nodeCode(node:Node,sigma:Map<string,any>,stack:Stack):void{
             }
             else{//store returned value
                 stack.addTempValue();//add an empty list
-                stack.tempValue[stack.tempValue.length-1].addValue(f(param));
+                stack.tempValue[stack.tempValue.length-1].addElement(f(param));
             }
             stack.tempValue.pop();
         }
     }
 }
 
-function evaluateEdgeLable(edge : Edge, resRight:number[]):boolean{
-    //get code from: "(VarRef3_4_3_6terminates == true)"
-    let edgeLable: string = edge.guards[0];
-    let match = edgeLable.match(/\((.*?)\)/);    //"VarRef3_4_3_6terminates == true"
-    let code: string| null = match ? match[1] : null;
-    let varName: string | null = null;
-    //get variable name "VarRef3_4_3_6terminates"
-    if (code) {
-        let parts = code.split('==');
-        if (parts[0]){
-            varName = parts[0].trim();
-        }
+
+
+function creatFunctionForEdge(edge:Edge, sigma:Map<any,any>) : Function{
+    let guard : string[] = edge.guards[0].split(",");//["verifyEqual","VarRef2_4_2_6terminate","true"]
+    let paramElement = new TypedElement();
+    paramElement.name = "resRight";
+    paramElement.type = "Number" ;
+    let params : TypedElement[] = [paramElement];
+    let functionBody : string[] =[];
+    var code : string ="return resRight " ;
+    if(guard[0]=="verifyEqual"){
+        code += "== "
     }
-    if(resRight.length>1){
-        throw Error("number of parametre is not correct");
-    }
-    else{
-        var bool : boolean = eval(`
-            if(${resRight} > 0){
-            ${varName} = 1;\n
-            }else{
-                ${varName} = 0;\n
-            }\n
-            ${code};
-        `)
-    }
-    
-    return bool;
+    code += guard[2];
+    code += ";"
+    functionBody.push(code);    
+    return defineFunction("verifyEdges0",params,functionBody,sigma);
 }
 
 
@@ -363,7 +353,7 @@ function waitParam(tempFunctionList:Array<TempList<Function>>, stack:Stack) {//c
                 let param : number[]|undefined = stack.tempValue.pop()?.getList()
                 if(f(param)!= undefined){
                     stack.addTempValue();
-                    stack.tempValue[stack.tempValue.length-1].addValue(f(param));
+                    stack.tempValue[stack.tempValue.length-1].addElement(f(param));
                     //console.log("yes1 : function return "+ f(param));
                     console.log(`yes1 : ${f.name} return ${f(param)}`);
                 }else{
@@ -377,42 +367,6 @@ function waitParam(tempFunctionList:Array<TempList<Function>>, stack:Stack) {//c
 
 
 }
-
-/*function wait(fList:Array<Function>, tempfunctionValue:TempValueList<number>){
-    return new Promise<void>(function(resolve) {
-        let paramList:number[]=tempfunctionValue.getlastList();
-
-        fList.map(f => {
-            if(node.params.length < 1){         //call function without params
-                if(node.returnType == "void" ){
-                    console.log(f());
-                }else{
-                    stack.tempValueList.reserveTempList(1);
-                    stack.tempValueList.addValueAtLastTempList(f());
-                }
-            }
-            else{                               //call function with params
-                let param = [...stack.tempValueList.getlastList()];
-                if(node.returnType == "void"){
-                    console.log(f(param));
-                }
-                else{//store returned value
-                    stack.tempValueList.reserveTempList(1);
-                    stack.tempValueList.addValueAtLastTempList(f(param));
-                }
-                stack.tempValueList.reduce();
-            }
-
-        });
-        resolve();
-    });
-    
-}
-*/
-
-
-
-
 
 //with function list
 async function handleJoinNode(stack:Stack,node:Node,sigma:Map<string,any>) {
@@ -447,7 +401,7 @@ async function handleJoinNode(stack:Stack,node:Node,sigma:Map<string,any>) {
                 stack.tempValue.pop();
                 if(f(paramList) != undefined){
                     stack.addTempValue();
-                    stack.tempValue[stack.addTempValue.length-1].addValue(f(paramList));
+                    stack.tempValue[stack.addTempValue.length-1].addElement(f(paramList));
                 }else{
                     console.log(f(paramList));
                 }
