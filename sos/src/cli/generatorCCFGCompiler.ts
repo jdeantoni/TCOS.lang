@@ -1341,6 +1341,8 @@ function addUtilFunctions(fileNode: CompositeGeneratorNode,rootTypeName: string)
         let node = hole.astNode as AstNode
         let timerHoleLocalCCFG = new CCFG()
         let startsTimerHoleNode: Node = new Step(node,NodeType.starts,[\`std::this_thread::sleep_for(\${hole.duration}ms);\`])
+        startsTimerHoleNode.returnType = "void"
+        startsTimerHoleNode.functionsNames = [\`init\${startsTimerHoleNode.uid}Timer\`]
         timerHoleLocalCCFG.addNode(startsTimerHoleNode)
         timerHoleLocalCCFG.initialState = startsTimerHoleNode
         let terminatesTimerHoleNode: Node = new Step(node,NodeType.terminates)
