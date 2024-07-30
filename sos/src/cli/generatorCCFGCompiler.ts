@@ -7,8 +7,18 @@ import { inferType } from '../language-server/type-system/infer.js';
 import chalk from 'chalk';
 
 
+const lock= "lock"
+const createVar = "createVar"
+const createGlobalVar = "createGlobalVar"
+const assignVar = "assignVar"
+const setVarFromGlobal = "setVarFromGlobal"
+const setGlobalVar = "setGlobalVar"
+const operation = "operation"
+const ret ="return"
+const verifyEqual = "verifyEqual"
 
 
+// this function is used to generate the code for the visitor pattern of the specified compiler
 
 export function generateStuffFromSoS(model: SoSSpec, grammar: Grammar[], filePath: string, destination: string | undefined): string {
     const data = extractDestinationAndName(filePath, destination);
@@ -160,7 +170,9 @@ export class CCFGVisitor implements SimpleLVisitor {
     return generatedFilePath;
 }
 
-
+/**  retrieves the starting rule of the concept
+ * @param rulesCF: the rule to be analyzed
+ * */
 function retrieveStartingRules(rulesCF: RuleControlFlow[]) {
     let startingRule = [];
     for (let r of rulesCF) {
@@ -173,6 +185,9 @@ function retrieveStartingRules(rulesCF: RuleControlFlow[]) {
     return startingRule;
 }
 
+/**creates checks how many possible termination rules are in the concept
+ * @param rulesCF: the list of rules of the concept 
+ */
 function checkIfMultipleTerminate(rulesCF: RuleControlFlow[]) {
     let terminatingRules = [];
     for (let r of rulesCF) {
@@ -216,16 +231,16 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
     let e = this.ccfg.addEdge(previousNode,${ruleCF.rule.name}StateModificationNode)
     e.guards = [...e.guards, ...[${guardActions}]]`)
     
-    if(param != undefined){
-        file.append(`
+        if(param != undefined){
+            file.append(`
     ${ruleCF.rule.name}StateModificationNode.params = [...${ruleCF.rule.name}StateModificationNode.params, ...[Object.assign( new TypedElement(), JSON.parse(\`${param.toJSON()}\`))]]
     `)
-    }
+        }
 
-    file.append(`
+        file.append(`
     previousNode = ${ruleCF.rule.name}StateModificationNode
     }`)
-    guardActions = ""
+        guardActions = ""
     
         file.append(`
     previousNode.functionsNames = [...previousNode.functionsNames, ...[\`\${previousNode.uid}${ruleCF.rule.name}\`]] 
@@ -248,7 +263,7 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
     let functionType = "void"
     for(let emission of ruleCF.rule.conclusion.eventemissions){
         if(emission.$type == "ValuedEventEmission"){
-            let [visitedEmission, returnType] =  visitValuedEventEmission(emission as ValuedEventEmission)
+            let [visitedEmission, returnType] =  visitValuedEventEmission(emission as ValuedEventEmission,file)
             functionType = returnType
             eventEmissionActions = eventEmissionActions + visitedEmission
         }
@@ -261,6 +276,13 @@ function handleConclusion(ruleCF: RuleControlFlow, file: CompositeGeneratorNode,
 
 }
 
+/**
+ * handles the conclusion of a rule with a single emission. It generates the code for the state modifications and the event emissions
+ * @param ruleCF: the current rule
+ * @param file: the file containing the generated compiler
+ * @param guardActions: the guards of the rule
+ * @param terminatesNodeName: the name of the node being terminated
+ */
 function handleSingleEmission(ruleCF: RuleControlFlow, file: CompositeGeneratorNode, guardActions: string, terminatesNodeName: string) {
     let isEventEmissionACollection: boolean = checkIfEventEmissionIsCollectionBased(ruleCF);
     if (isEventEmissionACollection) {
@@ -355,6 +377,14 @@ function handleSingleEmission(ruleCF: RuleControlFlow, file: CompositeGeneratorN
     }
 }
 
+/**
+ * handles the conclusion of a rule with multiple emission that occur concurently. It generates the code for the state modifications and the event emissions
+ * @param ruleCF: the current rule
+ * @param file: the file containing the generated compiler
+ * @param guardActions: the guards of the rule
+ * @param terminatesNodeName: the name of the node being terminated
+ */
+
 function handleParallelMultipleEmissions(file: CompositeGeneratorNode, ruleCF: RuleControlFlow, guardActions: string, terminatesNodeName: string) {
     file.append(`
         let ${ruleCF.rule.name}ForkNode: Node = new Fork("${ruleCF.rule.name}ForkNode")
@@ -400,11 +430,19 @@ function handleParallelMultipleEmissions(file: CompositeGeneratorNode, ruleCF: R
     }
 }
 
+
+/**
+ * handles the conclusion of a rule with multiple emission that occur sequentially. It generates the code for the state modifications and the event emissions
+ * @param ruleCF: the current rule
+ * @param file: the file containing the generated compiler
+ * @param guardActions: the guards of the rule
+ * @param terminatesNodeName: the name of the node being terminated
+ */
 function handleSequentialMultipleEmissions(file: CompositeGeneratorNode, ruleCF: RuleControlFlow, guardActions: string, terminatesNodeName: string) {
     let splittedConclusionParticipants = splitArrayByParticipants(ruleCF.conclusionParticipants);
-    console.log(chalk.bgGreenBright("ruleCF.conclusionParticipants", ruleCF.conclusionParticipants.map(p => p.name)))
+    //console.log(chalk.bgGreenBright("ruleCF.conclusionParticipants", ruleCF.conclusionParticipants.map(p => p.name)))
     for (let emissionParticipant of splittedConclusionParticipants) {
-        console.log(chalk.bgGreenBright("emissionParticipant", emissionParticipant.map(p => p.name)))
+        //console.log(chalk.bgGreenBright("emissionParticipant", emissionParticipant.map(p => p.name)))
         const participantName = emissionParticipant[0].name;
         let [extraPrefix, participant] = getExtraPrefix(ruleCF, participantName);
         if (extraPrefix.length != 0) {
@@ -423,7 +461,7 @@ function handleSequentialMultipleEmissions(file: CompositeGeneratorNode, ruleCF:
    `);
 
         } else {
-            console.log(chalk.bgGreenBright("participantName", participantName))
+            //console.log(chalk.bgGreenBright("participantName", participantName))
             if(participantName == "this" && emissionParticipant[1].name == "terminates") {
                 file.append(`
         this.ccfg.addEdge(previousNode,${terminatesNodeName})
@@ -460,7 +498,10 @@ function getExtraPrefix(ruleCF: RuleControlFlow, participantName: string|undefin
 /**
  * returns the previous node name. May imply the creation of new nodes in case of multiple synchronizations that may require a decision or join node
  * @param ruleCF 
+ * @param allRulesCF
  * @param previousNodeName 
+ * @param file
+ * 
  * @returns [the previous node prefix, the guards, the parameter typed element in json format]
  */
 function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFlow[], previousNodeName: string, file: CompositeGeneratorNode): [string,string,string, TypedElement|undefined] { 
@@ -494,6 +535,14 @@ function handlePreviousPremise(ruleCF: RuleControlFlow, allRulesCF:RuleControlFl
     return [`terminates${extraPrefix.replaceAll(`"`,``)}`, `${participant}`, "", undefined]
     
 }
+
+/**
+ * returns the previous node name in case of multiple synchronizations that may require a join node. It generates the code for the state modifications and the event emissions
+ * @param file 
+ * @param ruleCF 
+ * @param allRulesCF 
+ * @returns [the previous node prefix, the guards, the parameter typed element in json format]
+ */
 
 function handlePremiseMultipleSynchronization(file: CompositeGeneratorNode, ruleCF: RuleControlFlow, allRulesCF: RuleControlFlow[]) : [string,string,string, TypedElement|undefined]{
     const indexRight = ruleCF.premiseParticipants.findIndex(p => p.type == "event") + 1
@@ -592,6 +641,13 @@ function handlePremiseMultipleSynchronization(file: CompositeGeneratorNode, rule
     return [multipleSynchroPrefix,`${multipleSynchroParticipant}`,premiseGuards, undefined]
 }
 
+
+/**
+ * returns the previous node name in case of a comparison premise. It generates the code for the state modifications and the event emissions
+ * @param file 
+ * @param ruleCF 
+ * @returns [the previous node prefix, the guards, the parameter typed element in json format]
+ */
 function handlePremiseSimpleComparison(file: CompositeGeneratorNode, ruleCF: RuleControlFlow) : [string,string,string, TypedElement|undefined]{
     let [extraPrefix, participant] = getExtraPrefix(ruleCF, ruleCF.premiseParticipants[0].name);
     let participantName = ruleCF.premiseParticipants[0].name
@@ -612,6 +668,13 @@ function handlePremiseSimpleComparison(file: CompositeGeneratorNode, ruleCF: Rul
     return [`choiceNode`+extraPrefix, `${participant}`, guards, undefined];
 }
 
+
+/**
+ * puts all the actions and the guards of the rule in strings 
+ * @param lhs left hand side of the multiple synchronization
+ * @param rhs right hand side of the multiple synchronization
+ * @returns [the actions, the guards, the parameters]
+ */
 function visitMultipleSynchroEventRef(lhs: EventExpression, rhs: EventExpression) :[string, string, TypedElement[]]{
     let actions : string = ""
     let guards : string = ""
@@ -649,12 +712,25 @@ function visitMultipleSynchroEventRef(lhs: EventExpression, rhs: EventExpression
     return [actions,guards,params]
 }
 
+
+/**
+ * checks if the event expression has a comparison on either side
+ * @param comb the event expression
+ * @returns true if the event expression has a comparison on either side
+ */
 function chekIfOwnsACondition(comb: EventCombination): boolean {
     return comb.lhs.$type == "ExplicitValuedEventRefConstantComparison" || comb.lhs.$type == "ImplicitValuedEventRefConstantComparison"
             ||
            comb.rhs.$type == "ExplicitValuedEventRefConstantComparison" || comb.rhs.$type == "ImplicitValuedEventRefConstantComparison"
 }
 
+
+/**
+ * returns the name of the rule emitting the event that starts this rule
+ * @param ruleCF the current rule
+ * @param allRulesCF all the rules of the opened concept
+ * @returns the name of the rule emitting the event
+ */
 function getEmittingRuleName(ruleCF: RuleControlFlow, allRulesCF: RuleControlFlow[]): string {
     let premiseFirstParticipant = ruleCF.premiseParticipants[0]
     for(let rule of allRulesCF){
@@ -666,7 +742,11 @@ function getEmittingRuleName(ruleCF: RuleControlFlow, allRulesCF: RuleControlFlo
 }
 
 
-
+/**
+ * returns the participants of the event expression
+ * @param ruleCF  the current rule
+ * @returns a boolean indicating if the event emission is collection based
+ */
 function checkIfEventEmissionIsCollectionBased(ruleCF: RuleControlFlow) {
     let isEventEmissionACollection: boolean = false;
     for (let p of ruleCF.conclusionParticipants) {
@@ -677,6 +757,11 @@ function checkIfEventEmissionIsCollectionBased(ruleCF: RuleControlFlow) {
     return isEventEmissionACollection;
 }
 
+/**
+ * writes the preambule for the visitor file of the compiler 
+ * @param fileNode the file 
+ * @param data the file path data
+ */
 function writePreambule(fileNode: CompositeGeneratorNode, data: FilePathData) {
     fileNode.append(`
 import { AstNode, Reference, isReference } from "langium";
@@ -684,6 +769,10 @@ import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, TypedElement } from ".
 }
 
 
+/**
+ * writes the basic functions of the visitor file of the compiler
+ * @param fileNode the file
+ */
 function addUtilFunctions(fileNode: CompositeGeneratorNode) {
     fileNode.append(`
     getOrVisitNode(node:AstNode | Reference<AstNode> |undefined): [Node,Node]{
@@ -731,7 +820,12 @@ function addUtilFunctions(fileNode: CompositeGeneratorNode) {
     `)
 }
 
-
+/**
+ * retrieves a litst of the rule control flows from the openedRule and adds an explanation of the premisses and conclusions of the rules in the file 
+ * @param fileNode the file
+ * @param openedRule the rule
+ * @returns a list of rule control flows
+ */
 function createCCFGFromRules(fileNode: CompositeGeneratorNode, openedRule: RuleOpening): RuleControlFlow[] {
     let res: RuleControlFlow[] = []
     for (var rwr of openedRule.rules) {
@@ -752,6 +846,12 @@ function createCCFGFromRules(fileNode: CompositeGeneratorNode, openedRule: RuleO
     return res
 }
 
+/**
+ * a class representing a rule control flow
+ * @param rule the rule AST node
+ * @param premiseParticipants the potentially multiple premises of the rule
+ * @param conclusionParticipants the potentially multiple conclusions of the rule
+ */
 class RuleControlFlow {
     rule: RWRule
     premiseParticipants: TypedElement[]
@@ -763,6 +863,15 @@ class RuleControlFlow {
     }
 
 }
+
+/**
+ * a class representing a typed element
+ * @param name the name of the element
+ * @param type the type of the element
+ * @param isCollection a boolean indicating if the element is a collection
+ * @function toJSON returns the element in json format
+ * @function equals returns true if the element is equal to another element
+ */
 
 class TypedElement {
     toJSON() {
@@ -784,6 +893,12 @@ class TypedElement {
 
 }
 
+
+/**
+ * 
+ * @param eventEmission  the event emission
+ * @returns a typed element list of the event emission participants
+ */
 function getEventEmissionParticipants(eventEmission: EventEmission): TypedElement[] {
     let res: TypedElement[] = []
     if (eventEmission.$type == "SimpleEventEmission") {
@@ -803,6 +918,12 @@ function getEventEmissionParticipants(eventEmission: EventEmission): TypedElemen
 
     return res
 }
+
+/**
+ * 
+ * @param eventExpression the event expression
+ * @returns a typed element list of the event synchronisation participants
+ */
 
 function getEventSynchronisationParticipants(eventExpression: EventExpression): TypedElement[] {
     let res: TypedElement[] = []
@@ -849,17 +970,34 @@ function getEventSynchronisationParticipants(eventExpression: EventExpression): 
 
 }
 
+/**
+ * 
+ * @param eventExpression the event expression in the shape of a valued event ref
+ * @returns a typed element list of the valued event ref participants
+ */
 function getValuedEventRefParticipants(eventExpression: ValuedEventRef): TypedElement[] {
     let res: TypedElement[] = []
     res = getExplicitEventExpressionParticipants(eventExpression.membercall as MemberCall)
     return res
 }
 
+/**
+ * 
+ * @param eventExpression an event expression in the shape of a valued event ref constant comparison
+ * @returns a typed element list of the event expression participants
+ */
 function getValuedEventRefConstantComparisonParticipants(eventExpression: ValuedEventRefConstantComparison): TypedElement[] {
     let res: TypedElement[] = []
     res = getExplicitEventExpressionParticipants(eventExpression.membercall as MemberCall)
     return res
 }
+
+
+/**
+ * checks if an EventExpression in the shape of a rulesync is emitting an event if it is, returns a list of the participants
+ * @param rule a single rule sync
+ * @returns a typed element list of the event expression participants
+ */
 
 function getSingleRuleSyncEventExpressionParticipants(rule: SingleRuleSync): TypedElement[] {
     let res: TypedElement[] = []
@@ -870,6 +1008,11 @@ function getSingleRuleSyncEventExpressionParticipants(rule: SingleRuleSync): Typ
     return res
 }
 
+/**
+ * gets the event emission participants of a single rule sync, if any
+ * @param rule an event expression in the shape of a collection rule sync
+ * @returns a typed element list of the participants to the event expression
+ */
 function getCollectionRuleSyncEventExpressionParticipants(rule: CollectionRuleSync): TypedElement[] {
     let res: TypedElement[] = []
     if ((rule.collection as MemberCall)?.element?.ref != undefined) {
@@ -880,6 +1023,11 @@ function getCollectionRuleSyncEventExpressionParticipants(rule: CollectionRuleSy
     return res
 }
 
+/**
+ * gets the event emission participants of a member call and its anteriors, if any. 
+ * @param membercall a member call
+ * @returns a typed element list of the event expression participants
+ */
 function getExplicitEventExpressionParticipants(membercall: MemberCall): (TypedElement)[] {
     let res: TypedElement[] = []
 
@@ -913,7 +1061,11 @@ function getExplicitEventExpressionParticipants(membercall: MemberCall): (TypedE
     }
     return res
 }
-
+/**
+ * extracts the variable type of a name element and returns its name and its type 
+ * @param namedElem 
+ * @returns [name, type]
+ */
 function getNameAndTypeOfElement(namedElem: NamedElement): [(string | undefined), (string | undefined)] {
     let type: (string | undefined) = "unknown"
     let name: (string | undefined) = namedElem.name
@@ -935,7 +1087,11 @@ function getNameAndTypeOfElement(namedElem: NamedElement): [(string | undefined)
 }
 
 
-
+/**
+ *  splits a list of typed elements by participants
+ * @param elements a list of typed elements
+ * @returns a 2d list of typed element separated by participants
+ */
 
 function splitArrayByParticipants(elements: TypedElement[]): TypedElement[][] {
     const result: TypedElement[][] = [];
@@ -968,6 +1124,7 @@ function splitArrayByParticipants(elements: TypedElement[]): TypedElement[][] {
 
 
 /**
+ * 
  * for now in c++ like form but should be an interface to the target language
  * @param runtimeState
  * @returns
@@ -984,19 +1141,25 @@ function visitValuedEventRefComparison(valuedEventRefComparison: ValuedEventRefC
         // }else{
         //     varType = inferType(valuedEventRefComparison.literal, new Map())
         // }
+
+        //guardactionsactions
         if(valuedEventRefComparison.$type == "ImplicitValuedEventRefConstantComparison"){
-            res = res + `\`(bool)\${getASTNodeUID(node.${(valuedEventRefComparison.membercall as MemberCall).element?.$refText})}${"terminates"} == ${(typeof(v) == "string")?v:v.$cstNode?.text}\``
+            //res = res + `\`(bool)\${getASTNodeUID(node.${(valuedEventRefComparison.membercall as MemberCall).element?.$refText})}${"terminates"} == ${(typeof(v) == "string")?v:v.$cstNode?.text}\``
+            res = res + `\`${verifyEqual},\${getASTNodeUID(node.${(valuedEventRefComparison.membercall as MemberCall).element?.$refText})}${"terminate"},${(typeof(v) == "string")?v:v.$cstNode?.text}\``
         }
         if(valuedEventRefComparison.$type == "ExplicitValuedEventRefConstantComparison"){
             let prev = (valuedEventRefComparison.membercall as MemberCall)?.previous
-            res = res + `\`(bool)\${getASTNodeUID(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRefComparison.membercall as MemberCall).element?.$refText} == ${(typeof(v) == "string")?v:v.$cstNode?.text}\``
+            //res = res + `\`(bool)\${getASTNodeUID(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRefComparison.membercall as MemberCall).element?.$refText} == ${(typeof(v) == "string")?v:v.$cstNode?.text}\``
+            res = res + `\`${verifyEqual},\${getASTNodeUID(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRefComparison.membercall as MemberCall).element?.$refText},${(typeof(v) == "string")?v:v.$cstNode?.text}\``
         }
+        
     }
     return res
 }
 
 
 /**
+ * writes out the code for 
  * for now in c++ like form but should be an interface to the target language
  * @param runtimeState
  * @returns
@@ -1025,7 +1188,9 @@ function visitValuedEventRef(valuedEventRef: ValuedEventRef | undefined): [strin
 
 
 /**
- * @param  
+ * creates the visitor code for a new variable declarations
+ * @param  runtimeState the variable declarations
+ * @param file the file to be written into 
  * @returns 
  */
 function visitVariableDeclaration(runtimeState: VariableDeclaration[] | undefined, file : CompositeGeneratorNode): void {
@@ -1061,10 +1226,12 @@ function getVariableDeclarationCode(runtimeState: VariableDeclaration[] | undefi
             if(vardDecl.type != undefined && vardDecl.type.$cstNode?.text == "Event"){
                 continue
             }else{
-                if(vardDecl.value != undefined && vardDecl.value.$type == "MemberCall"){
-                    res = res + sep + `\`sigma["\${getASTNodeUID(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?`\${node.${(vardDecl.value as MemberCall).element?.$refText}}`:""});\``
+                 if(vardDecl.value != undefined && vardDecl.value.$type == "MemberCall"){
+                   //res = res + sep + `\`sigma["\${getASTNodeUID(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?`\${node.${(vardDecl.value as MemberCall).element?.$refText}}`:""});\``
+                   res = res + sep + `\`${createGlobalVar},${getVariableType(vardDecl.type)}${(vardDecl.value != undefined)?`\${node.${(vardDecl.value as MemberCall).element?.$refText}}`:""},\${getASTNodeUID(node)}${vardDecl.name}\``
                 }else{
-                    res = res + sep + `\`sigma["\${getASTNodeUID(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?vardDecl.value.$cstNode?.text:""});\``
+                    //res = res + sep + `\`sigma["\${getASTNodeUID(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?vardDecl.value.$cstNode?.text:""});\``
+                    res = res + sep + `\`${createGlobalVar},${getVariableType(vardDecl.type)}${(vardDecl.value != undefined)?vardDecl.value.$cstNode?.text:""},\${getASTNodeUID(node)}${vardDecl.name}\``
                 }
                 sep= ","
             }
@@ -1078,42 +1245,59 @@ function getVariableDeclarationCode(runtimeState: VariableDeclaration[] | undefi
  * @param runtimeState 
  * @returns 
  */
-function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefined): [string, string] {
+function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefined,file:CompositeGeneratorNode): [string, string] {
     var res : string = ""
     if (valuedEmission != undefined) {
         let varType = inferType(valuedEmission.data, new Map())
         let typeName = getCPPVariableTypeName(varType.$type)
 
         if(valuedEmission.data != undefined && valuedEmission.data.$type == "MemberCall"){
+            
+            //todo write a node that saves the variable
             res = createVariableFromMemberCall(valuedEmission.data as MemberCall, typeName)
+            console.log(res)
         }
         if(valuedEmission.data != undefined && valuedEmission.data.$type == "BinaryExpression"){
+            //todo write a node that joins the two variable nodes and saves the result
             let lhs = (valuedEmission.data as BinaryExpression).left
             let lhsType = inferType(lhs, new Map())
             let lhsTypeName = getCPPVariableTypeName(lhsType.$type)
-            let leftRes = createVariableFromMemberCall(lhs as MemberCall, lhsTypeName)
+            let leftRes: string = ""; // Declare the variable rightRes
+            leftRes = createVariableFromMemberCall(lhs as MemberCall, lhsTypeName);
             res = res + leftRes+","
             let rhs = (valuedEmission.data as BinaryExpression).right
             let rhsType = inferType(rhs, new Map())
             let rhsTypeName = getCPPVariableTypeName(rhsType.$type)
-            let rightRes = createVariableFromMemberCall(rhs as MemberCall, rhsTypeName)
+            let rightRes: string = ""; // Declare the variable rightRes
+            rightRes  = createVariableFromMemberCall(rhs as MemberCall, rhsTypeName);
             res = res + rightRes+","
             let applyOp = (valuedEmission.data as BinaryExpression).operator
-            res = res + `\`${typeName} \${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset} = \${getASTNodeUID(node)}${lhs.$cstNode?.offset} ${applyOp} \${getASTNodeUID(node)}${rhs.$cstNode?.offset};\``
+            //res = res + `\`${typeName} \${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset} = \${getASTNodeUID(node)}${lhs.$cstNode?.offset} ${applyOp} \${getASTNodeUID(node)}${rhs.$cstNode?.offset};\``
+            res = res + `\`${createVar},\${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,`
+            res = res + `\`${operation},\${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset},\${getASTNodeUID(node)}${lhs.$cstNode?.offset},${applyOp},\${getASTNodeUID(node)}${rhs.$cstNode?.offset}\``
         }
         if(valuedEmission.data != undefined && valuedEmission.data.$type == "BooleanExpression" || valuedEmission.data.$type == "NumberExpression" || valuedEmission.data.$type == "StringExpression"){
-            res = `\`${typeName} \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  ${valuedEmission.data.$cstNode?.text};\``
-            res = res + "," +`\`return \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name};\``
+            // write a node that sends the value specified 
+            //res = `\`${typeName} \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  ${valuedEmission.data.$cstNode?.text};\``
+            //res = res + "," +`\`return \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name};\``
+            res = res  +`\`${createVar},${typeName},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\``+ ","
+            res = res  +`\`${assignVar},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name},${valuedEmission.data.$cstNode?.text}\``+ ","
+            res = res  +`\`${ret},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\``+ ","
             return [res, typeName]
         }
         if(res.length > 0){
             res = res + ","
         }
-        res = res + `\`${typeName} \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  \${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset};\``
-        res = res + "," +`\`return \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name};\``
+        console.log(res)
+        //res = res + `\`${typeName} \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name} =  \${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset};\``
+        //res = res + "," +`\`return \${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name};\``
+        res = res+ `\`${createVar},${typeName},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\`,`
+        res = res+ `\`${assignVar},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name},\${getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,`
+        res = res+ `\`${ret},\${getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\``
+        
         return [res, typeName]
     }
-    return [res, "void"]
+    return [res , "void"]
 }
 
 function createVariableFromMemberCall(data: MemberCall, typeName: string): string {
@@ -1123,15 +1307,26 @@ function createVariableFromMemberCall(data: MemberCall, typeName: string): strin
     if (elem == undefined) {
         return res
     }
+
+
+
     if (elem?.$type == "VariableDeclaration") {
-        res = res +`\`const std::lock_guard<std::mutex> lock(sigma_mutex);\`,`
-        res = res + `\`${typeName} \${getASTNodeUID(node)}${data.$cstNode?.offset} = *(${typeName} *) sigma["\${getASTNodeUID(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name}"];//${elem.name}}\``
+        //res = res +`\`const std::lock_guard<std::mutex> lock(sigma_mutex); \`,`
+        //res = res + `\`${typeName} \${getASTNodeUID(node)}${data.$cstNode?.offset} = *(${typeName} *) sigma["\${getASTNodeUID(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name}"];//${elem.name}}\``
+        res = res+ `\`${lock},variableMutex\`,`
+        res = res+ `\`${createVar},${typeName},\${getASTNodeUID(node)}${data.$cstNode?.offset}\`,`
+        res = res+ `\`${setVarFromGlobal},${typeName},\${getASTNodeUID(node)}${data.$cstNode?.offset},\${getASTNodeUID(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name}\``
     } 
     else if (elem?.$type == "TemporaryVariable") {
-        res = res + `\`${typeName} \${getASTNodeUID(node)}${data.$cstNode?.offset} = ${elem.name}; // was \${getASTNodeUID(node)}${prev != undefined ? prev?.ref?.$cstNode?.offset : elem.$cstNode?.offset}; but using the parameter name now\``
+        //res = res + `\`${typeName} \${getASTNodeUID(node)}${data.$cstNode?.offset} = ${elem.name}; // was \${getASTNodeUID(node)}${prev != undefined ? prev?.ref?.$cstNode?.offset : elem.$cstNode?.offset}; but using the parameter name now\``
+        res = res+ `\`${createVar},${typeName},\${getASTNodeUID(node)}${data.$cstNode?.offset}\`,`
+        res = res+ `\`${assignVar},\${getASTNodeUID(node)}${data.$cstNode?.offset},${elem.name}\`` 
     }
     else /*if (elem?.$type == "Assignment")*/ {
-        res = res + `\`${typeName} \${getASTNodeUID(node)}${data.$cstNode?.offset} = \${node.${data.$cstNode?.text}};\ //${elem.name}\``
+        
+        //res = res + `\`${typeName} \${getASTNodeUID(node)}${data.$cstNode?.offset} = \${node.${data.$cstNode?.text}};\ //${elem.name}\``
+        res = res+ `\`${createVar},${typeName},\${getASTNodeUID(node)}${data.$cstNode?.offset}\`,`
+        res = res+ `\`${assignVar},\${getASTNodeUID(node)}${data.$cstNode?.offset},\${node.${data.$cstNode?.text}}\``
     }
     return res
 }
@@ -1182,14 +1377,16 @@ function visitStateModifications(ruleCF: RuleControlFlow, actionsString: string)
         sep = ","
         
         if(rhsElem.$type == "TemporaryVariable"){
-            actionsString = actionsString + sep + `\`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-                const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
-                (*((${typeName}*)sigma[\"\${getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"])) = \${getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset};\``;
+            //actionsString = actionsString + sep + `\`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
+            //    const std::lock_guard<std::mutex> lock(sigma_mutex);\``;                              
+            //actionsString = actionsString + sep + `(*((${typeName}*)sigma[\"\${getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"])) = \${getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset};\``;
+            actionsString = actionsString + sep + `\`${setGlobalVar},${typeName},\${getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name},\${getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset}\``
         }else{
-            actionsString = actionsString + sep + `\`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
+            /*actionsString = actionsString + sep + `\`//TODO: fix this and avoid memory leak by deleting, constructing appropriately
                 const std::lock_guard<std::mutex> lock(sigma_mutex);
                 (*((${typeName}*)sigma[\"\${getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}"])) = \${getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset};\``;
-            
+            */
+           actionsString = actionsString + sep + `\`${setGlobalVar},${typeName},\${getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name},\${getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset}\``
         }
     }
     return actionsString;

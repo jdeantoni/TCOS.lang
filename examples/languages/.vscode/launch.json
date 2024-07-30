@@ -14,22 +14,21 @@
             ],
             "sourceMaps": true,
             "outFiles": [
-                "${workspaceFolder}/testSoSLang/out/**/*.js",
-                "${workspaceFolder}/fsm/out/**/*.js",
-            ]            
+                "${workspaceFolder}/out/**/*.js"
+            ]
         },
         {
             "name": "Attach to Language Server",
             "type": "node",
-            "port": 6011,
+            "port": 6009,
             "request": "attach",
             "skipFiles": [
                 "<node_internals>/**"
             ],
             "sourceMaps": true,
             "outFiles": [
-                "${workspaceFolder}/testSoSLang/out/**/*.js",
-                "${workspaceFolder}/fsm/out/**/*.js",
+                "${workspaceFolder}/out/**/*.js",
+                "${workspaceFolder}/node_modules/langium"
             ]
         }
     ]

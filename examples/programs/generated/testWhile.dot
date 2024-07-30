@@ -4,48 +4,47 @@ digraph G {
   "2" [label="2:startsarray0_0_0_10_1_0_1_10_2_0_2_11_4_0_8_1" shape="ellipse" ];
   "3" [label="3:startsVariable0_0_0_10:
 void functioninit3Variable(){
-sigma[\"Variable0_0_0_10currentValue\"] = new int();
+createGlobalVar,int,Variable0_0_0_10currentValue
 }" shape="ellipse" ];
   "4" [label="4:terminatesVariable0_0_0_10" shape="ellipse" ];
   "5" [label="5:initializeVarStateModificationNode:
 void function5initializeVar(){
-int Variable0_0_0_101377 = 1; //undefined
-//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-                const std::lock_guard<std::mutex> lock(sigma_mutex);
-                (*((int*)sigma[\"Variable0_0_0_10currentValue\"])) = Variable0_0_0_101377;
+createVar,int,Variable0_0_0_101430
+assignVar,Variable0_0_0_101430,1
+setGlobalVar,int,Variable0_0_0_10currentValue,Variable0_0_0_101430
 }" shape="ellipse" ];
   "6" [label="6:startsVariable1_0_1_10:
 void functioninit6Variable(){
-sigma[\"Variable1_0_1_10currentValue\"] = new int();
+createGlobalVar,int,Variable1_0_1_10currentValue
 }" shape="ellipse" ];
   "7" [label="7:terminatesVariable1_0_1_10" shape="ellipse" ];
   "8" [label="8:initializeVarStateModificationNode:
 void function8initializeVar(){
-int Variable1_0_1_101377 = 0; //undefined
-//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-                const std::lock_guard<std::mutex> lock(sigma_mutex);
-                (*((int*)sigma[\"Variable1_0_1_10currentValue\"])) = Variable1_0_1_101377;
+createVar,int,Variable1_0_1_101430
+assignVar,Variable1_0_1_101430,0
+setGlobalVar,int,Variable1_0_1_10currentValue,Variable1_0_1_101430
 }" shape="ellipse" ];
   "9" [label="9:startsVariable2_0_2_11:
 void functioninit9Variable(){
-sigma[\"Variable2_0_2_11currentValue\"] = new int();
+createGlobalVar,int,Variable2_0_2_11currentValue
 }" shape="ellipse" ];
   "10" [label="10:terminatesVariable2_0_2_11" shape="ellipse" ];
   "11" [label="11:initializeVarStateModificationNode:
 void function11initializeVar(){
-int Variable2_0_2_111377 = 42; //undefined
-//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-                const std::lock_guard<std::mutex> lock(sigma_mutex);
-                (*((int*)sigma[\"Variable2_0_2_11currentValue\"])) = Variable2_0_2_111377;
+createVar,int,Variable2_0_2_111430
+assignVar,Variable2_0_2_111430,42
+setGlobalVar,int,Variable2_0_2_11currentValue,Variable2_0_2_111430
 }" shape="ellipse" ];
   "12" [label="12:startsWhile4_0_8_1" shape="ellipse" ];
   "13" [label="13:terminatesWhile4_0_8_1" shape="ellipse" ];
   "14" [label="14:startsVarRef4_7_4_9:
 int function14accessVarRef(){
-const std::lock_guard<std::mutex> lock(sigma_mutex);
-int VarRef4_7_4_91583 = *(int *) sigma[\"Variable0_0_0_10currentValue\"];//currentValue}
-int VarRef4_7_4_9terminates =  VarRef4_7_4_91583;
-return VarRef4_7_4_9terminates;
+lock,variableMutex
+createVar,int,VarRef4_7_4_91645
+setVarFromGlobal,int,VarRef4_7_4_91645,Variable0_0_0_10currentValue
+createVar,int,VarRef4_7_4_9terminates
+assignVar,VarRef4_7_4_9terminates,VarRef4_7_4_91645
+return,VarRef4_7_4_9terminates
 }" shape="ellipse" ];
   "15" [label="15:terminatesVarRef4_7_4_9" shape="ellipse" ];
   "16" [label="16:choiceNodeVarRef4_7_4_9" shape="diamond" ];
@@ -56,35 +55,37 @@ return VarRef4_7_4_9terminates;
   "21" [label="21:terminatesAssignment6_4_6_11" shape="ellipse" ];
   "22" [label="22:startsVarRef6_9_6_11:
 int function22accessVarRef(){
-const std::lock_guard<std::mutex> lock(sigma_mutex);
-int VarRef6_9_6_111583 = *(int *) sigma[\"Variable1_0_1_10currentValue\"];//currentValue}
-int VarRef6_9_6_11terminates =  VarRef6_9_6_111583;
-return VarRef6_9_6_11terminates;
+lock,variableMutex
+createVar,int,VarRef6_9_6_111645
+setVarFromGlobal,int,VarRef6_9_6_111645,Variable1_0_1_10currentValue
+createVar,int,VarRef6_9_6_11terminates
+assignVar,VarRef6_9_6_11terminates,VarRef6_9_6_111645
+return,VarRef6_9_6_11terminates
 }" shape="ellipse" ];
   "23" [label="23:terminatesVarRef6_9_6_11" shape="ellipse" ];
   "24" [label="24:executeAssignment2StateModificationNode:
 void function24executeAssignment2(int resRight){
-int Assignment6_4_6_112524 = resRight; // was Assignment6_4_6_112358; but using the parameter name now
-//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-                const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
-                (*((int*)sigma[\"Variable0_0_0_10currentValue\"])) = Assignment6_4_6_112524;
+createVar,int,Assignment6_4_6_112620
+assignVar,Assignment6_4_6_112620,resRight
+setGlobalVar,int,Variable0_0_0_10currentValue,Assignment6_4_6_112620
 }" shape="ellipse" ];
   "25" [label="25:startsAssignment7_4_7_11" shape="ellipse" ];
   "26" [label="26:terminatesAssignment7_4_7_11" shape="ellipse" ];
   "27" [label="27:startsVarRef7_9_7_11:
 int function27accessVarRef(){
-const std::lock_guard<std::mutex> lock(sigma_mutex);
-int VarRef7_9_7_111583 = *(int *) sigma[\"Variable2_0_2_11currentValue\"];//currentValue}
-int VarRef7_9_7_11terminates =  VarRef7_9_7_111583;
-return VarRef7_9_7_11terminates;
+lock,variableMutex
+createVar,int,VarRef7_9_7_111645
+setVarFromGlobal,int,VarRef7_9_7_111645,Variable2_0_2_11currentValue
+createVar,int,VarRef7_9_7_11terminates
+assignVar,VarRef7_9_7_11terminates,VarRef7_9_7_111645
+return,VarRef7_9_7_11terminates
 }" shape="ellipse" ];
   "28" [label="28:terminatesVarRef7_9_7_11" shape="ellipse" ];
   "29" [label="29:executeAssignment2StateModificationNode:
 void function29executeAssignment2(int resRight){
-int Assignment7_4_7_112524 = resRight; // was Assignment7_4_7_112358; but using the parameter name now
-//TODO: fix this and avoid memory leak by deleting, constructing appropriately
-                const std::lock_guard<std::mutex> lock(sigma_mutex);                                    
-                (*((int*)sigma[\"Variable1_0_1_10currentValue\"])) = Assignment7_4_7_112524;
+createVar,int,Assignment7_4_7_112620
+assignVar,Assignment7_4_7_112620,resRight
+setGlobalVar,int,Variable1_0_1_10currentValue,Assignment7_4_7_112620
 }" shape="ellipse" ];
   "30" [label="30:terminatesarray6_4_6_11_7_4_7_11" shape="ellipse" ];
   "31" [label="31:orJoinNodeVarRef4_7_4_9" shape="invtriangle" style="filled" fillcolor="lightblue"];
@@ -115,10 +116,10 @@ int Assignment7_4_7_112524 = resRight; // was Assignment7_4_7_112358; but using 
   "21" -> "25" [label=""];
   "26" -> "30" [label=""];
   "30" -> "18" [label=""];
-  "16" -> "17" [label="(bool)VarRef4_7_4_9terminates == true"];
+  "16" -> "17" [label="verifyEqual,VarRef4_7_4_9terminate,true"];
   "18" -> "31" [label=""];
   "31" -> "14" [label=""];
-  "16" -> "13" [label="(bool)VarRef4_7_4_9terminates == false"];
+  "16" -> "13" [label="verifyEqual,VarRef4_7_4_9terminate,false"];
   "10" -> "12" [label=""];
   "13" -> "32" [label=""];
   "32" -> "1" [label=""];
