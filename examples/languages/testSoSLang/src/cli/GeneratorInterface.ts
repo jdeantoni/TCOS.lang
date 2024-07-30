@@ -26,13 +26,28 @@ interface IGenerator {
      * @param fname the name of the function
      * @param params the parameters of the function
      * @param returnType the return type of the function
+     * @param insideFunction a list of the strings for each line of code inside the function in the right order
      */
-    createFunction(codeFile:CompositeGeneratorNode,fname:string,params:TypedElement[],returnType:string): void;
+    createFunction(codeFile:CompositeGeneratorNode,fname:string,params:TypedElement[],returnType:string,insideFunction:string[]): void;
+    /**
+     * createIf is a function that takes a the codeFile we write in and a list of conditions and writes in the start of an if statement with the specified conditions
+     * @param codeFile the codefile to be written in
+     * @param guards the guards are a list of strings that represent the conditions of the if statement
+     * @param insideOfIf the compositegeneratornode containing the code that will be inside the if statement
+     */
+    createIf(codeFile: CompositeGeneratorNode, guards: string[],insideOfIf: string[]): string[]; 
+    /**
+     * createAndOpenThread is a function that takes a the codeFile we write in and a unique identifier and writes in a way to create and open a thread
+     * @param codefile the codefile to be written in
+     * @param uid the unique identifier of the thread
+     */
+    createAndOpenThread(codeFile: CompositeGeneratorNode, uid: number,insideThreadCode:string[]): string[];
     /**
      * createMainFunction is a function that takes a the codeFile we write in and writes in the main function declaration and opening bracket
      * @param codeFile the codefile to be written in
      */
-    createMainFunction(codeFile:CompositeGeneratorNode): void;
+    
+    createMainFunction(codeFile:CompositeGeneratorNode,insideMain:string[]): void;
     /**
      * createFuncCall is a function that takes a the codeFile we write in, a function name, a list of parameters, and a return type and writes in the function call
      * you should use this function to call functions that you have already declared
@@ -42,55 +57,46 @@ interface IGenerator {
      * @param params the parameters of the function
      * @param typeName the type of the return of the function
      */
-    createFuncCall(codeFile: CompositeGeneratorNode,fname:string,params:string[],typeName:string): void;
+    createFuncCall(codeFile: CompositeGeneratorNode,fname:string,params:string[],typeName:string): string[];
+    
+    
     /**
-     * createIf is a function that takes a the codeFile we write in and a list of conditions and writes in the start of an if statement with the specified conditions
+     * generate a goto statement to go back to a specific point in the code 
      * @param codeFile the codefile to be written in
-     * @param guards the guards are a list of strings that represent the conditions of the if statement
-     * @param insideOfIf the compositegeneratornode containing the code that will be inside the if statement
+     * @param queueUID the unique identifier of the flag
      */
-    createIf(codeFile: CompositeGeneratorNode, guards: string[]): void;  /// the guards are a list of strings that represent the conditions of the if statement
+    goToFlag(codeFile: CompositeGeneratorNode, UID: number): string[];
+    /**
+     * generate a flag to go back to this specific point in the code
+     * @param codeFile the codefile to be written in
+     * @param uid the unique identifier of the flag
+     */
+    createFlagToGoBackTo(codeFile: CompositeGeneratorNode, uid: number): string[];
     /**
      * createSynchronizer is a function that takes a the codeFile we write in and a unique identifier and writes in a synchronizer for the threads
      * @param codeFile this is the codefile to be written in
      * @param synchUID this is the unique identifier of the synchronizer
      */
-    createSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): void;
+    createSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): string[];
     /**
      * activateSynchronizer is a function that takes a the codeFile we write in and a unique identifier and writes in a way to activate the synchronizer
      * @param codeFile this is the codefile to be written in
      * @param synchUID this is the unique identifier of the synchronizer
      */
-    activateSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): void;
+    activateSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): string[];
     /**
      * waitForSynchronizer is a function that takes a the codeFile we write in and a unique identifier and writes in a way to wait for the synchronizer
      * @param codeFile the codefile to be written in
      * @param synchUID the unique identifier of the synchronizer
      */
-    waitForSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): void;
-    /**
-     * createAndOpenThread is a function that takes a the codeFile we write in and a unique identifier and writes in a way to create and open a thread
-     * @param codefile the codefile to be written in
-     * @param uid the unique identifier of the thread
-     */
-    createAndOpenThread(codeFile: CompositeGeneratorNode, uid: number): void;
-    /**
-     * endThread is a function that takes a the codeFile we write in and a unique identifier and writes in a way to end a thread
-     * @param codeFile the codefile to be written in
-     * @param uid the unique identifier of the thread
-     */
-    endThread(codeFile: CompositeGeneratorNode, uid: number): void;
-    /**
-     * endSection is a function that takes a the codeFile we write in and writes in a way to end a section of code (e.g. a function or if statement)
-     * @param codeFile the codefile to be written in
-     */
-    endSection(codeFile: CompositeGeneratorNode): void;
+    waitForSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): string[];
+    
     /**
      * createQueue is a function that takes a the codeFile we write in and a unique identifier and writes in a way to create a queue
      * @param codeFile the codefile to be written in
      * @param queueUID the unique identifier of the queue
      */
-    createQueue(codeFile: CompositeGeneratorNode,queueUID:number): void;
+    createQueue(codeFile: CompositeGeneratorNode,queueUID:number): string[];
     /**
      *  createLockingQueue is a function that takes a the codeFile we write in, a type, and a unique identifier and writes in a way to create a locking queue (a queue that is thread safe)
      * 
@@ -98,7 +104,7 @@ interface IGenerator {
      * @param typeName the type of the queue
      * @param queueUID the unique identifier of the queue
      */
-    createLockingQueue(codeFile: CompositeGeneratorNode, typeName: string, queueUID: number): void;
+    createLockingQueue(codeFile: CompositeGeneratorNode, typeName: string, queueUID: number): string[];
     /**
      *   receiveFromQueue is a function that takes a the codeFile we write in, a unique identifier, a type, and an optional variable name and writes in a way to pop the variables from a queue
      * 
@@ -107,7 +113,7 @@ interface IGenerator {
      * @param typeName type of the variable to be popped
      * @param varName name of the variable to be popped
      * */
-    receiveFromQueue(codeFile: CompositeGeneratorNode,queueUID:number,typeName:string,varName:string): void;
+    receiveFromQueue(codeFile: CompositeGeneratorNode,queueUID:number,typeName:string,varName:string): string[];
     /**
      * sendToQueue is a function that takes a the codeFile we write in, a unique identifier, a type, and a variable name and writes in a way to push the variable into a queue
      * @param codeFile the codefile to be written in
@@ -115,34 +121,34 @@ interface IGenerator {
      * @param typeName type of the variable to be pushed
      * @param varName name of the variable to be pushed
      */
-    sendToQueue(codeFile: CompositeGeneratorNode,queueUID:number,typeName:string,varName:string): void;
+    sendToQueue(codeFile: CompositeGeneratorNode,queueUID:number,typeName:string,varName:string): string[];
     /**
      * assignVar is a function that takes a the codeFile we write in, a local variable's name, and a value and writes in a way to set the value of the variable
      * @param codeFile the codefile to be written in
      * @param varName the name of the variable
      * @param value the value to be assigned to the variable
      */
-    assignVar(codeFile: CompositeGeneratorNode,varName:string,value:string): void;
+    assignVar(codeFile: CompositeGeneratorNode,varName:string,value:string): string[];
     /**
      * returnVar is a function that takes a the codeFile we write in and a local variable name and writes in a way to return the variable
      * @param codeFile the codefile to be written in
      * @param varName the name of the variable
      */
-    returnVar(codeFile: CompositeGeneratorNode,varName:string): void;
+    returnVar(codeFile: CompositeGeneratorNode,varName:string): string[];
     /**
      * createVar is a function that takes a the codeFile we write in, a type, and a local variable name and writes in a way to declare a variable
      * @param codeFile the codefile to be written in
      * @param type the type of the variable
      * @param varName the name of the variable
      */
-    createVar(codeFile: CompositeGeneratorNode,type:string,varName:string): void;
+    createVar(codeFile: CompositeGeneratorNode,type:string,varName:string): string[];
     /**
      * createGlobalVar is a function that takes a the codeFile we write in, a type, and a global variable name and writes in a way to declare a variable that can be read and written to by all threads and functions
      * @param codeFile the codefile to be written in
      * @param type the type of the variable
      * @param varName the name of the variable
      */
-    createGlobalVar(codeFile: CompositeGeneratorNode,type:string,varName:string): void;
+    createGlobalVar(codeFile: CompositeGeneratorNode,type:string,varName:string): string[];
     /**
      * setVarFromGlobal is a function that takes a the codeFile we write in, a type, a local variable name, and a global variable name and writes in a way to set the local variable from the global variable
      * @param codeFile the codefile to be written in
@@ -150,7 +156,7 @@ interface IGenerator {
      * @param varName the name of the variable
      * @param value the name of the global variable
      */
-    setVarFromGlobal(codeFile: CompositeGeneratorNode,type:string,varName:string,value:string): void;
+    setVarFromGlobal(codeFile: CompositeGeneratorNode,type:string,varName:string,value:string): string[];
     /**
      * setGlobalVar is a function that takes a the codeFile we write in, a type, a global variable name, and a value and writes in a way to set the global variable to the value
      * @param codeFile the codefile to be written in
@@ -158,7 +164,7 @@ interface IGenerator {
      * @param varName the name of the variable
      * @param value the value to be assigned to the variable
      */
-    setGlobalVar(codeFile: CompositeGeneratorNode,type:string,varName:string,value:string): void;
+    setGlobalVar(codeFile: CompositeGeneratorNode,type:string,varName:string,value:string): string[];
     /**
      * operation is a function that takes a the codeFile we write in, a local variable name, an operator, and another local variable name and writes in a way to perform the operation
      * @param codeFile the codefile to be written in
@@ -167,7 +173,7 @@ interface IGenerator {
      * @param op the operator
      * @param n2 the second variable
      */
-    operation(codeFile: CompositeGeneratorNode,varName:string,n1:string,op:string,n2:string): void;
+    operation(codeFile: CompositeGeneratorNode,varName:string,n1:string,op:string,n2:string): string[];
     /**
      * the createEqualsVerif function is a function that takes two values and returns a string that represents checking if the two values are equal
      * @param firstValue the first value

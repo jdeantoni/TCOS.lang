@@ -3,20 +3,20 @@ import {  CompositeGeneratorNode, MultiMap, toString } from 'langium';
 import path from 'path';
 import { Model } from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
-import { CCFGVisitor } from './generated/testFSE';
+import { TestSimpleLCompilerFrontEnd } from './generated/testFSE';
 import { CCFG, Edge, Node } from '../ccfg/ccfglib';
 import {IGenerator} from './GeneratorInterface';
 import chalk from 'chalk';
 
 
-const createVar = "createVar"   //createVar, type, name
-const assignVar = "assignVar"
-const setVarFromGlobal = "setVarFromGlobal"
-const createGlobalVar = "createGlobalVar"
-const setGlobalVar = "setGlobalVar"
-const operation = "operation"
-const ret ="return"
-const verifyEqual = "verifyEqual"
+const createVar = "createVar"   //createVar,type,name
+const assignVar = "assignVar"   //assignVar,name,value
+const setVarFromGlobal = "setVarFromGlobal" //setVarFromGlobal,type,varName,globalVarName
+const createGlobalVar = "createGlobalVar" //createGlobalVar,type,varName
+const setGlobalVar = "setGlobalVar" //setGlobalVar,type,varName,value
+const operation = "operation" //operation,varName,n1,op,n2
+const ret ="return" //return,varName
+const verifyEqual = "verifyEqual" //verifyEqual,varName1,varName2
 let debug = false;
 
 export function generatefromCCFG(model: Model, filePath: string, targetDirectory: string | undefined, doDebug: boolean|undefined, generator:IGenerator): string {
@@ -60,22 +60,17 @@ function doGenerateCode(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: boo
     generator.createBase(codeFile,debug);
     compileFunctionDefs(ccfg,generator,codeFile);
 
-    generator.createMainFunction(codeFile);
     
     let currentNode = initNode;
-    visitAllNodes(ccfg, currentNode, /*-1,*/ codeFile,generator, true);
-    generator.endSection(codeFile);
-
-    generator.endFile(codeFile);
+    let insideMain:string[] = visitAllNodes(ccfg, currentNode, /*-1,*/ codeFile,generator, true);
+    generator.createMainFunction(codeFile,insideMain);
 }
 
 
 
 function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model): CCFG {
-    var visitor = new CCFGVisitor();
-    visitor.visit(model);
-
-    var ccfg = visitor.ccfg
+    var compilerFrontEnd = new TestSimpleLCompilerFrontEnd();
+    var ccfg = compilerFrontEnd.generateCCFG(model,debug);
    
     ccfg.addSyncEdge()
 
@@ -99,29 +94,31 @@ function compileFunctionDefs(ccfg: CCFG,generator:IGenerator,codeFile:CompositeG
                 if(typeof node.functionsDefs[0] == "string"){
                     for (let fname of node.functionsNames) {
                     // console.log("function name: "+fname);
-                        generator.createFunction(codeFile,fname, node.params, node.returnType);
+                        let allFDefs:string[] = [];
                         for (let fdef of node.functionsDefs) {
                             let b = fdef.split(",");
                             if (b[0] == ret) {
-                                generator.returnVar(codeFile,b[1]);
+                                allFDefs= [...allFDefs, ...generator.returnVar(codeFile,b[1])];
                             }else if (b[0]==createVar){
-                                generator.createVar(codeFile,b[1], b[2]);
+                                allFDefs = [...allFDefs, ...generator.createVar(codeFile,b[1], b[2])];
                             }else if (b[0]==assignVar){
-                                generator.assignVar(codeFile,b[1], b[2]);
+                                allFDefs=[...allFDefs, ...generator.assignVar(codeFile,b[1], b[2])];
                             } else if (b[0]==setVarFromGlobal){
-                                generator.setVarFromGlobal(codeFile,b[1], b[2], b[3]);
+                                allFDefs =[...allFDefs, ...generator.setVarFromGlobal(codeFile,b[1], b[2], b[3])];
                             } else if (b[0]==createGlobalVar){
-                                generator.createGlobalVar(codeFile,b[1], b[2]);
+                                allFDefs=[...allFDefs, ...generator.createGlobalVar(codeFile,b[1], b[2])];
                             } else if (b[0]==setGlobalVar){
-                                generator.setGlobalVar(codeFile,b[1], b[2], b[3]);
+                                allFDefs=[...allFDefs, ...generator.setGlobalVar(codeFile,b[1], b[2], b[3])];
                             } else if (b[0]==operation){
-                                generator.operation(codeFile,b[1], b[2], b[3], b[4]);
+                                allFDefs=[...allFDefs, ...generator.operation(codeFile,b[1], b[2], b[3], b[4])];
                             } else{
                                 console.log("Unknown function definition: "+b[0]);
+                                allFDefs = [...allFDefs, fdef];
                             }
 
                         }
-                        generator.endSection(codeFile);
+                        //console.log("function name: "+fname+ " allFDefs = "+allFDefs);
+                        generator.createFunction(codeFile,fname, node.params, node.returnType,allFDefs);
                     }
                 }
             }
@@ -136,16 +133,16 @@ let continuationsRecursLevel: number[] = []
 let visitedUID: number[] = []
 let recursLevel = 0;
 let createdQueueIds: number[] = []
-function visitAllNodes(ccfg: CCFG, currentNode: Node, codeFile: CompositeGeneratorNode, generator: IGenerator, visitIsStarting: boolean = false) {
+function visitAllNodes(ccfg: CCFG, currentNode: Node, codeFile: CompositeGeneratorNode, generator: IGenerator, visitIsStarting: boolean = false): string[] {
     recursLevel = recursLevel + 1;
     let currentUID:number = getCurrentUID(currentNode);
 
     if (currentNode.outputEdges.length == 0 /*|| currentUID == untilUID*/) {
-        return
+        return []
     }
 
 
-
+    let thisNodeCode:string[] = [];
     currentNode.numberOfVisits = currentNode.numberOfVisits + 1;
 
     // console.log("try visit "+currentNode.uid  + " nbVisit = "+currentNode.numberOfVisits)
@@ -160,10 +157,10 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, codeFile: CompositeGenerat
                     currentNode.numberOfVisits = currentNode.inputEdges.length;
                     continuations.push(currentNode);
                 }
-                return
+                return []
             }
             // console.log("do not visit "+currentNode.uid  + " nbVisit = "+currentNode.numberOfVisits + " inputEdges = "+currentNode.inputEdges.length)
-            return
+            return []
         }
         
         if (currentNode.numberOfVisits == currentNode.inputEdges.length){        
@@ -174,12 +171,12 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, codeFile: CompositeGenerat
                 }
                 continuations.push(currentNode);
             }
-            return
+            return []
         }
     }  
     
     if (visitedUID.includes(currentUID)){
-        return
+        return []
     }
     visitedUID.push(currentUID);
     // console.log("visit "+currentNode.uid  + " nbVisit = "+currentNode.numberOfVisits)
@@ -191,7 +188,7 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, codeFile: CompositeGenerat
     switch(currentNode.getType()){
     case "Step":
         {
-        addCorrespondingCode(codeFile, currentNode,ccfg,generator);
+        thisNodeCode = [...thisNodeCode, ...addCorrespondingCode(codeFile, currentNode,ccfg,generator)];
         if(currentNode.outputEdges.length > 1){
 
             let edgeToVisit: Edge[] = currentNode.outputEdges;
@@ -200,14 +197,14 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, codeFile: CompositeGenerat
                 ///todo  à quoi ce truc sert ? ------------------------------------------------------------------------------------------------
                 //codeFile.append(`
                 //{`)
-                visitAllNodes(ccfg, edge.to, /*untilUID,*/ codeFile,generator);
+                thisNodeCode = [...thisNodeCode, ...visitAllNodes(ccfg, edge.to, /*untilUID,*/ codeFile,generator)];
                 //codeFile.append(`
                 //}`);
 
             }
         }else{
             let edge = currentNode.outputEdges[0];
-            visitAllNodes(ccfg,edge.to, /*untilUID,*/ codeFile,generator);
+            thisNodeCode = [...thisNodeCode, ...visitAllNodes(ccfg,edge.to, /*untilUID,*/ codeFile,generator)];
         }
         
         break;
@@ -227,7 +224,11 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, codeFile: CompositeGenerat
                 if(ptn.returnType != undefined){
                     if(!createdQueueIds.includes(syncUID)){
                         createdQueueIds.push(syncUID);
-                        generator.createSynchronizer(codeFile,syncUID);
+                        if(ptn.returnType != "void" && ptn.returnType != undefined){
+                            thisNodeCode = [...thisNodeCode, ...generator.createLockingQueue(codeFile,ptn.returnType,syncUID)];
+                        }else{
+                            thisNodeCode = [...thisNodeCode, ...generator.createSynchronizer(codeFile,syncUID)];
+                        }
                     }
                 }
                
@@ -241,15 +242,15 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, codeFile: CompositeGenerat
             if (edge.to.cycles.length > 0 && ! edge.to.cyclePossessAnAndJoin()){
                 //we have a cycle and no andJoin in the cycle
                 //console.log(edge.to.uid+": no andJoin in cycle ")
-                visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ codeFile,generator);
+                thisNodeCode = [...thisNodeCode, ...visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ codeFile,generator)];
                 if(edge.to.isCycleInitiator){
-                    addQueuePushCode(edge.to.uid,edge.to,ccfg,codeFile,undefined,generator);
+                    thisNodeCode = [...thisNodeCode, ...addQueuePushCode(edge.to.uid,edge.to,ccfg,codeFile,undefined,generator)];
                 }
             }else{
                 fifoThreadUid.add(currentNode.uid,edge.to.uid);
-                generator.createAndOpenThread(codeFile,edge.to.uid);
-                visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ codeFile,generator);
-                generator.endThread(codeFile,edge.to.uid);
+                let insideThreadCode:string[] ;
+                insideThreadCode = visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ codeFile,generator);
+                thisNodeCode = [...thisNodeCode, ...generator.createAndOpenThread(codeFile,edge.to.uid,insideThreadCode)];
             }
         }
 
@@ -276,15 +277,15 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, codeFile: CompositeGenerat
                 currentNode.returnType = paramType
             }
             if (paramType == "void"){
-                generator.waitForSynchronizer(codeFile,currentNode.uid);
+                thisNodeCode = [...thisNodeCode, ...generator.waitForSynchronizer(codeFile,currentNode.uid)];
             } else {
-                generator.createVar(codeFile,paramType || "void",paramName);
-                generator.receiveFromQueue(codeFile,currentNode.uid,paramType||"void", paramName);
+                thisNodeCode = [...thisNodeCode, ...generator.createVar(codeFile,paramType || "void",paramName)];
+                thisNodeCode = [...thisNodeCode, ...generator.receiveFromQueue(codeFile,currentNode.uid,paramType||"void", paramName)];
             }
         }
-        addCorrespondingCode(codeFile, currentNode,ccfg,generator);
+        thisNodeCode = [...thisNodeCode, ...addCorrespondingCode(codeFile, currentNode,ccfg,generator)];
         let nextNode = currentNode.outputEdges[0].to
-        visitAllNodes(ccfg,nextNode, /*untilUID,*/ codeFile,generator);
+        thisNodeCode = [...thisNodeCode, ...visitAllNodes(ccfg,nextNode, /*untilUID,*/ codeFile,generator)];
         break;
         }
     case "OrJoin":
@@ -308,16 +309,16 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, codeFile: CompositeGenerat
                 currentNode.returnType = paramType
             }
             if(currentNode.isCycleInitiator){
-                generator.createQueue(codeFile,currentNode.uid);
+                thisNodeCode = [...thisNodeCode, ...generator.createFlagToGoBackTo(codeFile,currentNode.uid)];
             }
             if (paramType == "void" || paramType == undefined){
-                generator.waitForSynchronizer(codeFile,currentNode.uid);
+                thisNodeCode = [...thisNodeCode, ...generator.waitForSynchronizer(codeFile,currentNode.uid)];
             } else {
-            generator.createVar(codeFile,paramType || "void",paramName);
-            generator.receiveFromQueue(codeFile,currentNode.uid,paramType||"void", paramName);
+                thisNodeCode = [...thisNodeCode, ...generator.createVar(codeFile,paramType || "void",paramName)];
+                thisNodeCode = [...thisNodeCode, ...generator.receiveFromQueue(codeFile,currentNode.uid,paramType||"void", paramName)];
             }
             let nextNode = currentNode.outputEdges[0].to
-            visitAllNodes(ccfg,nextNode, /*untilUID,*/ codeFile,generator);
+            thisNodeCode = [...thisNodeCode, ...visitAllNodes(ccfg,nextNode, /*untilUID,*/ codeFile,generator)];
             break;
         }
     case "Choice":
@@ -335,14 +336,14 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, codeFile: CompositeGenerat
 
     // from here --------------------------------
                     
-                    generator.createSynchronizer(codeFile,syncUID);
+                    thisNodeCode = [...thisNodeCode, ...generator.createSynchronizer(codeFile,syncUID)];
                 }
             }
         }
 
         continuationsRecursLevel.push(recursLevel);
 
-        addComparisonVariableDeclaration(codeFile, currentNode,generator);
+        thisNodeCode = [...thisNodeCode, ...addComparisonVariableDeclaration(codeFile, currentNode,generator)];
         let edgeToVisit: Edge[] = currentNode.outputEdges;
         
         
@@ -353,16 +354,18 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, codeFile: CompositeGenerat
             let guards: string[] = [];
             for(let guard of edge.guards){
                 const guardList=guard.split(",")
-                console.log(guardList)
+                //console.log(guardList)
                 
                 if (guardList[0] === verifyEqual){
                     guards.push(generator.createEqualsVerif(guardList[1],guardList[2]))
                 } 
             }
-            generator.createIf(codeFile,guards);
 
-            addCorrespondingCode(codeFile, currentNode,ccfg,generator);
-            visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ codeFile,generator);                
+            let insideOfIf:string[];
+
+            insideOfIf = addCorrespondingCode(codeFile,currentNode,ccfg,generator);
+            insideOfIf = [...insideOfIf, ...visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ codeFile,generator)]; 
+                        
             
             //special case for choice node when directly linked to join node
             if((edge.to.getType() == "AndJoin" || edge.to.getType() == "OrJoin") && currentNode.functionsDefs.length == 0){
@@ -372,12 +375,12 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, codeFile: CompositeGenerat
                         console.log(chalk.red(currentNode.uid+" : multiple previous typed nodes not handled here"))
                     }
                     let ptn = ptns[0]     
-                    addQueuePushCode(edge.to.uid, ptn, ccfg, codeFile, ptn.functionsNames[0],generator);
+                    insideOfIf = [...insideOfIf, ...addQueuePushCode(edge.to.uid, ptn, ccfg, codeFile, ptn.functionsNames[0],generator)];
                 }else{
-                    addQueuePushCode(edge.to.uid, currentNode, ccfg, codeFile, currentNode.functionsNames[0],generator);
+                    insideOfIf = [...insideOfIf, ...addQueuePushCode(edge.to.uid, currentNode, ccfg, codeFile, currentNode.functionsNames[0],generator)];
                 }
             }
-            generator.endSection(codeFile);
+            thisNodeCode = [...thisNodeCode , ...generator.createIf(codeFile,guards,insideOfIf)];   
         }
 
         break;
@@ -391,21 +394,21 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, codeFile: CompositeGenerat
             continuationsRecursLevel.pop();
             if(toVisit != undefined){
                 // console.log("continuation of "+toVisit.uid + " from "+currentNode.uid + " nbVisit = "+toVisit.numberOfVisits)
-                visitAllNodes(ccfg, toVisit, /*nextUntilUID,*/ codeFile,generator);
+                thisNodeCode = [...thisNodeCode, ...visitAllNodes(ccfg, toVisit, /*nextUntilUID,*/ codeFile,generator)];
             }
         }   
     }
     recursLevel = recursLevel - 1;
-    return;
+    return thisNodeCode;
 }
 function getCurrentUID(node: Node): number {
     return node.uid;
 }
 
-function addCorrespondingCode(codeFile: CompositeGeneratorNode, currentNode: Node, ccfg: CCFG,generator:IGenerator) {
+function addCorrespondingCode(codeFile: CompositeGeneratorNode, currentNode: Node, ccfg: CCFG,generator:IGenerator):string[] {
     
     if(!debug && currentNode.functionsDefs.length == 0){
-        return
+        return []
     }
     if(debug){
         /*codeFile.append(`
@@ -416,24 +419,26 @@ function addCorrespondingCode(codeFile: CompositeGeneratorNode, currentNode: Nod
     }
 
     if(currentNode.returnType == undefined){
-        return
+        return []
     }
-
+    let res:string[] = [];
     currentNode.functionsNames.forEach(f => {
         let paramNames = getParameterNames(currentNode);
-        generator.createFuncCall(codeFile,f,paramNames,currentNode.returnType || "void");
+        res =[...res ,...generator.createFuncCall(codeFile,f,paramNames,currentNode.returnType || "void")];
         if(currentNode.functionsDefs.length == 0){
-            return
+            return []
         }
         
 
         let queueUID = queueUidToPushIn(currentNode)
-        addQueuePushCode(queueUID, currentNode, ccfg, codeFile, f,generator);
+        res =[...res ,...addQueuePushCode(queueUID, currentNode, ccfg, codeFile, f,generator)];
+        return res;
     });
     if(currentNode.functionsNames.length == 0){
         let queueUID = queueUidToPushIn(currentNode)
-        addQueuePushCode(queueUID, currentNode, ccfg, codeFile, undefined,generator);
+        res = [...res, ...addQueuePushCode(queueUID, currentNode, ccfg, codeFile, undefined,generator)];
     }
+    return res;
 }
 
 
@@ -453,9 +458,11 @@ function queueUidToPushIn(n: Node): number|undefined {
     return undefined
 }
 /////   todo : add the code to push in the queue
-function addQueuePushCode(queueUID: number | undefined, currentNode: Node, ccfg: CCFG, codeFile: CompositeGeneratorNode, f: string|undefined, generator:IGenerator) {
+function addQueuePushCode(queueUID: number | undefined, currentNode: Node, ccfg: CCFG, codeFile: CompositeGeneratorNode, f: string|undefined, generator:IGenerator): string[] {
+    
+    let res:string[] = [];
     if (queueUID != undefined) {
-
+        
         let syncNode = ccfg.getNodeByUID(queueUID);
         if (syncNode == undefined) {
             throw new Error("syncNode is undefined uid = " + queueUID);
@@ -467,26 +474,22 @@ function addQueuePushCode(queueUID: number | undefined, currentNode: Node, ccfg:
 //        let ptn = ptns[0];
         if(!createdQueueIds.includes(queueUID)){
             createdQueueIds.push(queueUID);
-            generator.createSynchronizer(codeFile,queueUID);
+            res = [...res, ...generator.createSynchronizer(codeFile,queueUID)];
         }
         //codeFile.append(`{\n`)
         if (currentNode.returnType == undefined || currentNode.returnType == "void" || f == undefined) {
 
-            generator.activateSynchronizer(codeFile,queueUID);
+            res = [...res, ...generator.activateSynchronizer(codeFile,queueUID)];
         } else {
-            generator.sendToQueue(codeFile,queueUID,currentNode.returnType || "void",`result${f}`)
+            res = [...res, ...generator.sendToQueue(codeFile,queueUID,currentNode.returnType || "void",`result${f}`)]
         }
         if(syncNode.isCycleInitiator){
-            if(currentNode.returnType == undefined || currentNode.returnType == "void" || f == undefined){
-                codeFile.append(`goto synch${syncNode.uid};\n`);
-            }else{
-                codeFile.append(`
-                goto queue${syncNode.uid};
-                 `);
-            }
+            res = [...res, ...generator.goToFlag(codeFile,queueUID)];
         }
         //codeFile.append(`}\n`)
+        return res;
     }
+    return []
 }
 
 function getParameterNames(currentNode: Node): string[] {
@@ -539,10 +542,11 @@ function getPreviousTypedNodes(ie: Edge, stopAlsoOnNoCodeJoinNode = false): Node
     return res;
 }
 //////////// todo : add the code to do the comparison
-function addComparisonVariableDeclaration(codeFile: CompositeGeneratorNode, currentNode: Node,generator:IGenerator) {
+function addComparisonVariableDeclaration(codeFile: CompositeGeneratorNode, currentNode: Node,generator:IGenerator) : string[] {
     for(let ie of currentNode.inputEdges){
         let ptnsWithJoin = getPreviousTypedNodes(ie, true);
         let realPtns = getPreviousTypedNodes(ie, false);
+        let comparisonVariableCode:string[] = [];
         for (let i = 0; i < realPtns.length; i++) {
             let realPtn = realPtns[i];
             if(realPtn.returnType != "void"){
@@ -552,14 +556,16 @@ function addComparisonVariableDeclaration(codeFile: CompositeGeneratorNode, curr
                 returnedVariableName = returnedVariableName.substring(0, returnedVariableName.length-1); //remove semicolum
                 let ptn = ptnsWithJoin[0];
                 if(ptn.getType() == "AndJoin" || ptn.getType() == "OrJoin"){
-                    generator.createVar(codeFile,ptn.returnType || "void",returnedVariableName);
-                    generator.assignVar(codeFile,returnedVariableName,ptn.params[i].name);
+                    comparisonVariableCode= [...comparisonVariableCode,...generator.createVar(codeFile,ptn.returnType || "void",returnedVariableName), ...generator.assignVar(codeFile,returnedVariableName,ptn.params[i].name)];
                 }else{
-                    generator.createVar(codeFile,ptn.returnType || "void",returnedVariableName);
-                    generator.assignVar(codeFile,returnedVariableName,`result${ptn.functionsNames[0]}`);
+                    comparisonVariableCode= [...comparisonVariableCode,...generator.createVar(codeFile,ptn.returnType || "void",returnedVariableName),...generator.assignVar(codeFile,returnedVariableName,`result${ptn.functionsNames[0]}`)];
+                    
                     
                 }
             }
         }
+        return comparisonVariableCode;
     }
+    return []
 }
+

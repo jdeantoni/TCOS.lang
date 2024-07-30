@@ -11,17 +11,24 @@ export class TypedElement {
     }
 }
 
+export enum NodeType {
+    starts = "starts",
+    terminates = "terminates",
+    multipleSynchro = "multipleSynchro",
+}
+
 export abstract class Node {
  
     static uidCounter: integer = 0;
     uid: integer;
     owningCCFG: CCFG | undefined = undefined;
 
-    value:any;  //unused so far
     astNode: AstNode | undefined; //unnused so far
-   
+
     outputEdges: Edge[] = [];
     inputEdges: Edge[] = [];
+
+    type: NodeType | undefined = undefined;
 
     syncNodeIds: integer[] = [];
     functionsNames: string[] = [];
@@ -34,9 +41,12 @@ export abstract class Node {
     isCycleInitiator: boolean = false;
     cycles: Node[][] = []
 
-    constructor(value: any, theActions: string[] = []) {
+    isVisited: boolean = false;
+
+    constructor(astNode?:AstNode, type?: NodeType, theActions: string[] = []) {
         this.uid = Node.uidCounter++;
-        this.value = value;
+        this.astNode = astNode;
+        this.type = type;
         this.functionsDefs = theActions;
     }
 
@@ -45,18 +55,27 @@ export abstract class Node {
     }
 
     isBefore(n2: Node): boolean {
+        if(this.isVisited){
+            return false;
+        }
+        this.isVisited = true;
         if (this.outputEdges.length == 0){
+            console.log(chalk.gray("ending node reached"));
+            this.isVisited = false;
             return false;
         }
         for (let e of this.outputEdges) {
             if (e.to === n2){
+                console.log(chalk.gray("info: "+this.uid+" is before "+n2.uid));
+                this.isVisited = false;
                 return true;
             }
         }
         for(let e of this.outputEdges){
+            console.log(chalk.gray("info: moving to node"+e.to.uid));
             return e.to.isBefore(n2);
         }
-
+        this.isVisited = false;
         return false
     }
 
@@ -73,51 +92,6 @@ export abstract class Node {
     
 
 }
-
-// export class ContainerNode extends Node {
-
-//     internalccfg: CCFG;
-
-//     constructor(value: any, theActions: string[] = []) {
-//         super(value, theActions);
-//         this.internalccfg = new CCFG();
-//     }
-
-//     addNode(node: Node): Node {
-//         return this.internalccfg.addNode(node);
-//     }
-
-//     addEdge(from: Node, to: Node, label:string=""): Edge {
-//         return this.internalccfg.addEdge(from, to, label);
-//     }
-
-//     toDot(): string {
-//         return this.internalccfg.toDot();
-//     }
-
-//     getNodeFromName(name: string): Node | undefined {
-//         let res = this.internalccfg.getNodeFromName(name);
-//         if(res == undefined){
-//             if(this.owningCCFG != undefined){
-//                 return this.owningCCFG.getNodeFromName(name);
-//             }
-//         }
-//         return res;
-//     }
-
-//     getNodeByUID(uid: integer): Node | undefined {
-//         if(this.owningCCFG != undefined){
-//             return this.owningCCFG.getNodeByUID(uid);
-//         }
-//         return this.internalccfg.getNodeByUID(uid);
-//     }
-
-//     replaceNode(oldNode: Node, newNode: Node): void {
-//         this.internalccfg.replaceNode(oldNode, newNode);
-//     }
-
-
-// }
 
 
 export class Edge {
@@ -138,6 +112,10 @@ export class Edge {
     }
 }
 
+/**
+ * Represents a Control Flow Graph (CCFG).
+ * A CCFG consists of nodes and edges that represent the control flow of a program.
+ */
 export class CCFG {
     nodes: Node[];
     edges: Edge[];
@@ -151,6 +129,9 @@ export class CCFG {
         this.edges = [];
     }
 
+    /**
+     * add a node to the CCFG if not already in it. Change the owningCCFG of the node to this CCFG idf necessary
+     */
     addNode(node: Node): Node {
         if(this.nodes.length == 0){
             this.initialState = node;
@@ -176,49 +157,54 @@ export class CCFG {
      */
     addEdge(from: Node, to: Node, label:string=""): Edge {
         let res : Edge | undefined = this.edges.find(e => e.from === from && e.to === to);
-        if (res == undefined) {
-            const edge = new Edge(from, to);
-            this.edges.push(edge);
-            from.outputEdges.push(edge);
+        if (res != undefined) {
+            console.log(chalk.grey("warning, edge already exists from "+from.uid+":"+from.type+" to "+to.uid+":"+to.type));
+            return res; 
+        }
+        const edge = new Edge(from, to);
+        this.edges.push(edge);
+        from.outputEdges.push(edge);
 
-            if(to.inputEdges.length == 0){
-                to.inputEdges.push(edge);
-                return edge;
-            }else{ //already an input edge. check if an orJoin Node
-                if (to.getType() == "OrJoin" || to.getType() == "AndJoin") {
-                    edge.to = to
-                    to.inputEdges.push(edge)
-                    return edge
+        if(to.inputEdges.length == 0){
+            to.inputEdges.push(edge);
+            return edge;
+        }else{ //already an input edge. check if an orJoin Node
+            if (to.getType() == "OrJoin" || to.getType() == "AndJoin") {
+                edge.to = to
+                to.inputEdges.push(edge)
+                return edge
+            }
+            if (to.inputEdges.length == 1 && (to.inputEdges[0].from.getType() == "OrJoin" || to.inputEdges[0].from.getType() == "AndJoin"))  {
+                // console.log(chalk.bgYellow("adding to an existing or join node: "+to.value+" -> "+to.inputEdges[0].from.value+" -> "+to.inputEdges[0].from.uid+" "+to.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges.length));
+                edge.to = to.inputEdges[0].from;
+                to.inputEdges[0].from.inputEdges.push(edge);                   
+                return edge
+            }else{
+                // console.log(chalk.gray("creating a new or Join node: orJoinNode between "+from.uid+" and "+to.uid));
+                let orJoinNode = new OrJoin(to.astNode);
+                this.addNode(orJoinNode)
+                
+                edge.to = orJoinNode
+                for(let e of to.inputEdges){
+                    e.to = orJoinNode
+                    orJoinNode.inputEdges.push(e)
                 }
-                if (to.inputEdges.length == 1 && (to.inputEdges[0].from.getType() == "OrJoin" || to.inputEdges[0].from.getType() == "AndJoin"))  {
-                    console.log(chalk.bgYellow("adding to an existing or join node: "+to.value+" -> "+to.inputEdges[0].from.value+" -> "+to.inputEdges[0].from.uid+" "+to.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges.length));
-                    edge.to = to.inputEdges[0].from;
-                    to.inputEdges[0].from.inputEdges.push(edge);                   
-                    return edge
-                }else{
-                    let toUID = to.value.startsWith("starts")?to.value.substring(6):to.value.startsWith("terminates")?to.value.substring(10):to.value;
-                    console.log(chalk.gray("creating a new or Join node: orJoinNode between "+from.uid+" and "+to.uid));
-                    let orJoinNode = new OrJoin("orJoinNode"+toUID);
-                    this.addNode(orJoinNode)
-                    
-                    edge.to = orJoinNode
-                    for(let e of to.inputEdges){
-                        e.to = orJoinNode
-                        orJoinNode.inputEdges.push(e)
-                    }
-                    to.inputEdges = []
-                    let secondEdge = new Edge(orJoinNode, to)
-                    this.edges.push(secondEdge)
-                    to.inputEdges.push(secondEdge)
-                    orJoinNode.outputEdges.push(secondEdge)
-                    return edge
-                }
+                to.inputEdges = []
+                let secondEdge = new Edge(orJoinNode, to)
+                this.edges.push(secondEdge)
+                to.inputEdges.push(secondEdge)
+                orJoinNode.outputEdges.push(secondEdge)
+                return edge
             }
         }
-        console.log(chalk.grey("warning, edge already exists from "+from.uid+":"+from.value+" to "+to.uid+":"+to.value));
-        return res
+        
     }
 
+    /**
+     * replace the oldNode by the newNode in the CCFG. reroute the edges accordingly
+     * @param oldNode 
+     * @param newNode 
+     */
     replaceNode(oldNode: Node, newNode: Node): void {
         let index = this.nodes.findIndex(n => n.uid === oldNode.uid);
         if (index != -1) {
@@ -248,36 +234,88 @@ export class CCFG {
         }
     }
 
+    /**
+     * returns the node with the given uid
+     * 
+     * @param uid: integer
+     * @returns the node with the given uid or undefined if not found
+     */
     getNodeByUID(uid: integer): Node | undefined  {
         for(let n of this.nodes){
             if(n.uid === uid){
                 return n;
             }
-            // if(n.getType() == "ContainerNode"){
-            //     let res = (n as ContainerNode).internalccfg.getNodeByUID(uid);
-            //     if(res != undefined){
-            //         return res;
-            //     }
-            // }
         }
         return undefined
     }
 
-    getNodeFromName(name: string): Node | undefined {
+    /**
+     * returns the node with the given astNode and type
+     * @param astNode 
+     * @param t 
+     * @returns the node with the given astNode and type or undefined if not found
+     */
+    getNodeFromASTNode(astNode: AstNode, t?:NodeType): Node | undefined {
         for(let n of this.nodes){
-            if(n.value === name){
+            if(n.astNode != undefined && n.astNode == astNode && n.type == t){
                 return n;
             }
-            // if(n.getType() == "ContainerNode"){
-            //     let res = (n as ContainerNode).internalccfg.getNodeFromName(name);
-            //     if(res != undefined){
-            //         return res;
-            //     }
-            // }
         }
-        
         return undefined
     }
+
+
+    computeCorrespondingNodes(): void {
+        for (const node of this.nodes) {
+            if (node.getType() === "Fork" || node.getType() === "Choice") {
+                const correspondingNode = this.findCorrespondingNode(node);
+                if (correspondingNode) {
+                    node.syncNodeIds.push(correspondingNode.uid);
+                    correspondingNode.syncNodeIds.push(node.uid);
+                }
+            }
+        }
+    }
+
+    private findCorrespondingNode(node: Node): Node | undefined {
+        const visited: Node[] = [];
+        const queue: Node[] = [];
+        queue.push(node);
+
+        var splitCounter: integer = -1;
+
+        while (queue.length > 0) {
+            const current = queue.shift();
+            if (current) {
+                
+                visited.push(current);
+                if ((current.getType() === "Fork" || current.getType() === "Choice")) {
+                    splitCounter = splitCounter + 1;
+                }
+                if ((current.getType() === "OrJoin" || current.getType() === "AndJoin")) {
+                    if (splitCounter > 0) {
+                        splitCounter = splitCounter - 1;
+                    }else{
+                        return current;
+                    }
+                }
+                const joinEdges = current.outputEdges.filter(edge => edge.to.getType() === "OrJoin" || edge.to.getType() === "AndJoin");
+                const otherEdges = current.outputEdges.filter(edge => edge.to.getType() !== "OrJoin" && edge.to.getType() !== "AndJoin");
+                const sortedEdges = [...joinEdges, ...otherEdges];
+                for (const edge of sortedEdges) {
+                    const nextNode = edge.to;
+                    if (!visited.includes(nextNode)) {
+                        if(! queue.includes(nextNode)){
+                            queue.push(nextNode);
+                        }
+                    }
+                }
+            }
+        }
+
+        return undefined;
+    }
+
 
     addSyncEdge(): void{
         for(let n of this.nodes){
@@ -286,7 +324,9 @@ export class CCFG {
                     if((n2.getType() == "Fork" || n2.getType() == "Choice")
                         &&
                         n2.outputEdges.length > 1){
+                            console.log(chalk.gray("info: checking sync edge between "+n2.uid+" and "+n.uid));
                         if(n2.isBefore(n)){
+                            console.log(chalk.gray("info: adding sync edge between "+n2.uid+" and "+n.uid));
                             n2.syncNodeIds.push(n.uid);
                             n.syncNodeIds.push(n2.uid);
                             this.syncEdges.push(new SyncEdge(n, n2, "sync"));
@@ -318,7 +358,7 @@ export class CCFG {
 
     private detectCyclesRec(node: Node, visited: Node[], recursionStack: Node[]): boolean {
         if (recursionStack.includes(node)) {
-            console.log(chalk.gray("info: cycle detected on node #" + node.uid + " (" + node.value + ")"));
+            console.log(chalk.gray("info: cycle detected on node #" + node.uid + " (" + node.type + ")"));
             if (node.getType() == "OrJoin") {
                 node.isCycleInitiator = true;
             }
@@ -351,7 +391,7 @@ export class CCFG {
             const cycle = path.slice(cycleStartIndex);
             // if (! node.cycles.some( c => c == cycle)){
                // node.cycles.push(cycle);
-                console.log(chalk.gray("info: cycle detected on node #" + node.uid + " (" + node.value + ")\n\t" + cycle.map(n => n.uid).join(" -> ") + " -> " + node.uid ));                
+                console.log(chalk.gray("info: cycle detected on node #" + node.uid + " (" + node.type + ")\n\t" + cycle.map(n => n.uid).join(" -> ") + " -> " + node.uid ));                
                 for(const n of cycle){
                     if (! n.cycles.some(c => c === cycle)){    
                         n.cycles.push(cycle);
@@ -368,47 +408,7 @@ export class CCFG {
         }
         return;
     }
-    // detectCycles(): boolean {
-    //     const visited: Node[] = [];
-    //     const recursionStack: Node[] = [];
-
-    //     for (const node of this.nodes) {
-    //         if (this.detectCyclesRec(node, visited, recursionStack)) {
-    //             return true;
-    //         }
-    //     }
-
-    //     return false;
-    // }
-
-    // private detectCyclesRec(node: Node, visited: Node[], recursionStack: Node[]): boolean {
-    //     if (recursionStack.includes(node)) {
-    //         console.log(chalk.gray("info: cycle detected on node #"+node.uid+" ("+node.value+")"));
-    //         if(node.getType() == "OrJoin"){
-    //             node.isCycleInitiator = true;
-    //         }
-    //         return true;
-    //     }
-
-    //     if (visited.includes(node)) {
-    //         return false;
-    //     }
-
-    //     visited.push(node);
-    //     recursionStack.push(node);
-
-    //     for (const edge of node.outputEdges) {
-    //         if (this.detectCyclesRec(edge.to, visited, recursionStack)) {
-    //             return true;
-    //         }
-    //     }
-
-    //     recursionStack.pop();
-
-    //     return false;
-    // }
-  
-
+    
 
     toDot(): string {
         let wholeDot = 'digraph G {\n';
@@ -476,9 +476,9 @@ export class CCFG {
 
     dotGetNodeLabel(node: Node): string {
         if(node.functionsDefs.length == 0){
-            return node.uid.toString()+":"+node.value;
+            return node.uid.toString()+"["+node.syncNodeIds.map(i =>i).join(',')+"]"+":"+node.type;
         }
-        return node.uid.toString()+":"+node.value+":\n"+node.returnType+" function"+node.functionsNames+"("+node.params.map(p => (p as TypedElement).toString()).join(", ")+"){\n"+node.functionsDefs.map(
+        return node.uid.toString()+"["+node.syncNodeIds.map(i =>i).join(',')+"]"+":"+node.type+":\n"+node.returnType+" function"+node.functionsNames+"("+node.params.map(p => (p as TypedElement).toString()).join(", ")+"){\n"+node.functionsDefs.map(
             a => a.replaceAll("\"","\\\"")).join("\n")+"\n}";
     }
 
@@ -496,12 +496,38 @@ export class CCFG {
                 return "triangle";
             case "StartTimer":
                 return "parallelogram";
+            case "Hole":
+                return "cylinder";
+            case "CollectionHole":
+                return "cylinder";
             default:
                 return "box";
         }
     }
 
 
+    fillHole(h: Hole, ccfg: CCFG): void {
+        if(h.inputEdges.length == 0 && h.outputEdges.length == 0){
+            console.log(chalk.red("error: hole has no input and no output edge"));
+            return;
+        }
+        for (let inputEdge of h.inputEdges) {
+            inputEdge.to = ccfg.initialState as Node;
+            ccfg.initialState?.inputEdges.push(inputEdge);
+        }
+        let terminalNode = ccfg.nodes.find(n => n.type == "terminates");
+        if (terminalNode == undefined) {
+           throw new Error("no terminal node found in the ccfg");
+        }
+        for (let outputEdge of h.outputEdges) {
+            outputEdge.from = terminalNode as Node;
+            terminalNode.outputEdges.push(outputEdge);
+        }
+        this.nodes = this.nodes.filter(n => n.uid !== h.uid);
+        this.nodes = [...this.nodes, ...ccfg.nodes];
+        this.edges = [...this.edges, ...ccfg.edges];
+
+    }
 
 
 }
@@ -514,33 +540,66 @@ export class SyncEdge extends Edge {
 
 export class Step extends Node {
     
-    constructor(value: any, theActions: string[] = []) {
-        super(value, theActions);
+    constructor(astNode?:AstNode, type?: NodeType, theActions: string[] = []) {
+        super(astNode, type, theActions);
     }
 }
 
 export class Choice extends Node {
-    constructor(value: any) {
-        super(value);
+    constructor(astNode?:AstNode) {
+        super(astNode);
     }
 }
 
 export class Join extends Node {
-    constructor(value: any) {
-        super(value);
+    constructor(astNode?:AstNode) {
+        super(astNode, NodeType.multipleSynchro);
     }
 }
 
 export class Fork extends Node {
-    constructor(value: any) {
-        super(value);
+    constructor(astNode?:AstNode) {
+        super(astNode);
     }
 }
 
 export class OrJoin extends Join {
-    constructor(value: any) {
-        super(value);
+    constructor(astNode?:AstNode) {
+        super(astNode);
     }
+}
+
+
+export class AndJoin extends Join {
+    constructor(astNode?:AstNode) {
+        super(astNode);
+    }
+}
+
+export class Hole extends Node {
+    constructor(astNode?:AstNode) {
+        super(astNode);
+    }
+}
+
+export class TimerHole extends Hole {
+
+    duration: integer = 0;
+
+    constructor(astNode:AstNode, d:integer) {
+        super(astNode);
+        this.duration = d;
+    }
+}
+
+export class CollectionHole extends Hole {
+    astNodeCollection: AstNode[];
+    constructor(astNode:AstNode[]) {
+        super(undefined);
+        this.astNodeCollection = astNode;
+    }
+    isSequential: boolean = false;
+    parallelSyncPolicy: string = "lastOf";
 }
 
 // export class Timer extends Node {
@@ -562,10 +621,4 @@ export class OrJoin extends Join {
 //         super(value);
 //     }
 // }
-
-export class AndJoin extends Join {
-    constructor(value: any) {
-        super(value);
-    }
-}
 

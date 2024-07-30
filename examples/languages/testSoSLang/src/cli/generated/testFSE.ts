@@ -1,31 +1,1021 @@
 
-import { AstNode, Reference, isReference } from "langium";
-import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, TypedElement } from "../../ccfg/ccfglib";
-import { Model,Bloc,ParallelBloc,Variable,VarRef,If,Assignment,Conjunction,Plus,BooleanConst,While,PeriodicBloc,FunctionCall,FunctionDef } from "../../language-server/generated/ast";
+import fs from 'fs';
+import { AstNode, Reference, isReference, streamAst } from "langium";
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole} from "../../ccfg/ccfglib.js";
+import { Model,Bloc,ParallelBloc,Variable,VarRef,If,Assignment,Conjunction,Plus,BooleanConst,While,PeriodicBloc,FunctionCall,FunctionDef } from "../../language-server/generated/ast.js";
 
-export interface SimpleLVisitor {
-    visit(node: AstNode| Reference<AstNode>): [Node,Node];
+var debug = false
+
+export interface CompilerFrontEnd {
+
+    createLocalCCFG(node: AstNode| Reference<AstNode>): CCFG;
     
+     createModelLocalCCFG(node: Model): CCFG;
+     createBlocLocalCCFG(node: Bloc): CCFG;
+     createParallelBlocLocalCCFG(node: ParallelBloc): CCFG;
+     createVariableLocalCCFG(node: Variable): CCFG;
+     createVarRefLocalCCFG(node: VarRef): CCFG;
+     createIfLocalCCFG(node: If): CCFG;
+     createAssignmentLocalCCFG(node: Assignment): CCFG;
+     createConjunctionLocalCCFG(node: Conjunction): CCFG;
+     createPlusLocalCCFG(node: Plus): CCFG;
+     createBooleanConstLocalCCFG(node: BooleanConst): CCFG;
+     createWhileLocalCCFG(node: While): CCFG;
+     createPeriodicBlocLocalCCFG(node: PeriodicBloc): CCFG;
+     createFunctionCallLocalCCFG(node: FunctionCall): CCFG;
+     createFunctionDefLocalCCFG(node: FunctionDef): CCFG;
 
-     visitModel(node: Model): [Node,Node];
-     visitBloc(node: Bloc): [Node,Node];
-     visitParallelBloc(node: ParallelBloc): [Node,Node];
-     visitVariable(node: Variable): [Node,Node];
-     visitVarRef(node: VarRef): [Node,Node];
-     visitIf(node: If): [Node,Node];
-     visitAssignment(node: Assignment): [Node,Node];
-     visitConjunction(node: Conjunction): [Node,Node];
-     visitPlus(node: Plus): [Node,Node];
-     visitBooleanConst(node: BooleanConst): [Node,Node];
-     visitWhile(node: While): [Node,Node];
-     visitPeriodicBloc(node: PeriodicBloc): [Node,Node];
-     visitFunctionCall(node: FunctionCall): [Node,Node];
-     visitFunctionDef(node: FunctionDef): [Node,Node];
+    generateCCFG(node: AstNode): CCFG;
+    
 }
 
+export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
+    constructor(debugMode: boolean = false){ 
+        debug = debugMode
+    }
+
+    globalCCFG: CCFG = new CCFG();
+
+  
+    createLocalCCFG(node: AstNode | Reference<AstNode>): CCFG {
+        if(isReference(node)){
+            if(node.ref === undefined){
+                throw new Error("not possible to visit an undefined AstNode")
+            }
+            node = node.ref
+        }
+        if(node.$type == "Model"){
+            return this.createModelLocalCCFG(node as Model);
+        }
+        if(node.$type == "Bloc"){
+            return this.createBlocLocalCCFG(node as Bloc);
+        }
+        if(node.$type == "ParallelBloc"){
+            return this.createParallelBlocLocalCCFG(node as ParallelBloc);
+        }
+        if(node.$type == "Variable"){
+            return this.createVariableLocalCCFG(node as Variable);
+        }
+        if(node.$type == "VarRef"){
+            return this.createVarRefLocalCCFG(node as VarRef);
+        }
+        if(node.$type == "If"){
+            return this.createIfLocalCCFG(node as If);
+        }
+        if(node.$type == "Assignment"){
+            return this.createAssignmentLocalCCFG(node as Assignment);
+        }
+        if(node.$type == "Conjunction"){
+            return this.createConjunctionLocalCCFG(node as Conjunction);
+        }
+        if(node.$type == "Plus"){
+            return this.createPlusLocalCCFG(node as Plus);
+        }
+        if(node.$type == "BooleanConst"){
+            return this.createBooleanConstLocalCCFG(node as BooleanConst);
+        }
+        if(node.$type == "While"){
+            return this.createWhileLocalCCFG(node as While);
+        }
+        if(node.$type == "PeriodicBloc"){
+            return this.createPeriodicBlocLocalCCFG(node as PeriodicBloc);
+        }
+        if(node.$type == "FunctionCall"){
+            return this.createFunctionCallLocalCCFG(node as FunctionCall);
+        }
+        if(node.$type == "FunctionDef"){
+            return this.createFunctionDefLocalCCFG(node as FunctionDef);
+        }  
+        throw new Error("Not implemented: " + node.$type);
+    }
+    
+// rule statementsInOrder1
+   //premise: starts:event
+   //conclusion: statements:Statement[],s:unknown,starts:event
+// rule finishModel
+   //premise: statements:Statement[],last():Statement,terminates:event
+   //conclusion: terminates:event
+
+    /**
+     * returns the local CCFG of the Model node
+     * @param a Model node 
+     * @returns the local CCFG (with holes)
+     */
+    createModelLocalCCFG(node: Model): CCFG {
+        let localCCFG = new CCFG()
+        let startsModelNode: Node = new Step(node,NodeType.starts,[])
+        if(startsModelNode.functionsDefs.length>0){
+            startsModelNode.returnType = "void"
+        }
+        startsModelNode.functionsNames = [`init${startsModelNode.uid}Model`]
+        localCCFG.addNode(startsModelNode)
+        localCCFG.initialState = startsModelNode
+        let terminatesModelNode: Node = new Step(node,NodeType.terminates)
+        localCCFG.addNode(terminatesModelNode)
+        
+        let statementsHole: CollectionHole = new CollectionHole(node.statements)
+        statementsHole.isSequential = true
+        statementsHole.parallelSyncPolicy = "undefined"
+        localCCFG.addNode(statementsHole)
+        
+        startsModelNode.params = [...startsModelNode.params, ...[]]
+        startsModelNode.returnType = "void"
+        startsModelNode.functionsNames = [`${startsModelNode.uid}statementsInOrder1`] //overwrite existing name
+        startsModelNode.functionsDefs =[...startsModelNode.functionsDefs, ...[]] //GG
+                //mark 1.5
+        localCCFG.addEdge(startsModelNode,statementsHole)
+        
+        statementsHole.params = [...statementsHole.params, ...[]]
+        statementsHole.returnType = "void"
+        statementsHole.functionsNames = [`${statementsHole.uid}finishModel`] //overwrite existing name
+        statementsHole.functionsDefs =[...statementsHole.functionsDefs, ...[]] //GG
+                //mark 1 { "name": "terminates", "type": "event"}
+        {let e = localCCFG.addEdge(statementsHole,terminatesModelNode)
+        e.guards = [...e.guards, ...[]]}
+        
+        return localCCFG;
+    }
+// rule startsBloc
+   //premise: starts:event
+   //conclusion: statements:Statement[],s:unknown,starts:event
+// rule finishBloc
+   //premise: statements:Statement[],last():Statement,terminates:event
+   //conclusion: terminates:event
+
+    /**
+     * returns the local CCFG of the Bloc node
+     * @param a Bloc node 
+     * @returns the local CCFG (with holes)
+     */
+    createBlocLocalCCFG(node: Bloc): CCFG {
+        let localCCFG = new CCFG()
+        let startsBlocNode: Node = new Step(node,NodeType.starts,[])
+        if(startsBlocNode.functionsDefs.length>0){
+            startsBlocNode.returnType = "void"
+        }
+        startsBlocNode.functionsNames = [`init${startsBlocNode.uid}Bloc`]
+        localCCFG.addNode(startsBlocNode)
+        localCCFG.initialState = startsBlocNode
+        let terminatesBlocNode: Node = new Step(node,NodeType.terminates)
+        localCCFG.addNode(terminatesBlocNode)
+        
+        let statementsHole: CollectionHole = new CollectionHole(node.statements)
+        statementsHole.isSequential = true
+        statementsHole.parallelSyncPolicy = "undefined"
+        localCCFG.addNode(statementsHole)
+        
+        startsBlocNode.params = [...startsBlocNode.params, ...[]]
+        startsBlocNode.returnType = "void"
+        startsBlocNode.functionsNames = [`${startsBlocNode.uid}startsBloc`] //overwrite existing name
+        startsBlocNode.functionsDefs =[...startsBlocNode.functionsDefs, ...[]] //GG
+                //mark 1.5
+        localCCFG.addEdge(startsBlocNode,statementsHole)
+        
+        statementsHole.params = [...statementsHole.params, ...[]]
+        statementsHole.returnType = "void"
+        statementsHole.functionsNames = [`${statementsHole.uid}finishBloc`] //overwrite existing name
+        statementsHole.functionsDefs =[...statementsHole.functionsDefs, ...[]] //GG
+                //mark 1 { "name": "terminates", "type": "event"}
+        {let e = localCCFG.addEdge(statementsHole,terminatesBlocNode)
+        e.guards = [...e.guards, ...[]]}
+        
+        return localCCFG;
+    }
+// rule startsParallelBloc
+   //premise: starts:event
+   //conclusion: statements:Statement[],s:unknown,starts:event
+// rule finishParallelBloc
+   //premise: statements:Statement[],terminates:event
+   //conclusion: terminates:event
+
+    /**
+     * returns the local CCFG of the ParallelBloc node
+     * @param a ParallelBloc node 
+     * @returns the local CCFG (with holes)
+     */
+    createParallelBlocLocalCCFG(node: ParallelBloc): CCFG {
+        let localCCFG = new CCFG()
+        let startsParallelBlocNode: Node = new Step(node,NodeType.starts,[])
+        if(startsParallelBlocNode.functionsDefs.length>0){
+            startsParallelBlocNode.returnType = "void"
+        }
+        startsParallelBlocNode.functionsNames = [`init${startsParallelBlocNode.uid}ParallelBloc`]
+        localCCFG.addNode(startsParallelBlocNode)
+        localCCFG.initialState = startsParallelBlocNode
+        let terminatesParallelBlocNode: Node = new Step(node,NodeType.terminates)
+        localCCFG.addNode(terminatesParallelBlocNode)
+        
+        let statementsHole: CollectionHole = new CollectionHole(node.statements)
+        statementsHole.isSequential = false
+        statementsHole.parallelSyncPolicy = "lastOf"
+        localCCFG.addNode(statementsHole)
+        
+        startsParallelBlocNode.params = [...startsParallelBlocNode.params, ...[]]
+        startsParallelBlocNode.returnType = "void"
+        startsParallelBlocNode.functionsNames = [`${startsParallelBlocNode.uid}startsParallelBloc`] //overwrite existing name
+        startsParallelBlocNode.functionsDefs =[...startsParallelBlocNode.functionsDefs, ...[]] //GG
+                //mark 1.5
+        localCCFG.addEdge(startsParallelBlocNode,statementsHole)
+        
+        statementsHole.params = [...statementsHole.params, ...[]]
+        statementsHole.returnType = "void"
+        statementsHole.functionsNames = [`${statementsHole.uid}finishParallelBloc`] //overwrite existing name
+        statementsHole.functionsDefs =[...statementsHole.functionsDefs, ...[]] //GG
+                //mark 1 { "name": "terminates", "type": "event"}
+        {let e = localCCFG.addEdge(statementsHole,terminatesParallelBlocNode)
+        e.guards = [...e.guards, ...[]]}
+        
+        return localCCFG;
+    }
+// rule initializeVar
+   //premise: starts:event
+   //conclusion: terminates:event
+
+    /**
+     * returns the local CCFG of the Variable node
+     * @param a Variable node 
+     * @returns the local CCFG (with holes)
+     */
+    createVariableLocalCCFG(node: Variable): CCFG {
+        let localCCFG = new CCFG()
+        let startsVariableNode: Node = new Step(node,NodeType.starts,[`createGlobalVar,int,${this.getASTNodeUID(node)}currentValue`])
+        if(startsVariableNode.functionsDefs.length>0){
+            startsVariableNode.returnType = "void"
+        }
+        startsVariableNode.functionsNames = [`init${startsVariableNode.uid}Variable`]
+        localCCFG.addNode(startsVariableNode)
+        localCCFG.initialState = startsVariableNode
+        let terminatesVariableNode: Node = new Step(node,NodeType.terminates)
+        localCCFG.addNode(terminatesVariableNode)
+        
+        {
+        let initializeVarStateModificationNode: Node = new Step(node, undefined, [`createVar,int,${this.getASTNodeUID(node)}1381`,`assignVar,${this.getASTNodeUID(node)}1381,${node.initialValue}`,`setGlobalVar,int,${this.getASTNodeUID(node)}currentValue,${this.getASTNodeUID(node)}1381`])
+        localCCFG.addNode(initializeVarStateModificationNode)
+        {let e = localCCFG.addEdge(startsVariableNode,initializeVarStateModificationNode)
+        e.guards = [...e.guards, ...[]]}
+        startsVariableNode = initializeVarStateModificationNode
+        }
+    
+        startsVariableNode.params = [...startsVariableNode.params, ...[]]
+        startsVariableNode.returnType = "void"
+        startsVariableNode.functionsNames = [`${startsVariableNode.uid}initializeVar`] //overwrite existing name
+        startsVariableNode.functionsDefs =[...startsVariableNode.functionsDefs, ...[]] //GG
+                //mark 1 { "name": "terminates", "type": "event"}
+        {let e = localCCFG.addEdge(startsVariableNode,terminatesVariableNode)
+        e.guards = [...e.guards, ...[]]}
+        
+        return localCCFG;
+    }
+// rule accessVarRef
+   //premise: starts:event
+   //conclusion: terminates:event
+
+    /**
+     * returns the local CCFG of the VarRef node
+     * @param a VarRef node 
+     * @returns the local CCFG (with holes)
+     */
+    createVarRefLocalCCFG(node: VarRef): CCFG {
+        let localCCFG = new CCFG()
+        let startsVarRefNode: Node = new Step(node,NodeType.starts,[])
+        if(startsVarRefNode.functionsDefs.length>0){
+            startsVarRefNode.returnType = "void"
+        }
+        startsVarRefNode.functionsNames = [`init${startsVarRefNode.uid}VarRef`]
+        localCCFG.addNode(startsVarRefNode)
+        localCCFG.initialState = startsVarRefNode
+        let terminatesVarRefNode: Node = new Step(node,NodeType.terminates)
+        localCCFG.addNode(terminatesVarRefNode)
+        
+        startsVarRefNode.params = [...startsVarRefNode.params, ...[]]
+        startsVarRefNode.returnType = "int"
+        startsVarRefNode.functionsNames = [`${startsVarRefNode.uid}accessVarRef`] //overwrite existing name
+        startsVarRefNode.functionsDefs =[...startsVarRefNode.functionsDefs, ...[`createVar,int,${this.getASTNodeUID(node)}1587`,`setVarFromGlobal,int,${this.getASTNodeUID(node)}1587,${this.getASTNodeUID(node.theVar)}currentValue`,`createVar,int,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,${this.getASTNodeUID(node)}1587`,`return,${this.getASTNodeUID(node)}terminates`]] //GG
+                //mark 1 { "name": "terminates", "type": "event"}
+        {let e = localCCFG.addEdge(startsVarRefNode,terminatesVarRefNode)
+        e.guards = [...e.guards, ...[]]}
+        
+        return localCCFG;
+    }
+// rule condStart
+   //premise: starts:event
+   //conclusion: cond:VarRef,starts:event
+// rule condTrueStart
+   //premise: cond:VarRef,terminates:event
+   //conclusion: then:Bloc,starts:event
+// rule condFalseStart
+   //premise: cond:VarRef,terminates:event
+   //conclusion: else:Bloc,starts:event
+// rule condStop
+   //premise: else:Bloc,terminates:event
+	//then:Bloc,terminates:event
+   //conclusion: terminates:event
+
+    /**
+     * returns the local CCFG of the If node
+     * @param a If node 
+     * @returns the local CCFG (with holes)
+     */
+    createIfLocalCCFG(node: If): CCFG {
+        let localCCFG = new CCFG()
+        let startsIfNode: Node = new Step(node,NodeType.starts,[])
+        if(startsIfNode.functionsDefs.length>0){
+            startsIfNode.returnType = "void"
+        }
+        startsIfNode.functionsNames = [`init${startsIfNode.uid}If`]
+        localCCFG.addNode(startsIfNode)
+        localCCFG.initialState = startsIfNode
+        let terminatesIfNode: Node = new Step(node,NodeType.terminates)
+        localCCFG.addNode(terminatesIfNode)
+        
+        let condHole: Hole = new Hole(node.cond)
+        localCCFG.addNode(condHole)
+        
+        let thenHole: Hole = new Hole(node.then)
+        localCCFG.addNode(thenHole)
+        
+        let elseHole: Hole = new Hole(node.else)
+        localCCFG.addNode(elseHole)
+        
+        startsIfNode.params = [...startsIfNode.params, ...[]]
+        startsIfNode.returnType = "void"
+        startsIfNode.functionsNames = [`${startsIfNode.uid}condStart`] //overwrite existing name
+        startsIfNode.functionsDefs =[...startsIfNode.functionsDefs, ...[]] //GG
+                //mark 0
+        {let e = localCCFG.addEdge(startsIfNode,condHole)
+        e.guards = [...e.guards, ...[]]}
+            
+        let condTrueStartChoiceNode = undefined
+        if(condHole.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
+            condTrueStartChoiceNode = condHole.outputEdges.filter(e => e.to.getType() == "Choice")[0].to
+        }else{
+            condTrueStartChoiceNode = new Choice(node.cond)
+            localCCFG.addNode(condTrueStartChoiceNode)
+        }
+        localCCFG.addEdge(condHole,condTrueStartChoiceNode)
+                
+        condTrueStartChoiceNode.params = [...condTrueStartChoiceNode.params, ...[]]
+        condTrueStartChoiceNode.returnType = "void"
+        condTrueStartChoiceNode.functionsNames = [`${condTrueStartChoiceNode.uid}condTrueStart`] //overwrite existing name
+        condTrueStartChoiceNode.functionsDefs =[...condTrueStartChoiceNode.functionsDefs, ...[]] //GG
+                //mark 0
+        {let e = localCCFG.addEdge(condTrueStartChoiceNode,thenHole)
+        e.guards = [...e.guards, ...[`verifyEqual,${this.getASTNodeUID(node.cond)}terminate,true`]]}
+            
+        let condFalseStartChoiceNode = undefined
+        if(condHole.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
+            condFalseStartChoiceNode = condHole.outputEdges.filter(e => e.to.getType() == "Choice")[0].to
+        }else{
+            condFalseStartChoiceNode = new Choice(node.cond)
+            localCCFG.addNode(condFalseStartChoiceNode)
+        }
+        localCCFG.addEdge(condHole,condFalseStartChoiceNode)
+                
+        condFalseStartChoiceNode.params = [...condFalseStartChoiceNode.params, ...[]]
+        condFalseStartChoiceNode.returnType = "void"
+        condFalseStartChoiceNode.functionsNames = [`${condFalseStartChoiceNode.uid}condFalseStart`] //overwrite existing name
+        condFalseStartChoiceNode.functionsDefs =[...condFalseStartChoiceNode.functionsDefs, ...[]] //GG
+                //mark 0
+        {let e = localCCFG.addEdge(condFalseStartChoiceNode,elseHole)
+        e.guards = [...e.guards, ...[`verifyEqual,${this.getASTNodeUID(node.cond)}terminate,false`]]}
+            
+        let condStopOrJoinNode: Node = new OrJoin(node)
+        localCCFG.addNode(condStopOrJoinNode)
+                             //mark a
+        localCCFG.addEdge(elseHole,condStopOrJoinNode)
+                                         //mark a
+        localCCFG.addEdge(thenHole,condStopOrJoinNode)
+                            
+        condStopOrJoinNode.params = [...condStopOrJoinNode.params, ...[]]
+        condStopOrJoinNode.returnType = "void"
+        condStopOrJoinNode.functionsNames = [`${condStopOrJoinNode.uid}condStop`] //overwrite existing name
+        condStopOrJoinNode.functionsDefs =[...condStopOrJoinNode.functionsDefs, ...[]] //GG
+                //mark 1 { "name": "terminates", "type": "event"}
+        {let e = localCCFG.addEdge(condStopOrJoinNode,terminatesIfNode)
+        e.guards = [...e.guards, ...[]]}
+        
+        return localCCFG;
+    }
+// rule executeAssignment
+   //premise: starts:event
+   //conclusion: expr:Expr,starts:event
+// rule executeAssignment2
+   //premise: expr:Expr,terminates:event
+   //conclusion: terminates:event
+
+    /**
+     * returns the local CCFG of the Assignment node
+     * @param a Assignment node 
+     * @returns the local CCFG (with holes)
+     */
+    createAssignmentLocalCCFG(node: Assignment): CCFG {
+        let localCCFG = new CCFG()
+        let startsAssignmentNode: Node = new Step(node,NodeType.starts,[])
+        if(startsAssignmentNode.functionsDefs.length>0){
+            startsAssignmentNode.returnType = "void"
+        }
+        startsAssignmentNode.functionsNames = [`init${startsAssignmentNode.uid}Assignment`]
+        localCCFG.addNode(startsAssignmentNode)
+        localCCFG.initialState = startsAssignmentNode
+        let terminatesAssignmentNode: Node = new Step(node,NodeType.terminates)
+        localCCFG.addNode(terminatesAssignmentNode)
+        
+        let exprHole: Hole = new Hole(node.expr)
+        localCCFG.addNode(exprHole)
+        
+        startsAssignmentNode.params = [...startsAssignmentNode.params, ...[]]
+        startsAssignmentNode.returnType = "void"
+        startsAssignmentNode.functionsNames = [`${startsAssignmentNode.uid}executeAssignment`] //overwrite existing name
+        startsAssignmentNode.functionsDefs =[...startsAssignmentNode.functionsDefs, ...[]] //GG
+                //mark 0
+        {let e = localCCFG.addEdge(startsAssignmentNode,exprHole)
+        e.guards = [...e.guards, ...[]]}
+            
+        {
+        let executeAssignment2StateModificationNode: Node = new Step(node, undefined, [`createVar,int,${this.getASTNodeUID(node)}2528`,`assignVar,${this.getASTNodeUID(node)}2528,resRight`,`setGlobalVar,int,${this.getASTNodeUID(node.variable)}currentValue,${this.getASTNodeUID(node)}2528`])
+        localCCFG.addNode(executeAssignment2StateModificationNode)
+        {let e = localCCFG.addEdge(exprHole,executeAssignment2StateModificationNode)
+        e.guards = [...e.guards, ...[]]}
+        exprHole = executeAssignment2StateModificationNode
+        }
+    
+        exprHole.params = [...exprHole.params, ...[Object.assign( new TypedElement(), JSON.parse(`{ "name": "resRight", "type": "int"}`))]]
+        exprHole.returnType = "void"
+        exprHole.functionsNames = [`${exprHole.uid}executeAssignment2`] //overwrite existing name
+        exprHole.functionsDefs =[...exprHole.functionsDefs, ...[]] //GG
+                //mark 1 { "name": "terminates", "type": "event"}
+        {let e = localCCFG.addEdge(exprHole,terminatesAssignmentNode)
+        e.guards = [...e.guards, ...[]]}
+        
+        return localCCFG;
+    }
+// rule evaluateConjunction
+   //premise: starts:event
+   //conclusion: lhs:BooleanExpression,starts:event
+	//rhs:BooleanExpression,starts:event
+// rule evaluateConjunction2
+   //premise: lhs:BooleanExpression,terminates:event
+   //conclusion: terminates:event
+// rule evaluateConjunction3
+   //premise: rhs:BooleanExpression,terminates:event
+   //conclusion: terminates:event
+// rule evaluateConjunction4
+   //premise: lhs:BooleanExpression,terminates:event
+	//rhs:BooleanExpression,terminates:event
+   //conclusion: terminates:event
+
+    /**
+     * returns the local CCFG of the Conjunction node
+     * @param a Conjunction node 
+     * @returns the local CCFG (with holes)
+     */
+    createConjunctionLocalCCFG(node: Conjunction): CCFG {
+        let localCCFG = new CCFG()
+        let startsConjunctionNode: Node = new Step(node,NodeType.starts,[])
+        if(startsConjunctionNode.functionsDefs.length>0){
+            startsConjunctionNode.returnType = "void"
+        }
+        startsConjunctionNode.functionsNames = [`init${startsConjunctionNode.uid}Conjunction`]
+        localCCFG.addNode(startsConjunctionNode)
+        localCCFG.initialState = startsConjunctionNode
+        let terminatesConjunctionNode: Node = new Step(node,NodeType.terminates)
+        localCCFG.addNode(terminatesConjunctionNode)
+        
+        let lhsHole: Hole = new Hole(node.lhs)
+        localCCFG.addNode(lhsHole)
+        
+        let rhsHole: Hole = new Hole(node.rhs)
+        localCCFG.addNode(rhsHole)
+        
+        startsConjunctionNode.params = [...startsConjunctionNode.params, ...[]]
+        startsConjunctionNode.returnType = "void"
+        startsConjunctionNode.functionsNames = [`${startsConjunctionNode.uid}evaluateConjunction`] //overwrite existing name
+        startsConjunctionNode.functionsDefs =[...startsConjunctionNode.functionsDefs, ...[]] //GG
+    
+        let forkevaluateConjunctionNode: Node = new Fork(node)
+        localCCFG.addNode(forkevaluateConjunctionNode)
+        localCCFG.addEdge(startsConjunctionNode,forkevaluateConjunctionNode)
+            
+                    //mark 3
+        localCCFG.addEdge(forkevaluateConjunctionNode,lhsHole)
+                                        //mark 3
+        localCCFG.addEdge(forkevaluateConjunctionNode,rhsHole)
+                    
+        let evaluateConjunction2ChoiceNode = undefined
+        if(lhsHole.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
+            evaluateConjunction2ChoiceNode = lhsHole.outputEdges.filter(e => e.to.getType() == "Choice")[0].to
+        }else{
+            evaluateConjunction2ChoiceNode = new Choice(node.lhs)
+            localCCFG.addNode(evaluateConjunction2ChoiceNode)
+        }
+        localCCFG.addEdge(lhsHole,evaluateConjunction2ChoiceNode)
+                
+        evaluateConjunction2ChoiceNode.params = [...evaluateConjunction2ChoiceNode.params, ...[]]
+        evaluateConjunction2ChoiceNode.returnType = "bool"
+        evaluateConjunction2ChoiceNode.functionsNames = [`${evaluateConjunction2ChoiceNode.uid}evaluateConjunction2`] //overwrite existing name
+        evaluateConjunction2ChoiceNode.functionsDefs =[...evaluateConjunction2ChoiceNode.functionsDefs, ...[`createVar,bool,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,false`,`return,${this.getASTNodeUID(node)}terminates`,]] //GG
+                //mark 1 { "name": "terminates", "type": "event"}
+        {let e = localCCFG.addEdge(evaluateConjunction2ChoiceNode,terminatesConjunctionNode)
+        e.guards = [...e.guards, ...[`verifyEqual,${this.getASTNodeUID(node.lhs)}terminate,false`]]}
+        
+        let evaluateConjunction3ChoiceNode = undefined
+        if(rhsHole.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
+            evaluateConjunction3ChoiceNode = rhsHole.outputEdges.filter(e => e.to.getType() == "Choice")[0].to
+        }else{
+            evaluateConjunction3ChoiceNode = new Choice(node.rhs)
+            localCCFG.addNode(evaluateConjunction3ChoiceNode)
+        }
+        localCCFG.addEdge(rhsHole,evaluateConjunction3ChoiceNode)
+                
+        evaluateConjunction3ChoiceNode.params = [...evaluateConjunction3ChoiceNode.params, ...[]]
+        evaluateConjunction3ChoiceNode.returnType = "bool"
+        evaluateConjunction3ChoiceNode.functionsNames = [`${evaluateConjunction3ChoiceNode.uid}evaluateConjunction3`] //overwrite existing name
+        evaluateConjunction3ChoiceNode.functionsDefs =[...evaluateConjunction3ChoiceNode.functionsDefs, ...[`createVar,bool,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,false`,`return,${this.getASTNodeUID(node)}terminates`,]] //GG
+                //mark 1 { "name": "terminates", "type": "event"}
+        {let e = localCCFG.addEdge(evaluateConjunction3ChoiceNode,terminatesConjunctionNode)
+        e.guards = [...e.guards, ...[`verifyEqual,${this.getASTNodeUID(node.rhs)}terminate,false`]]}
+        
+        let evaluateConjunction4AndJoinNode: Node = new AndJoin(node)
+        localCCFG.addNode(evaluateConjunction4AndJoinNode)
+                             //mark a
+        localCCFG.addEdge(lhsHole,evaluateConjunction4AndJoinNode)
+                                         //mark a
+        localCCFG.addEdge(rhsHole,evaluateConjunction4AndJoinNode)
+                            
+        let evaluateConjunction4ChoiceNode = undefined
+        if(evaluateConjunction4AndJoinNode.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
+            evaluateConjunction4ChoiceNode = evaluateConjunction4AndJoinNode.outputEdges.filter(e => e.to.getType() == "Choice")[0].to
+        }else{
+            evaluateConjunction4ChoiceNode = new Choice(node.lhs)
+            localCCFG.addNode(evaluateConjunction4ChoiceNode)
+        }
+        localCCFG.addEdge(evaluateConjunction4AndJoinNode,evaluateConjunction4ChoiceNode)
+                
+        evaluateConjunction4ChoiceNode.params = [...evaluateConjunction4ChoiceNode.params, ...[]]
+        evaluateConjunction4ChoiceNode.returnType = "bool"
+        evaluateConjunction4ChoiceNode.functionsNames = [`${evaluateConjunction4ChoiceNode.uid}evaluateConjunction4`] //overwrite existing name
+        evaluateConjunction4ChoiceNode.functionsDefs =[...evaluateConjunction4ChoiceNode.functionsDefs, ...[`createVar,bool,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,true`,`return,${this.getASTNodeUID(node)}terminates`,]] //GG
+                //mark 1 { "name": "terminates", "type": "event"}
+        {let e = localCCFG.addEdge(evaluateConjunction4ChoiceNode,terminatesConjunctionNode)
+        e.guards = [...e.guards, ...[`verifyEqual,${this.getASTNodeUID(node.lhs)}terminate,true`,`verifyEqual,${this.getASTNodeUID(node.rhs)}terminate,true`]]}
+        
+        return localCCFG;
+    }
+// rule startPlus
+   //premise: starts:event
+   //conclusion: right:Expr,starts:event
+	//left:Expr,starts:event
+// rule finishPlus
+   //premise: right:Expr,terminates:event
+	//left:Expr,terminates:event
+   //conclusion: terminates:event
+
+    /**
+     * returns the local CCFG of the Plus node
+     * @param a Plus node 
+     * @returns the local CCFG (with holes)
+     */
+    createPlusLocalCCFG(node: Plus): CCFG {
+        let localCCFG = new CCFG()
+        let startsPlusNode: Node = new Step(node,NodeType.starts,[])
+        if(startsPlusNode.functionsDefs.length>0){
+            startsPlusNode.returnType = "void"
+        }
+        startsPlusNode.functionsNames = [`init${startsPlusNode.uid}Plus`]
+        localCCFG.addNode(startsPlusNode)
+        localCCFG.initialState = startsPlusNode
+        let terminatesPlusNode: Node = new Step(node,NodeType.terminates)
+        localCCFG.addNode(terminatesPlusNode)
+        
+        let rightHole: Hole = new Hole(node.right)
+        localCCFG.addNode(rightHole)
+        
+        let leftHole: Hole = new Hole(node.left)
+        localCCFG.addNode(leftHole)
+        
+        startsPlusNode.params = [...startsPlusNode.params, ...[]]
+        startsPlusNode.returnType = "void"
+        startsPlusNode.functionsNames = [`${startsPlusNode.uid}startPlus`] //overwrite existing name
+        startsPlusNode.functionsDefs =[...startsPlusNode.functionsDefs, ...[]] //GG
+    
+        let forkstartPlusNode: Node = new Fork(node)
+        localCCFG.addNode(forkstartPlusNode)
+        localCCFG.addEdge(startsPlusNode,forkstartPlusNode)
+            
+                    //mark 3
+        localCCFG.addEdge(forkstartPlusNode,rightHole)
+                                        //mark 3
+        localCCFG.addEdge(forkstartPlusNode,leftHole)
+                    
+        let finishPlusAndJoinNode: Node = new AndJoin(node)
+        localCCFG.addNode(finishPlusAndJoinNode)
+                             //mark a
+        localCCFG.addEdge(rightHole,finishPlusAndJoinNode)
+                                         //mark a
+        localCCFG.addEdge(leftHole,finishPlusAndJoinNode)
+                            
+        finishPlusAndJoinNode.params = [...finishPlusAndJoinNode.params, ...[Object.assign( new TypedElement(), JSON.parse(`{ "name": "n2", "type": "int"}`)),Object.assign( new TypedElement(), JSON.parse(`{ "name": "n1", "type": "int"}`))]]
+        finishPlusAndJoinNode.returnType = "int"
+        finishPlusAndJoinNode.functionsNames = [`${finishPlusAndJoinNode.uid}finishPlus`] //overwrite existing name
+        finishPlusAndJoinNode.functionsDefs =[...finishPlusAndJoinNode.functionsDefs, ...[`createVar,int,${this.getASTNodeUID(node)}4391`,`assignVar,${this.getASTNodeUID(node)}4391,n1`,`createVar,int,${this.getASTNodeUID(node)}4396`,`assignVar,${this.getASTNodeUID(node)}4396,n2`,`createVar,int,${this.getASTNodeUID(node)}4390`,`operation,${this.getASTNodeUID(node)}4390,${this.getASTNodeUID(node)}4391,+,${this.getASTNodeUID(node)}4396`,`createVar,int,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,${this.getASTNodeUID(node)}4390`,`return,${this.getASTNodeUID(node)}terminates`]] //GG
+                //mark 1 { "name": "terminates", "type": "event"}
+        {let e = localCCFG.addEdge(finishPlusAndJoinNode,terminatesPlusNode)
+        e.guards = [...e.guards, ...[]]}
+        
+        return localCCFG;
+    }
+// rule evalBooleanConst
+   //premise: starts:event
+   //conclusion: terminates:event
+
+    /**
+     * returns the local CCFG of the BooleanConst node
+     * @param a BooleanConst node 
+     * @returns the local CCFG (with holes)
+     */
+    createBooleanConstLocalCCFG(node: BooleanConst): CCFG {
+        let localCCFG = new CCFG()
+        let startsBooleanConstNode: Node = new Step(node,NodeType.starts,[`createGlobalVar,bool,${this.getASTNodeUID(node)}constantValue`,`setGlobalVar,bool,${this.getASTNodeUID(node)}constantValue,${node.value}`])
+        if(startsBooleanConstNode.functionsDefs.length>0){
+            startsBooleanConstNode.returnType = "void"
+        }
+        startsBooleanConstNode.functionsNames = [`init${startsBooleanConstNode.uid}BooleanConst`]
+        localCCFG.addNode(startsBooleanConstNode)
+        localCCFG.initialState = startsBooleanConstNode
+        let terminatesBooleanConstNode: Node = new Step(node,NodeType.terminates)
+        localCCFG.addNode(terminatesBooleanConstNode)
+        
+        startsBooleanConstNode.params = [...startsBooleanConstNode.params, ...[]]
+        startsBooleanConstNode.returnType = "bool"
+        startsBooleanConstNode.functionsNames = [`${startsBooleanConstNode.uid}evalBooleanConst`] //overwrite existing name
+        startsBooleanConstNode.functionsDefs =[...startsBooleanConstNode.functionsDefs, ...[`createVar,bool,${this.getASTNodeUID(node)}4610`,`setVarFromGlobal,bool,${this.getASTNodeUID(node)}4610,${this.getASTNodeUID(node)}constantValue`,`createVar,bool,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,${this.getASTNodeUID(node)}4610`,`return,${this.getASTNodeUID(node)}terminates`]] //GG
+                //mark 1 { "name": "terminates", "type": "event"}
+        {let e = localCCFG.addEdge(startsBooleanConstNode,terminatesBooleanConstNode)
+        e.guards = [...e.guards, ...[]]}
+        
+        return localCCFG;
+    }
+// rule whileStart
+   //premise: starts:event
+   //conclusion: cond:VarRef,starts:event
+// rule whileBodyStart
+   //premise: cond:VarRef,terminates:event
+   //conclusion: body:Bloc,starts:event
+// rule whileBodyEnd
+   //premise: body:Bloc,terminates:event
+   //conclusion: cond:VarRef,starts:event
+// rule whileEnd
+   //premise: cond:VarRef,terminates:event
+   //conclusion: terminates:event
+
+    /**
+     * returns the local CCFG of the While node
+     * @param a While node 
+     * @returns the local CCFG (with holes)
+     */
+    createWhileLocalCCFG(node: While): CCFG {
+        let localCCFG = new CCFG()
+        let startsWhileNode: Node = new Step(node,NodeType.starts,[])
+        if(startsWhileNode.functionsDefs.length>0){
+            startsWhileNode.returnType = "void"
+        }
+        startsWhileNode.functionsNames = [`init${startsWhileNode.uid}While`]
+        localCCFG.addNode(startsWhileNode)
+        localCCFG.initialState = startsWhileNode
+        let terminatesWhileNode: Node = new Step(node,NodeType.terminates)
+        localCCFG.addNode(terminatesWhileNode)
+        
+        let condHole: Hole = new Hole(node.cond)
+        localCCFG.addNode(condHole)
+        
+        let bodyHole: Hole = new Hole(node.body)
+        localCCFG.addNode(bodyHole)
+        
+        startsWhileNode.params = [...startsWhileNode.params, ...[]]
+        startsWhileNode.returnType = "void"
+        startsWhileNode.functionsNames = [`${startsWhileNode.uid}whileStart`] //overwrite existing name
+        startsWhileNode.functionsDefs =[...startsWhileNode.functionsDefs, ...[]] //GG
+                //mark 0
+        {let e = localCCFG.addEdge(startsWhileNode,condHole)
+        e.guards = [...e.guards, ...[]]}
+            
+        let whileBodyStartChoiceNode = undefined
+        if(condHole.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
+            whileBodyStartChoiceNode = condHole.outputEdges.filter(e => e.to.getType() == "Choice")[0].to
+        }else{
+            whileBodyStartChoiceNode = new Choice(node.cond)
+            localCCFG.addNode(whileBodyStartChoiceNode)
+        }
+        localCCFG.addEdge(condHole,whileBodyStartChoiceNode)
+                
+        whileBodyStartChoiceNode.params = [...whileBodyStartChoiceNode.params, ...[]]
+        whileBodyStartChoiceNode.returnType = "void"
+        whileBodyStartChoiceNode.functionsNames = [`${whileBodyStartChoiceNode.uid}whileBodyStart`] //overwrite existing name
+        whileBodyStartChoiceNode.functionsDefs =[...whileBodyStartChoiceNode.functionsDefs, ...[]] //GG
+                //mark 0
+        {let e = localCCFG.addEdge(whileBodyStartChoiceNode,bodyHole)
+        e.guards = [...e.guards, ...[`verifyEqual,${this.getASTNodeUID(node.cond)}terminate,true`]]}
+            
+        bodyHole.params = [...bodyHole.params, ...[]]
+        bodyHole.returnType = "void"
+        bodyHole.functionsNames = [`${bodyHole.uid}whileBodyEnd`] //overwrite existing name
+        bodyHole.functionsDefs =[...bodyHole.functionsDefs, ...[]] //GG
+                //mark 0
+        {let e = localCCFG.addEdge(bodyHole,condHole)
+        e.guards = [...e.guards, ...[]]}
+            
+        let whileEndChoiceNode = undefined
+        if(condHole.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
+            whileEndChoiceNode = condHole.outputEdges.filter(e => e.to.getType() == "Choice")[0].to
+        }else{
+            whileEndChoiceNode = new Choice(node.cond)
+            localCCFG.addNode(whileEndChoiceNode)
+        }
+        localCCFG.addEdge(condHole,whileEndChoiceNode)
+                
+        whileEndChoiceNode.params = [...whileEndChoiceNode.params, ...[]]
+        whileEndChoiceNode.returnType = "void"
+        whileEndChoiceNode.functionsNames = [`${whileEndChoiceNode.uid}whileEnd`] //overwrite existing name
+        whileEndChoiceNode.functionsDefs =[...whileEndChoiceNode.functionsDefs, ...[]] //GG
+                //mark 1 { "name": "terminates", "type": "event"}
+        {let e = localCCFG.addEdge(whileEndChoiceNode,terminatesWhileNode)
+        e.guards = [...e.guards, ...[`verifyEqual,${this.getASTNodeUID(node.cond)}terminate,false`]]}
+        
+        return localCCFG;
+    }
+// rule periodicStart
+   //premise: starts:event
+   //conclusion: blocTrigger:Timer,starts:event
+// rule periodicBodyStart
+   //premise: blocTrigger:Timer,terminates:event
+   //conclusion: bloc:Bloc,starts:event
+	//blocTrigger:Timer,starts:event
+
+    /**
+     * returns the local CCFG of the PeriodicBloc node
+     * @param a PeriodicBloc node 
+     * @returns the local CCFG (with holes)
+     */
+    createPeriodicBlocLocalCCFG(node: PeriodicBloc): CCFG {
+        let localCCFG = new CCFG()
+        let startsPeriodicBlocNode: Node = new Step(node,NodeType.starts,[`createGlobalVar,int,${this.getASTNodeUID(node)}blocTrigger`,`setGlobalVar,int,${this.getASTNodeUID(node)}blocTrigger,${node.time}`])
+        if(startsPeriodicBlocNode.functionsDefs.length>0){
+            startsPeriodicBlocNode.returnType = "void"
+        }
+        startsPeriodicBlocNode.functionsNames = [`init${startsPeriodicBlocNode.uid}PeriodicBloc`]
+        localCCFG.addNode(startsPeriodicBlocNode)
+        localCCFG.initialState = startsPeriodicBlocNode
+        let terminatesPeriodicBlocNode: Node = new Step(node,NodeType.terminates)
+        localCCFG.addNode(terminatesPeriodicBlocNode)
+        
+        let blocTriggerHole: Hole = new TimerHole(node,node.time) //timer hole to ease specific filling
+        localCCFG.addNode(blocTriggerHole)
+        
+        let blocHole: Hole = new Hole(node.bloc)
+        localCCFG.addNode(blocHole)
+        
+        startsPeriodicBlocNode.params = [...startsPeriodicBlocNode.params, ...[]]
+        startsPeriodicBlocNode.returnType = "void"
+        startsPeriodicBlocNode.functionsNames = [`${startsPeriodicBlocNode.uid}periodicStart`] //overwrite existing name
+        startsPeriodicBlocNode.functionsDefs =[...startsPeriodicBlocNode.functionsDefs, ...[]] //GG
+                //mark 0
+        {let e = localCCFG.addEdge(startsPeriodicBlocNode,blocTriggerHole)
+        e.guards = [...e.guards, ...[]]}
+            
+        blocTriggerHole.params = [...blocTriggerHole.params, ...[]]
+        blocTriggerHole.returnType = "void"
+        blocTriggerHole.functionsNames = [`${blocTriggerHole.uid}periodicBodyStart`] //overwrite existing name
+        blocTriggerHole.functionsDefs =[...blocTriggerHole.functionsDefs, ...[]] //GG
+    
+        let forkperiodicBodyStartNode: Node = new Fork(node)
+        localCCFG.addNode(forkperiodicBodyStartNode)
+        localCCFG.addEdge(blocTriggerHole,forkperiodicBodyStartNode)
+            
+                    //mark 3
+        localCCFG.addEdge(forkperiodicBodyStartNode,blocHole)
+                                        //mark 3
+        localCCFG.addEdge(forkperiodicBodyStartNode,blocTriggerHole)
+                    
+        return localCCFG;
+    }
+// rule functionCallArgsStart
+   //premise: starts:event
+   //conclusion: args:Expr[],a:unknown,starts:event
+// rule functionCallStarts
+   //premise: args:Expr[],last():Expr,terminates:event
+   //conclusion: theFunction:[FunctionDef:ID],starts:event
+// rule functionCallEnd
+   //premise: theFunction:[FunctionDef:ID],terminates:event
+   //conclusion: terminates:event
+
+    /**
+     * returns the local CCFG of the FunctionCall node
+     * @param a FunctionCall node 
+     * @returns the local CCFG (with holes)
+     */
+    createFunctionCallLocalCCFG(node: FunctionCall): CCFG {
+        let localCCFG = new CCFG()
+        let startsFunctionCallNode: Node = new Step(node,NodeType.starts,[])
+        if(startsFunctionCallNode.functionsDefs.length>0){
+            startsFunctionCallNode.returnType = "void"
+        }
+        startsFunctionCallNode.functionsNames = [`init${startsFunctionCallNode.uid}FunctionCall`]
+        localCCFG.addNode(startsFunctionCallNode)
+        localCCFG.initialState = startsFunctionCallNode
+        let terminatesFunctionCallNode: Node = new Step(node,NodeType.terminates)
+        localCCFG.addNode(terminatesFunctionCallNode)
+        
+        let argsHole: CollectionHole = new CollectionHole(node.args)
+        argsHole.isSequential = true
+        argsHole.parallelSyncPolicy = "undefined"
+        localCCFG.addNode(argsHole)
+        
+        let theFunctionHole: Hole = new Hole(node.theFunction.ref)
+        localCCFG.addNode(theFunctionHole)
+        
+        startsFunctionCallNode.params = [...startsFunctionCallNode.params, ...[]]
+        startsFunctionCallNode.returnType = "void"
+        startsFunctionCallNode.functionsNames = [`${startsFunctionCallNode.uid}functionCallArgsStart`] //overwrite existing name
+        startsFunctionCallNode.functionsDefs =[...startsFunctionCallNode.functionsDefs, ...[]] //GG
+                //mark 1.5
+        localCCFG.addEdge(startsFunctionCallNode,argsHole)
+        
+        argsHole.params = [...argsHole.params, ...[Object.assign( new TypedElement(), JSON.parse(`{ "name": "evaluatedArgs", "type": "unknown"}`))]]
+        argsHole.returnType = "void"
+        argsHole.functionsNames = [`${argsHole.uid}functionCallStarts`] //overwrite existing name
+        argsHole.functionsDefs =[...argsHole.functionsDefs, ...[]] //GG
+                //mark 0
+        {let e = localCCFG.addEdge(argsHole,theFunctionHole)
+        e.guards = [...e.guards, ...[]]}
+            
+        theFunctionHole.params = [...theFunctionHole.params, ...[]]
+        theFunctionHole.returnType = "void"
+        theFunctionHole.functionsNames = [`${theFunctionHole.uid}functionCallEnd`] //overwrite existing name
+        theFunctionHole.functionsDefs =[...theFunctionHole.functionsDefs, ...[]] //GG
+                //mark 1 { "name": "terminates", "type": "event"}
+        {let e = localCCFG.addEdge(theFunctionHole,terminatesFunctionCallNode)
+        e.guards = [...e.guards, ...[]]}
+        
+        return localCCFG;
+    }
+// rule functionDefArgsStart
+   //premise: starts:event
+   //conclusion: body:Bloc,starts:event
+// rule functionDefEnd
+   //premise: body:Bloc,terminates:event
+   //conclusion: terminates:event
+
+    /**
+     * returns the local CCFG of the FunctionDef node
+     * @param a FunctionDef node 
+     * @returns the local CCFG (with holes)
+     */
+    createFunctionDefLocalCCFG(node: FunctionDef): CCFG {
+        let localCCFG = new CCFG()
+        let startsFunctionDefNode: Node = new Step(node,NodeType.starts,[])
+        if(startsFunctionDefNode.functionsDefs.length>0){
+            startsFunctionDefNode.returnType = "void"
+        }
+        startsFunctionDefNode.functionsNames = [`init${startsFunctionDefNode.uid}FunctionDef`]
+        localCCFG.addNode(startsFunctionDefNode)
+        localCCFG.initialState = startsFunctionDefNode
+        let terminatesFunctionDefNode: Node = new Step(node,NodeType.terminates)
+        localCCFG.addNode(terminatesFunctionDefNode)
+        
+        let bodyHole: Hole = new Hole(node.body)
+        localCCFG.addNode(bodyHole)
+        
+        startsFunctionDefNode.params = [...startsFunctionDefNode.params, ...[]]
+        startsFunctionDefNode.returnType = "void"
+        startsFunctionDefNode.functionsNames = [`${startsFunctionDefNode.uid}functionDefArgsStart`] //overwrite existing name
+        startsFunctionDefNode.functionsDefs =[...startsFunctionDefNode.functionsDefs, ...[]] //GG
+                //mark 0
+        {let e = localCCFG.addEdge(startsFunctionDefNode,bodyHole)
+        e.guards = [...e.guards, ...[]]}
+            
+        bodyHole.params = [...bodyHole.params, ...[]]
+        bodyHole.returnType = "void"
+        bodyHole.functionsNames = [`${bodyHole.uid}functionDefEnd`] //overwrite existing name
+        bodyHole.functionsDefs =[...bodyHole.functionsDefs, ...[]] //GG
+                //mark 1 { "name": "terminates", "type": "event"}
+        {let e = localCCFG.addEdge(bodyHole,terminatesFunctionDefNode)
+        e.guards = [...e.guards, ...[]]}
+        
+        return localCCFG;
+    }
+
+    generateCCFG(root: Model, debug: boolean = false): CCFG {
+
+        //pass 1: create local CCFGs for all nodes
+        console.log("pass 1: create local CCFGs for all nodes")
+        let astNodeToLocalCCFG = new Map<AstNode, CCFG>()
+        for (let n of streamAst(root)){
+            let localCCFG = this.createLocalCCFG(n)
+            if(debug){
+                let dotContent = localCCFG.toDot();
+                fs.writeFileSync(`./generated/localCCFGs/localCCFG${localCCFG.initialState?.functionsNames[0].replace(/initd+/g,"")}.dot`, dotContent);
+            }
+            astNodeToLocalCCFG.set(n, localCCFG)
+        }
+
+        //pass 2: connect all local CCFGs
+        console.log("pass 2: connect all local CCFGs")
+        let globalCCFG = astNodeToLocalCCFG.get(root) as CCFG
+        let holeNodes : Hole[] = this.retrieveHoles(globalCCFG)
+        //fix point loop until all holes are filled
+        while (holeNodes.length > 0) {
+            if (debug) console.log("holes to fill: "+holeNodes.length)
+            for (let holeNode of holeNodes) {
+                if (holeNode.getType() == "TimerHole") {
+                    if (debug) console.log("filling timer hole: "+holeNode.uid)
+                    this.fillTimerHole(holeNode as TimerHole, globalCCFG)
+                    continue
+                }if (holeNode.getType() == "CollectionHole") {
+                    if (debug) console.log("filling timer hole: "+holeNode.uid)
+                        this.fillCollectionHole(holeNode as CollectionHole, globalCCFG)
+                        continue
+                }else{
+                    if (debug) console.log("filling hole: "+holeNode.uid)
+                    if (holeNode.astNode === undefined) {
+                        throw new Error("Hole has undefined astNode :"+holeNode.uid)
+                    }
+                    let holeNodeLocalCCFG = astNodeToLocalCCFG.get(holeNode.astNode) as CCFG
+                    globalCCFG.fillHole(holeNode, holeNodeLocalCCFG)
+                }
+            }
+            holeNodes = this.retrieveHoles(globalCCFG)
+        }
+
+        return globalCCFG
+    }
+
+    fillCollectionHole(hole: CollectionHole, ccfg: CCFG) {
+        let holeNodeLocalCCFG = new CCFG()
+        let startsCollectionHoleNode: Node = new Step(hole.astNode,NodeType.starts,[])
+        holeNodeLocalCCFG.addNode(startsCollectionHoleNode)
+        holeNodeLocalCCFG.initialState = startsCollectionHoleNode
+        let terminatesCollectionHoleNode: Node = new Step(hole.astNode,NodeType.terminates)
+        holeNodeLocalCCFG.addNode(terminatesCollectionHoleNode)
+        if(hole.isSequential){
+            let previousNode = startsCollectionHoleNode
+            for (let e of hole.astNodeCollection){
+                let collectionHole : Hole = new Hole(e)
+                holeNodeLocalCCFG.addNode(collectionHole)
+                holeNodeLocalCCFG.addEdge(previousNode,collectionHole)
+                previousNode = collectionHole
+            }
+            holeNodeLocalCCFG.addEdge(previousNode,terminatesCollectionHoleNode)
+            ccfg.fillHole(hole, holeNodeLocalCCFG)
+        }
+        else{
+            let forkNode = new Fork(hole.astNode)
+            holeNodeLocalCCFG.addNode(forkNode)
+            holeNodeLocalCCFG.addEdge(startsCollectionHoleNode,forkNode)
+            let joinNode = undefined
+            if(hole.parallelSyncPolicy == "lastOF"){
+                joinNode = new AndJoin(hole.astNode)
+            }else{
+                joinNode = new OrJoin(hole.astNode)
+            } 
+            holeNodeLocalCCFG.addNode(joinNode)
+            holeNodeLocalCCFG.addEdge(joinNode,terminatesCollectionHoleNode)
+            for (let e of hole.astNodeCollection){
+                let collectionHole : Hole = new Hole(e)
+                holeNodeLocalCCFG.addNode(collectionHole)
+                holeNodeLocalCCFG.addEdge(forkNode,collectionHole)
+                holeNodeLocalCCFG.addEdge(collectionHole,joinNode)
+            }
+            ccfg.fillHole(hole, holeNodeLocalCCFG)
+        }
+        return
+    }
+
+    fillTimerHole(hole: TimerHole, ccfg: CCFG) {
+        let node = hole.astNode as AstNode
+        let timerHoleLocalCCFG = new CCFG()
+        let startsTimerHoleNode: Node = new Step(node,NodeType.starts,[`std::this_thread::sleep_for(${hole.duration}ms);`])
+        startsTimerHoleNode.returnType = "void"
+        startsTimerHoleNode.functionsNames = [`init${startsTimerHoleNode.uid}Timer`]
+        timerHoleLocalCCFG.addNode(startsTimerHoleNode)
+        timerHoleLocalCCFG.initialState = startsTimerHoleNode
+        let terminatesTimerHoleNode: Node = new Step(node,NodeType.terminates)
+        timerHoleLocalCCFG.addNode(terminatesTimerHoleNode)
+        timerHoleLocalCCFG.addEdge(startsTimerHoleNode,terminatesTimerHoleNode)
+        ccfg.fillHole(hole, timerHoleLocalCCFG)
+    }
+
+    retrieveHoles(ccfg: CCFG): Hole[] {
+        let holes: Hole[] = [];
+        for (let node of ccfg.nodes) {
+            if (node instanceof Hole) {
+                holes.push(node);
+            }
+        }
+        return holes;
+    }
 
 
-    function getASTNodeUID(node: AstNode | AstNode[] | Reference<AstNode> | Reference<AstNode>[] | undefined ): any {
+    getASTNodeUID(node: AstNode | AstNode[] | Reference<AstNode> | Reference<AstNode>[] | undefined ): any {
         if(node === undefined){
             throw new Error("not possible to get the UID of an undefined AstNode")
         }
@@ -39,1111 +1029,18 @@ export interface SimpleLVisitor {
                         noUndef.push(e)
                     }
                 }
-                return getASTNodeUID(noUndef)
+                return this.getASTNodeUID(noUndef)
             }
             var rs = node.map(n => (n as AstNode).$cstNode?.range)
             return "array"+rs.map(r => r?.start.line+"_"+r?.start.character+"_"+r?.end.line+"_"+r?.end.character).join("_");
         }
         
         if(isReference(node)){
-            return getASTNodeUID(node.ref)
+            return this.getASTNodeUID(node.ref)
         }
 
         var r = node.$cstNode?.range
         return node.$type+r?.start.line+"_"+r?.start.character+"_"+r?.end.line+"_"+r?.end.character;
-    }
-
-
-export class CCFGVisitor implements SimpleLVisitor {
-    ccfg: CCFG = new CCFG();
-
-  
-    
-
-    visit(node: AstNode | Reference<AstNode>): [Node,Node] {
-        if(isReference(node)){
-            if(node.ref === undefined){
-                throw new Error("not possible to visit an undefined AstNode")
-            }
-            node = node.ref
-        }
-        if(node.$type == "Model"){
-            return this.visitModel(node as Model);
-        }
-        if(node.$type == "Bloc"){
-            return this.visitBloc(node as Bloc);
-        }
-        if(node.$type == "ParallelBloc"){
-            return this.visitParallelBloc(node as ParallelBloc);
-        }
-        if(node.$type == "Variable"){
-            return this.visitVariable(node as Variable);
-        }
-        if(node.$type == "VarRef"){
-            return this.visitVarRef(node as VarRef);
-        }
-        if(node.$type == "If"){
-            return this.visitIf(node as If);
-        }
-        if(node.$type == "Assignment"){
-            return this.visitAssignment(node as Assignment);
-        }
-        if(node.$type == "Conjunction"){
-            return this.visitConjunction(node as Conjunction);
-        }
-        if(node.$type == "Plus"){
-            return this.visitPlus(node as Plus);
-        }
-        if(node.$type == "BooleanConst"){
-            return this.visitBooleanConst(node as BooleanConst);
-        }
-        if(node.$type == "While"){
-            return this.visitWhile(node as While);
-        }
-        if(node.$type == "PeriodicBloc"){
-            return this.visitPeriodicBloc(node as PeriodicBloc);
-        }
-        if(node.$type == "FunctionCall"){
-            return this.visitFunctionCall(node as FunctionCall);
-        }
-        if(node.$type == "FunctionDef"){
-            return this.visitFunctionDef(node as FunctionDef);
-        }
-        throw new Error("Not implemented: " + node.$type);
-    }
-    
-    visitModel(node: Model): [Node,Node] {
-        let startsModelNode: Node = new Step("starts"+getASTNodeUID(node),[])
-        if(startsModelNode.functionsDefs.length>0){
-            startsModelNode.returnType = "void"
-        }
-        startsModelNode.functionsNames = [`init${startsModelNode.uid}Model`]
-        this.ccfg.addNode(startsModelNode)
-        let terminatesModelNode: Node = new Step("terminates"+getASTNodeUID(node))
-        this.ccfg.addNode(terminatesModelNode)
-        // rule statementsInOrder1
-   //premise: starts:event
-   //conclusion: statements:Statement[],s:unknown,starts:event
-// rule finishModel
-   //premise: statements:Statement[],last():Statement,terminates:event
-   //conclusion: terminates:event
-
-        let previousNode =undefined
-        
-    {
-        let startsnodestatementsInOrder1 = this.retrieveNode("starts",node) //retrieve 1
-        previousNode = startsnodestatementsInOrder1
-    }
-    
-        let statementsInOrder1StepNode = new Step("starts"+getASTNodeUID(node.statements))
-        this.ccfg.addNode(statementsInOrder1StepNode)
-        let e = this.ccfg.addEdge(previousNode,statementsInOrder1StepNode)
-        e.guards = [...e.guards, ...[]] //DD
-
-        previousNode = statementsInOrder1StepNode
-        for (var child of node.statements) {
-            let [childStartsNode,childTerminatesNode] = this.getOrVisitNode(child)
-            this.ccfg.addEdge(previousNode,childStartsNode)
-            previousNode = childTerminatesNode
-        }
-        let statementsTerminatesNode = new Step("terminates"+getASTNodeUID(node.statements))
-        this.ccfg.addNode(statementsTerminatesNode)
-        this.ccfg.addEdge(previousNode,statementsTerminatesNode)
-        
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}statementsInOrder1`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-    {
-        let terminatesnode_statementsfinishModel = this.retrieveNode("terminates",node.statements) //retrieve 1
-        previousNode = terminatesnode_statementsfinishModel
-    }
-    
-        {let e = this.ccfg.addEdge(previousNode,terminatesModelNode)
-        e.guards = [...e.guards, ...[]] //EE
-        }
-        
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}finishModel`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-        return [startsModelNode,terminatesModelNode]
-    }
-
-    visitBloc(node: Bloc): [Node,Node] {
-        let startsBlocNode: Node = new Step("starts"+getASTNodeUID(node),[])
-        if(startsBlocNode.functionsDefs.length>0){
-            startsBlocNode.returnType = "void"
-        }
-        startsBlocNode.functionsNames = [`init${startsBlocNode.uid}Bloc`]
-        this.ccfg.addNode(startsBlocNode)
-        let terminatesBlocNode: Node = new Step("terminates"+getASTNodeUID(node))
-        this.ccfg.addNode(terminatesBlocNode)
-        // rule startsBloc
-   //premise: starts:event
-   //conclusion: statements:Statement[],s:unknown,starts:event
-// rule finishBloc
-   //premise: statements:Statement[],last():Statement,terminates:event
-   //conclusion: terminates:event
-
-        let previousNode =undefined
-        
-    {
-        let startsnodestartsBloc = this.retrieveNode("starts",node) //retrieve 1
-        previousNode = startsnodestartsBloc
-    }
-    
-        let startsBlocStepNode = new Step("starts"+getASTNodeUID(node.statements))
-        this.ccfg.addNode(startsBlocStepNode)
-        let e = this.ccfg.addEdge(previousNode,startsBlocStepNode)
-        e.guards = [...e.guards, ...[]] //DD
-
-        previousNode = startsBlocStepNode
-        for (var child of node.statements) {
-            let [childStartsNode,childTerminatesNode] = this.getOrVisitNode(child)
-            this.ccfg.addEdge(previousNode,childStartsNode)
-            previousNode = childTerminatesNode
-        }
-        let statementsTerminatesNode = new Step("terminates"+getASTNodeUID(node.statements))
-        this.ccfg.addNode(statementsTerminatesNode)
-        this.ccfg.addEdge(previousNode,statementsTerminatesNode)
-        
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}startsBloc`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-    {
-        let terminatesnode_statementsfinishBloc = this.retrieveNode("terminates",node.statements) //retrieve 1
-        previousNode = terminatesnode_statementsfinishBloc
-    }
-    
-        {let e = this.ccfg.addEdge(previousNode,terminatesBlocNode)
-        e.guards = [...e.guards, ...[]] //EE
-        }
-        
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}finishBloc`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-        return [startsBlocNode,terminatesBlocNode]
-    }
-
-    visitParallelBloc(node: ParallelBloc): [Node,Node] {
-        let startsParallelBlocNode: Node = new Step("starts"+getASTNodeUID(node),[])
-        if(startsParallelBlocNode.functionsDefs.length>0){
-            startsParallelBlocNode.returnType = "void"
-        }
-        startsParallelBlocNode.functionsNames = [`init${startsParallelBlocNode.uid}ParallelBloc`]
-        this.ccfg.addNode(startsParallelBlocNode)
-        let terminatesParallelBlocNode: Node = new Step("terminates"+getASTNodeUID(node))
-        this.ccfg.addNode(terminatesParallelBlocNode)
-        // rule startsParallelBloc
-   //premise: starts:event
-   //conclusion: statements:Statement[],s:unknown,starts:event
-// rule finishParallelBloc
-   //premise: statements:Statement[],terminates:event
-   //conclusion: terminates:event
-
-        let previousNode =undefined
-        
-    {
-        let startsnodestartsParallelBloc = this.retrieveNode("starts",node) //retrieve 1
-        previousNode = startsnodestartsParallelBloc
-    }
-    
-        let startsParallelBlocForkNode: Node = new Fork("startsParallelBlocForkNode")
-        this.ccfg.addNode(startsParallelBlocForkNode)
-        {let e = this.ccfg.addEdge(previousNode,startsParallelBlocForkNode)
-        e.guards = [...e.guards, ...[]] //CC
-        }
-
-        let startsParallelBlocFakeNode: Node = new AndJoin("startsParallelBlocFakeNode")    
-        this.ccfg.addNode(startsParallelBlocFakeNode)    
-        for (var child of node.statements) {
-            let [childStartsNode,childTerminatesNode] = this.getOrVisitNode(child)
-            this.ccfg.addEdge(startsParallelBlocForkNode,childStartsNode)
-            this.ccfg.addEdge(childTerminatesNode,startsParallelBlocFakeNode)
-        }
-
-        
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}startsParallelBloc`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-    let finishParallelBlocLastOfNode: Node = new AndJoin("lastOfNode"+getASTNodeUID(node.statements))
-    this.ccfg.replaceNode(startsParallelBlocFakeNode,finishParallelBlocLastOfNode)                    
-                
-    {
-        let lastOfNodenode_statementsfinishParallelBloc = this.retrieveNode("lastOfNode",node.statements) //retrieve 1
-        previousNode = lastOfNodenode_statementsfinishParallelBloc
-    }
-    
-        {let e = this.ccfg.addEdge(previousNode,terminatesParallelBlocNode)
-        e.guards = [...e.guards, ...[]] //EE
-        }
-        
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}finishParallelBloc`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-        return [startsParallelBlocNode,terminatesParallelBlocNode]
-    }
-
-    visitVariable(node: Variable): [Node,Node] {
-        let startsVariableNode: Node = new Step("starts"+getASTNodeUID(node),[`createGlobalVar,int,${getASTNodeUID(node)}currentValue`])
-        if(startsVariableNode.functionsDefs.length>0){
-            startsVariableNode.returnType = "void"
-        }
-        startsVariableNode.functionsNames = [`init${startsVariableNode.uid}Variable`]
-        this.ccfg.addNode(startsVariableNode)
-        let terminatesVariableNode: Node = new Step("terminates"+getASTNodeUID(node))
-        this.ccfg.addNode(terminatesVariableNode)
-        // rule initializeVar
-   //premise: starts:event
-   //conclusion: terminates:event
-
-        let previousNode =undefined
-        
-    {
-        let startsnodeinitializeVar = this.retrieveNode("starts",node) //retrieve 1
-        previousNode = startsnodeinitializeVar
-    }
-    
-    {let initializeVarStateModificationNode: Node = new Step("initializeVarStateModificationNode")
-    this.ccfg.addNode(initializeVarStateModificationNode)
-    let e = this.ccfg.addEdge(previousNode,initializeVarStateModificationNode)
-    e.guards = [...e.guards, ...[]]
-    previousNode = initializeVarStateModificationNode
-    }
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`${previousNode.uid}initializeVar`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}1430`,`assignVar,${getASTNodeUID(node)}1430,${node.initialValue}`,`setGlobalVar,int,${getASTNodeUID(node)}currentValue,${getASTNodeUID(node)}1430`]] //AA
-    
-        {let e = this.ccfg.addEdge(previousNode,terminatesVariableNode)
-        e.guards = [...e.guards, ...[]] //EE
-        }
-        
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}initializeVar`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-        return [startsVariableNode,terminatesVariableNode]
-    }
-
-    visitVarRef(node: VarRef): [Node,Node] {
-        let startsVarRefNode: Node = new Step("starts"+getASTNodeUID(node),[])
-        if(startsVarRefNode.functionsDefs.length>0){
-            startsVarRefNode.returnType = "void"
-        }
-        startsVarRefNode.functionsNames = [`init${startsVarRefNode.uid}VarRef`]
-        this.ccfg.addNode(startsVarRefNode)
-        let terminatesVarRefNode: Node = new Step("terminates"+getASTNodeUID(node))
-        this.ccfg.addNode(terminatesVarRefNode)
-        // rule accessVarRef
-   //premise: starts:event
-   //conclusion: terminates:event
-
-        let previousNode =undefined
-        
-    {
-        let startsnodeaccessVarRef = this.retrieveNode("starts",node) //retrieve 1
-        previousNode = startsnodeaccessVarRef
-    }
-    
-        {let e = this.ccfg.addEdge(previousNode,terminatesVarRefNode)
-        e.guards = [...e.guards, ...[]] //EE
-        }
-        
-        previousNode.returnType = "int"
-        previousNode.functionsNames = [`${previousNode.uid}accessVarRef`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`lock,variableMutex`,`createVar,int,${getASTNodeUID(node)}1645`,`setVarFromGlobal,int,${getASTNodeUID(node)}1645,${getASTNodeUID(node.theVar)}currentValue`,`createVar,int,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,${getASTNodeUID(node)}1645`,`return,${getASTNodeUID(node)}terminates`]] //GG
-    
-        return [startsVarRefNode,terminatesVarRefNode]
-    }
-
-    visitIf(node: If): [Node,Node] {
-        let startsIfNode: Node = new Step("starts"+getASTNodeUID(node),[])
-        if(startsIfNode.functionsDefs.length>0){
-            startsIfNode.returnType = "void"
-        }
-        startsIfNode.functionsNames = [`init${startsIfNode.uid}If`]
-        this.ccfg.addNode(startsIfNode)
-        let terminatesIfNode: Node = new Step("terminates"+getASTNodeUID(node))
-        this.ccfg.addNode(terminatesIfNode)
-        // rule condStart
-   //premise: starts:event
-   //conclusion: cond:VarRef,starts:event
-// rule condTrueStart
-   //premise: cond:VarRef,terminates:event
-   //conclusion: then:Bloc,starts:event
-// rule condFalseStart
-   //premise: cond:VarRef,terminates:event
-   //conclusion: else:Bloc,starts:event
-// rule condStop
-   //premise: else:Bloc,terminates:event,then:Bloc,terminates:event
-   //conclusion: terminates:event
-
-        let previousNode =undefined
-        
-    {
-        let startsnodecondStart = this.retrieveNode("starts",node) //retrieve 1
-        previousNode = startsnodecondStart
-    }
-    
-        let condStartsNodecondStart = this.retrieveNode("starts",node.cond)
-        
-            {
-            let e = this.ccfg.addEdge(previousNode,condStartsNodecondStart)
-            e.guards = [...e.guards, ...[]] //FF
-            }
-            
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}condStart`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-        let condTerminatesNodecondTrueStart = this.retrieveNode("terminates",node.cond)
-        let condChoiceNodecondTrueStart = this.ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.cond))
-        if (condChoiceNodecondTrueStart == undefined) {
-            let condChoiceNode = new Choice("choiceNode"+getASTNodeUID(node.cond))
-            this.ccfg.addNode(condChoiceNode)
-            this.ccfg.addEdge(condTerminatesNodecondTrueStart,condChoiceNode)
-            condChoiceNodecondTrueStart = condChoiceNode
-        }else{
-            this.ccfg.addEdge(condTerminatesNodecondTrueStart,condChoiceNodecondTrueStart)
-        }
-        
-    {
-        let choiceNodenode_condcondTrueStart = this.retrieveNode("choiceNode",node.cond) //retrieve 1
-        previousNode = choiceNodenode_condcondTrueStart
-    }
-    
-        let thenStartsNodecondTrueStart = this.retrieveNode("starts",node.then)
-        
-            {
-            let e = this.ccfg.addEdge(previousNode,thenStartsNodecondTrueStart)
-            e.guards = [...e.guards, ...[`verifyEqual,${getASTNodeUID(node.cond)}terminate,true`]] //FF
-            }
-            
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}condTrueStart`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-        let condTerminatesNodecondFalseStart = this.retrieveNode("terminates",node.cond)
-        let condChoiceNodecondFalseStart = this.ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.cond))
-        if (condChoiceNodecondFalseStart == undefined) {
-            let condChoiceNode = new Choice("choiceNode"+getASTNodeUID(node.cond))
-            this.ccfg.addNode(condChoiceNode)
-            this.ccfg.addEdge(condTerminatesNodecondFalseStart,condChoiceNode)
-            condChoiceNodecondFalseStart = condChoiceNode
-        }else{
-            this.ccfg.addEdge(condTerminatesNodecondFalseStart,condChoiceNodecondFalseStart)
-        }
-        
-    {
-        let choiceNodenode_condcondFalseStart = this.retrieveNode("choiceNode",node.cond) //retrieve 1
-        previousNode = choiceNodenode_condcondFalseStart
-    }
-    
-        let elseStartsNodecondFalseStart = this.retrieveNode("starts",node.else)
-        
-            {
-            let e = this.ccfg.addEdge(previousNode,elseStartsNodecondFalseStart)
-            e.guards = [...e.guards, ...[`verifyEqual,${getASTNodeUID(node.cond)}terminate,false`]] //FF
-            }
-            
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}condFalseStart`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-    let condStopOrJoinNode: Node = new OrJoin("orJoinNode"+getASTNodeUID(node.else))
-    this.ccfg.addNode(condStopOrJoinNode)
-    let elseTerminatesNodecondStop = this.retrieveNode("terminates", node.else)
-    let thenTerminatesNodecondStop = this.retrieveNode("terminates", node.then)
-    this.ccfg.addEdge(elseTerminatesNodecondStop,condStopOrJoinNode)
-    this.ccfg.addEdge(thenTerminatesNodecondStop,condStopOrJoinNode)
-            
-    {
-        let multipleSynchroNode = this.ccfg.getNodeFromName("orJoinNode"+getASTNodeUID(node.else))
-        if(multipleSynchroNode == undefined){
-            throw new Error("impossible to be there orJoinNode"+getASTNodeUID(node.else))
-        }
-        multipleSynchroNode.params = [...multipleSynchroNode.params, ...[]]
-        multipleSynchroNode.functionsDefs = [...multipleSynchroNode.functionsDefs, ...[]] //HH
-    }
-    
-    {
-        let orJoinNodenode_elsecondStop = this.retrieveNode("orJoinNode",node.else) //retrieve 1
-        previousNode = orJoinNodenode_elsecondStop
-    }
-    
-        {let e = this.ccfg.addEdge(previousNode,terminatesIfNode)
-        e.guards = [...e.guards, ...[]] //EE
-        }
-        
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}condStop`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-        return [startsIfNode,terminatesIfNode]
-    }
-
-    visitAssignment(node: Assignment): [Node,Node] {
-        let startsAssignmentNode: Node = new Step("starts"+getASTNodeUID(node),[])
-        if(startsAssignmentNode.functionsDefs.length>0){
-            startsAssignmentNode.returnType = "void"
-        }
-        startsAssignmentNode.functionsNames = [`init${startsAssignmentNode.uid}Assignment`]
-        this.ccfg.addNode(startsAssignmentNode)
-        let terminatesAssignmentNode: Node = new Step("terminates"+getASTNodeUID(node))
-        this.ccfg.addNode(terminatesAssignmentNode)
-        // rule executeAssignment
-   //premise: starts:event
-   //conclusion: expr:Expr,starts:event
-// rule executeAssignment2
-   //premise: expr:Expr,terminates:event
-   //conclusion: terminates:event
-
-        let previousNode =undefined
-        
-    {
-        let startsnodeexecuteAssignment = this.retrieveNode("starts",node) //retrieve 1
-        previousNode = startsnodeexecuteAssignment
-    }
-    
-        let exprStartsNodeexecuteAssignment = this.retrieveNode("starts",node.expr)
-        
-            {
-            let e = this.ccfg.addEdge(previousNode,exprStartsNodeexecuteAssignment)
-            e.guards = [...e.guards, ...[]] //FF
-            }
-            
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}executeAssignment`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-    {
-        let terminatesnode_exprexecuteAssignment2 = this.retrieveNode("terminates",node.expr) //retrieve 1
-        previousNode = terminatesnode_exprexecuteAssignment2
-    }
-    
-    {let executeAssignment2StateModificationNode: Node = new Step("executeAssignment2StateModificationNode")
-    this.ccfg.addNode(executeAssignment2StateModificationNode)
-    let e = this.ccfg.addEdge(previousNode,executeAssignment2StateModificationNode)
-    e.guards = [...e.guards, ...[]]
-    executeAssignment2StateModificationNode.params = [...executeAssignment2StateModificationNode.params, ...[Object.assign( new TypedElement(), JSON.parse(`{ "name": "resRight", "type": "int"}`))]]
-    
-    previousNode = executeAssignment2StateModificationNode
-    }
-    previousNode.functionsNames = [...previousNode.functionsNames, ...[`${previousNode.uid}executeAssignment2`]] 
-    previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}2620`,`assignVar,${getASTNodeUID(node)}2620,resRight`,`setGlobalVar,int,${getASTNodeUID(node.variable)}currentValue,${getASTNodeUID(node)}2620`]] //AA
-    
-        {let e = this.ccfg.addEdge(previousNode,terminatesAssignmentNode)
-        e.guards = [...e.guards, ...[]] //EE
-        }
-        
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}executeAssignment2`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-        return [startsAssignmentNode,terminatesAssignmentNode]
-    }
-
-    visitConjunction(node: Conjunction): [Node,Node] {
-        let startsConjunctionNode: Node = new Step("starts"+getASTNodeUID(node),[])
-        if(startsConjunctionNode.functionsDefs.length>0){
-            startsConjunctionNode.returnType = "void"
-        }
-        startsConjunctionNode.functionsNames = [`init${startsConjunctionNode.uid}Conjunction`]
-        this.ccfg.addNode(startsConjunctionNode)
-        let terminatesConjunctionNode: Node = new Step("terminates"+getASTNodeUID(node))
-        this.ccfg.addNode(terminatesConjunctionNode)
-        // rule evaluateConjunction
-   //premise: starts:event
-   //conclusion: lhs:BooleanExpression,starts:event
-   //conclusion: lhs:BooleanExpression,starts:event,rhs:BooleanExpression,starts:event
-// rule evaluateConjunction2
-   //premise: lhs:BooleanExpression,terminates:event
-   //conclusion: terminates:event
-// rule evaluateConjunction3
-   //premise: rhs:BooleanExpression,terminates:event
-   //conclusion: terminates:event
-// rule evaluateConjunction4
-   //premise: lhs:BooleanExpression,terminates:event,rhs:BooleanExpression,terminates:event
-   //conclusion: terminates:event
-
-        let ConjunctionOrJoinNode: Node = new OrJoin("orJoin"+getASTNodeUID(node))
-        this.ccfg.addNode(ConjunctionOrJoinNode)
-        this.ccfg.addEdge(ConjunctionOrJoinNode,terminatesConjunctionNode)
-        
-        let previousNode =undefined
-        
-    {
-        let startsnodeevaluateConjunction = this.retrieveNode("starts",node) //retrieve 1
-        previousNode = startsnodeevaluateConjunction
-    }
-    
-        let evaluateConjunctionForkNode: Node = new Fork("evaluateConjunctionForkNode")
-        this.ccfg.addNode(evaluateConjunctionForkNode)
-        {let e = this.ccfg.addEdge(previousNode,evaluateConjunctionForkNode)
-        e.guards = [...e.guards, ...[]] //BB
-        }
-        
-        let [lhsStartNode/*,lhsTerminatesNode*/] = this.getOrVisitNode(node.lhs)
-        this.ccfg.addEdge(evaluateConjunctionForkNode,lhsStartNode)
-        
-        let [rhsStartNode/*,rhsTerminatesNode*/] = this.getOrVisitNode(node.rhs)
-        this.ccfg.addEdge(evaluateConjunctionForkNode,rhsStartNode)
-        
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}evaluateConjunction`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-        let lhsTerminatesNodeevaluateConjunction2 = this.retrieveNode("terminates",node.lhs)
-        let lhsChoiceNodeevaluateConjunction2 = this.ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.lhs))
-        if (lhsChoiceNodeevaluateConjunction2 == undefined) {
-            let lhsChoiceNode = new Choice("choiceNode"+getASTNodeUID(node.lhs))
-            this.ccfg.addNode(lhsChoiceNode)
-            this.ccfg.addEdge(lhsTerminatesNodeevaluateConjunction2,lhsChoiceNode)
-            lhsChoiceNodeevaluateConjunction2 = lhsChoiceNode
-        }else{
-            this.ccfg.addEdge(lhsTerminatesNodeevaluateConjunction2,lhsChoiceNodeevaluateConjunction2)
-        }
-        
-    {
-        let choiceNodenode_lhsevaluateConjunction2 = this.retrieveNode("choiceNode",node.lhs) //retrieve 1
-        previousNode = choiceNodenode_lhsevaluateConjunction2
-    }
-    
-        {let e = this.ccfg.addEdge(previousNode,ConjunctionOrJoinNode)
-        e.guards = [...e.guards, ...[`verifyEqual,${getASTNodeUID(node.lhs)}terminate,false`]] //EE
-        }
-        
-        previousNode.returnType = "bool"
-        previousNode.functionsNames = [`${previousNode.uid}evaluateConjunction2`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,bool,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,false`,`return,${getASTNodeUID(node)}terminates`,]] //GG
-    
-        let rhsTerminatesNodeevaluateConjunction3 = this.retrieveNode("terminates",node.rhs)
-        let rhsChoiceNodeevaluateConjunction3 = this.ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.rhs))
-        if (rhsChoiceNodeevaluateConjunction3 == undefined) {
-            let rhsChoiceNode = new Choice("choiceNode"+getASTNodeUID(node.rhs))
-            this.ccfg.addNode(rhsChoiceNode)
-            this.ccfg.addEdge(rhsTerminatesNodeevaluateConjunction3,rhsChoiceNode)
-            rhsChoiceNodeevaluateConjunction3 = rhsChoiceNode
-        }else{
-            this.ccfg.addEdge(rhsTerminatesNodeevaluateConjunction3,rhsChoiceNodeevaluateConjunction3)
-        }
-        
-    {
-        let choiceNodenode_rhsevaluateConjunction3 = this.retrieveNode("choiceNode",node.rhs) //retrieve 1
-        previousNode = choiceNodenode_rhsevaluateConjunction3
-    }
-    
-        {let e = this.ccfg.addEdge(previousNode,ConjunctionOrJoinNode)
-        e.guards = [...e.guards, ...[`verifyEqual,${getASTNodeUID(node.rhs)}terminate,false`]] //EE
-        }
-        
-        previousNode.returnType = "bool"
-        previousNode.functionsNames = [`${previousNode.uid}evaluateConjunction3`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,bool,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,false`,`return,${getASTNodeUID(node)}terminates`,]] //GG
-    
-    let evaluateConjunction4AndJoinNode: Node = new AndJoin("andJoinNode"+getASTNodeUID(node.lhs))
-    this.ccfg.addNode(evaluateConjunction4AndJoinNode)
-    let lhsTerminatesNodeevaluateConjunction4 = this.retrieveNode("terminates", node.lhs)
-    let rhsTerminatesNodeevaluateConjunction4 = this.retrieveNode("terminates", node.rhs)
-    this.ccfg.addEdge(lhsTerminatesNodeevaluateConjunction4,evaluateConjunction4AndJoinNode)
-    this.ccfg.addEdge(rhsTerminatesNodeevaluateConjunction4,evaluateConjunction4AndJoinNode)
-            
-    let evaluateConjunction4ConditionNode: Node = new Choice("conditionNode"+getASTNodeUID(node.lhs))
-    this.ccfg.addNode(evaluateConjunction4ConditionNode)
-    let tmpMultipleSynchroNode = this.ccfg.getNodeFromName("andJoinNode"+getASTNodeUID(node.lhs))
-    if(tmpMultipleSynchroNode == undefined){
-        throw new Error("impossible to be there andJoinNode"+getASTNodeUID(node.lhs))
-    }
-    this.ccfg.addEdge(tmpMultipleSynchroNode,evaluateConjunction4ConditionNode)
-        
-    {
-        let multipleSynchroNode = this.ccfg.getNodeFromName("conditionNode"+getASTNodeUID(node.lhs))
-        if(multipleSynchroNode == undefined){
-            throw new Error("impossible to be there conditionNode"+getASTNodeUID(node.lhs))
-        }
-        multipleSynchroNode.params = [...multipleSynchroNode.params, ...[]]
-        multipleSynchroNode.functionsDefs = [...multipleSynchroNode.functionsDefs, ...[]] //HH
-    }
-    
-    {
-        let conditionNodenode_lhsevaluateConjunction4 = this.retrieveNode("conditionNode",node.lhs) //retrieve 1
-        previousNode = conditionNodenode_lhsevaluateConjunction4
-    }
-    
-        {let e = this.ccfg.addEdge(previousNode,ConjunctionOrJoinNode)
-        e.guards = [...e.guards, ...[`verifyEqual,${getASTNodeUID(node.lhs)}terminate,true`,`verifyEqual,${getASTNodeUID(node.rhs)}terminate,true`]] //EE
-        }
-        
-        previousNode.returnType = "bool"
-        previousNode.functionsNames = [`${previousNode.uid}evaluateConjunction4`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,bool,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,true`,`return,${getASTNodeUID(node)}terminates`,]] //GG
-    
-        return [startsConjunctionNode,terminatesConjunctionNode]
-    }
-
-    visitPlus(node: Plus): [Node,Node] {
-        let startsPlusNode: Node = new Step("starts"+getASTNodeUID(node),[])
-        if(startsPlusNode.functionsDefs.length>0){
-            startsPlusNode.returnType = "void"
-        }
-        startsPlusNode.functionsNames = [`init${startsPlusNode.uid}Plus`]
-        this.ccfg.addNode(startsPlusNode)
-        let terminatesPlusNode: Node = new Step("terminates"+getASTNodeUID(node))
-        this.ccfg.addNode(terminatesPlusNode)
-        // rule startPlus
-   //premise: starts:event
-   //conclusion: right:Expr,starts:event
-   //conclusion: right:Expr,starts:event,left:Expr,starts:event
-// rule finishPlus
-   //premise: right:Expr,terminates:event,left:Expr,terminates:event
-   //conclusion: terminates:event
-
-        let previousNode =undefined
-        
-    {
-        let startsnodestartPlus = this.retrieveNode("starts",node) //retrieve 1
-        previousNode = startsnodestartPlus
-    }
-    
-        let startPlusForkNode: Node = new Fork("startPlusForkNode")
-        this.ccfg.addNode(startPlusForkNode)
-        {let e = this.ccfg.addEdge(previousNode,startPlusForkNode)
-        e.guards = [...e.guards, ...[]] //BB
-        }
-        
-        let [rightStartNode/*,rightTerminatesNode*/] = this.getOrVisitNode(node.right)
-        this.ccfg.addEdge(startPlusForkNode,rightStartNode)
-        
-        let [leftStartNode/*,leftTerminatesNode*/] = this.getOrVisitNode(node.left)
-        this.ccfg.addEdge(startPlusForkNode,leftStartNode)
-        
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}startPlus`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-    let finishPlusAndJoinNode: Node = new AndJoin("andJoinNode"+getASTNodeUID(node.right))
-    this.ccfg.addNode(finishPlusAndJoinNode)
-    let rightTerminatesNodefinishPlus = this.retrieveNode("terminates", node.right)
-    let leftTerminatesNodefinishPlus = this.retrieveNode("terminates", node.left)
-    this.ccfg.addEdge(rightTerminatesNodefinishPlus,finishPlusAndJoinNode)
-    this.ccfg.addEdge(leftTerminatesNodefinishPlus,finishPlusAndJoinNode)
-            
-    {
-        let multipleSynchroNode = this.ccfg.getNodeFromName("andJoinNode"+getASTNodeUID(node.right))
-        if(multipleSynchroNode == undefined){
-            throw new Error("impossible to be there andJoinNode"+getASTNodeUID(node.right))
-        }
-        multipleSynchroNode.params = [...multipleSynchroNode.params, ...[Object.assign( new TypedElement(), JSON.parse(`{ "name": "n2", "type": "int"}`)),Object.assign( new TypedElement(), JSON.parse(`{ "name": "n1", "type": "int"}`))]]
-        multipleSynchroNode.functionsDefs = [...multipleSynchroNode.functionsDefs, ...[`int ${getASTNodeUID(node)}4391 = n2;`,`int ${getASTNodeUID(node)}4416 = n1;`]] //HH
-    }
-    
-    {
-        let andJoinNodenode_rightfinishPlus = this.retrieveNode("andJoinNode",node.right) //retrieve 1
-        previousNode = andJoinNodenode_rightfinishPlus
-    }
-    
-        {let e = this.ccfg.addEdge(previousNode,terminatesPlusNode)
-        e.guards = [...e.guards, ...[]] //EE
-        }
-        
-        previousNode.returnType = "int"
-        previousNode.functionsNames = [`${previousNode.uid}finishPlus`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`createVar,int,${getASTNodeUID(node)}4537`,`assignVar,${getASTNodeUID(node)}4537,n1`,`createVar,int,${getASTNodeUID(node)}4542`,`assignVar,${getASTNodeUID(node)}4542,n2`,`createVar,${getASTNodeUID(node)}4536`,`operation,${getASTNodeUID(node)}4536,${getASTNodeUID(node)}4537,+,${getASTNodeUID(node)}4542`,`createVar,int,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,${getASTNodeUID(node)}4536`,`return,${getASTNodeUID(node)}terminates`]] //GG
-    
-        return [startsPlusNode,terminatesPlusNode]
-    }
-
-    visitBooleanConst(node: BooleanConst): [Node,Node] {
-        let startsBooleanConstNode: Node = new Step("starts"+getASTNodeUID(node),[`createGlobalVar,bool${node.value},${getASTNodeUID(node)}constantValue`])
-        if(startsBooleanConstNode.functionsDefs.length>0){
-            startsBooleanConstNode.returnType = "void"
-        }
-        startsBooleanConstNode.functionsNames = [`init${startsBooleanConstNode.uid}BooleanConst`]
-        this.ccfg.addNode(startsBooleanConstNode)
-        let terminatesBooleanConstNode: Node = new Step("terminates"+getASTNodeUID(node))
-        this.ccfg.addNode(terminatesBooleanConstNode)
-        // rule evalBooleanConst
-   //premise: starts:event
-   //conclusion: terminates:event
-
-        let previousNode =undefined
-        
-    {
-        let startsnodeevalBooleanConst = this.retrieveNode("starts",node) //retrieve 1
-        previousNode = startsnodeevalBooleanConst
-    }
-    
-        {let e = this.ccfg.addEdge(previousNode,terminatesBooleanConstNode)
-        e.guards = [...e.guards, ...[]] //EE
-        }
-        
-        previousNode.returnType = "bool"
-        previousNode.functionsNames = [`${previousNode.uid}evalBooleanConst`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[`lock,variableMutex`,`createVar,bool,${getASTNodeUID(node)}4765`,`setVarFromGlobal,bool,${getASTNodeUID(node)}4765,${getASTNodeUID(node)}constantValue`,`createVar,bool,${getASTNodeUID(node)}terminates`,`assignVar,${getASTNodeUID(node)}terminates,${getASTNodeUID(node)}4765`,`return,${getASTNodeUID(node)}terminates`]] //GG
-    
-        return [startsBooleanConstNode,terminatesBooleanConstNode]
-    }
-
-    visitWhile(node: While): [Node,Node] {
-        let startsWhileNode: Node = new Step("starts"+getASTNodeUID(node),[])
-        if(startsWhileNode.functionsDefs.length>0){
-            startsWhileNode.returnType = "void"
-        }
-        startsWhileNode.functionsNames = [`init${startsWhileNode.uid}While`]
-        this.ccfg.addNode(startsWhileNode)
-        let terminatesWhileNode: Node = new Step("terminates"+getASTNodeUID(node))
-        this.ccfg.addNode(terminatesWhileNode)
-        // rule whileStart
-   //premise: starts:event
-   //conclusion: cond:VarRef,starts:event
-// rule whileBodyStart
-   //premise: cond:VarRef,terminates:event
-   //conclusion: body:Bloc,starts:event
-// rule whileBodyEnd
-   //premise: body:Bloc,terminates:event
-   //conclusion: cond:VarRef,starts:event
-// rule whileEnd
-   //premise: cond:VarRef,terminates:event
-   //conclusion: terminates:unknown
-
-        let previousNode =undefined
-        
-    {
-        let startsnodewhileStart = this.retrieveNode("starts",node) //retrieve 1
-        previousNode = startsnodewhileStart
-    }
-    
-        let condStartsNodewhileStart = this.retrieveNode("starts",node.cond)
-        
-            {
-            let e = this.ccfg.addEdge(previousNode,condStartsNodewhileStart)
-            e.guards = [...e.guards, ...[]] //FF
-            }
-            
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}whileStart`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-        let condTerminatesNodewhileBodyStart = this.retrieveNode("terminates",node.cond)
-        let condChoiceNodewhileBodyStart = this.ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.cond))
-        if (condChoiceNodewhileBodyStart == undefined) {
-            let condChoiceNode = new Choice("choiceNode"+getASTNodeUID(node.cond))
-            this.ccfg.addNode(condChoiceNode)
-            this.ccfg.addEdge(condTerminatesNodewhileBodyStart,condChoiceNode)
-            condChoiceNodewhileBodyStart = condChoiceNode
-        }else{
-            this.ccfg.addEdge(condTerminatesNodewhileBodyStart,condChoiceNodewhileBodyStart)
-        }
-        
-    {
-        let choiceNodenode_condwhileBodyStart = this.retrieveNode("choiceNode",node.cond) //retrieve 1
-        previousNode = choiceNodenode_condwhileBodyStart
-    }
-    
-        let bodyStartsNodewhileBodyStart = this.retrieveNode("starts",node.body)
-        
-            {
-            let e = this.ccfg.addEdge(previousNode,bodyStartsNodewhileBodyStart)
-            e.guards = [...e.guards, ...[`verifyEqual,${getASTNodeUID(node.cond)}terminate,true`]] //FF
-            }
-            
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}whileBodyStart`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-    {
-        let terminatesnode_bodywhileBodyEnd = this.retrieveNode("terminates",node.body) //retrieve 1
-        previousNode = terminatesnode_bodywhileBodyEnd
-    }
-    
-        let condStartsNodewhileBodyEnd = this.retrieveNode("starts",node.cond)
-        
-            {
-            let e = this.ccfg.addEdge(previousNode,condStartsNodewhileBodyEnd)
-            e.guards = [...e.guards, ...[]] //FF
-            }
-            
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}whileBodyEnd`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-        let condTerminatesNodewhileEnd = this.retrieveNode("terminates",node.cond)
-        let condChoiceNodewhileEnd = this.ccfg.getNodeFromName("choiceNode"+getASTNodeUID(node.cond))
-        if (condChoiceNodewhileEnd == undefined) {
-            let condChoiceNode = new Choice("choiceNode"+getASTNodeUID(node.cond))
-            this.ccfg.addNode(condChoiceNode)
-            this.ccfg.addEdge(condTerminatesNodewhileEnd,condChoiceNode)
-            condChoiceNodewhileEnd = condChoiceNode
-        }else{
-            this.ccfg.addEdge(condTerminatesNodewhileEnd,condChoiceNodewhileEnd)
-        }
-        
-    {
-        let choiceNodenode_condwhileEnd = this.retrieveNode("choiceNode",node.cond) //retrieve 1
-        previousNode = choiceNodenode_condwhileEnd
-    }
-    
-        {let e = this.ccfg.addEdge(previousNode,terminatesWhileNode)
-        e.guards = [...e.guards, ...[`verifyEqual,${getASTNodeUID(node.cond)}terminate,false`]] //EE
-        }
-        
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}whileEnd`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-        return [startsWhileNode,terminatesWhileNode]
-    }
-
-    visitPeriodicBloc(node: PeriodicBloc): [Node,Node] {
-        let startsPeriodicBlocNode: Node = new Step("starts"+getASTNodeUID(node),[`createGlobalVar,int${node.time},${getASTNodeUID(node)}blocTrigger`])
-        if(startsPeriodicBlocNode.functionsDefs.length>0){
-            startsPeriodicBlocNode.returnType = "void"
-        }
-        startsPeriodicBlocNode.functionsNames = [`init${startsPeriodicBlocNode.uid}PeriodicBloc`]
-        this.ccfg.addNode(startsPeriodicBlocNode)
-        let terminatesPeriodicBlocNode: Node = new Step("terminates"+getASTNodeUID(node))
-        this.ccfg.addNode(terminatesPeriodicBlocNode)
-        // rule periodicStart
-   //premise: starts:event
-   //conclusion: blocTrigger:Timer,starts:event
-// rule periodicBodyStart
-   //premise: blocTrigger:Timer,terminates:event
-   //conclusion: bloc:Bloc,starts:event
-   //conclusion: bloc:Bloc,starts:event,blocTrigger:Timer,starts:event
-
-        let previousNode =undefined
-        
-    {
-        let startsnodeperiodicStart = this.retrieveNode("starts",node) //retrieve 1
-        previousNode = startsnodeperiodicStart
-    }
-    
-        let blocTriggerStartsNodeperiodicStart = this.retrieveNode("starts",node)
-        
-            let blocTriggerTerminatesNodeperiodicStart = this.retrieveNode("terminates",node)
-            blocTriggerStartsNodeperiodicStart = new Step("startsblocTrigger"+getASTNodeUID(node))
-            this.ccfg.addNode( blocTriggerStartsNodeperiodicStart)
-            blocTriggerStartsNodeperiodicStart.functionsNames = [`starts${blocTriggerStartsNodeperiodicStart.uid}blocTrigger`]
-            blocTriggerStartsNodeperiodicStart.returnType = "void"
-            blocTriggerStartsNodeperiodicStart.functionsDefs = [...blocTriggerStartsNodeperiodicStart.functionsDefs, ...[`std::this_thread::sleep_for(${node.time}ms);`]] //GGG
-            blocTriggerTerminatesNodeperiodicStart = new Step("terminatesblocTrigger"+getASTNodeUID(node))
-            this.ccfg.addNode(blocTriggerTerminatesNodeperiodicStart)
-    
-            {
-            let e1 = this.ccfg.addEdge(previousNode, blocTriggerStartsNodeperiodicStart)
-            e1.guards = [...e1.guards, ...[]] //FFF
-            let e2 = this.ccfg.addEdge( blocTriggerStartsNodeperiodicStart,blocTriggerTerminatesNodeperiodicStart)
-            e2.guards = [...e2.guards, ...[]] //FFF
-            }
-
-            
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}periodicStart`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-    {
-        let terminatesblocTriggernodeperiodicBodyStart = this.retrieveNode("terminatesblocTrigger",node) //retrieve 1
-        previousNode = terminatesblocTriggernodeperiodicBodyStart
-    }
-    
-        let periodicBodyStartForkNode: Node = new Fork("periodicBodyStartForkNode")
-        this.ccfg.addNode(periodicBodyStartForkNode)
-        {let e = this.ccfg.addEdge(previousNode,periodicBodyStartForkNode)
-        e.guards = [...e.guards, ...[]] //BB
-        }
-        
-        let [blocStartNode/*,blocTerminatesNode*/] = this.getOrVisitNode(node.bloc)
-        this.ccfg.addEdge(periodicBodyStartForkNode,blocStartNode)
-        
-    let blocTriggerStartsNodeperiodicBodyStart = this.retrieveNode("starts"+"blocTrigger",node)
-    let blocTriggerTerminatesNodeperiodicBodyStart = this.retrieveNode("terminates"+"blocTrigger",node)
-    {
-    //let e1 = this.ccfg.addEdge(previousNode, blocTriggerStartsNodeperiodicBodyStart)
-    //e1.guards = [...e1.guards, ...[]] //FF22
-    let e2 = this.ccfg.addEdge( blocTriggerStartsNodeperiodicBodyStart,blocTriggerTerminatesNodeperiodicBodyStart)
-    e2.guards = [...e2.guards, ...[]] //FF22
-    this.ccfg.addEdge(periodicBodyStartForkNode,blocTriggerStartsNodeperiodicBodyStart)
-    }
-   
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}periodicBodyStart`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-        return [startsPeriodicBlocNode,terminatesPeriodicBlocNode]
-    }
-
-    visitFunctionCall(node: FunctionCall): [Node,Node] {
-        let startsFunctionCallNode: Node = new Step("starts"+getASTNodeUID(node),[])
-        if(startsFunctionCallNode.functionsDefs.length>0){
-            startsFunctionCallNode.returnType = "void"
-        }
-        startsFunctionCallNode.functionsNames = [`init${startsFunctionCallNode.uid}FunctionCall`]
-        this.ccfg.addNode(startsFunctionCallNode)
-        let terminatesFunctionCallNode: Node = new Step("terminates"+getASTNodeUID(node))
-        this.ccfg.addNode(terminatesFunctionCallNode)
-        // rule functionCallArgsStart
-   //premise: starts:event
-   //conclusion: args:Expr[],a:unknown,starts:event
-// rule functionCallStarts
-   //premise: args:Expr[],last():Expr,terminates:event
-   //conclusion: theFunction:[FunctionDef:ID],starts:event
-// rule functionCallEnd
-   //premise: theFunction:[FunctionDef:ID],terminates:event
-   //conclusion: terminates:event
-
-        let previousNode =undefined
-        
-    {
-        let startsnodefunctionCallArgsStart = this.retrieveNode("starts",node) //retrieve 1
-        previousNode = startsnodefunctionCallArgsStart
-    }
-    
-        let functionCallArgsStartStepNode = new Step("starts"+getASTNodeUID(node.args))
-        this.ccfg.addNode(functionCallArgsStartStepNode)
-        let e = this.ccfg.addEdge(previousNode,functionCallArgsStartStepNode)
-        e.guards = [...e.guards, ...[]] //DD
-
-        previousNode = functionCallArgsStartStepNode
-        for (var child of node.args) {
-            let [childStartsNode,childTerminatesNode] = this.getOrVisitNode(child)
-            this.ccfg.addEdge(previousNode,childStartsNode)
-            previousNode = childTerminatesNode
-        }
-        let argsTerminatesNode = new Step("terminates"+getASTNodeUID(node.args))
-        this.ccfg.addNode(argsTerminatesNode)
-        this.ccfg.addEdge(previousNode,argsTerminatesNode)
-        
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}functionCallArgsStart`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-    {
-        let terminatesnode_argsfunctionCallStarts = this.retrieveNode("terminates",node.args) //retrieve 1
-        previousNode = terminatesnode_argsfunctionCallStarts
-    }
-    
-        let theFunctionStartsNodefunctionCallStarts = this.retrieveNode("starts",node.theFunction)
-        
-            {
-            let e = this.ccfg.addEdge(previousNode,theFunctionStartsNodefunctionCallStarts)
-            e.guards = [...e.guards, ...[]] //FF
-            }
-            
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}functionCallStarts`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-    {
-        let terminatesnode_theFunctionfunctionCallEnd = this.retrieveNode("terminates",node.theFunction) //retrieve 1
-        previousNode = terminatesnode_theFunctionfunctionCallEnd
-    }
-    
-        {let e = this.ccfg.addEdge(previousNode,terminatesFunctionCallNode)
-        e.guards = [...e.guards, ...[]] //EE
-        }
-        
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}functionCallEnd`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-        return [startsFunctionCallNode,terminatesFunctionCallNode]
-    }
-
-    visitFunctionDef(node: FunctionDef): [Node,Node] {
-        let startsFunctionDefNode: Node = new Step("starts"+getASTNodeUID(node),[])
-        if(startsFunctionDefNode.functionsDefs.length>0){
-            startsFunctionDefNode.returnType = "void"
-        }
-        startsFunctionDefNode.functionsNames = [`init${startsFunctionDefNode.uid}FunctionDef`]
-        this.ccfg.addNode(startsFunctionDefNode)
-        let terminatesFunctionDefNode: Node = new Step("terminates"+getASTNodeUID(node))
-        this.ccfg.addNode(terminatesFunctionDefNode)
-        // rule functionDefArgsStart
-   //premise: starts:event
-   //conclusion: body:Bloc,starts:event
-// rule functionDefEnd
-   //premise: body:Bloc,terminates:event
-   //conclusion: terminates:unknown
-
-        let previousNode =undefined
-        
-    {
-        let startsnodefunctionDefArgsStart = this.retrieveNode("starts",node) //retrieve 1
-        previousNode = startsnodefunctionDefArgsStart
-    }
-    
-        let bodyStartsNodefunctionDefArgsStart = this.retrieveNode("starts",node.body)
-        
-            {
-            let e = this.ccfg.addEdge(previousNode,bodyStartsNodefunctionDefArgsStart)
-            e.guards = [...e.guards, ...[]] //FF
-            }
-            
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}functionDefArgsStart`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-    {
-        let terminatesnode_bodyfunctionDefEnd = this.retrieveNode("terminates",node.body) //retrieve 1
-        previousNode = terminatesnode_bodyfunctionDefEnd
-    }
-    
-        {let e = this.ccfg.addEdge(previousNode,terminatesFunctionDefNode)
-        e.guards = [...e.guards, ...[]] //EE
-        }
-        
-        previousNode.returnType = "void"
-        previousNode.functionsNames = [`${previousNode.uid}functionDefEnd`] //overwrite existing name
-        previousNode.functionsDefs =[...previousNode.functionsDefs, ...[]] //GG
-    
-        return [startsFunctionDefNode,terminatesFunctionDefNode]
-    }
-
-    getOrVisitNode(node:AstNode | Reference<AstNode> |undefined): [Node,Node]{
-        if(node === undefined){
-            throw new Error("not possible to get or visit an undefined AstNode")
-        }     
-        if(isReference(node)){
-            if(node.ref === undefined){
-                throw new Error("not possible to visit an undefined AstNode")
-            }
-            node = node.ref
-        }
-
-        let startsNode = this.ccfg.getNodeFromName("starts"+getASTNodeUID(node))
-        if(startsNode !== undefined){
-            let terminatesNode = this.ccfg.getNodeFromName("terminates"+getASTNodeUID(node))
-            if(terminatesNode === undefined){
-                throw new Error("impossible to be there")
-            }
-            return [startsNode,terminatesNode]
-        }
-        let [starts,terminates] = this.visit(node)
-        return [starts,terminates]
-    }
-
-    retrieveNode(prefix: string, node: AstNode | AstNode[] | Reference<AstNode> | Reference<AstNode>[] | undefined): Node {
-        if(node === undefined){
-            throw new Error("not possible to retrieve a node from an undefined AstNode")
-        }
-        if(Array.isArray(node) || (prefix != "starts" && prefix != "terminates")){
-            let n = this.ccfg.getNodeFromName(prefix+getASTNodeUID(node))
-            if(n === undefined){
-                throw new Error("impossible to retrieve "+prefix+getASTNodeUID(node)+ "from the ccfg")
-            }
-            return n
-        }
-        if(prefix == "starts"){
-            return this.getOrVisitNode(node)[0]
-        }
-        if(prefix == "terminates"){
-            return this.getOrVisitNode(node)[1]
-        }       
-        throw new Error("not possible to retrieve the node given as parameter: "+prefix+getASTNodeUID(node))
     }
     
 }

@@ -10,7 +10,6 @@ entry SoSSpec:
    ;
 
 
-//on purpose no if conditions. They should be queried and scheduled by CCSL like ordering
 RuleOpening:
     {infer RuleOpening} 
     (name=ID)? 'open' onRule=[ParserRule:ID] '{'
@@ -23,15 +22,11 @@ RuleOpening:
 ImportStatement:
 	'import' importURI=STRING; 
 
-
-
 RWRule:
 	premise=Premise
     ('-')+ name=ID
 	conclusion=Conclusion
 ;
-
-
 
 EventExpression:
 	EventRef |  NaryEventExpression | EventCombination |  ValuedEventRef | ValuedEventRefConstantComparison;

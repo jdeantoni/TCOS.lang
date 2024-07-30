@@ -3,7 +3,7 @@ import {  CompositeGeneratorNode, MultiMap, toString } from 'langium';
 import path from 'path';
 import { Model } from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
-import { CCFGVisitor } from './generated/testFSE';
+import {TestSimpleLCompilerFrontEnd } from './generated/testFSE';
 import { CCFG, Edge, Node, TypedElement } from '../ccfg/ccfglib';
 import chalk from 'chalk';
 
@@ -42,10 +42,10 @@ export function generateCPPfromCCFG(model: Model, filePath: string, targetDirect
 
 
 function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model): CCFG {
-    var visitor = new CCFGVisitor();
-    visitor.visit(model);
+    var compilerFrontEnd = new TestSimpleLCompilerFrontEnd();
 
-    var ccfg = visitor.ccfg
+    var ccfg = compilerFrontEnd.generateCCFG(model, true);
+    console.log("CCFG generated (nodes: " + ccfg.nodes.length + ", edges: " + ccfg.edges.length + ")");
    
     ccfg.addSyncEdge()
 
