@@ -224,7 +224,7 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, codeFile: CompositeGenerat
                 if(ptn.returnType != undefined){
                     if(!createdQueueIds.includes(syncUID)){
                         createdQueueIds.push(syncUID);
-                        if(ptn.returnType != "void"){
+                        if(ptn.returnType != "void" && ptn.returnType != undefined){
                             thisNodeCode = [...thisNodeCode, ...generator.createLockingQueue(codeFile,ptn.returnType,syncUID)];
                         }else{
                             thisNodeCode = [...thisNodeCode, ...generator.createSynchronizer(codeFile,syncUID)];
@@ -568,3 +568,4 @@ function addComparisonVariableDeclaration(codeFile: CompositeGeneratorNode, curr
     }
     return []
 }
+
