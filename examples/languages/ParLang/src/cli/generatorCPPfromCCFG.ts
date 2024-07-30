@@ -3,8 +3,8 @@ import {  CompositeGeneratorNode, MultiMap, toString } from 'langium';
 import path from 'path';
 import { Program } from '../language/generated/ast';
 import { extractDestinationAndName } from './cli-util.js';
-import { CCFGVisitor } from './generated/parLang.js';
-import { CCFG, Edge, Node, Step, TypedElement } from '../ccfg/ccfglib.js';
+import { ParLangSemanticsCompilerFrontEnd } from './generated/parLang.js';
+import { CCFG, Edge, Node, TypedElement } from '../ccfg/ccfglib.js';
 import chalk from 'chalk';
 
 
@@ -42,18 +42,12 @@ export function generateCPPfromCCFG(model: Program, filePath: string, targetDire
 
 
 function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Program): CCFG {
-    var visitor = new CCFGVisitor();
-    let [startModel,stopModel] = visitor.visit(model);
+    console.log("Generating CCFG");
+    var frontEnd = new ParLangSemanticsCompilerFrontEnd(debug);
+    var ccfg = frontEnd.generateCCFG(model);
+    console.log("CCFG generated (#nodes:", ccfg.nodes.length, ", #edges:", ccfg.edges.length, ")");
     
 
-    var ccfg = visitor.ccfg
-    let initNode = new Step(-1)
-    ccfg.addNode(initNode);
-    ccfg.initialState = initNode;
-    ccfg.addEdge(initNode, startModel);
-    let endNode = new Step(-2)
-    ccfg.addNode(endNode);
-    ccfg.addEdge(stopModel, endNode);
    
     ccfg.computeCorrespondingNodes()//addSyncEdge()
 

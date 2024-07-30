@@ -17,12 +17,13 @@ const packageContent = await fs.readFile(packagePath, 'utf-8');
 export const generateAction = async (fileName: string, opts: GenerateOptions): Promise<void> => {
     const services = createParLangServices(NodeFileSystem).ParLang;
     const model = await extractAstNode<Program>(fileName, services);
-    const generatedFilePath = generateCPPfromCCFG(model, fileName, opts.destination, true);
+    const generatedFilePath = generateCPPfromCCFG(model, fileName, opts.targetDirectory, opts.debug);
     console.log(chalk.green(`CCFG and code generated successfully: ${generatedFilePath}`));
 };
 
 export type GenerateOptions = {
-    destination?: string;
+    targetDirectory ?: string;
+    debug ?: boolean;
 }
 
 export default function(): void {
@@ -32,11 +33,12 @@ export default function(): void {
 
     const fileExtensions = ParLangLanguageMetaData.fileExtensions.join(', ');
     program
-        .command('generate')
-        .argument('<file>', `source file (possible file extensions: ${fileExtensions})`)
-        .option('-d, --destination <dir>', 'destination directory of generating')
-        .description('generates JavaScript code that prints "Hello, {name}!" for each greeting in a source file')
-        .action(generateAction);
+    .command('generate')
+    .argument('<file>', `source file (possible file extensions: ${fileExtensions})`)
+    .option('-t, --targetDirectory <dir>', 'destination directory of generating', 'generated')
+    .option('-d, --debug ', 'ask for debugging message during execution of the generated code')
+    .description('generates the concurrent control flow graph representation of the given source file')
+    .action(generateAction);
 
     program.parse(process.argv);
 }

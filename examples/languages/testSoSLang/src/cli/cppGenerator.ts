@@ -98,7 +98,7 @@ export class CppGenerator implements IGenerator {
         return ["LockingQueue<Void> synch" + synchUID + ";\n"]
     }
     activateSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): string[] {
-        return ["Void fakeParam"+synchUID+";\n " ,"synch" + synchUID + ".push(fakeParam"+synchUID+");\n"]
+        return ["{Void fakeParam"+synchUID+";\n " ,"synch" + synchUID + ".push(fakeParam"+synchUID+");}\n"]
     }
     waitForSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): string[] {
         return ["{Void joinPopped"+synchUID+";\n " ,"synch" + synchUID + ".waitAndPop(joinPopped"+synchUID+");}\n"]
@@ -122,13 +122,13 @@ export class CppGenerator implements IGenerator {
         return [type + " " + varName + ";\n"]
     }
     createGlobalVar(codeFile: CompositeGeneratorNode, type: string, varName: string): string[] {
-        return [`{const std::lock_guard<std::mutex> lock(sigma_mutex);`,"sigma[\"" + varName + "\"] = new "+type+"();\n}"]
+        return [`{const std::lock_guard<std::mutex> lock(sigma_mutex);`,"sigma[\"" + varName + "\"] = new "+type+"();}\n"]
     }
     setVarFromGlobal(codeFile: CompositeGeneratorNode, type: string, varName: string, value: string): string[] {
-        return [`{const std::lock_guard<std::mutex> lock(sigma_mutex);`,varName + " = *(" + type + "*)sigma[\"" + value + "\"];\n}"]
+        return [`{const std::lock_guard<std::mutex> lock(sigma_mutex);`,varName + " = *(" + type + "*)sigma[\"" + value + "\"];}\n"]
     }
     setGlobalVar(codeFile: CompositeGeneratorNode, type: string, varName: string, value: string): string[] {
-        return [`{const std::lock_guard<std::mutex> lock(sigma_mutex);`,"*(("+type+"*)sigma[\"" + varName + "\"]) = "+value +";\n}"]
+        return [`{const std::lock_guard<std::mutex> lock(sigma_mutex);`,"*(("+type+"*)sigma[\"" + varName + "\"]) = "+value +";}\n"]
     }
     operation(codeFile: CompositeGeneratorNode, varName: string, n1: string, op: string, n2: string): string[] {
         return [varName + " = " + n1 + " " + op + " " + n2 + ";\n"]

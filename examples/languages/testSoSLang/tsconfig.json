@@ -3,11 +3,11 @@
   "compilerOptions": {
     "target": "ES6",
     "module": "commonjs",
-    "lib": ["ESNext","es2022"],
+    "lib": ["ESNext"],
     "sourceMap": true,
     "outDir": "out",
     "strict": true,
-    "noUnusedLocals": true,
+    "noUnusedLocals": false,
     "noImplicitReturns": true,
     "noImplicitOverride": true,
     "moduleResolution": "node",

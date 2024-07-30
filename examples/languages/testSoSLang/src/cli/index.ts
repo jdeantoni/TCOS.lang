@@ -5,7 +5,7 @@ import { SimpleLLanguageMetaData } from '../language-server/generated/module';
 import { createSimpleLServices } from '../language-server/simple-l-module';
 import { extractAstNode } from './cli-util';
 import { NodeFileSystem } from 'langium/node';
-import { generatefromCCFG } from './compilerBackend';
+import { generatefromCCFG } from './interpretCCFG';
 import { IGenerator } from './GeneratorInterface';
 import { PythonGenerator } from './pythonGenerator';
 import { CppGenerator } from './cppGenerator';

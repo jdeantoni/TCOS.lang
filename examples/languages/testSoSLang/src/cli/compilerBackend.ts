@@ -3,7 +3,7 @@ import {  CompositeGeneratorNode, MultiMap, toString } from 'langium';
 import path from 'path';
 import { Model } from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
-import { CCFGVisitor } from './generated/testFSE';
+import { TestSimpleLCompilerFrontEnd } from './generated/testFSE';
 import { CCFG, Edge, Node } from '../ccfg/ccfglib';
 import {IGenerator} from './GeneratorInterface';
 import chalk from 'chalk';
@@ -69,10 +69,8 @@ function doGenerateCode(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: boo
 
 
 function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model): CCFG {
-    var visitor = new CCFGVisitor();
-    visitor.visit(model);
-
-    var ccfg = visitor.ccfg
+    var compilerFrontEnd = new TestSimpleLCompilerFrontEnd();
+    var ccfg = compilerFrontEnd.generateCCFG(model,debug);
    
     ccfg.addSyncEdge()
 
