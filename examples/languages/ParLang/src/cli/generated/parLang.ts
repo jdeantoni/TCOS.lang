@@ -310,7 +310,7 @@ export class ParLangSemanticsCompilerFrontEnd implements CompilerFrontEnd {
         
         return localCCFG;
     }
-// rule fugaceStmt1
+// rule fugaceStmt2
    //premise: starts:event
    //conclusion: terminates:event
 
@@ -333,7 +333,7 @@ export class ParLangSemanticsCompilerFrontEnd implements CompilerFrontEnd {
         
         startsStmt2Node.params = [...startsStmt2Node.params, ...[]]
         startsStmt2Node.returnType = "void"
-        startsStmt2Node.functionsNames = [`${startsStmt2Node.uid}fugaceStmt1`] //overwrite existing name
+        startsStmt2Node.functionsNames = [`${startsStmt2Node.uid}fugaceStmt2`] //overwrite existing name
         startsStmt2Node.functionsDefs =[...startsStmt2Node.functionsDefs, ...[]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
         {let e = localCCFG.addEdge(startsStmt2Node,terminatesStmt2Node)

@@ -21,6 +21,11 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
         "$type": "Group",
         "elements": [
           {
+            "$type": "Keyword",
+            "value": "semantics",
+            "cardinality": "?"
+          },
+          {
             "$type": "Assignment",
             "feature": "name",
             "operator": "=",
