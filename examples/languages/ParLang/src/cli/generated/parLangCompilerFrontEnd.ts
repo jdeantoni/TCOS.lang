@@ -21,7 +21,7 @@ export interface CompilerFrontEnd {
     
 }
 
-export class ParLangSemanticsCompilerFrontEnd implements CompilerFrontEnd {
+export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
     constructor(debugMode: boolean = false){ 
         debug = debugMode
     }

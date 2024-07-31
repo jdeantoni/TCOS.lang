@@ -22,7 +22,7 @@ export class ParLangValidator {
 
     checkPersonStartsWithCapital(s: Statement, accept: ValidationAcceptor): void {
         if (isStatement(s)) {
-            console.log('validate statement:', s);
+            //console.log('validate statement:', s);
         }
     }
 

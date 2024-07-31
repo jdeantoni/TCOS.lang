@@ -1,4 +1,4 @@
-testSimpleL
+semantics SimpleL
 
 import "./testSoSLang/src/language-server/simple-l.langium"
 

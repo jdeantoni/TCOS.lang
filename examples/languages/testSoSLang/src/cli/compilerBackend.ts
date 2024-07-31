@@ -3,7 +3,7 @@ import {  CompositeGeneratorNode, MultiMap, toString } from 'langium';
 import path from 'path';
 import { Model } from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
-import { TestSimpleLCompilerFrontEnd } from './generated/testFSE';
+import { SimpleLCompilerFrontEnd } from './generated/simpleLCompilerFrontEnd';
 import { CCFG, Edge, Node } from '../ccfg/ccfglib';
 import {IGenerator} from './GeneratorInterface';
 import chalk from 'chalk';
@@ -53,7 +53,7 @@ export function generatefromCCFG(model: Model, filePath: string, targetDirectory
 function doGenerateCode(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: boolean, generator: IGenerator) {
     let initNode = ccfg.initialState;
     if (initNode == undefined) {
-        console.log("No initial state found");
+        console.log(chalk.red("No initial state found in the CCFG, aborting"));
         return;
     }
 
@@ -69,7 +69,7 @@ function doGenerateCode(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: boo
 
 
 function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model): CCFG {
-    var compilerFrontEnd = new TestSimpleLCompilerFrontEnd();
+    var compilerFrontEnd = new SimpleLCompilerFrontEnd();
     var ccfg = compilerFrontEnd.generateCCFG(model,debug);
    
     ccfg.addSyncEdge()

@@ -29,7 +29,7 @@ export interface CompilerFrontEnd {
     
 }
 
-export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
+export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
     constructor(debugMode: boolean = false){ 
         debug = debugMode
     }
@@ -249,7 +249,7 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         localCCFG.addNode(terminatesVariableNode)
         
         {
-        let initializeVarStateModificationNode: Node = new Step(node, undefined, [`createVar,int,${this.getASTNodeUID(node)}1381`,`assignVar,${this.getASTNodeUID(node)}1381,${node.initialValue}`,`setGlobalVar,int,${this.getASTNodeUID(node)}currentValue,${this.getASTNodeUID(node)}1381`])
+        let initializeVarStateModificationNode: Node = new Step(node, undefined, [`createVar,int,${this.getASTNodeUID(node)}1387`,`assignVar,${this.getASTNodeUID(node)}1387,${node.initialValue}`,`setGlobalVar,int,${this.getASTNodeUID(node)}currentValue,${this.getASTNodeUID(node)}1387`])
         localCCFG.addNode(initializeVarStateModificationNode)
         {let e = localCCFG.addEdge(startsVariableNode,initializeVarStateModificationNode)
         e.guards = [...e.guards, ...[]]}
@@ -290,7 +290,7 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         startsVarRefNode.params = [...startsVarRefNode.params, ...[]]
         startsVarRefNode.returnType = "int"
         startsVarRefNode.functionsNames = [`${startsVarRefNode.uid}accessVarRef`] //overwrite existing name
-        startsVarRefNode.functionsDefs =[...startsVarRefNode.functionsDefs, ...[`createVar,int,${this.getASTNodeUID(node)}1587`,`setVarFromGlobal,int,${this.getASTNodeUID(node)}1587,${this.getASTNodeUID(node.theVar)}currentValue`,`createVar,int,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,${this.getASTNodeUID(node)}1587`,`return,${this.getASTNodeUID(node)}terminates`]] //GG
+        startsVarRefNode.functionsDefs =[...startsVarRefNode.functionsDefs, ...[`createVar,int,${this.getASTNodeUID(node)}1593`,`setVarFromGlobal,int,${this.getASTNodeUID(node)}1593,${this.getASTNodeUID(node.theVar)}currentValue`,`createVar,int,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,${this.getASTNodeUID(node)}1593`,`return,${this.getASTNodeUID(node)}terminates`]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
         {let e = localCCFG.addEdge(startsVarRefNode,terminatesVarRefNode)
         e.guards = [...e.guards, ...[]]}
@@ -432,7 +432,7 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         e.guards = [...e.guards, ...[]]}
             
         {
-        let executeAssignment2StateModificationNode: Node = new Step(node, undefined, [`createVar,int,${this.getASTNodeUID(node)}2528`,`assignVar,${this.getASTNodeUID(node)}2528,resRight`,`setGlobalVar,int,${this.getASTNodeUID(node.variable)}currentValue,${this.getASTNodeUID(node)}2528`])
+        let executeAssignment2StateModificationNode: Node = new Step(node, undefined, [`createVar,int,${this.getASTNodeUID(node)}2534`,`assignVar,${this.getASTNodeUID(node)}2534,resRight`,`setGlobalVar,int,${this.getASTNodeUID(node.variable)}currentValue,${this.getASTNodeUID(node)}2534`])
         localCCFG.addNode(executeAssignment2StateModificationNode)
         {let e = localCCFG.addEdge(exprHole,executeAssignment2StateModificationNode)
         e.guards = [...e.guards, ...[]]}
@@ -617,7 +617,7 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         finishPlusAndJoinNode.params = [...finishPlusAndJoinNode.params, ...[Object.assign( new TypedElement(), JSON.parse(`{ "name": "n2", "type": "int"}`)),Object.assign( new TypedElement(), JSON.parse(`{ "name": "n1", "type": "int"}`))]]
         finishPlusAndJoinNode.returnType = "int"
         finishPlusAndJoinNode.functionsNames = [`${finishPlusAndJoinNode.uid}finishPlus`] //overwrite existing name
-        finishPlusAndJoinNode.functionsDefs =[...finishPlusAndJoinNode.functionsDefs, ...[`createVar,int,${this.getASTNodeUID(node)}4391`,`assignVar,${this.getASTNodeUID(node)}4391,n1`,`createVar,int,${this.getASTNodeUID(node)}4396`,`assignVar,${this.getASTNodeUID(node)}4396,n2`,`createVar,int,${this.getASTNodeUID(node)}4390`,`operation,${this.getASTNodeUID(node)}4390,${this.getASTNodeUID(node)}4391,+,${this.getASTNodeUID(node)}4396`,`createVar,int,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,${this.getASTNodeUID(node)}4390`,`return,${this.getASTNodeUID(node)}terminates`]] //GG
+        finishPlusAndJoinNode.functionsDefs =[...finishPlusAndJoinNode.functionsDefs, ...[`createVar,int,${this.getASTNodeUID(node)}4397`,`assignVar,${this.getASTNodeUID(node)}4397,n1`,`createVar,int,${this.getASTNodeUID(node)}4402`,`assignVar,${this.getASTNodeUID(node)}4402,n2`,`createVar,int,${this.getASTNodeUID(node)}4396`,`operation,${this.getASTNodeUID(node)}4396,${this.getASTNodeUID(node)}4397,+,${this.getASTNodeUID(node)}4402`,`createVar,int,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,${this.getASTNodeUID(node)}4396`,`return,${this.getASTNodeUID(node)}terminates`]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
         {let e = localCCFG.addEdge(finishPlusAndJoinNode,terminatesPlusNode)
         e.guards = [...e.guards, ...[]]}
@@ -648,7 +648,7 @@ export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
         startsBooleanConstNode.params = [...startsBooleanConstNode.params, ...[]]
         startsBooleanConstNode.returnType = "bool"
         startsBooleanConstNode.functionsNames = [`${startsBooleanConstNode.uid}evalBooleanConst`] //overwrite existing name
-        startsBooleanConstNode.functionsDefs =[...startsBooleanConstNode.functionsDefs, ...[`createVar,bool,${this.getASTNodeUID(node)}4610`,`setVarFromGlobal,bool,${this.getASTNodeUID(node)}4610,${this.getASTNodeUID(node)}constantValue`,`createVar,bool,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,${this.getASTNodeUID(node)}4610`,`return,${this.getASTNodeUID(node)}terminates`]] //GG
+        startsBooleanConstNode.functionsDefs =[...startsBooleanConstNode.functionsDefs, ...[`createVar,bool,${this.getASTNodeUID(node)}4616`,`setVarFromGlobal,bool,${this.getASTNodeUID(node)}4616,${this.getASTNodeUID(node)}constantValue`,`createVar,bool,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,${this.getASTNodeUID(node)}4616`,`return,${this.getASTNodeUID(node)}terminates`]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
         {let e = localCCFG.addEdge(startsBooleanConstNode,terminatesBooleanConstNode)
         e.guards = [...e.guards, ...[]]}
