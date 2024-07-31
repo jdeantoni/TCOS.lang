@@ -23,9 +23,9 @@ var conceptNameToRulesCF: Map<string, RuleControlFlow[]> = new Map()
 
 // this function is used to generate the code for the visitor pattern of the specified compiler
 
-export function generateStuffFromSoS(model: SoSSpec, grammar: Grammar[], filePath: string, destination: string | undefined): string {
+export function generateCompilerFrontEndFromSoS(model: SoSSpec, grammar: Grammar[], filePath: string, destination: string | undefined): string {
     const data = extractDestinationAndName(filePath, destination);
-    const generatedFilePath = `${path.join(data.destination, data.name)}.ts`;
+    const generatedFilePath = `${path.join(data.destination, data.name+"CompilerFrontEnd")}.ts`;
     const file = new CompositeGeneratorNode();
 
     writePreambule(file, data);
@@ -37,7 +37,16 @@ export function generateStuffFromSoS(model: SoSSpec, grammar: Grammar[], filePat
             conceptNames.push(openedRule.onRule.ref.name)
         }
     }
-    file.append(`import { ${conceptNames.join(',')} } from "../../language-server/generated/ast.js";`, NL)
+    if (fs.existsSync(data.destination+"/../../language-server/")) {
+        file.append(`import { ${conceptNames.join(',')} } from "../../language-server/generated/ast.js";`, NL)
+    }else{
+        if (fs.existsSync(data.destination+"/../../language/")) {
+            file.append(`import { ${conceptNames.join(',')} } from "../../language/generated/ast.js";`, NL)
+        }else{
+            console.log(chalk.red("seems that data destination does not target a valid language server or language folder. I'm looking for either this "+data.destination+"/../../language-server/ or this "+data.destination+"/../../language/ folders "))
+        }
+    }
+    
     file.append(`
 var debug = false
 
@@ -1054,7 +1063,6 @@ function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefine
             
             //todo write a node that saves the variable
             res = createVariableFromMemberCall(valuedEmission.data as MemberCall, typeName)
-            console.log(res)
         }
         if(valuedEmission.data != undefined && valuedEmission.data.$type == "BinaryExpression"){
             //todo write a node that joins the two variable nodes and saves the result
@@ -1084,7 +1092,6 @@ function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefine
         if(res.length > 0){
             res = res + ","
         }
-        console.log(res)
         res = res+ `\`${createVar},${typeName},\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\`,`
         res = res+ `\`${assignVar},\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name},\${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,`
         res = res+ `\`${ret},\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\``

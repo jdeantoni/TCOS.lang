@@ -3,7 +3,7 @@ import {  CompositeGeneratorNode, MultiMap, toString } from 'langium';
 import path from 'path';
 import { Program } from '../language/generated/ast';
 import { extractDestinationAndName } from './cli-util.js';
-import { ParLangSemanticsCompilerFrontEnd } from './generated/parLang.js';
+import { ParLangCompilerFrontEnd } from './generated/parLangCompilerFrontEnd.js';
 import { CCFG, Edge, Node } from '../ccfg/ccfglib.js';
 import {IGenerator} from './GeneratorInterface.js';
 import chalk from 'chalk';
@@ -69,7 +69,7 @@ function doGenerateCode(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: boo
 
 
 function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Program): CCFG {
-    var compilerFrontEnd = new ParLangSemanticsCompilerFrontEnd();
+    var compilerFrontEnd = new ParLangCompilerFrontEnd();
     var ccfg = compilerFrontEnd.generateCCFG(model,debug);
    
     ccfg.addSyncEdge()
