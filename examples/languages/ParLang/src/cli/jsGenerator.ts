@@ -90,10 +90,13 @@ export class CppGenerator implements IGenerator {
     waitForSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): string[] {
         throw new Error("function waitForSynchronizer should be defined");
     }
-    createFlagToGoBackTo(codeFile: CompositeGeneratorNode, uid:number): string[] {
+    createLoopStart(codeFile: CompositeGeneratorNode, uid:number): string[] {
         throw new Error("function createFlagToGoBackTo should be defined");
     }
-    goToFlag(codeFile: CompositeGeneratorNode, uid:number): string[] {
+    createLoopEnd(codeFile: CompositeGeneratorNode, uid:number): string[] {
+        throw new Error("function createFlagToGoBackTo should be defined");
+    }
+    setLoopFlag(codeFile: CompositeGeneratorNode, uid:number): string[] {
         throw new Error("function goToFlag should be defined");
     }
     createEqualsVerif(firstValue: string, secondValue: string): string {

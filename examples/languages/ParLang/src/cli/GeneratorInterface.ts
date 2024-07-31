@@ -61,17 +61,25 @@ interface IGenerator {
     
     
     /**
-     * generate a goto statement to go back to a specific point in the code 
+     * set a boolean variable to true or false depending if looping (goto loop start) or not. The var is name "flag"+uid
      * @param codeFile the codefile to be written in
      * @param queueUID the unique identifier of the flag
      */
-    goToFlag(codeFile: CompositeGeneratorNode, UID: number): string[];
+    setLoopFlag(codeFile: CompositeGeneratorNode, UID: number): string[];
     /**
-     * generate a flag to go back to this specific point in the code
+     * returns the target dependent code to start a loop block on truthiness of specific boolean flag
      * @param codeFile the codefile to be written in
-     * @param uid the unique identifier of the flag
+     * @param uid the unique identifier of the flag whose name should be "flag"+uid
      */
-    createFlagToGoBackTo(codeFile: CompositeGeneratorNode, uid: number): string[];
+    createLoopStart(codeFile: CompositeGeneratorNode, uid: number): string[];
+
+    /**
+     * returns the target dependent code to finish a loop block
+     * @param codeFile the codefile to be written in
+     * @param uid the unique identifier of the flag whose name should be "flag"+uid
+     */
+    createLoopEnd(codeFile: CompositeGeneratorNode, uid: number): string[];
+
     /**
      * createSynchronizer is a function that takes a the codeFile we write in and a unique identifier and writes in a synchronizer for the threads
      * @param codeFile this is the codefile to be written in

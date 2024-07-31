@@ -53,7 +53,7 @@ export function generatefromCCFG(model: Program, filePath: string, targetDirecto
 function doGenerateCode(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: boolean, generator: IGenerator) {
     let initNode = ccfg.initialState;
     if (initNode == undefined) {
-        console.log("No initial state found");
+        console.log(chalk.red("No initial state found in the CCFG, aborting"));
         return;
     }
 
@@ -309,7 +309,7 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, codeFile: CompositeGenerat
                 currentNode.returnType = paramType
             }
             if(currentNode.isCycleInitiator){
-                thisNodeCode = [...thisNodeCode, ...generator.createFlagToGoBackTo(codeFile,currentNode.uid)];
+                thisNodeCode = [...thisNodeCode, ...generator.createLoopStart(codeFile,currentNode.uid)];
             }
             if (paramType == "void" || paramType == undefined){
                 thisNodeCode = [...thisNodeCode, ...generator.waitForSynchronizer(codeFile,currentNode.uid)];
@@ -319,6 +319,9 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, codeFile: CompositeGenerat
             }
             let nextNode = currentNode.outputEdges[0].to
             thisNodeCode = [...thisNodeCode, ...visitAllNodes(ccfg,nextNode, /*untilUID,*/ codeFile,generator)];
+            if(currentNode.isCycleInitiator){
+                thisNodeCode = [...thisNodeCode, ...generator.createLoopEnd(codeFile,currentNode.uid)]; //ends the while loop
+            }
             break;
         }
     case "Choice":
@@ -422,6 +425,11 @@ function addCorrespondingCode(codeFile: CompositeGeneratorNode, currentNode: Nod
         return []
     }
     let res:string[] = [];
+    if(currentNode.functionsNames == undefined || currentNode.functionsNames.length == 0){
+        let queueUID = queueUidToPushIn(currentNode)
+        res = [...res, ...addQueuePushCode(queueUID, currentNode, ccfg, codeFile, undefined,generator)];
+        return res;
+    }
     currentNode.functionsNames.forEach(f => {
         let paramNames = getParameterNames(currentNode);
         res =[...res ,...generator.createFuncCall(codeFile,f,paramNames,currentNode.returnType || "void")];
@@ -432,12 +440,9 @@ function addCorrespondingCode(codeFile: CompositeGeneratorNode, currentNode: Nod
 
         let queueUID = queueUidToPushIn(currentNode)
         res =[...res ,...addQueuePushCode(queueUID, currentNode, ccfg, codeFile, f,generator)];
-        return res;
+        return res
     });
-    if(currentNode.functionsNames.length == 0){
-        let queueUID = queueUidToPushIn(currentNode)
-        res = [...res, ...addQueuePushCode(queueUID, currentNode, ccfg, codeFile, undefined,generator)];
-    }
+    
     return res;
 }
 
@@ -484,7 +489,7 @@ function addQueuePushCode(queueUID: number | undefined, currentNode: Node, ccfg:
             res = [...res, ...generator.sendToQueue(codeFile,queueUID,currentNode.returnType || "void",`result${f}`)]
         }
         if(syncNode.isCycleInitiator){
-            res = [...res, ...generator.goToFlag(codeFile,queueUID)];
+           res = [...res, ...generator.setLoopFlag(codeFile,queueUID)];
         }
         //codeFile.append(`}\n`)
         return res;

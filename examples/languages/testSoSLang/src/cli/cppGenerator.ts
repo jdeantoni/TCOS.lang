@@ -95,7 +95,7 @@ export class CppGenerator implements IGenerator {
 
     }
     createSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): string[] {
-        return ["LockingQueue<Void> synch" + synchUID + ";\n"]
+        return [`bool flag${synchUID} = true;\nLockingQueue<Void> synch${synchUID} ;\n`]
     }
     activateSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): string[] {
         return ["{Void fakeParam"+synchUID+";\n " ,"synch" + synchUID + ".push(fakeParam"+synchUID+");}\n"]
@@ -103,11 +103,14 @@ export class CppGenerator implements IGenerator {
     waitForSynchronizer(codeFile: CompositeGeneratorNode, synchUID: number): string[] {
         return ["{Void joinPopped"+synchUID+";\n " ,"synch" + synchUID + ".waitAndPop(joinPopped"+synchUID+");}\n"]
     }
-    createFlagToGoBackTo(codeFile: CompositeGeneratorNode, uid:number): string[] {
-        return ["flag"+uid+ " :\n"]
+    createLoopStart(codeFile: CompositeGeneratorNode, uid:number): string[] {
+        return ["flag"+uid+"= true;\nwhile (flag"+uid+ " == true){\n\tflag"+uid+" = false;\n"]
     }
-    goToFlag(codeFile: CompositeGeneratorNode, uid:number): string[] {
-        return ["goto flag"+uid+ ";\n"]
+    createLoopEnd(codeFile: CompositeGeneratorNode, uid:number): string[] {
+        return ["}"]
+    }
+    setLoopFlag(codeFile: CompositeGeneratorNode, uid:number): string[] {
+        return ["flag"+uid+ " = true;\n"]
     }
     createEqualsVerif(firstValue: string, secondValue: string): string {
         return firstValue + " == " + secondValue

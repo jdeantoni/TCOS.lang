@@ -4,11 +4,16 @@ import { TypedElement } from "../ccfg/ccfglib";
 
 
 export class PythonGenerator implements IGenerator {
-    goToFlag(codeFile: CompositeGeneratorNode, queueUID: number): string[] {
+    setLoopFlag(codeFile: CompositeGeneratorNode, queueUID: number): string[] {
         throw new Error("Method not implemented.");
     }
-    createFlagToGoBackTo(codeFile: CompositeGeneratorNode, uid: number): string[] {
-        throw new Error("Method not implemented.");
+    createLoopStart(codeFile: CompositeGeneratorNode, uid: number): string[] {
+        this.nbTabs++;
+        return [`${Array(this.nbTabs).join("\t")}while flag${uid} == True: \n`]; 
+    }
+    createLoopEnd(codeFile: CompositeGeneratorNode, uid: number): string[] {
+        this.nbTabs--;
+        return [``]; 
     }
     
     createEqualsVerif(firstValue: string, secondValue: string): string {

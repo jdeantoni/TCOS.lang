@@ -309,7 +309,7 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, codeFile: CompositeGenerat
                 currentNode.returnType = paramType
             }
             if(currentNode.isCycleInitiator){
-                thisNodeCode = [...thisNodeCode, ...generator.createFlagToGoBackTo(codeFile,currentNode.uid)];
+                thisNodeCode = [...thisNodeCode, ...generator.createLoopStart(codeFile,currentNode.uid)];
             }
             if (paramType == "void" || paramType == undefined){
                 thisNodeCode = [...thisNodeCode, ...generator.waitForSynchronizer(codeFile,currentNode.uid)];
@@ -319,6 +319,9 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, codeFile: CompositeGenerat
             }
             let nextNode = currentNode.outputEdges[0].to
             thisNodeCode = [...thisNodeCode, ...visitAllNodes(ccfg,nextNode, /*untilUID,*/ codeFile,generator)];
+            if(currentNode.isCycleInitiator){
+                thisNodeCode = [...thisNodeCode, ...generator.createLoopEnd(codeFile,currentNode.uid)]; //ends the while loop
+            }
             break;
         }
     case "Choice":
@@ -484,7 +487,7 @@ function addQueuePushCode(queueUID: number | undefined, currentNode: Node, ccfg:
             res = [...res, ...generator.sendToQueue(codeFile,queueUID,currentNode.returnType || "void",`result${f}`)]
         }
         if(syncNode.isCycleInitiator){
-            res = [...res, ...generator.goToFlag(codeFile,queueUID)];
+           res = [...res, ...generator.setLoopFlag(codeFile,queueUID)];
         }
         //codeFile.append(`}\n`)
         return res;
