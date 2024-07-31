@@ -4,6 +4,12 @@ import { TypedElement } from "../ccfg/ccfglib";
 
 
 export class PythonGenerator implements IGenerator {
+    isDebug: boolean;
+
+    constructor(debug: boolean) {
+        this.isDebug = debug;
+    }
+    
     goToFlag(codeFile: CompositeGeneratorNode, queueUID: number): string[] {
         throw new Error("Method not implemented.");
     }

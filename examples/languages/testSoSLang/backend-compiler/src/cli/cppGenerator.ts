@@ -4,6 +4,11 @@ import { TypedElement } from "../ccfg/ccfglib";
 
 
 export class CppGenerator implements IGenerator {
+    isDebug: boolean;
+
+    constructor(debug: boolean) {
+        this.isDebug = debug;
+    }
     
     nameFile(filename: string): string {
         return `${filename}.cpp`;

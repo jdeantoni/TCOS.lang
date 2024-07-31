@@ -1,7 +1,6 @@
 import fs from 'fs';
 import {  CompositeGeneratorNode, MultiMap, toString } from 'langium';
 import path from 'path';
-import { Model } from '../language-server/generated/ast';
 import { extractDestinationAndName } from './cli-util';
 import { CCFGVisitor } from './generated/testFSE';
 import { CCFG, Edge, Node } from '../ccfg/ccfglib';
@@ -19,36 +18,15 @@ const ret ="return" //return,varName
 const verifyEqual = "verifyEqual" //verifyEqual,varName1,varName2
 let debug = false;
 
-export function generatefromCCFG(model: Model, filePath: string, targetDirectory: string | undefined, doDebug: boolean|undefined, generator:IGenerator): string {
-    const data = extractDestinationAndName(filePath, targetDirectory);
-    
+export function generatefromCCFG(ccfg: CCFG, codeFile:CompositeGeneratorNode, generator:IGenerator, filePath:string) {
 
-    const generatedDotFilePath = `${path.join(data.destination, data.name)}.dot`;
-    const dotFile = new CompositeGeneratorNode();
-
-    
-    let ccfg = doGenerateCCFG(dotFile, model);
-
-    const generatedCodeFilePath = generator.nameFile(`${path.join(data.destination, data.name)}`);
-    const codeFile = new CompositeGeneratorNode();
-    let debug: boolean = false;
-
-    if (!fs.existsSync(data.destination)) {
-        fs.mkdirSync(data.destination, { recursive: true });
-    }
-    fs.writeFileSync(generatedDotFilePath, toString(dotFile));
-
-
-    debug = doDebug != undefined ? doDebug : false;
+    let generatedCodeFilePath = generator.nameFile(filePath);
 
     doGenerateCode(codeFile, ccfg, debug, generator);
 
-    if (!fs.existsSync(data.destination)) {
-        fs.mkdirSync(data.destination, { recursive: true });
-    }
+
     fs.writeFileSync(generatedCodeFilePath, toString(codeFile));
 
-    return generatedDotFilePath;
 }
 function doGenerateCode(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: boolean, generator: IGenerator) {
     let initNode = ccfg.initialState;
@@ -68,20 +46,6 @@ function doGenerateCode(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: boo
 
 
 
-function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model): CCFG {
-    var visitor = new CCFGVisitor();
-    visitor.visit(model);
-
-    var ccfg = visitor.ccfg
-   
-    ccfg.addSyncEdge()
-
-    ccfg.detectCycles();
-    ccfg.collectCycles()
-
-    codeFile.append(ccfg.toDot());
-    return ccfg;
-}
 
 function compileFunctionDefs(ccfg: CCFG,generator:IGenerator,codeFile:CompositeGeneratorNode): string {
     let functionsDefs = "";
