@@ -21,11 +21,11 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
     const services = createParLangServices(NodeFileSystem).ParLang;
     const model = await extractAstNode<Program>(fileName, services);
     let generator:IGenerator;
-    // if (opts.python != undefined && opts.python) {
-    //     generator = new PythonGenerator();
-    // } else {
+     if (opts.python != undefined && opts.python) {
+         generator = new PythonGenerator();
+     } else {
         generator = new CppGenerator();
-    // }
+     }
     const generatedFilePath = generatefromCCFG(model, fileName, opts.targetDirectory, opts.debug,generator);
     console.log(chalk.green(`CCFG and code generated successfully: ${generatedFilePath}`));
 };
@@ -46,8 +46,8 @@ export default function(): void {
     .command('generate')
     .argument('<file>', `source file (possible file extensions: ${fileExtensions})`)
     .option('-t, --targetDirectory <dir>', 'destination directory of generating', 'generated')
-    .option('-d, --debug ', 'ask for debugging message during execution of the generated code')
-    .option('--python', 'compile into python', 'output.cpp')
+    .option('-d, --debug ', 'ask for debugging message during execution of the generated code', false)
+    .option('--python', 'compile into python', false)
     .description('generates the concurrent control flow graph representation of the given source file')
     .action(generateAction);
 

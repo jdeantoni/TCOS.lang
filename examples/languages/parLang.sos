@@ -1,4 +1,4 @@
-semantics parLangSemantics
+semantics ParLang
 
 import "./ParLang/src/language/par-lang.langium"
 
