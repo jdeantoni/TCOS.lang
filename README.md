@@ -94,6 +94,9 @@ The dot file and the generated C++ code are provided in the `generated` folder. 
 other options:
  * `node ../languages/ParLang/bin/cli.js generate test1.parlang --debug` to add console prints to the generated code
  * `node ../languages/ParLang/bin/cli.js generate test1.parlang --python` to compile in python instead of C++
+ * `node ../languages/ParLang/bin/cli.js generate test1.parlang --js` to compile in js instead of C++
+
+note: the `--debug` function can be used with any compiler backend (c++, python or js). However, the `--python` and `--js` options are exclusives. 
 
 
 ### As a (Meta) Developper
