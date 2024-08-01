@@ -431,7 +431,7 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
     fillTimerHole(hole: TimerHole, ccfg: CCFG) {
         let node = hole.astNode as AstNode
         let timerHoleLocalCCFG = new CCFG()
-        let startsTimerHoleNode: Node = new Step(node,NodeType.starts,[`std::this_thread::sleep_for(${hole.duration}ms);`])
+        let startsTimerHoleNode: Node = new Step(node,NodeType.starts,[`addSleep,${hole.duration}`])
         startsTimerHoleNode.returnType = "void"
         startsTimerHoleNode.functionsNames = [`init${startsTimerHoleNode.uid}Timer`]
         timerHoleLocalCCFG.addNode(startsTimerHoleNode)
