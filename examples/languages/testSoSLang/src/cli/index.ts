@@ -9,6 +9,7 @@ import { generatefromCCFG } from './compilerBackend';
 import { IGenerator } from './GeneratorInterface';
 import { PythonGenerator } from './pythonGenerator';
 import { CppGenerator } from './cppGenerator';
+import { JsGenerator } from './jsGenerator';
 
 export const generateAction = async (fileName: string, opts: GenerateOptions): Promise<void> => {
     const services = createSimpleLServices(NodeFileSystem).SimpleL;
@@ -17,6 +18,8 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
     let generator:IGenerator;
     if (opts.python) {
         generator = new PythonGenerator();
+    } else if(opts.js != undefined && opts.js){
+        generator = new JsGenerator();
     } else {
         generator = new CppGenerator();
     }
@@ -28,6 +31,7 @@ export type GenerateOptions = {
     targetDirectory ?: string;
     debug ?: boolean;
     python ?: boolean;
+    js ?: boolean;
 }
 
 export default function(): void {
@@ -44,6 +48,7 @@ export default function(): void {
         .option('-t, --targetDirectory <dir>', 'destination directory of generating', 'generated')
         .option('-d, --debug ', 'ask for debugging message during execution of the generated code')
         .option('--python', 'compile into python', 'output.cpp')
+        .option('--js', 'compile into js', 'output.cpp')
         .description('generates the concurrent control flow graph representation of the given source file')
         .action(generateAction);
 
