@@ -12,6 +12,7 @@ import { generatefromCCFG } from './compilerBackend.js';
 import { IGenerator } from './GeneratorInterface.js';
 import { PythonGenerator } from './pythonGenerator.js';
 import { CppGenerator } from './cppGenerator.js';
+import { JsGenerator } from './jsGenerator.js';
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 const packagePath = path.resolve(__dirname, '..', '..', 'package.json');
@@ -23,7 +24,10 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
     let generator:IGenerator;
      if (opts.python != undefined && opts.python) {
          generator = new PythonGenerator();
-     } else {
+     } 
+     else if(opts.js != undefined && opts.js){
+         generator = new JsGenerator();
+     } else{
         generator = new CppGenerator();
      }
     const generatedFilePath = generatefromCCFG(model, fileName, opts.targetDirectory, opts.debug,generator);
@@ -34,6 +38,7 @@ export type GenerateOptions = {
     targetDirectory ?: string;
     debug ?: boolean;
     python ?: boolean;
+    js ?: boolean;
 }
 
 export default function(): void {
@@ -48,6 +53,7 @@ export default function(): void {
     .option('-t, --targetDirectory <dir>', 'destination directory of generating', 'generated')
     .option('-d, --debug ', 'ask for debugging message during execution of the generated code', false)
     .option('--python', 'compile into python', false)
+    .option('--js', 'compile into js', false)
     .description('generates the concurrent control flow graph representation of the given source file')
     .action(generateAction);
 

@@ -16,28 +16,26 @@ export class JsGenerator implements IGenerator {
     }
     createBase(): string[] {  
         let res:string[] = []  
-        res.push(`
-        import { Range, integer } from "vscode-languageserver";
-        `)  // imports
 
-        
         res.push(`
-        class Void{
-        };
-        
-        let sigma = new Map();
-        `);// global variables
+class Void{}
+let sigma = new Map();
+
+`);// global variables
         return res
     }
     endFile():string[] {
-        return []
+        return [`main();\n`]
     }
     createFunction( fname: string, params: TypedElement[], returnType: string,insideFunction:string[]): string[] {
         let res:string[] = []
-        res.push(" function" + fname + `(${params.map(p => (p as TypedElement).toString()).join(", ")}){\n`)
+        res.push("async function function" + fname + `(${params.map(p => (p as TypedElement).name).join(", ")}){\n`)
 
+        if (this.debug){
+            res.push(`\tconsole.log("\tfunction${fname} started");\n`)
+        }
         for (let i = 0; i < insideFunction.length; i++) {
-            res.push(insideFunction[i])
+            res.push("\t"+insideFunction[i])
         }
         res.push("}\n")
         return res
@@ -48,22 +46,30 @@ export class JsGenerator implements IGenerator {
         for (let i = 0; i < insideMain.length; i++) {
             res.push("\t"+insideMain[i])
         }
+        if (this.debug){
+            res.push(`\tfor (let v of sigma){\n`)
+            res.push(`\t\tconsole.log(v[0]+" = " + v[1]);\n`)
+            res.push(`\t}\n`)
+        }
         res.push("}\n")
         return res
     }
     createFuncCall( fname: string, params: string[], typeName: string): string[] {
         if (typeName == "void"){
-            return [`function${fname}(${params.join(", ")});\n`]
+            return [`await function${fname}(${params.join(", ")});\n`]
         }
         
-        return [typeName+ " result"+fname+" = function"+fname + `(${params.join(", ")});\n`]
+        return ["let result"+fname+" = await function"+fname + `(${params.join(", ")});\n`]
     }
     createIf( guards: string[],insideOfIf:string[]): string[] {
         let createIfString:string[] = []
 
         createIfString.push("if (" + guards.join(" && ") + "){\n")
+        if (this.debug){
+            createIfString.push(`\tconsole.log("(${guards.join(" && ")}) is TRUE");\n`)
+        }
         insideOfIf.forEach(element => {
-            createIfString.push(element)
+            createIfString.push("\t"+element)
         });
         createIfString.push("}\n")
         return createIfString
@@ -71,41 +77,55 @@ export class JsGenerator implements IGenerator {
 
     createAndOpenThread( uid: number,insideThreadCode:string[]): string[] {
         let threadCode:string[] = []
-        threadCode = [...threadCode,`function asyncfuntion${uid}([&](){\n
+        threadCode = [...threadCode,`async function thread${uid}(){
             `]
-        for (let i = 0; i < insideThreadCode.length; i++) {
-            threadCode = [...threadCode, "await " + insideThreadCode[i] + ";\n"];
+        if (this.debug){
+            threadCode.push(`\tconsole.log("thread${uid} started");\n`)
         }
-        threadCode = [...threadCode,`});\n`, `await asyncfuntion${uid}();\n`]
+        for (let i = 0; i < insideThreadCode.length; i++) {
+            threadCode = [...threadCode, "\t" + insideThreadCode[i]];
+        }
+        threadCode = [...threadCode,`}\n`]
+        threadCode = [...threadCode, `thread${uid}();\n`]
         return threadCode
     }
     createQueue( queueUID: number): string[] {
-        throw new Error("function createQueue should be defined");
+        return [`var queue${queueUID} = [];\n`]
     }
     createLockingQueue( typeName: string, queueUID: number): string[] {
-        throw new Error("function createLockingQueue should be defined");
+        return [`var queue${queueUID} = [];\n`]
     }
     receiveFromQueue( queueUID: number, typeName: string, varName: string): string[] {
-        throw new Error("function receiveFromQueue should be defined");
+        return [`{\n`,`${varName} = queue${queueUID}.pop();\n`,`\twhile (${varName} == undefined){\n`,`\t\tawait new Promise(resolve => setTimeout(resolve, 100));\n`,`\t\t${varName} = queue${queueUID}.pop();\n`,`\t}\n`,`}\n`]
+
     }
     sendToQueue( queueUID: number, typeName: string, varName: string): string[] {
-        throw new Error("function sendToQueue should be defined");
+        return [`queue${queueUID}.push(${varName});\n`]
     }
     createSynchronizer( synchUID: number): string[] {
-        throw new Error("function createSynchronizer should be defined");
+        return [`var sync${synchUID} = [];\n`]
     }
     activateSynchronizer( synchUID: number): string[] {
-        throw new Error("function activateSynchronizer should be defined");
+        return [`sync${synchUID}.push(42);\n`]
     }
     waitForSynchronizer( synchUID: number): string[] {
-        throw new Error("function waitForSynchronizer should be defined");
+        return [`{\n`,`\tfakeVar${synchUID} = sync${synchUID}.pop();\n`,`\twhile (fakeVar${synchUID} == undefined){\n`,`\t\tawait new Promise(resolve => setTimeout(resolve, 100));\n`,`\t\tfakeVar${synchUID} = sync${synchUID}.pop();\n`,`\t}\n`,`}\n`]
+
     }
     createLoop( uid:number, insideLoop: string[]): string[] {
-        throw new Error("function createFlagToGoBackTo should be defined");
+        let res = []
+        res.push(`var flag${uid} = true;\n`)
+        res.push(`while(flag${uid}){\n`)
+        res.push(`\tflag${uid} = false;\n`)
+        for (let i = 0; i < insideLoop.length; i++) {
+            res.push("\t"+insideLoop[i])
+        }
+        res.push(`}\n`)
+        return res
     }
 
     setLoopFlag( uid:number): string[] {
-        throw new Error("function goToFlag should be defined");
+        return [`flag${uid} = true;\n`]
     }
     createEqualsVerif(firstValue: string, secondValue: string): string {
         return firstValue + " == " + secondValue
@@ -121,16 +141,16 @@ export class JsGenerator implements IGenerator {
 
     }
     createGlobalVar( type: string, varName: string): string[] {
-        return ["sigma.set(\"" + varName + "\", new "+ type +"());\n"]
+        return [`sigma.set("${varName}", undefined);\n`]
     }
     setVarFromGlobal( type: string, varName: string, value: string): string[] {
-        return ["sigma.set(\"" + varName + "\", " + value + ");\n"]
+        return [`${varName} = sigma.get("${value}");\n`]
     }
     setGlobalVar( type: string, varName: string, value: string): string[] {
-        return ["sigma.set(\"" + varName + "\",  " + value + ");\n"]
+        return [`sigma.set("${varName}", ${value});\n`]
     }
     operation( varName: string, n1: string, op: string, n2: string): string[] {
-        return ["let" + varName + " = " + n1 + " " + op + " " + n2 + ";\n"]
+        return [varName + " = " + n1 + " " + op + " " + n2 + ";\n"]
     }
     createSleep( duration: string): string[] {
         return ["await new Promise(resolve => setTimeout(resolve, " + duration + "));\n"]
