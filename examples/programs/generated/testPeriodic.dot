@@ -43,7 +43,7 @@ setGlobalVar,int,Variable1_0_1_10currentValue,Assignment7_0_7_72534
 }" shape="ellipse" ];
   "44" [label="44[]:Step_starts:
 void functioninit44Timer(){
-std::this_thread::sleep_for(1000ms);
+addSleep,1000
 }" shape="ellipse" ];
   "45" [label="45[]:Step_terminates" shape="ellipse" ];
   "15" [label="15[]:Step_starts" shape="ellipse" ];
