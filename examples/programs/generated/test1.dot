@@ -11,7 +11,7 @@ setGlobalVar,int,Perio0_0_2_1blocTrigger,1000
   "8" [label="8[7]:OrJoin" shape="invtriangle" style="filled" fillcolor="lightblue"];
   "31" [label="31[]:Step_starts:
 void functioninit31Timer(){
-std::this_thread::sleep_for(1000ms);
+addSleep,1000
 }" shape="ellipse" ];
   "32" [label="32[]:Step_terminates" shape="ellipse" ];
   "9" [label="9[]:Step_starts" shape="ellipse" ];
@@ -28,15 +28,15 @@ createGlobalVar,int,Stmt11_6_1_11fakeState
 setGlobalVar,int,Stmt11_6_1_11fakeState,0
 }" shape="ellipse" ];
   "20" [label="20[]:Step_terminates" shape="ellipse" ];
-  "21" [label="21[]:Step_starts:
-void function21fugaceStmt1(){
-createGlobalVar,int,Stmt11_14_1_19fakeState
-setGlobalVar,int,Stmt11_14_1_19fakeState,0
-}" shape="ellipse" ];
+  "21" [label="21[]:Step_starts" shape="ellipse" ];
   "22" [label="22[]:Step_terminates" shape="ellipse" ];
   "27" [label="27[]:Step_starts" shape="ellipse" ];
   "28" [label="28[]:Step_terminates" shape="ellipse" ];
-  "29" [label="29[]:Step_starts" shape="ellipse" ];
+  "29" [label="29[]:Step_starts:
+void function29fugaceStmt1(){
+createGlobalVar,int,Stmt11_33_1_38fakeState
+setGlobalVar,int,Stmt11_33_1_38fakeState,0
+}" shape="ellipse" ];
   "30" [label="30[]:Step_terminates" shape="ellipse" ];
   "0" -> "3" [label=""];
   "4" -> "1" [label=""];
