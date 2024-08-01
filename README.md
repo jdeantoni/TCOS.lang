@@ -89,7 +89,11 @@ Below is an example of a ParLang program with the corresponding CCFG. The CCFG (
 </p>
 ![A ParLang program and its CCFG]()
 
-The dot file and the generated C++ code are provided in the `generated` folder. the generated code compile the easiest way: `g++ test1.cpp -o test1.exe`. These generated artefacts can be found in the [./examples/programs/generated](./examples/programs/generated) folder
+The dot file and the generated C++ code are provided in the `generated` folder. the generated code compile the easiest way: `g++ test1.cpp -o test1.exe`. These generated artefacts can be found in the [./examples/programs/generated](./examples/programs/generated) folder. 
+
+other options:
+ * `node ../languages/ParLang/bin/cli.js generate test1.parlang --debug` to add console prints to the generated code
+ * `node ../languages/ParLang/bin/cli.js generate test1.parlang --python` to compile in python instead of C++
 
 
 ### As a (Meta) Developper
