@@ -1,9 +1,6 @@
-import fs from 'fs';
+
 import {  CompositeGeneratorNode, MultiMap, toString } from 'langium';
-import path from 'path';
-import { extractDestinationAndName } from './cli-util';
-import { CCFGVisitor } from './generated/testFSE';
-import { CCFG, Edge, Node } from '../ccfg/ccfglib';
+import { CCFG, Edge, Node } from '../../../CCFG/src/ccfglib';
 import {IGenerator} from './GeneratorInterface';
 import chalk from 'chalk';
 
@@ -18,15 +15,14 @@ const ret ="return" //return,varName
 const verifyEqual = "verifyEqual" //verifyEqual,varName1,varName2
 let debug = false;
 
-export function generatefromCCFG(ccfg: CCFG, codeFile:CompositeGeneratorNode, generator:IGenerator, filePath:string) {
+export function generatefromCCFG(ccfg: CCFG, codeFile:CompositeGeneratorNode, generator:IGenerator, filePath:string,debug:boolean): string {
 
-    let generatedCodeFilePath = generator.nameFile(filePath);
+    
 
     doGenerateCode(codeFile, ccfg, debug, generator);
 
 
-    fs.writeFileSync(generatedCodeFilePath, toString(codeFile));
-
+    return toString(codeFile);
 }
 function doGenerateCode(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: boolean, generator: IGenerator) {
     let initNode = ccfg.initialState;

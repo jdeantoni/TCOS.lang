@@ -1,5 +1,5 @@
 import { CompositeGeneratorNode } from "langium";
-import { TypedElement } from "../ccfg/ccfglib";
+import { TypedElement } from "../../../CCFG/src/ccfglib";
 
 interface IGenerator {
     isDebug: boolean;

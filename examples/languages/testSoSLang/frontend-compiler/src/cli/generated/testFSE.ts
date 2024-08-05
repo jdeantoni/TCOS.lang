@@ -1,6 +1,6 @@
 
 import { AstNode, Reference, isReference } from "langium";
-import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, TypedElement } from "../../ccfg/ccfglib";
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, TypedElement } from "../../../../CCFG/src/ccfglib";
 import { Model,Bloc,ParallelBloc,Variable,VarRef,If,Assignment,Conjunction,Plus,BooleanConst,While,PeriodicBloc,FunctionCall,FunctionDef } from "../../language-server/generated/ast";
 
 export interface SimpleLVisitor {
@@ -21,6 +21,7 @@ export interface SimpleLVisitor {
      visitPeriodicBloc(node: PeriodicBloc): [Node,Node];
      visitFunctionCall(node: FunctionCall): [Node,Node];
      visitFunctionDef(node: FunctionDef): [Node,Node];
+     
 }
 
 
