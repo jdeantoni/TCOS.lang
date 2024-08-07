@@ -42,7 +42,7 @@
     "bin": {
         "simple-l-cli": "./bin/cli"
     },
-    "main": "./out/frontend-compiler/src/extension.js",
+    "main": "./out/testSoSLang/src/extension.js",
     "scripts": {
         "vscode:prepublish": "npm run build && npm run lint",
         "build": "tsc -b tsconfig.json",

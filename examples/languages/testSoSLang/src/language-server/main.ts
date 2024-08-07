@@ -11,3 +11,4 @@ const { shared } = createSimpleLServices({ connection, ...NodeFileSystem });
 
 // Start the language server with the shared services
 startLanguageServer(shared);
+

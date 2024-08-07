@@ -20,6 +20,7 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
     const services = createSimpleLServices(NodeFileSystem).SimpleL;
     const model = await extractAstNode<Model>(fileName, services);
 
+
     const data = extractDestinationAndName(fileName, opts.targetDirectory);
     
 
@@ -38,6 +39,8 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
     fs.writeFileSync(generatedDotFilePath, toString(dotFile));
 
     let filePath = path.join(data.destination, data.name);
+    
+    debug = opts.debug != undefined ? opts.debug : false;
 
     let generator:IGenerator;
     if (opts.generatorInterfaceName == "python") {
@@ -49,7 +52,6 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
     let generatedCodeFilePath = generator.nameFile(filePath);
 
 
-    debug = opts.debug != undefined ? opts.debug : false;
 
     let codeFileString = generatefromCCFG(ccfg, codeFile, generator, filePath,debug)
     if (!fs.existsSync(data.destination)) {
@@ -72,7 +74,7 @@ export default function(): void {
 
     program
         // eslint-disable-next-line @typescript-eslint/no-var-requires
-        .version(require('../../package.json').version);
+        .version(require('../../../../package.json').version);
 
     const fileExtensions = SimpleLLanguageMetaData.fileExtensions.join(', ');
     program

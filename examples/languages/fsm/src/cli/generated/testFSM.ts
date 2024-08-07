@@ -1,6 +1,6 @@
 
 import { AstNode, Reference, isReference } from "langium";
-import { AndJoin, Fork, CCFG, Node, OrJoin, Step } from "../../ccfg/ccfglib";
+import { AndJoin, Fork, CCFG, Node, OrJoin, Step } from "../../../../CCFG/src/ccfglib";
 import { FSMModel,FSM,Event,Transition,State } from "../../language-server/generated/ast";
 
 export interface SimpleLVisitor {

@@ -58,3 +58,4 @@ function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
     client.start();
     return client;
 }
+

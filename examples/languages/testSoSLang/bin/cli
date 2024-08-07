@@ -1,2 +1,2 @@
 #!/usr/bin/env node
-require("../out/frontend-compiler/src/cli").default();
+require("../out/testSOSLang/src/cli").default();
