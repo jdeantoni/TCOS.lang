@@ -14,6 +14,8 @@ import { CCFGVisitor } from './generated/testFSE';
 import { IGenerator } from '../../../backend-compiler/src/cli/GeneratorInterface';
 import { PythonGenerator } from '../../../backend-compiler/src/cli/pythonGenerator';
 import { CppGenerator } from '../../../backend-compiler/src/cli/cppGenerator';
+import { JsGenerator } from './jsGenerator';
+
 
 export const generateAction = async (fileName: string, opts: GenerateOptions): Promise<void> => {
     console.log("started")
@@ -43,8 +45,10 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
     debug = opts.debug != undefined ? opts.debug : false;
 
     let generator:IGenerator;
-    if (opts.generatorInterfaceName == "python") {
+    if (opts.python) {
         generator = new PythonGenerator(debug);
+    } else if(opts.js != undefined && opts.js){
+        generator = new JsGenerator();
     } else {
         generator = new CppGenerator(debug);
     }
@@ -65,7 +69,8 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
 export type GenerateOptions = {
     targetDirectory ?: string;
     debug ?: boolean;
-    generatorInterfaceName ?: string;
+    python ?: boolean;
+    js ?: boolean;
 }
 
 export default function(): void {
@@ -82,7 +87,8 @@ export default function(): void {
         .argument('<file>', `source file (possible file extensions: ${fileExtensions})`)
         .option('-t, --targetDirectory <dir>', 'destination directory of generating', 'generated')
         .option('-d, --debug ', 'ask for debugging message during execution of the generated code')
-        .option('-g, --gen <generatorInterfaceName>', 'say the name of the interface', 'output.cpp')
+        .option('--python', 'compile into python', 'output.cpp')
+        .option('--js', 'compile into js', 'output.cpp')
         .description('generates the concurrent control flow graph representation of the given source file')
         .action(generateAction);
 

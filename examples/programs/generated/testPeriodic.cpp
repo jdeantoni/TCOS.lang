@@ -16,67 +16,80 @@
         std::mutex sigma_mutex;  // protects sigma
         
         void functioninit3Variable(){
-sigma["Variable0_0_0_10currentValue"] = new int();
+std::cout << "	functioninit3Variable started" << std::endl;
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["Variable0_0_0_10currentValue"] = new int();}
 }
 void function5initializeVar(){
-int Variable0_0_0_101437;
-Variable0_0_0_101437 = 1;
-*((int*)sigma["Variable0_0_0_10currentValue"]) = Variable0_0_0_101437;
+std::cout << "	function5initializeVar started" << std::endl;
+	int Variable0_0_0_101387;
+	Variable0_0_0_101387 = 1;
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable0_0_0_10currentValue"]) = Variable0_0_0_101387;}
 }
 void functioninit6Variable(){
-sigma["Variable1_0_1_10currentValue"] = new int();
+std::cout << "	functioninit6Variable started" << std::endl;
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["Variable1_0_1_10currentValue"] = new int();}
 }
 void function8initializeVar(){
-int Variable1_0_1_101437;
-Variable1_0_1_101437 = 0;
-*((int*)sigma["Variable1_0_1_10currentValue"]) = Variable1_0_1_101437;
+std::cout << "	function8initializeVar started" << std::endl;
+	int Variable1_0_1_101387;
+	Variable1_0_1_101387 = 0;
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable1_0_1_10currentValue"]) = Variable1_0_1_101387;}
 }
 void function9periodicStart(){
-sigma["PeriodicBloc3_0_5_3blocTrigger"] = new int1000();
+std::cout << "	function9periodicStart started" << std::endl;
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["PeriodicBloc3_0_5_3blocTrigger"] = new int();}
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["PeriodicBloc3_0_5_3blocTrigger"]) = 1000;}
 }
-void functionstarts11blocTrigger(){
-std::this_thread::sleep_for(1000ms);}
-int function22accessVarRef(){
-int VarRef4_13_4_151652;
-VarRef4_13_4_151652 = *(int*)sigma["Variable0_0_0_10currentValue"];
-int VarRef4_13_4_15terminates;
-VarRef4_13_4_15terminates = VarRef4_13_4_151652;
-return VarRef4_13_4_15terminates;
+void function35executeAssignment2(int resRight){
+std::cout << "	function35executeAssignment2 started" << std::endl;
+	int Assignment7_0_7_72534;
+	Assignment7_0_7_72534 = resRight;
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable1_0_1_10currentValue"]) = Assignment7_0_7_72534;}
 }
-int function24accessVarRef(){
-int VarRef4_10_4_121652;
-VarRef4_10_4_121652 = *(int*)sigma["Variable0_0_0_10currentValue"];
-int VarRef4_10_4_12terminates;
-VarRef4_10_4_12terminates = VarRef4_10_4_121652;
-return VarRef4_10_4_12terminates;
+void functioninit44Timer(){
+std::cout << "	functioninit44Timer started" << std::endl;
+	std::this_thread::sleep_for(1000ms);}
+int function36accessVarRef(){
+std::cout << "	function36accessVarRef started" << std::endl;
+	int VarRef7_5_7_71593;
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	VarRef7_5_7_71593 = *(int*)sigma["Variable0_0_0_10currentValue"];}
+	int VarRef7_5_7_7terminates;
+	VarRef7_5_7_7terminates = VarRef7_5_7_71593;
+	return VarRef7_5_7_7terminates;
 }
-int function26finishPlus(int n2, int n1){
-int Plus4_9_4_164398 = n2;int Plus4_9_4_164423 = n1;int Plus4_9_4_164544;
-Plus4_9_4_164544 = n1;
-int Plus4_9_4_164549;
-Plus4_9_4_164549 = n2;
-Plus4_9_4_164543 undefined;
-Plus4_9_4_164543 = Plus4_9_4_164544 + Plus4_9_4_164549;
-int Plus4_9_4_16terminates;
-Plus4_9_4_16terminates = Plus4_9_4_164543;
-return Plus4_9_4_16terminates;
+void function21executeAssignment2(int resRight){
+std::cout << "	function21executeAssignment2 started" << std::endl;
+	int Assignment4_4_4_162534;
+	Assignment4_4_4_162534 = resRight;
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable0_0_0_10currentValue"]) = Assignment4_4_4_162534;}
 }
-void function27executeAssignment2(int resRight){
-int Assignment4_4_4_162627;
-Assignment4_4_4_162627 = resRight;
-*((int*)sigma["Variable0_0_0_10currentValue"]) = Assignment4_4_4_162627;
+int function27finishPlus(int n2, int n1){
+std::cout << "	function27finishPlus started" << std::endl;
+	int Plus4_9_4_164397;
+	Plus4_9_4_164397 = n1;
+	int Plus4_9_4_164402;
+	Plus4_9_4_164402 = n2;
+	int Plus4_9_4_164396;
+	Plus4_9_4_164396 = Plus4_9_4_164397 + Plus4_9_4_164402;
+	int Plus4_9_4_16terminates;
+	Plus4_9_4_16terminates = Plus4_9_4_164396;
+	return Plus4_9_4_16terminates;
 }
-int function32accessVarRef(){
-int VarRef7_5_7_71652;
-VarRef7_5_7_71652 = *(int*)sigma["Variable0_0_0_10currentValue"];
-int VarRef7_5_7_7terminates;
-VarRef7_5_7_7terminates = VarRef7_5_7_71652;
-return VarRef7_5_7_7terminates;
+int function30accessVarRef(){
+std::cout << "	function30accessVarRef started" << std::endl;
+	int VarRef4_13_4_151593;
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	VarRef4_13_4_151593 = *(int*)sigma["Variable0_0_0_10currentValue"];}
+	int VarRef4_13_4_15terminates;
+	VarRef4_13_4_15terminates = VarRef4_13_4_151593;
+	return VarRef4_13_4_15terminates;
 }
-void function34executeAssignment2(int resRight){
-int Assignment7_0_7_72627;
-Assignment7_0_7_72627 = resRight;
-*((int*)sigma["Variable1_0_1_10currentValue"]) = Assignment7_0_7_72627;
+int function28accessVarRef(){
+std::cout << "	function28accessVarRef started" << std::endl;
+	int VarRef4_10_4_121593;
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	VarRef4_10_4_121593 = *(int*)sigma["Variable0_0_0_10currentValue"];}
+	int VarRef4_10_4_12terminates;
+	VarRef4_10_4_12terminates = VarRef4_10_4_121593;
+	return VarRef4_10_4_12terminates;
 }
 int main(){
 		functioninit3Variable();
@@ -84,34 +97,42 @@ int main(){
 	functioninit6Variable();
 	function8initializeVar();
 	function9periodicStart();
-	lockingQueue<Void> synch29;
-	Void fakeParam29;
- 	synch29.push(fakeParam29);
-	goto flag29;
-	flag29 :
-	Void joinPopped29;
- 	synch29.waitAndPop(joinPopped29);
-	functionstarts11blocTrigger();
-	LockingQueue<int> queue26;	std::thread thread14([&](){
-	std::thread thread22([&](){
-	int result22accessVarRef = function22accessVarRef();
-	queue26.push(result22accessVarRef);
-	});
-	thread22.detach();
-	std::thread thread24([&](){
-	int result24accessVarRef = function24accessVarRef();
-	queue26.push(result24accessVarRef);
-	});
-	thread24.detach();
-	int AndJoinPopped_26_0;
-	queue26.waitAndPop(AndJoinPopped_26_0);
-	int AndJoinPopped_26_1;
-	queue26.waitAndPop(AndJoinPopped_26_1);
-	int result26finishPlus = function26finishPlus(AndJoinPopped_26_0, AndJoinPopped_26_1);
-	function27executeAssignment2(result26finishPlus);
-	});
-	thread14.detach();
-	Void fakeParam29;
- 	synch29.push(fakeParam29);
-	goto flag29;
-for(auto entry : sigma){ std::cout << entry.first << " : " << *((int*)entry.second) << std::endl;}}
+	bool flag14 = true;
+	LockingQueue<Void> synch14;
+	{Void fakeParam14;
+ 	synch14.push(fakeParam14);}
+	flag14 = true;
+	flag14= true;
+while (flag14 == true){
+	flag14 = false;
+		{Void joinPopped14;
+ 		synch14.waitAndPop(joinPopped14);}
+		functioninit44Timer();
+		LockingQueue<int> queue27;		std::thread thread15([&](){
+		std::cout << "thread15 started" << std::endl;
+			std::thread thread30([&](){
+			std::cout << "thread30 started" << std::endl;
+				int result30accessVarRef = function30accessVarRef();
+				queue27.push(result30accessVarRef);
+			});
+			thread30.detach();
+			std::thread thread28([&](){
+			std::cout << "thread28 started" << std::endl;
+				int result28accessVarRef = function28accessVarRef();
+				queue27.push(result28accessVarRef);
+			});
+			thread28.detach();
+			int AndJoinPopped_27_0;
+			queue27.waitAndPop(AndJoinPopped_27_0);
+			int AndJoinPopped_27_1;
+			queue27.waitAndPop(AndJoinPopped_27_1);
+			int result27finishPlus = function27finishPlus(AndJoinPopped_27_0, AndJoinPopped_27_1);
+			function21executeAssignment2(result27finishPlus);
+		});
+		thread15.detach();
+		{Void fakeParam14;
+ 		synch14.push(fakeParam14);}
+		flag14 = true;
+	}
+for(auto entry : sigma){ std::cout << entry.first << " : " << *((int*)entry.second) << std::endl;}
+}

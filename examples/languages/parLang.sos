@@ -1,37 +1,29 @@
-parLangSemantics
+semantics ParLang
 
 import "./ParLang/src/language/par-lang.langium"
 
-
-
 open Program {
-
-
-         when starts 
-    ------------------------ startsProgram
+        when starts 
+    -------------------------- startsProgram
       <this,σ> ~> <stmt,σ>
 
-
-
-             when <stmt,σ> 
-    ----------------------------- finishProgram
-        <this,σ> ~> terminates
-
-
+        when <stmt,σ> 
+    -------------------------- finishProgram
+      <this,σ> ~> terminates
 }
 
 open Seq{
         when starts
     ------------------------ startsLhsSeq
-    <this,σ> ~> <lhs,σ>
+      <this,σ> ~> <lhs,σ>
 
         when <lhs,σ>
     ------------------------ startsRhsSeq
-    <this,σ> ~> <rhs,σ>
+      <this,σ> ~> <rhs,σ>
 
         when <rhs,σ>
     ------------------------ finishSeq
-    <this,σ> ~> terminates
+      <this,σ> ~> terminates
 }
 
 open Par{
@@ -42,19 +34,18 @@ open Par{
       when (<lhs,σ> ^ <rhs,σ>)
     ---------------------------       finishPar
         <this,σ> ~> terminates
-
 }
 
 open Perio{
    var blocTrigger: Timer = p;
 
-          when starts
+              when starts
       -------------------------------   perioStart
         <this,σ> ~> <blocTrigger,σ>
   
-          when <blocTrigger,σ>
+              when <blocTrigger,σ>
       -------------------------------------------   perioExpires
-        <this,σ> ~> <blocTrigger,σ> || <stmt,σ>
+        <this,σ> ~> <stmt,σ> || <blocTrigger,σ>
                   
 }
 
@@ -62,18 +53,14 @@ open Perio{
 open Stmt1  {
 
   var fakeState:integer = 0;
-
         when starts
-    ----------------------------- fugaceStmt1
+    ---------------------------------------- fugaceStmt1
     <this,σ> ~> fakeState := fakeState + 1;
                 terminates
 }
 
 open Stmt2  {
-
-  
-
         when starts
-    ------------------------ fugaceStmt1
+    ------------------------ fugaceStmt2
     <this,σ> ~> terminates
 }

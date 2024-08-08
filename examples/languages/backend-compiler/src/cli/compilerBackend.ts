@@ -60,19 +60,19 @@ function compileFunctionDefs(ccfg: CCFG,generator:IGenerator,codeFile:CompositeG
                         for (let fdef of node.functionsDefs) {
                             let b = fdef.split(",");
                             if (b[0] == ret) {
-                                allFDefs= [...allFDefs, ...generator.returnVar(codeFile,b[1])];
+                                allFDefs= [...allFDefs, ...generator.returnVar(b[1])];
                             }else if (b[0]==createVar){
-                                allFDefs = [...allFDefs, ...generator.createVar(codeFile,b[1], b[2])];
+                                allFDefs = [...allFDefs, ...generator.createVar(b[1], b[2])];
                             }else if (b[0]==assignVar){
-                                allFDefs=[...allFDefs, ...generator.assignVar(codeFile,b[1], b[2])];
+                                allFDefs=[...allFDefs, ...generator.assignVar(b[1], b[2])];
                             } else if (b[0]==setVarFromGlobal){
-                                allFDefs =[...allFDefs, ...generator.setVarFromGlobal(codeFile,b[1], b[2], b[3])];
+                                allFDefs =[...allFDefs, ...generator.setVarFromGlobal(b[1], b[2], b[3])];
                             } else if (b[0]==createGlobalVar){
-                                allFDefs=[...allFDefs, ...generator.createGlobalVar(codeFile,b[1], b[2])];
+                                allFDefs=[...allFDefs, ...generator.createGlobalVar(b[1], b[2])];
                             } else if (b[0]==setGlobalVar){
-                                allFDefs=[...allFDefs, ...generator.setGlobalVar(codeFile,b[1], b[2], b[3])];
+                                allFDefs=[...allFDefs, ...generator.setGlobalVar(b[1], b[2], b[3])];
                             } else if (b[0]==operation){
-                                allFDefs=[...allFDefs, ...generator.operation(codeFile,b[1], b[2], b[3], b[4])];
+                                allFDefs=[...allFDefs, ...generator.operation(b[1], b[2], b[3], b[4])];
                             } else{
                                 console.log("Unknown function definition: "+b[0]);
                                 allFDefs = [...allFDefs, fdef];
