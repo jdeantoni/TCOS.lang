@@ -6,11 +6,15 @@ class CppGenerator {
     constructor(debug) {
         this.isDebug = debug;
     }
+    setDebug(debug) {
+        this.isDebug = debug;
+    }
     nameFile(filename) {
         return `${filename}.cpp`;
     }
-    createBase(codeFile, debug) {
-        codeFile.append(`
+    createBase() {
+        let res = [];
+        res.push(`
         #include <string>
         #include <unordered_map>
         #include <thread>
@@ -21,12 +25,7 @@ class CppGenerator {
         
         using namespace std::chrono_literals;
         `); // imports
-        if (debug) {
-            codeFile.append(`
-        #define DEBUG 1
-            `);
-        } // debug
-        codeFile.append(`
+        res.push(`
         class Void{
         };
         
@@ -34,98 +33,121 @@ class CppGenerator {
         std::mutex sigma_mutex;  // protects sigma
         
         `); // global variables
+        return res;
     }
-    endFile(codeFile) {
+    endFile() {
+        return [];
     }
-    createFunction(codeFile, fname, params, returnType, insideFunction) {
-        codeFile.append(returnType + " function" + fname + `(${params.map(p => p.toString()).join(", ")}){\n`);
+    createFunction(fname, params, returnType, insideFunction) {
+        let res = [];
+        res.push(returnType + " function" + fname + `(${params.map(p => p.toString()).join(", ")}){\n`);
+        if (this.isDebug) {
+            res.push(`std::cout << "\tfunction${fname} started" << std::endl;\n`);
+        }
         for (let i = 0; i < insideFunction.length; i++) {
-            codeFile.append(insideFunction[i]);
+            res.push("\t" + insideFunction[i]);
         }
-        codeFile.append("}\n");
+        res.push("}\n");
+        return res;
     }
-    createMainFunction(codeFile, insideMain) {
-        codeFile.append("int main(){\n\t");
+    createMainFunction(insideMain) {
+        let res = [];
+        res.push("int main(){\n\t");
         for (let i = 0; i < insideMain.length; i++) {
-            codeFile.append("\t" + insideMain[i]);
+            res.push("\t" + insideMain[i]);
         }
-        codeFile.append("for(auto entry : sigma){ std::cout << entry.first << \" : \" << *((int*)entry.second) << std::endl;}");
-        codeFile.append("}\n");
+        res.push("for(auto entry : sigma){ std::cout << entry.first << \" : \" << *((int*)entry.second) << std::endl;}\n");
+        res.push("}\n");
+        return res;
     }
-    createFuncCall(codeFile, fname, params, typeName) {
+    createFuncCall(fname, params, typeName) {
         if (typeName == "void") {
             return [`function${fname}(${params.join(", ")});\n`];
         }
         return [typeName + " result" + fname + " = function" + fname + `(${params.join(", ")});\n`];
     }
-    createIf(codeFile, guards, insideOfIf) {
+    createIf(guards, insideOfIf) {
         let createIfString = [];
         createIfString.push("if (" + guards.join(" && ") + "){\n");
+        if (this.isDebug) {
+            createIfString.push(`std::cout << "(${guards.join(" && ")}) is TRUE" << std::endl;\n`);
+        }
         insideOfIf.forEach(element => {
-            createIfString.push(element);
+            createIfString.push("\t" + element);
         });
         createIfString.push("}\n");
         return createIfString;
     }
-    createAndOpenThread(codeFile, uid, insideThreadCode) {
+    createAndOpenThread(uid, insideThreadCode) {
         let threadCode = [];
         threadCode = [...threadCode, `std::thread thread${uid}([&](){\n`];
+        if (this.isDebug) {
+            threadCode.push(`std::cout << "thread${uid} started" << std::endl;\n`);
+        }
         for (let i = 0; i < insideThreadCode.length; i++) {
-            threadCode = [...threadCode, insideThreadCode[i]];
+            threadCode = [...threadCode, "\t" + insideThreadCode[i]];
         }
         threadCode = [...threadCode, `});\n`, `thread${uid}.detach();\n`];
         return threadCode;
     }
-    createQueue(codeFile, queueUID) {
+    createQueue(queueUID) {
         return [`LockingQueue<Void> queue${queueUID};\n`];
     }
-    createLockingQueue(codeFile, typeName, queueUID) {
+    createLockingQueue(typeName, queueUID) {
         return [`LockingQueue<${typeName}> queue${queueUID};`];
     }
-    receiveFromQueue(codeFile, queueUID, typeName, varName) {
+    receiveFromQueue(queueUID, typeName, varName) {
         return ["queue" + queueUID + ".waitAndPop(" + varName + ");\n"];
     }
-    sendToQueue(codeFile, queueUID, typeName, varName) {
+    sendToQueue(queueUID, typeName, varName) {
         return ["queue" + queueUID + ".push(" + varName + ");\n"];
     }
-    createSynchronizer(codeFile, synchUID) {
-        return ["lockingQueue<Void> synch" + synchUID + ";\n"];
+    createSynchronizer(synchUID) {
+        return [`bool flag${synchUID} = true;\n`, `LockingQueue<Void> synch${synchUID};\n`];
     }
-    activateSynchronizer(codeFile, synchUID) {
-        return ["Void fakeParam" + synchUID + ";\n ", "synch" + synchUID + ".push(fakeParam" + synchUID + ");\n"];
+    activateSynchronizer(synchUID) {
+        return ["{Void fakeParam" + synchUID + ";\n ", "synch" + synchUID + ".push(fakeParam" + synchUID + ");}\n"];
     }
-    waitForSynchronizer(codeFile, synchUID) {
-        return ["Void joinPopped" + synchUID + ";\n ", "synch" + synchUID + ".waitAndPop(joinPopped" + synchUID + ");\n"];
+    waitForSynchronizer(synchUID) {
+        return ["{Void joinPopped" + synchUID + ";\n ", "synch" + synchUID + ".waitAndPop(joinPopped" + synchUID + ");}\n"];
     }
-    createFlagToGoBackTo(codeFile, uid) {
-        return ["flag" + uid + " :\n"];
+    createLoop(uid, insideLoop) {
+        let res = ["flag" + uid + "= true;\nwhile (flag" + uid + " == true){\n\tflag" + uid + " = false;\n"];
+        for (let i = 0; i < insideLoop.length; i++) {
+            res.push("\t" + insideLoop[i]);
+        }
+        res.push("}\n");
+        return res;
     }
-    goToFlag(codeFile, uid) {
-        return ["goto flag" + uid + ";\n"];
+    setLoopFlag(uid) {
+        return ["flag" + uid + " = true;\n"];
     }
     createEqualsVerif(firstValue, secondValue) {
         return firstValue + " == " + secondValue;
     }
-    assignVar(codeFile, varName, value) {
+    assignVar(varName, value) {
         return [varName + " = " + value + ";\n"];
     }
-    returnVar(codeFile, varName) {
+    returnVar(varName) {
         return ["return " + varName + ";\n"];
     }
-    createVar(codeFile, type, varName) {
+    createVar(type, varName) {
         return [type + " " + varName + ";\n"];
     }
-    createGlobalVar(codeFile, type, varName) {
-        return [`{const std::lock_guard<std::mutex> lock(sigma_mutex);`, "sigma[\"" + varName + "\"] = new " + type + "();\n}"];
+    createGlobalVar(type, varName) {
+        return [`{const std::lock_guard<std::mutex> lock(sigma_mutex);`, "sigma[\"" + varName + "\"] = new " + type + "();}\n"];
     }
-    setVarFromGlobal(codeFile, type, varName, value) {
-        return [`{const std::lock_guard<std::mutex> lock(sigma_mutex);`, varName + " = *(" + type + "*)sigma[\"" + value + "\"];\n}"];
+    setVarFromGlobal(type, varName, value) {
+        return [`{const std::lock_guard<std::mutex> lock(sigma_mutex);`, varName + " = *(" + type + "*)sigma[\"" + value + "\"];}\n"];
     }
-    setGlobalVar(codeFile, type, varName, value) {
-        return [`{const std::lock_guard<std::mutex> lock(sigma_mutex);`, "*((" + type + "*)sigma[\"" + varName + "\"]) = " + value + ";\n}"];
+    setGlobalVar(type, varName, value) {
+        return [`{const std::lock_guard<std::mutex> lock(sigma_mutex);`, "*((" + type + "*)sigma[\"" + varName + "\"]) = " + value + ";}\n"];
     }
-    operation(codeFile, varName, n1, op, n2) {
+    operation(varName, n1, op, n2) {
         return [varName + " = " + n1 + " " + op + " " + n2 + ";\n"];
+    }
+    createSleep(duration) {
+        return [`std::this_thread::sleep_for(${duration}ms);\n`];
     }
 }
 exports.CppGenerator = CppGenerator;

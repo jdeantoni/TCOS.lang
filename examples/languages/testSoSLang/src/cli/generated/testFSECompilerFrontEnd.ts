@@ -1,10 +1,10 @@
 
 import fs from 'fs';
 import { AstNode, Reference, isReference, streamAst } from "langium";
-import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole} from "../../../../CCFG/src/ccfglib";
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole} from "../../../../CCFG/src/ccfglib.js";
 import { Model,Bloc,ParallelBloc,Variable,VarRef,If,Assignment,Conjunction,Plus,BooleanConst,While,PeriodicBloc,FunctionCall,FunctionDef } from "../../language-server/generated/ast.js";
 
-var debug = false
+var debug:boolean = false
 
 export interface CompilerFrontEnd {
 
@@ -29,11 +29,15 @@ export interface CompilerFrontEnd {
     
 }
 
-export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
+export class TestSimpleLCompilerFrontEnd implements CompilerFrontEnd {
     constructor(debugMode: boolean = false){ 
         debug = debugMode
-        console.log("debug mode: " + debug)
+        
+        if (debug) console.log("debug mode")
     }
+
+    
+
 
     globalCCFG: CCFG = new CCFG();
 
@@ -250,7 +254,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
         localCCFG.addNode(terminatesVariableNode)
         
         {
-        let initializeVarStateModificationNode: Node = new Step(node, undefined, [`createVar,int,${this.getASTNodeUID(node)}1387`,`assignVar,${this.getASTNodeUID(node)}1387,${node.initialValue}`,`setGlobalVar,int,${this.getASTNodeUID(node)}currentValue,${this.getASTNodeUID(node)}1387`])
+        let initializeVarStateModificationNode: Node = new Step(node, undefined, [`createVar,int,${this.getASTNodeUID(node)}1437`,`assignVar,${this.getASTNodeUID(node)}1437,${node.initialValue}`,`setGlobalVar,int,${this.getASTNodeUID(node)}currentValue,${this.getASTNodeUID(node)}1437`])
         localCCFG.addNode(initializeVarStateModificationNode)
         {let e = localCCFG.addEdge(startsVariableNode,initializeVarStateModificationNode)
         e.guards = [...e.guards, ...[]]}
@@ -291,7 +295,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
         startsVarRefNode.params = [...startsVarRefNode.params, ...[]]
         startsVarRefNode.returnType = "int"
         startsVarRefNode.functionsNames = [`${startsVarRefNode.uid}accessVarRef`] //overwrite existing name
-        startsVarRefNode.functionsDefs =[...startsVarRefNode.functionsDefs, ...[`createVar,int,${this.getASTNodeUID(node)}1593`,`setVarFromGlobal,int,${this.getASTNodeUID(node)}1593,${this.getASTNodeUID(node.theVar)}currentValue`,`createVar,int,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,${this.getASTNodeUID(node)}1593`,`return,${this.getASTNodeUID(node)}terminates`]] //GG
+        startsVarRefNode.functionsDefs =[...startsVarRefNode.functionsDefs, ...[`createVar,int,${this.getASTNodeUID(node)}1652`,`setVarFromGlobal,int,${this.getASTNodeUID(node)}1652,${this.getASTNodeUID(node.theVar)}currentValue`,`createVar,int,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,${this.getASTNodeUID(node)}1652`,`return,${this.getASTNodeUID(node)}terminates`]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
         {let e = localCCFG.addEdge(startsVarRefNode,terminatesVarRefNode)
         e.guards = [...e.guards, ...[]]}
@@ -433,7 +437,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
         e.guards = [...e.guards, ...[]]}
             
         {
-        let executeAssignment2StateModificationNode: Node = new Step(node, undefined, [`createVar,int,${this.getASTNodeUID(node)}2534`,`assignVar,${this.getASTNodeUID(node)}2534,resRight`,`setGlobalVar,int,${this.getASTNodeUID(node.variable)}currentValue,${this.getASTNodeUID(node)}2534`])
+        let executeAssignment2StateModificationNode: Node = new Step(node, undefined, [`createVar,int,${this.getASTNodeUID(node)}2627`,`assignVar,${this.getASTNodeUID(node)}2627,resRight`,`setGlobalVar,int,${this.getASTNodeUID(node.variable)}currentValue,${this.getASTNodeUID(node)}2627`])
         localCCFG.addNode(executeAssignment2StateModificationNode)
         {let e = localCCFG.addEdge(exprHole,executeAssignment2StateModificationNode)
         e.guards = [...e.guards, ...[]]}
@@ -618,7 +622,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
         finishPlusAndJoinNode.params = [...finishPlusAndJoinNode.params, ...[Object.assign( new TypedElement(), JSON.parse(`{ "name": "n2", "type": "int"}`)),Object.assign( new TypedElement(), JSON.parse(`{ "name": "n1", "type": "int"}`))]]
         finishPlusAndJoinNode.returnType = "int"
         finishPlusAndJoinNode.functionsNames = [`${finishPlusAndJoinNode.uid}finishPlus`] //overwrite existing name
-        finishPlusAndJoinNode.functionsDefs =[...finishPlusAndJoinNode.functionsDefs, ...[`createVar,int,${this.getASTNodeUID(node)}4397`,`assignVar,${this.getASTNodeUID(node)}4397,n1`,`createVar,int,${this.getASTNodeUID(node)}4402`,`assignVar,${this.getASTNodeUID(node)}4402,n2`,`createVar,int,${this.getASTNodeUID(node)}4396`,`operation,${this.getASTNodeUID(node)}4396,${this.getASTNodeUID(node)}4397,+,${this.getASTNodeUID(node)}4402`,`createVar,int,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,${this.getASTNodeUID(node)}4396`,`return,${this.getASTNodeUID(node)}terminates`]] //GG
+        finishPlusAndJoinNode.functionsDefs =[...finishPlusAndJoinNode.functionsDefs, ...[`createVar,int,${this.getASTNodeUID(node)}4544`,`assignVar,${this.getASTNodeUID(node)}4544,n1`,`createVar,int,${this.getASTNodeUID(node)}4549`,`assignVar,${this.getASTNodeUID(node)}4549,n2`,`createVar,int,${this.getASTNodeUID(node)}4543`,`operation,${this.getASTNodeUID(node)}4543,${this.getASTNodeUID(node)}4544,+,${this.getASTNodeUID(node)}4549`,`createVar,int,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,${this.getASTNodeUID(node)}4543`,`return,${this.getASTNodeUID(node)}terminates`]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
         {let e = localCCFG.addEdge(finishPlusAndJoinNode,terminatesPlusNode)
         e.guards = [...e.guards, ...[]]}
@@ -649,7 +653,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
         startsBooleanConstNode.params = [...startsBooleanConstNode.params, ...[]]
         startsBooleanConstNode.returnType = "bool"
         startsBooleanConstNode.functionsNames = [`${startsBooleanConstNode.uid}evalBooleanConst`] //overwrite existing name
-        startsBooleanConstNode.functionsDefs =[...startsBooleanConstNode.functionsDefs, ...[`createVar,bool,${this.getASTNodeUID(node)}4616`,`setVarFromGlobal,bool,${this.getASTNodeUID(node)}4616,${this.getASTNodeUID(node)}constantValue`,`createVar,bool,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,${this.getASTNodeUID(node)}4616`,`return,${this.getASTNodeUID(node)}terminates`]] //GG
+        startsBooleanConstNode.functionsDefs =[...startsBooleanConstNode.functionsDefs, ...[`createVar,bool,${this.getASTNodeUID(node)}4772`,`setVarFromGlobal,bool,${this.getASTNodeUID(node)}4772,${this.getASTNodeUID(node)}constantValue`,`createVar,bool,${this.getASTNodeUID(node)}terminates`,`assignVar,${this.getASTNodeUID(node)}terminates,${this.getASTNodeUID(node)}4772`,`return,${this.getASTNodeUID(node)}terminates`]] //GG
                 //mark 1 { "name": "terminates", "type": "event"}
         {let e = localCCFG.addEdge(startsBooleanConstNode,terminatesBooleanConstNode)
         e.guards = [...e.guards, ...[]]}
@@ -667,7 +671,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
    //conclusion: cond:VarRef,starts:event
 // rule whileEnd
    //premise: cond:VarRef,terminates:event
-   //conclusion: terminates:event
+   //conclusion: terminates:unknown
 
     /**
      * returns the local CCFG of the While node
@@ -717,7 +721,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
         {let e = localCCFG.addEdge(whileBodyStartChoiceNode,bodyHole)
         e.guards = [...e.guards, ...[`verifyEqual,${this.getASTNodeUID(node.cond)}terminate,true`]]}
             
-        bodyHole.params = [...bodyHole.params, ...[]]
+        bodyHole.params = [...bodyHole.params, ...[Object.assign( new TypedElement(), JSON.parse(`{ "name": "terminates", "type": "unknown"}`))]]
         bodyHole.returnType = "void"
         bodyHole.functionsNames = [`${bodyHole.uid}whileBodyEnd`] //overwrite existing name
         bodyHole.functionsDefs =[...bodyHole.functionsDefs, ...[]] //GG
@@ -738,8 +742,8 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
         whileEndChoiceNode.returnType = "void"
         whileEndChoiceNode.functionsNames = [`${whileEndChoiceNode.uid}whileEnd`] //overwrite existing name
         whileEndChoiceNode.functionsDefs =[...whileEndChoiceNode.functionsDefs, ...[]] //GG
-                //mark 1 { "name": "terminates", "type": "event"}
-        {let e = localCCFG.addEdge(whileEndChoiceNode,terminatesWhileNode)
+                //mark 1 { "name": "terminates", "type": "unknown"}
+        {let e = localCCFG.addEdge(whileEndChoiceNode,WhileNode)
         e.guards = [...e.guards, ...[`verifyEqual,${this.getASTNodeUID(node.cond)}terminate,false`]]}
         
         return localCCFG;
@@ -864,7 +868,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
    //conclusion: body:Bloc,starts:event
 // rule functionDefEnd
    //premise: body:Bloc,terminates:event
-   //conclusion: terminates:event
+   //conclusion: terminates:unknown
 
     /**
      * returns the local CCFG of the FunctionDef node
@@ -894,12 +898,12 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
         {let e = localCCFG.addEdge(startsFunctionDefNode,bodyHole)
         e.guards = [...e.guards, ...[]]}
             
-        bodyHole.params = [...bodyHole.params, ...[]]
+        bodyHole.params = [...bodyHole.params, ...[Object.assign( new TypedElement(), JSON.parse(`{ "name": "terminates", "type": "unknown"}`))]]
         bodyHole.returnType = "void"
         bodyHole.functionsNames = [`${bodyHole.uid}functionDefEnd`] //overwrite existing name
         bodyHole.functionsDefs =[...bodyHole.functionsDefs, ...[]] //GG
-                //mark 1 { "name": "terminates", "type": "event"}
-        {let e = localCCFG.addEdge(bodyHole,terminatesFunctionDefNode)
+                //mark 1 { "name": "terminates", "type": "unknown"}
+        {let e = localCCFG.addEdge(bodyHole,FunctionDefNode)
         e.guards = [...e.guards, ...[]]}
         
         return localCCFG;

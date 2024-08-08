@@ -1,14 +1,13 @@
-import { CompositeGeneratorNode } from "langium";
 import { IGenerator } from "./GeneratorInterface";
-import { TypedElement } from "../ccfg/ccfglib";
+import { TypedElement } from "../../../CCFG/src/ccfglib.js";
 
 
 export class JsGenerator implements IGenerator {
 
-    debug: boolean = false;
+    isDebug: boolean = false;
 
     setDebug(debug: boolean): void {
-        this.debug = debug;
+        this.isDebug = debug;
     }
     
     nameFile(filename: string): string {
@@ -31,7 +30,7 @@ let sigma = new Map();
         let res:string[] = []
         res.push("async function function" + fname + `(${params.map(p => (p as TypedElement).name).join(", ")}){\n`)
 
-        if (this.debug){
+        if (this.isDebug){
             res.push(`\tconsole.log("\tfunction${fname} started");\n`)
         }
         for (let i = 0; i < insideFunction.length; i++) {
@@ -46,7 +45,7 @@ let sigma = new Map();
         for (let i = 0; i < insideMain.length; i++) {
             res.push("\t"+insideMain[i])
         }
-        if (this.debug){
+        if (this.isDebug){
             res.push(`\tfor (let v of sigma){\n`)
             res.push(`\t\tconsole.log(v[0]+" = " + v[1]);\n`)
             res.push(`\t}\n`)
@@ -65,7 +64,7 @@ let sigma = new Map();
         let createIfString:string[] = []
 
         createIfString.push("if (" + guards.join(" && ") + "){\n")
-        if (this.debug){
+        if (this.isDebug){
             createIfString.push(`\tconsole.log("(${guards.join(" && ")}) is TRUE");\n`)
         }
         insideOfIf.forEach(element => {
@@ -79,7 +78,7 @@ let sigma = new Map();
         let threadCode:string[] = []
         threadCode = [...threadCode,`async function thread${uid}(){
             `]
-        if (this.debug){
+        if (this.isDebug){
             threadCode.push(`\tconsole.log("thread${uid} started");\n`)
         }
         for (let i = 0; i < insideThreadCode.length; i++) {

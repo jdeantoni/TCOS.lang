@@ -6,140 +6,156 @@ class PythonGenerator {
     constructor(debug) {
         this.isDebug = debug;
     }
+    setDebug(debug) {
+        this.isDebug = debug;
+    }
     goToFlag(codeFile, queueUID) {
         throw new Error("Method not implemented.");
     }
-    createFlagToGoBackTo(codeFile, uid) {
-        throw new Error("Method not implemented.");
+    setLoopFlag(queueUID) {
+        return [`flag${queueUID} = True\n`];
+    }
+    createLoop(uid, insideLoop) {
+        let res = [`while flag${uid} == True: \n`, `\tflag${uid} = False \n`];
+        for (let i = 0; i < insideLoop.length; i++) {
+            res.push("\t" + insideLoop[i]);
+        }
+        return res;
     }
     createEqualsVerif(firstValue, secondValue) {
-        if (firstValue == "true")
-            firstValue = "True";
-        if (firstValue == "false")
-            firstValue = "False";
-        if (secondValue == "true")
-            secondValue = "True";
-        if (secondValue == "false")
-            secondValue = "False";
+        firstValue = firstValue.charAt(0).toUpperCase() + firstValue.slice(1);
+        secondValue = secondValue.charAt(0).toUpperCase() + secondValue.slice(1);
         return firstValue + " == " + secondValue;
     }
     nbTabs = 1;
     nameFile(filename) {
         return `${filename}.py`;
     }
-    createBase(codeFile, debug) {
+    createBase() {
+        let res = [];
         // imports ----------------------------------------------------------------------------------------------------
-        codeFile.append(`import threading \n`);
-        codeFile.append(`import time \n`);
-        codeFile.append(`from queue import Queue, LifoQueue\n`);
-        if (debug) {
-            codeFile.append(`#define DEBUG 1 \n`);
-        } // debug
+        res.push(`import threading \n`);
+        res.push(`import time \n`);
+        res.push(`from queue import Queue, LifoQueue\n`);
         // global variables ---------------------------------------------------------------------------------------
-        codeFile.append(`##std::unordered_map<std::string, void*> sigma; ##std::mutex sigma_mutex;  // protects sigma \n`);
-        codeFile.append(`returnQueue = LifoQueue()\n`);
+        res.push(`##std::unordered_map<std::string, void*> sigma; ##std::mutex sigma_mutex;  // protects sigma \n`);
+        res.push(`returnQueue = LifoQueue()\n`);
+        res.push(`sigma: dict = {}\nsigma_mutex = threading.Lock()\n`);
+        return res;
     }
-    endFile(codeFile) {
-        codeFile.append(`if __name__ == "__main__": \n`);
-        codeFile.append(`\tmain() \n`);
+    endFile() {
+        let res = [];
+        res.push(`if __name__ == "__main__": \n`);
+        res.push(`\tmain() \n`);
+        return res;
     }
-    createFunction(codeFile, fname, params, returnType, insideFunction) {
-        codeFile.append(`def function${fname}(${params.map(p => p.name).join(", ")}): \n`);
-        this.nbTabs++;
-        for (let i = 0; i < insideFunction.length; i++) {
-            codeFile.append(Array(this.nbTabs).join("\t") + insideFunction[i]);
+    createFunction(fname, params, returnType, insideFunction) {
+        let res = [];
+        res.push(`def function${fname}(${params.map(p => p.name).join(", ")}): \n`);
+        if (this.isDebug) {
+            res.push(`\tprint("\tfunction${fname} started") \n`);
         }
-        this.nbTabs--;
+        for (let i = 0; i < insideFunction.length; i++) {
+            res.push("\t" + insideFunction[i]);
+        }
+        return res;
     }
-    createMainFunction(codeFile) {
-        codeFile.append(`def main(): \n`);
-        this.nbTabs++;
+    createMainFunction(insideMain) {
+        let res = [];
+        res.push(`def main(): \n`);
+        for (let i = 0; i < insideMain.length; i++) {
+            res.push("\t" + insideMain[i]);
+        }
+        if (this.isDebug) {
+            res.push(`\tfor v in sigma:\n\t\tprint(str(v)+" = " + str(sigma[v])) \n`);
+        }
+        return res;
     }
-    createFuncCall(codeFile, fname, params, typeName) {
+    createFuncCall(fname, params, typeName) {
         if (typeName == "void") {
             return [`function${fname}(${params.join(", ")}); \n`];
         }
         else
             return [`result${fname} = function${fname}(${params.join(", ")}); \n`];
     }
-    createIf(codeFile, guards, insideOfIf) {
+    createIf(guards, insideOfIf) {
         let createIfString = [];
         createIfString.push(`if ${guards.join(" and ")}: \n`);
+        if (this.isDebug) {
+            createIfString.push(`\tprint("(${guards.join(" and ")}) is TRUE") \n`);
+        }
         insideOfIf.forEach(element => {
-            codeFile.append("\t" + element);
+            createIfString.push("\t" + element);
         });
         return createIfString;
     }
-    createSynchronizer(codeFile, synchUID) {
-        codeFile.append(Array(this.nbTabs).join("\t") + `sync${synchUID} = threading.Event() \n`);
-        return [`sync${synchUID} = threading.Event() \n`];
+    createSynchronizer(synchUID) {
+        return [`sync${synchUID} = Queue() \n`];
     }
-    waitForSynchronizer(codeFile, synchUID) {
-        codeFile.append(Array(this.nbTabs).join("\t") + `sync${synchUID}.wait() \n`);
-        codeFile.append(Array(this.nbTabs).join("\t") + `sync${synchUID}.clear() \n`);
-        return [`sync${synchUID}.wait() `, ` sync${synchUID}.clear() \n`];
+    waitForSynchronizer(synchUID) {
+        return [`sync${synchUID}.get() \n`];
     }
-    activateSynchronizer(codeFile, synchUID) {
-        codeFile.append(Array(this.nbTabs).join("\t") + `sync${synchUID}.set() \n`);
-        return [`sync${synchUID}.set() \n`];
+    activateSynchronizer(synchUID) {
+        return [`sync${synchUID}.put(42) \n`];
     }
-    createAndOpenThread(codeFile, uid) {
-        codeFile.append(Array(this.nbTabs).join("\t") + `thread${uid} = threading.Thread(target=thread${uid}) \n`);
-        codeFile.append(Array(this.nbTabs).join("\t") + `thread${uid}.start() \n`);
-        codeFile.append(Array(this.nbTabs).join("\t") + `thread${uid}.join() \n`);
-        return [`thread${uid} = threading.Thread(target=thread${uid}) \n`, `thread${uid}.start() \n`, `thread${uid}.join() \n`];
+    createAndOpenThread(uid, insideThreadCode) {
+        let res = [`def codeThread${uid}():\n`];
+        if (this.isDebug) {
+            res.push(`\tprint("thread${uid} started") \n`);
+        }
+        for (let i = 0; i < insideThreadCode.length; i++) {
+            res.push("\t" + insideThreadCode[i]);
+        }
+        res = [...res, ...[`thread${uid} = threading.Thread(target=codeThread${uid}) \n`, `thread${uid}.start() \n`, `thread${uid}.join() \n`]];
+        return res;
     }
-    endThread(codeFile, uid) {
-        codeFile.append(Array(this.nbTabs).join("\t") + `return \n`);
+    endThread(uid) {
         return [`return \n`];
     }
     endSection(codeFile) {
         this.nbTabs--;
     }
-    createQueue(codeFile, queueUID) {
-        codeFile.append(Array(this.nbTabs).join("\t") + `queue${queueUID} = Queue() \n`);
+    createQueue(queueUID) {
         return [`queue${queueUID} = Queue() \n`];
     }
-    createLockingQueue(codeFile, typeName, queueUID) {
-        codeFile.append(Array(this.nbTabs).join("\t") + `queue${queueUID} = Queue() \n`);
+    createLockingQueue(typeName, queueUID) {
         return [`queue${queueUID} = Queue() \n`];
     }
-    receiveFromQueue(codeFile, queueUID, typeName, varName) {
-        codeFile.append(Array(this.nbTabs).join("\t") + `${varName} = queue${queueUID}.get() \n`);
+    receiveFromQueue(queueUID, typeName, varName) {
         return [`${varName} = queue${queueUID}.get() \n`];
     }
-    sendToQueue(codeFile, queueUID, typeName, varName) {
-        codeFile.append(Array(this.nbTabs).join("\t") + `queue${queueUID}.put(${varName}) \n`);
+    sendToQueue(queueUID, typeName, varName) {
         return [`queue${queueUID}.put(${varName}) \n`];
     }
-    assignVar(codeFile, varName, value) {
-        codeFile.append(Array(this.nbTabs).join("\t") + `${varName} = ${value} \n`);
+    assignVar(varName, value) {
+        if (value == "true" || value == "false") {
+            value = value.charAt(0).toUpperCase() + value.slice(1);
+        }
         return [`${varName} = ${value} \n`];
     }
-    returnVar(codeFile, varName) {
-        codeFile.append(Array(this.nbTabs).join("\t") + `return ${varName} \n`);
+    returnVar(varName) {
         return [`return ${varName} \n`];
     }
-    createVar(codeFile, type, varName) {
-        return [""];
+    createVar(type, varName) {
+        return [`\n`];
     }
-    createGlobalVar(codeFile, type, varName) {
-        codeFile.append(Array(this.nbTabs).join("\t") + `1+1 \n`);
-        return [``];
+    createGlobalVar(type, varName) {
+        return [`sigma_mutex.acquire()\n`, `sigma["${varName}"] = ${type}()\n`, `sigma_mutex.release()\n`];
     }
-    setVarFromGlobal(codeFile, type, varName, value) {
-        codeFile.append(Array(this.nbTabs).join("\t") + `global ${value} \n`);
-        codeFile.append(Array(this.nbTabs).join("\t") + `${varName} = ${value} \n`);
-        return [`global ${value} \n`, `${varName} = ${value} \n`];
+    setVarFromGlobal(type, varName, value) {
+        return [`sigma_mutex.acquire()\n`, `${varName} = sigma["${value}"]\n`, `sigma_mutex.release()\n`];
     }
-    setGlobalVar(codeFile, type, varName, value) {
-        codeFile.append(Array(this.nbTabs).join("\t") + `global ${varName} \n`);
-        codeFile.append(Array(this.nbTabs).join("\t") + `${varName} = ${value} \n`);
-        return [`global ${varName} \n`, `${varName} = ${value} \n`];
+    setGlobalVar(type, varName, value) {
+        if (value == "true" || value == "false") {
+            value = value.charAt(0).toUpperCase() + value.slice(1);
+        }
+        return [`sigma_mutex.acquire()\n`, `sigma["${varName}"] = ${value}\n`, `sigma_mutex.release()\n`];
     }
-    operation(codeFile, varName, n1, op, n2) {
-        codeFile.append(Array(this.nbTabs).join("\t") + `${varName} = ${n1} ${op} ${n2} \n`);
+    operation(varName, n1, op, n2) {
         return [`${varName} = ${n1} ${op} ${n2} \n`];
+    }
+    createSleep(duration) {
+        return [`time.sleep(${duration}//1000) \n`];
     }
 }
 exports.PythonGenerator = PythonGenerator;

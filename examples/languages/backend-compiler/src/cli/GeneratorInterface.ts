@@ -1,10 +1,11 @@
-import { CompositeGeneratorNode } from "langium";
+
 import { TypedElement } from "../../../CCFG/src/ccfglib";
 
 interface IGenerator {
     isDebug: boolean;
     
 
+    setDebug(debug:boolean): void;
     /**
      * nameFile is a function that takes a file name as an argument and returns a filename with a specific extension
      * @param filename the name of the file

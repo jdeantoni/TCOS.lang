@@ -10,11 +10,11 @@ import { CompositeGeneratorNode, toString } from 'langium';
 import path from 'path';
 import fs from 'fs';
 import { CCFG } from '../../../CCFG/src/ccfglib';
-import { CCFGVisitor } from './generated/testFSE';
+import { SimpleLCompilerFrontEnd } from './generated/simpleLCompilerFrontEnd';
 import { IGenerator } from '../../../backend-compiler/src/cli/GeneratorInterface';
 import { PythonGenerator } from '../../../backend-compiler/src/cli/pythonGenerator';
 import { CppGenerator } from '../../../backend-compiler/src/cli/cppGenerator';
-import { JsGenerator } from './jsGenerator';
+import { JsGenerator } from '../../../backend-compiler/src/cli/jsGenerator';
 
 
 export const generateAction = async (fileName: string, opts: GenerateOptions): Promise<void> => {
@@ -30,9 +30,9 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
     const dotFile = new CompositeGeneratorNode();
 
     
-    let ccfg = doGenerateCCFG(dotFile, model);
-    const codeFile = new CompositeGeneratorNode();
     let debug: boolean = false;
+    let ccfg = doGenerateCCFG(dotFile, model,debug);
+    const codeFile = new CompositeGeneratorNode();
     console.log(data.destination)
 
     if (!fs.existsSync(data.destination)) {
@@ -42,7 +42,6 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
 
     let filePath = path.join(data.destination, data.name);
     
-    debug = opts.debug != undefined ? opts.debug : false;
 
     let generator:IGenerator;
     if (opts.python) {
@@ -96,11 +95,9 @@ export default function(): void {
 }
 
 
-function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model): CCFG {
-    var visitor = new CCFGVisitor();
-    visitor.visit(model);
-
-    var ccfg = visitor.ccfg
+function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model,debug:boolean): CCFG {
+    var compilerFrontEnd = new SimpleLCompilerFrontEnd();
+    var ccfg = compilerFrontEnd.generateCCFG(model,debug);
    
     ccfg.addSyncEdge()
 

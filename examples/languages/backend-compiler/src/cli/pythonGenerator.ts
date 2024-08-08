@@ -9,19 +9,19 @@ export class PythonGenerator implements IGenerator {
     constructor(debug: boolean) {
         this.isDebug = debug;
     }
+    setDebug(debug: boolean): void {
+        this.isDebug = debug;
+    }
     
     goToFlag(codeFile: CompositeGeneratorNode, queueUID: number): string[] {
         throw new Error("Method not implemented.");
-
+    }
     
     setLoopFlag( queueUID: number): string[] {
         return [`flag${queueUID} = True\n`];
     }
 
 
-    setLoopFlag( queueUID: number): string[] {
-        return [`flag${queueUID} = True\n`];
-    }
     createLoop( uid: number, insideLoop: string[]): string[] {
         let res = [`while flag${uid} == True: \n`,`\tflag${uid} = False \n`];
         for (let i = 0; i < insideLoop.length; i++) {

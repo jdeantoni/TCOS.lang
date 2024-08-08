@@ -1,0 +1,238 @@
+testSimpleL
+
+import "./testSoSLang/src/language-server/simple-l.langium"
+
+
+
+open Model { 
+
+                            when starts 
+    ------------------------------------------------------------ statementsInOrder1
+      <this,σ> ~> statements->sequential.foreach(s => <s,σ>)
+
+
+
+             when <statements.last(),σ>
+    -------------------------------------------                finishModel
+              <this,σ> ~> terminates
+
+}
+
+open Bloc {
+
+                          when starts
+    -----------------------------------------------------      startsBloc
+            <this,σ> ~> statements->sequential.foreach(s => <s,σ>)
+
+  
+              when <statements.last(),σ>            
+        -------------------------------------------            finishBloc
+                  <this,σ> ~> terminates
+}
+
+open ParallelBloc {
+
+                          when starts
+    -------------------------------------------------------------------- startsParallelBloc
+      <this,σ> ~> statements->concurrent.foreach(s => emits s.starts)
+
+
+
+      when lastOf(statements.terminates)
+    -----------------------------------------                  finishParallelBloc
+            <this,σ> ~> terminates
+
+} 
+
+
+
+
+open Variable {
+
+    var currentValue: integer;
+
+
+                when starts
+    ---------------------------------------------              initializeVar
+     <this,σ> ~> currentValue := initialValue;
+                 terminates 
+
+}
+
+open VarRef {
+  
+                  when starts
+    ---------------------------------------------              accessVarRef 
+      <this,σ> ~> emits terminates[theVar.currentValue]
+  
+} 
+
+open If {
+
+            when starts
+    ------------------------------                             condStart
+      <this,σ> ~> <cond,σ>
+
+
+          when <cond,σ> -> true 
+    -----------------------------------                        condTrueStart
+          <this,σ> ~> <then,σ>
+
+
+      when <cond,σ> -> false 
+    -------------------------------                            condFalseStart
+      <this,σ> ~> <else,σ>
+      
+
+        when (<else,σ>  v <then,σ> )
+    -----------------------------------                        condStop
+          <this,σ> ~> terminates
+
+} 
+
+open Assignment {
+          when starts
+    --------------------------                                  executeAssignment
+      <this,σ> ~> <expr,σ>
+
+          when <expr,σ> -> resRight:integer                       
+    ----------------------------------------------------------- executeAssignment2
+      <this,σ> ~> variable.currentValue := resRight; 
+                  //variable.allReaders()->concurrent.foreach(r => r.updates)
+                  terminates
+}
+
+// open Conjunction { //lazy version
+//           when starts                   
+//     -------------------------                                   evaluateConjunction
+//       <this,σ> ~> <lhs,σ>
+
+          
+//       when <lhs,σ> -> true
+//     -------------------------                                   evaluateConjunction2
+//       <this,σ> ~> <rhs,σ>
+
+
+//           when <lhs,σ> -> false
+//     ----------------------------------                          evaluateConjunction3
+//       <this,σ> ~> terminates//(false)
+
+         
+//           when <rhs,σ> -> res
+//     -------------------------------                             evaluateConjunction4
+//       <this,σ> ~> terminates//(res)
+
+// }
+
+
+open Conjunction { //parallel version
+                when starts                   
+    -------------------------------------                       evaluateConjunction
+      <this,σ> ~> <lhs,σ> || <rhs,σ>   
+ 
+              when <lhs,σ> -> false
+    --------------------------------------------                evaluateConjunction2
+          <this,σ> ~> terminates[false]
+
+              when <rhs,σ> -> false
+    --------------------------------------------                evaluateConjunction3
+          <this,σ> ~> terminates[false]
+
+      when (<lhs,σ> -> true ^ <rhs,σ> -> true)
+    --------------------------------------------                evaluateConjunction4
+          <this,σ> ~> terminates[true]
+}
+
+open Plus {
+  
+                  when starts
+    -------------------------------------------                 startPlus
+        <this,σ> ~> <right,σ>||<left,σ>
+   
+      when (<right,σ> -> n2:integer ^ <left,σ> -> n1:integer)
+    ----------------------------------------------------------  finishPlus
+        <this,σ> ~> terminates[(n1 + n2)]
+}
+
+open BooleanConst{
+
+    var constantValue:boolean = value;
+
+                    when starts
+    -------------------------------------------                 evalBooleanConst
+          <this,σ> ~> terminates[constantValue]
+}
+
+open While {
+
+           when starts
+    --------------------------                                whileStart
+      <this,σ> ~> <cond,σ>
+ 
+        when <cond,σ> -> true
+    --------------------------                                whileBodyStart
+      <this,σ> ~> <body,σ>
+                 
+
+      when <body,σ> -> terminates
+    ---------------------------------                         whileBodyEnd
+          <this,σ> ~> <cond,σ>
+
+        when <cond,σ> -> false  
+    ----------------------------                              whileEnd
+        <this,σ> ~> terminates
+
+}
+
+open PeriodicBloc{
+
+  var blocTrigger: Timer = time;
+  // var isExecuting: boolean = false;
+
+            when starts
+      --------------------------                                periodicStart
+        <this,σ> ~> <blocTrigger,σ>
+  
+          when <blocTrigger,σ> 
+      -------------------------------------------------         periodicBodyStart
+        <this,σ> ~> <bloc,σ> || <blocTrigger,σ>
+                  
+  
+      //          when <bloc,σ>
+      // ---------------------------------                         periodicBodyEnd
+      //       <this,σ> ~> isExecuting := false;
+  
+      //   when <blocTrigger,σ> [isExecuting == true]
+      // ---------------------------------------------------       periodicBodyStart
+      //   <this,σ> ~> terminates(false) //timing probleme
+                    
+
+}
+
+open FunctionCall {
+
+                      when starts
+      ----------------------------------------------------     functionCallArgsStart
+        <this,σ> ~> args->sequential.foreach(a => <a,σ>)
+  
+              when <args.last(),σ> -> evaluatedArgs 
+      ----------------------------------------------------     functionCallStarts
+        <this,σ> ~> //theFunction.params  := evaluatedArgs;      -> what is appropriate to be done there ?
+                    <theFunction,σ>
+
+                 when <theFunction,σ>
+      -------------------------------------------------         functionCallEnd
+                <this,σ> ~> terminates
+
+}
+
+open FunctionDef{
+  
+                        when starts
+        ----------------------------------------------------     functionDefArgsStart
+                    <this,σ> ~> <body,σ>
+  
+                when <body,σ> -> terminates
+        -------------------------------------------------         functionDefEnd
+                  <this,σ> ~> terminates
+}

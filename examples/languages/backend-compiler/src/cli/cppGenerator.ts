@@ -1,4 +1,3 @@
-import { CompositeGeneratorNode } from "langium";
 import { IGenerator } from "./GeneratorInterface";
 import { TypedElement } from "../../../CCFG/src/ccfglib";
 
@@ -7,6 +6,9 @@ export class CppGenerator implements IGenerator {
     isDebug: boolean;
 
     constructor(debug: boolean) {
+        this.isDebug = debug;
+    }
+    setDebug(debug: boolean): void {
         this.isDebug = debug;
     }
     
