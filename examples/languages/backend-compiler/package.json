@@ -39,7 +39,8 @@
     }
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "watch": "tsc -w"
   },
   "dependencies": {
     "chalk": "^4.1.2",
