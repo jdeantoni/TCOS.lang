@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CppGenerator = void 0;
 class CppGenerator {
     debug;
-    constructor(debug) {
+    constructor(debug = false) {
         this.debug = debug;
     }
     setDebug(debug) {
@@ -94,7 +94,7 @@ class CppGenerator {
         return [`LockingQueue<Void> queue${queueUID};\n`];
     }
     createLockingQueue(typeName, queueUID) {
-        return [`LockingQueue<${typeName}> queue${queueUID};`];
+        return [`LockingQueue<${typeName}> queue${queueUID};\n`];
     }
     receiveFromQueue(queueUID, typeName, varName) {
         return ["queue" + queueUID + ".waitAndPop(" + varName + ");\n"];

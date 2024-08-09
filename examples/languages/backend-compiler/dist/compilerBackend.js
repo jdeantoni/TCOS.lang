@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generatefromCCFG = generatefromCCFG;
+exports.generatefromCCFG = void 0;
 const langium_1 = require("langium");
 const chalk_1 = __importDefault(require("chalk"));
 const createVar = "createVar"; //createVar,type,name
@@ -17,10 +17,9 @@ const verifyEqual = "verifyEqual"; //verifyEqual,varName1,varName2
 const addSleep = "addSleep"; //addSleep,duration
 let debug = false;
 function generatefromCCFG(ccfg, codeFile, generator, filePath, debug) {
-    console.log("generatefromCCG");
     doGenerateCode(codeFile, ccfg, debug, generator);
-    return (0, langium_1.toString)(codeFile);
 }
+exports.generatefromCCFG = generatefromCCFG;
 function doGenerateCode(codeFile, ccfg, debug, generator) {
     let initNode = ccfg.initialState;
     if (initNode == undefined) {
@@ -35,6 +34,7 @@ function doGenerateCode(codeFile, ccfg, debug, generator) {
     allCode = [...allCode, ...generator.createMainFunction(insideMain)];
     allCode = [...allCode, ...generator.endFile()];
     codeFile.append(allCode.join(""));
+    console.log(codeFile);
 }
 function compileFunctionDefs(ccfg, generator) {
     let res = [];
@@ -178,7 +178,6 @@ function visitAllNodes(ccfg, currentNode, generator, visitIsStarting = false) {
                                     thisNodeCode = [...thisNodeCode, ...generator.createLockingQueue(ptn.returnType, syncUID)];
                                 }
                                 else {
-                                    console.log("create THAT synch " + syncUID);
                                     thisNodeCode = [...thisNodeCode, ...generator.createSynchronizer(syncUID)];
                                 }
                             }
@@ -402,7 +401,12 @@ function addQueuePushCode(queueUID, currentNode, ccfg, f, generator) {
         //        let ptn = ptns[0];
         if (!createdQueueIds.includes(queueUID)) {
             createdQueueIds.push(queueUID);
-            res = [...res, ...generator.createSynchronizer(queueUID)];
+            if (syncNode.returnType != undefined && syncNode.returnType != "void") {
+                res = [...res, ...generator.createLockingQueue(syncNode.returnType, queueUID)];
+            }
+            else {
+                res = [...res, ...generator.createSynchronizer(queueUID)];
+            }
         }
         //codeFile.append(`{\n`)
         if (currentNode.returnType == undefined || currentNode.returnType == "void" || f == undefined) {

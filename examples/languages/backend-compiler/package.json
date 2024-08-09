@@ -6,50 +6,40 @@
   "engines": {
     "vscode": "^1.56.0"
   },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "categories": [
     "Programming Languages"
-  ],
-  "contributes": {
-    "languages": [
-      {
-        "id": "simple-l",
-        "aliases": [
-          "simpleL",
-          "simple-l"
-        ],
-        "extensions": [
-          ".simple"
-        ],
-        "configuration": "./language-configuration.json"
-      }
-    ],
-    "grammars": [
-      {
-        "language": "simple-l",
-        "scopeName": "source.simple-l",
-        "path": "./syntaxes/simple-l.tmLanguage.json"
-      }
-    ]
-  },
-  "activationEvents": [
-    "onLanguage:simple-l"
   ],
   "files": [
     "bin",
     "out",
     "src"
   ],
-  "bin": {
-    "simple-l-cli": "./bin/cli"
+  "exports": {
+    "./compilerBackend": {
+      "import": "./dist/compilerBackend.js",
+      "require": "./dist/compilerBackend.js"
+    },
+    "./GeneratorInterface": {
+      "import": "./dist/generatorInterface.js",
+      "require": "./dist/generatorInterface.js"
+    },
+    "./cppGenerator": {
+      "import": "./dist/cppGenerator.js",
+      "require": "./dist/cppGenerator.js"
+    },
+    "./jsGenerator": {
+      "import": "./dist/jsGenerator.js",
+      "require": "./dist/jsGenerator.js"
+    },
+    "./pythonGenerator": {
+      "import": "./dist/cppGenerator.js",
+      "require": "./dist/cppGenerator.js"
+    }
   },
-  "main": "./out/extension.js",
   "scripts": {
-    "vscode:prepublish": "npm run build && npm run lint",
-    "build": "tsc -b tsconfig.json",
-    "watch": "tsc -b tsconfig.json --watch",
-    "lint": "eslint src --ext ts",
-    "langium:generate": "langium generate",
-    "langium:watch": "langium generate --watch"
+    "build": "tsc"
   },
   "dependencies": {
     "chalk": "^4.1.2",
@@ -58,7 +48,8 @@
     "langium": "~1.0.0",
     "vscode-languageclient": "^8.0.2",
     "vscode-languageserver": "^8.0.2",
-    "vscode-uri": "^3.0.2"
+    "vscode-uri": "^3.0.2",
+    "ccfg": "latest"
   },
   "devDependencies": {
     "@types/node": "^14.17.3",

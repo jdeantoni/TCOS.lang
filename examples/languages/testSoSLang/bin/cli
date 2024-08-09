@@ -1,2 +1,2 @@
 #!/usr/bin/env node
-require("../out/testSOSLang/src/cli").default();
+require("../out/cli").default();

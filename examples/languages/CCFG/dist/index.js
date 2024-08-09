@@ -18,7 +18,7 @@ var NodeType;
     NodeType["starts"] = "starts";
     NodeType["terminates"] = "terminates";
     NodeType["multipleSynchro"] = "multipleSynchro";
-})(NodeType || (exports.NodeType = NodeType = {}));
+})(NodeType = exports.NodeType || (exports.NodeType = {}));
 class Node {
     static uidCounter = 0;
     uid;

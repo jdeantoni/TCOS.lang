@@ -2,9 +2,10 @@
   "name": "ccfg",
   "version": "1.0.0",
   "description": "the place for the definition of the functionning of the ccfg",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "test": "npm test"
+    "build": "tsc "
   },
   "author": "",
   "license": "ISC",

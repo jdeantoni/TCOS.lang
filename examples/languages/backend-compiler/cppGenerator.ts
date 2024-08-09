@@ -1,5 +1,5 @@
 import { IGenerator } from "./GeneratorInterface";
-import { TypedElement } from "../../../CCFG/src/ccfglib";
+import { TypedElement } from "ccfg";
 
 
 export class CppGenerator implements IGenerator {

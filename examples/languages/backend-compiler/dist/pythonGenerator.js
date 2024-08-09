@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PythonGenerator = void 0;
 class PythonGenerator {
     debug;
-    constructor(debug) {
+    constructor(debug = false) {
         this.debug = debug;
     }
     setDebug(debug) {

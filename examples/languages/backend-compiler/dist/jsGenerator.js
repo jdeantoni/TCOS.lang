@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.JsGenerator = void 0;
 class JsGenerator {
     debug = false;
-    setDebug(debug) {
+    setDebug(debug = false) {
         this.debug = debug;
     }
     nameFile(filename) {

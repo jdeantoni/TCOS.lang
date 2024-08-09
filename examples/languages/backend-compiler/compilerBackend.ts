@@ -1,6 +1,6 @@
 
-import {  CompositeGeneratorNode, MultiMap, toString } from 'langium';
-import { CCFG, Edge, Node } from '../../../CCFG/src/ccfglib';
+import {  CompositeGeneratorNode, MultiMap } from 'langium';
+import { CCFG, Edge, Node } from 'ccfg';
 import {IGenerator} from './GeneratorInterface';
 import chalk from 'chalk';
 
@@ -16,14 +16,13 @@ const verifyEqual = "verifyEqual" //verifyEqual,varName1,varName2
 const addSleep = "addSleep" //addSleep,duration
 let debug = false;
 
-export function generatefromCCFG(ccfg: CCFG, codeFile:CompositeGeneratorNode, generator:IGenerator, filePath:string,debug:boolean): string {
+export function generatefromCCFG(ccfg: CCFG, codeFile:CompositeGeneratorNode, generator:IGenerator, filePath:string,debug:boolean): void {
 
-    
+
 
     doGenerateCode(codeFile, ccfg, debug, generator);
 
-
-    return toString(codeFile);
+    
 }
 function doGenerateCode(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: boolean, generator: IGenerator) {
     let initNode = ccfg.initialState;
@@ -42,6 +41,7 @@ function doGenerateCode(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: boo
     allCode = [...allCode, ...generator.createMainFunction(insideMain)];
     allCode = [...allCode, ...generator.endFile()];
     codeFile.append(allCode.join(""));
+    console.log(codeFile);
 }
 
 
@@ -448,7 +448,13 @@ function addQueuePushCode(queueUID: number | undefined, currentNode: Node, ccfg:
 //        let ptn = ptns[0];
         if(!createdQueueIds.includes(queueUID)){
             createdQueueIds.push(queueUID);
-            res = [...res, ...generator.createSynchronizer(queueUID)];
+            if (syncNode.returnType != undefined && syncNode.returnType != "void") {
+                
+                res = [...res, ...generator.createLockingQueue(syncNode.returnType,queueUID)];
+            } else {
+                
+                res = [...res, ...generator.createSynchronizer(queueUID)];
+            }
         }
         //codeFile.append(`{\n`)
         if (currentNode.returnType == undefined || currentNode.returnType == "void" || f == undefined) {

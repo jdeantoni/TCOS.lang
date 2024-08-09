@@ -5,16 +5,16 @@ import { SimpleLLanguageMetaData } from '../language-server/generated/module';
 import { createSimpleLServices } from '../language-server/simple-l-module';
 import { extractAstNode, extractDestinationAndName } from './cli-util';
 import { NodeFileSystem } from 'langium/node';
-import { generatefromCCFG } from '../../../backend-compiler/src/cli/compilerBackend';
+import { generatefromCCFG } from 'backend-compiler/compilerBackend';
 import { CompositeGeneratorNode, toString } from 'langium';
 import path from 'path';
 import fs from 'fs';
-import { CCFG } from '../../../CCFG/src/ccfglib';
+import { CCFG } from 'ccfg';
 import { SimpleLCompilerFrontEnd } from './generated/simpleLCompilerFrontEnd';
-import { IGenerator } from '../../../backend-compiler/src/cli/GeneratorInterface';
-import { PythonGenerator } from '../../../backend-compiler/src/cli/pythonGenerator';
-import { CppGenerator } from '../../../backend-compiler/src/cli/cppGenerator';
-import { JsGenerator } from '../../../backend-compiler/src/cli/jsGenerator';
+import { IGenerator } from 'backend-compiler/GeneratorInterface';
+import { PythonGenerator } from 'backend-compiler/pythonGenerator';
+import { CppGenerator } from 'backend-compiler/cppGenerator';
+import { JsGenerator } from 'backend-compiler/jsGenerator';
 
 
 export const generateAction = async (fileName: string, opts: GenerateOptions): Promise<void> => {
@@ -27,6 +27,7 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
 
     const generatedDotFilePath = `${path.join(data.destination, data.name)}.dot`;
     const dotFile = new CompositeGeneratorNode();
+
 
     
     let debug: boolean = false;
@@ -55,11 +56,12 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
 
 
 
-    let codeFileString = generatefromCCFG(ccfg, codeFile, generator, filePath,debug)
+    generatefromCCFG(ccfg, codeFile, generator, filePath,debug)
+    console.log(codeFile)
     if (!fs.existsSync(data.destination)) {
         fs.mkdirSync(data.destination, { recursive: true });
     }
-    fs.writeFileSync(generatedCodeFilePath, codeFileString);
+    fs.writeFileSync(generatedCodeFilePath, toString(codeFile));
 
     console.log(chalk.green(`CCFG and Code generated successfully: ${generatedCodeFilePath}`));
 };
@@ -77,7 +79,7 @@ export default function(): void {
 
     program
         // eslint-disable-next-line @typescript-eslint/no-var-requires
-        .version(require('../../../../package.json').version);
+        .version(require('../../package.json').version);
 
     const fileExtensions = SimpleLLanguageMetaData.fileExtensions.join(', ');
     program

@@ -1,5 +1,5 @@
 
-import { TypedElement } from "../../../CCFG/src/ccfglib";
+import { TypedElement } from "ccfg";
 
 interface IGenerator {
     debug: boolean;

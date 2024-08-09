@@ -1,6 +1,6 @@
 import { CompositeGeneratorNode } from "langium";
 import { IGenerator } from "./GeneratorInterface";
-import { TypedElement } from "../../../CCFG/src/ccfglib";
+import { TypedElement } from "ccfg";
 
 
 export class PythonGenerator implements IGenerator {
