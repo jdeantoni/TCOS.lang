@@ -5,7 +5,7 @@ import { FSMModel } from '../language-server/generated/ast';
 import { FilePathData } from './cli-util';
 import { CCFGVisitor } from './generated/testFSM';
 
-import { CCFG } from '../../../CCFG/src/ccfglib';
+import { CCFG } from 'ccfg';
 
 export function generateDot(model: FSMModel, data:FilePathData ): CCFG {
     

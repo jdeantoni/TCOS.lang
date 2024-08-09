@@ -57,7 +57,6 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
 
 
     generatefromCCFG(ccfg, codeFile, generator, filePath,debug)
-    console.log(codeFile)
     if (!fs.existsSync(data.destination)) {
         fs.mkdirSync(data.destination, { recursive: true });
     }

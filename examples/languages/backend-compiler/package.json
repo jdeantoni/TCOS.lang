@@ -19,23 +19,28 @@
   "exports": {
     "./compilerBackend": {
       "import": "./dist/compilerBackend.js",
-      "require": "./dist/compilerBackend.js"
+      "require": "./dist/compilerBackend.js",
+      "types": "./dist/compilerBackend.d.ts"
     },
     "./GeneratorInterface": {
       "import": "./dist/generatorInterface.js",
-      "require": "./dist/generatorInterface.js"
+      "require": "./dist/generatorInterface.js",
+      "types": "./dist/generatorInterface.d.ts"
     },
     "./cppGenerator": {
       "import": "./dist/cppGenerator.js",
-      "require": "./dist/cppGenerator.js"
+      "require": "./dist/cppGenerator.js",
+      "types": "./dist/cppGenerator.d.ts"
     },
     "./jsGenerator": {
       "import": "./dist/jsGenerator.js",
-      "require": "./dist/jsGenerator.js"
+      "require": "./dist/jsGenerator.js",
+      "types": "./dist/jsGenerator.d.ts"
     },
     "./pythonGenerator": {
       "import": "./dist/cppGenerator.js",
-      "require": "./dist/cppGenerator.js"
+      "require": "./dist/cppGenerator.js",
+      "types": "./dist/cppGenerator.d.ts"
     }
   },
   "scripts": {
