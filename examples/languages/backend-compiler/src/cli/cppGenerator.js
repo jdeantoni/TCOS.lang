@@ -2,12 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CppGenerator = void 0;
 class CppGenerator {
-    isDebug;
+    debug;
     constructor(debug) {
-        this.isDebug = debug;
+        this.debug = debug;
     }
     setDebug(debug) {
-        this.isDebug = debug;
+        this.debug = debug;
     }
     nameFile(filename) {
         return `${filename}.cpp`;
@@ -41,7 +41,7 @@ class CppGenerator {
     createFunction(fname, params, returnType, insideFunction) {
         let res = [];
         res.push(returnType + " function" + fname + `(${params.map(p => p.toString()).join(", ")}){\n`);
-        if (this.isDebug) {
+        if (this.debug) {
             res.push(`std::cout << "\tfunction${fname} started" << std::endl;\n`);
         }
         for (let i = 0; i < insideFunction.length; i++) {
@@ -69,7 +69,7 @@ class CppGenerator {
     createIf(guards, insideOfIf) {
         let createIfString = [];
         createIfString.push("if (" + guards.join(" && ") + "){\n");
-        if (this.isDebug) {
+        if (this.debug) {
             createIfString.push(`std::cout << "(${guards.join(" && ")}) is TRUE" << std::endl;\n`);
         }
         insideOfIf.forEach(element => {
@@ -81,7 +81,7 @@ class CppGenerator {
     createAndOpenThread(uid, insideThreadCode) {
         let threadCode = [];
         threadCode = [...threadCode, `std::thread thread${uid}([&](){\n`];
-        if (this.isDebug) {
+        if (this.debug) {
             threadCode.push(`std::cout << "thread${uid} started" << std::endl;\n`);
         }
         for (let i = 0; i < insideThreadCode.length; i++) {

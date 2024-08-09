@@ -4,13 +4,13 @@ import { TypedElement } from "../../../CCFG/src/ccfglib";
 
 
 export class PythonGenerator implements IGenerator {
-    isDebug: boolean;
+    debug: boolean;
 
-    constructor(debug: boolean) {
-        this.isDebug = debug;
+    constructor(debug: boolean = false) {
+        this.debug = debug;
     }
     setDebug(debug: boolean): void {
-        this.isDebug = debug;
+        this.debug = debug;
     }
     
     goToFlag(codeFile: CompositeGeneratorNode, queueUID: number): string[] {
@@ -62,7 +62,7 @@ export class PythonGenerator implements IGenerator {
     createFunction( fname: string, params: TypedElement[], returnType: string,insideFunction:string[]): string[] {
         let res:string[] = []
         res.push(`def function${fname}(${params.map(p => (p as TypedElement).name).join(", ")}): \n`)
-        if (this.isDebug){
+        if (this.debug){
             res.push(`\tprint("\tfunction${fname} started") \n`)
         }
         for (let i = 0; i < insideFunction.length; i++) {
@@ -76,7 +76,7 @@ export class PythonGenerator implements IGenerator {
         for (let i = 0; i < insideMain.length; i++) {
             res.push("\t"+insideMain[i])
         }
-        if (this.isDebug){
+        if (this.debug){
             res.push(`\tfor v in sigma:\n\t\tprint(str(v)+" = " + str(sigma[v])) \n`)
         }
         return res
@@ -91,7 +91,7 @@ export class PythonGenerator implements IGenerator {
         let createIfString:string[] = []
 
         createIfString.push(`if ${guards.join(" and ")}: \n`);
-        if (this.isDebug){
+        if (this.debug){
             createIfString.push(`\tprint("(${guards.join(" and ")}) is TRUE") \n`)
         }
         insideOfIf.forEach(element => {
@@ -111,7 +111,7 @@ export class PythonGenerator implements IGenerator {
     }
     createAndOpenThread( uid: number,insideThreadCode:string[]): string[] {
         let res = [`def codeThread${uid}():\n`]
-        if (this.isDebug){
+        if (this.debug){
             res.push(`\tprint("thread${uid} started") \n`)
         }
         for (let i = 0; i < insideThreadCode.length; i++) {

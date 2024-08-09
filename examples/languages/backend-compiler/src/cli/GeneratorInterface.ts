@@ -2,7 +2,7 @@
 import { TypedElement } from "../../../CCFG/src/ccfglib";
 
 interface IGenerator {
-    isDebug: boolean;
+    debug: boolean;
     
 
     setDebug(debug:boolean): void;

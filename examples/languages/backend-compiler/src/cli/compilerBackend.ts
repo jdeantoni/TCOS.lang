@@ -200,7 +200,6 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, generator: IGenerator, vis
                         }
                     }
                 }
-               
             }
         }
 
@@ -309,7 +308,6 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, generator: IGenerator, vis
                     
 
     // from here --------------------------------
-                    
                     thisNodeCode = [...thisNodeCode, ...generator.createSynchronizer(syncUID)];
                 }
             }

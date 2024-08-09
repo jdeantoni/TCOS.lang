@@ -17,6 +17,7 @@ const verifyEqual = "verifyEqual"; //verifyEqual,varName1,varName2
 const addSleep = "addSleep"; //addSleep,duration
 let debug = false;
 function generatefromCCFG(ccfg, codeFile, generator, filePath, debug) {
+    console.log("generatefromCCG");
     doGenerateCode(codeFile, ccfg, debug, generator);
     return (0, langium_1.toString)(codeFile);
 }
@@ -37,7 +38,6 @@ function doGenerateCode(codeFile, ccfg, debug, generator) {
 }
 function compileFunctionDefs(ccfg, generator) {
     let res = [];
-    let functionsDefs = "";
     for (let node of ccfg.nodes) {
         // if(node.getType() == "ContainerNode"){
         //     functionsDefs += compileFunctionDefs((node as ContainerNode).internalccfg);
@@ -178,6 +178,7 @@ function visitAllNodes(ccfg, currentNode, generator, visitIsStarting = false) {
                                     thisNodeCode = [...thisNodeCode, ...generator.createLockingQueue(ptn.returnType, syncUID)];
                                 }
                                 else {
+                                    console.log("create THAT synch " + syncUID);
                                     thisNodeCode = [...thisNodeCode, ...generator.createSynchronizer(syncUID)];
                                 }
                             }

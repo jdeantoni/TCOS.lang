@@ -3,13 +3,13 @@ import { TypedElement } from "../../../CCFG/src/ccfglib";
 
 
 export class CppGenerator implements IGenerator {
-    isDebug: boolean;
+    debug: boolean;
 
-    constructor(debug: boolean) {
-        this.isDebug = debug;
+    constructor(debug: boolean = false) {
+        this.debug = debug;
     }
     setDebug(debug: boolean): void {
-        this.isDebug = debug;
+        this.debug = debug;
     }
     
     nameFile(filename: string): string {
@@ -45,7 +45,7 @@ export class CppGenerator implements IGenerator {
     createFunction( fname: string, params: TypedElement[], returnType: string,insideFunction:string[]): string[] {
         let res:string[] = []
         res.push(returnType + " function" + fname + `(${params.map(p => (p as TypedElement).toString()).join(", ")}){\n`)
-        if (this.isDebug){
+        if (this.debug){
             res.push(`std::cout << "\tfunction${fname} started" << std::endl;\n`)
         }
         for (let i = 0; i < insideFunction.length; i++) {
@@ -75,7 +75,7 @@ export class CppGenerator implements IGenerator {
         let createIfString:string[] = []
 
         createIfString.push("if (" + guards.join(" && ") + "){\n")
-        if(this.isDebug){
+        if(this.debug){
             createIfString.push(`std::cout << "(${guards.join(" && ")}) is TRUE" << std::endl;\n`)
         }
         insideOfIf.forEach(element => {
@@ -87,7 +87,7 @@ export class CppGenerator implements IGenerator {
     createAndOpenThread( uid: number,insideThreadCode:string[]): string[] {
         let threadCode:string[] = []
         threadCode = [...threadCode,`std::thread thread${uid}([&](){\n`]
-        if(this.isDebug){
+        if(this.debug){
             threadCode.push(`std::cout << "thread${uid} started" << std::endl;\n`)
         }
         for (let i = 0; i < insideThreadCode.length; i++) {
@@ -102,7 +102,7 @@ export class CppGenerator implements IGenerator {
         return [`LockingQueue<Void> queue${queueUID};\n`]
     }
     createLockingQueue( typeName: string, queueUID: number): string[] {
-        return [`LockingQueue<${typeName}> queue${queueUID};`]
+        return [`LockingQueue<${typeName}> queue${queueUID};\n`]
     }
     receiveFromQueue( queueUID: number, typeName: string, varName: string): string[] {
         return ["queue" + queueUID + ".waitAndPop("+varName+");\n"]

@@ -22,7 +22,6 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
     const services = createSimpleLServices(NodeFileSystem).SimpleL;
     const model = await extractAstNode<Model>(fileName, services);
 
-
     const data = extractDestinationAndName(fileName, opts.targetDirectory);
     
 

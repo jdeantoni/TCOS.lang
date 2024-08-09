@@ -2,9 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.JsGenerator = void 0;
 class JsGenerator {
-    isDebug = false;
+    debug = false;
     setDebug(debug) {
-        this.isDebug = debug;
+        this.debug = debug;
     }
     nameFile(filename) {
         return `${filename}.js`;
@@ -24,7 +24,7 @@ let sigma = new Map();
     createFunction(fname, params, returnType, insideFunction) {
         let res = [];
         res.push("async function function" + fname + `(${params.map(p => p.name).join(", ")}){\n`);
-        if (this.isDebug) {
+        if (this.debug) {
             res.push(`\tconsole.log("\tfunction${fname} started");\n`);
         }
         for (let i = 0; i < insideFunction.length; i++) {
@@ -39,7 +39,7 @@ let sigma = new Map();
         for (let i = 0; i < insideMain.length; i++) {
             res.push("\t" + insideMain[i]);
         }
-        if (this.isDebug) {
+        if (this.debug) {
             res.push(`\tfor (let v of sigma){\n`);
             res.push(`\t\tconsole.log(v[0]+" = " + v[1]);\n`);
             res.push(`\t}\n`);
@@ -56,7 +56,7 @@ let sigma = new Map();
     createIf(guards, insideOfIf) {
         let createIfString = [];
         createIfString.push("if (" + guards.join(" && ") + "){\n");
-        if (this.isDebug) {
+        if (this.debug) {
             createIfString.push(`\tconsole.log("(${guards.join(" && ")}) is TRUE");\n`);
         }
         insideOfIf.forEach(element => {
@@ -69,7 +69,7 @@ let sigma = new Map();
         let threadCode = [];
         threadCode = [...threadCode, `async function thread${uid}(){
             `];
-        if (this.isDebug) {
+        if (this.debug) {
             threadCode.push(`\tconsole.log("thread${uid} started");\n`);
         }
         for (let i = 0; i < insideThreadCode.length; i++) {

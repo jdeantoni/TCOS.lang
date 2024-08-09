@@ -35,6 +35,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
         console.log("debug mode: " + debug)
     }
 
+
     globalCCFG: CCFG = new CCFG();
 
   
@@ -45,6 +46,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
             }
             node = node.ref
         }
+        
         if(node.$type == "Model"){
             return this.createModelLocalCCFG(node as Model);
         }

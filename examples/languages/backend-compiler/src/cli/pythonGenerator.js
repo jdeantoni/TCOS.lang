@@ -2,12 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PythonGenerator = void 0;
 class PythonGenerator {
-    isDebug;
+    debug;
     constructor(debug) {
-        this.isDebug = debug;
+        this.debug = debug;
     }
     setDebug(debug) {
-        this.isDebug = debug;
+        this.debug = debug;
     }
     goToFlag(codeFile, queueUID) {
         throw new Error("Method not implemented.");
@@ -52,7 +52,7 @@ class PythonGenerator {
     createFunction(fname, params, returnType, insideFunction) {
         let res = [];
         res.push(`def function${fname}(${params.map(p => p.name).join(", ")}): \n`);
-        if (this.isDebug) {
+        if (this.debug) {
             res.push(`\tprint("\tfunction${fname} started") \n`);
         }
         for (let i = 0; i < insideFunction.length; i++) {
@@ -66,7 +66,7 @@ class PythonGenerator {
         for (let i = 0; i < insideMain.length; i++) {
             res.push("\t" + insideMain[i]);
         }
-        if (this.isDebug) {
+        if (this.debug) {
             res.push(`\tfor v in sigma:\n\t\tprint(str(v)+" = " + str(sigma[v])) \n`);
         }
         return res;
@@ -81,7 +81,7 @@ class PythonGenerator {
     createIf(guards, insideOfIf) {
         let createIfString = [];
         createIfString.push(`if ${guards.join(" and ")}: \n`);
-        if (this.isDebug) {
+        if (this.debug) {
             createIfString.push(`\tprint("(${guards.join(" and ")}) is TRUE") \n`);
         }
         insideOfIf.forEach(element => {
@@ -100,7 +100,7 @@ class PythonGenerator {
     }
     createAndOpenThread(uid, insideThreadCode) {
         let res = [`def codeThread${uid}():\n`];
-        if (this.isDebug) {
+        if (this.debug) {
             res.push(`\tprint("thread${uid} started") \n`);
         }
         for (let i = 0; i < insideThreadCode.length; i++) {

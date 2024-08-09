@@ -4,10 +4,10 @@ import { TypedElement } from "../../../CCFG/src/ccfglib.js";
 
 export class JsGenerator implements IGenerator {
 
-    isDebug: boolean = false;
+    debug: boolean = false;
 
-    setDebug(debug: boolean): void {
-        this.isDebug = debug;
+    setDebug(debug: boolean = false): void {
+        this.debug = debug;
     }
     
     nameFile(filename: string): string {
@@ -30,7 +30,7 @@ let sigma = new Map();
         let res:string[] = []
         res.push("async function function" + fname + `(${params.map(p => (p as TypedElement).name).join(", ")}){\n`)
 
-        if (this.isDebug){
+        if (this.debug){
             res.push(`\tconsole.log("\tfunction${fname} started");\n`)
         }
         for (let i = 0; i < insideFunction.length; i++) {
@@ -45,7 +45,7 @@ let sigma = new Map();
         for (let i = 0; i < insideMain.length; i++) {
             res.push("\t"+insideMain[i])
         }
-        if (this.isDebug){
+        if (this.debug){
             res.push(`\tfor (let v of sigma){\n`)
             res.push(`\t\tconsole.log(v[0]+" = " + v[1]);\n`)
             res.push(`\t}\n`)
@@ -64,7 +64,7 @@ let sigma = new Map();
         let createIfString:string[] = []
 
         createIfString.push("if (" + guards.join(" && ") + "){\n")
-        if (this.isDebug){
+        if (this.debug){
             createIfString.push(`\tconsole.log("(${guards.join(" && ")}) is TRUE");\n`)
         }
         insideOfIf.forEach(element => {
@@ -78,7 +78,7 @@ let sigma = new Map();
         let threadCode:string[] = []
         threadCode = [...threadCode,`async function thread${uid}(){
             `]
-        if (this.isDebug){
+        if (this.debug){
             threadCode.push(`\tconsole.log("thread${uid} started");\n`)
         }
         for (let i = 0; i < insideThreadCode.length; i++) {
