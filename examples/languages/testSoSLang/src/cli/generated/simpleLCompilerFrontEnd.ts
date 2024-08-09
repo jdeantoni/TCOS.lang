@@ -1,7 +1,7 @@
 
 import fs from 'fs';
 import { AstNode, Reference, isReference, streamAst } from "langium";
-import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole} from "../../ccfg/ccfglib.js";
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole} from "ccfg";
 import { Model,Bloc,ParallelBloc,Variable,VarRef,If,Assignment,Conjunction,Plus,BooleanConst,While,PeriodicBloc,FunctionCall,FunctionDef } from "../../language-server/generated/ast.js";
 
 var debug = false
@@ -32,7 +32,9 @@ export interface CompilerFrontEnd {
 export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
     constructor(debugMode: boolean = false){ 
         debug = debugMode
+        console.log("debug mode: " + debug)
     }
+
 
     globalCCFG: CCFG = new CCFG();
 
@@ -44,6 +46,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
             }
             node = node.ref
         }
+        
         if(node.$type == "Model"){
             return this.createModelLocalCCFG(node as Model);
         }

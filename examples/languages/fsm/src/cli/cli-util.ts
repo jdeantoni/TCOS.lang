@@ -37,7 +37,7 @@ export async function extractAstNode<T extends AstNode>(fileName: string, servic
     return (await extractDocument(fileName, services)).parseResult?.value as T;
 }
 
-interface FilePathData {
+export interface FilePathData {
     destination: string,
     name: string
 }

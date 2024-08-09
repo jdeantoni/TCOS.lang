@@ -3,15 +3,20 @@ import { Command } from 'commander';
 import { FSMModel } from '../language-server/generated/ast';
 import { FiniteStateMachineLanguageMetaData } from '../language-server/generated/module';
 import { createFiniteStateMachineServices } from '../language-server/finite-state-machine-module';
-import { extractAstNode } from './cli-util';
-import { generateDot } from './generator';
+import { extractAstNode, extractDestinationAndName } from './cli-util';
+import { generateDot } from './generatorCCFGDot';
 import { NodeFileSystem } from 'langium/node';
 
 export const generateAction = async (fileName: string, opts: GenerateOptions): Promise<void> => {
     const services = createFiniteStateMachineServices(NodeFileSystem).FiniteStateMachine;
     const model = await extractAstNode<FSMModel>(fileName, services);
-    const generatedFilePath = generateDot(model, fileName, opts.destination);
-    console.log(chalk.green(`Dot file generated successfully: ${generatedFilePath}`));
+    const data = extractDestinationAndName(fileName, opts.destination);
+    const ccfg = generateDot(model, data);
+    console.log(chalk.green(`Dot file generated successfully: ${data.destination}/${data.name}.dot`));
+
+
+
+    
 };
 
 export type GenerateOptions = {

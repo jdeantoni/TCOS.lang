@@ -1,13 +1,12 @@
-import { CompositeGeneratorNode } from "langium";
 import { IGenerator } from "./GeneratorInterface";
-import { TypedElement } from "../ccfg/ccfglib";
+import { TypedElement } from "ccfg";
 
 
 export class JsGenerator implements IGenerator {
 
     debug: boolean = false;
 
-    setDebug(debug: boolean): void {
+    setDebug(debug: boolean = false): void {
         this.debug = debug;
     }
     

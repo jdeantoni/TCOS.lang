@@ -1,35 +1,35 @@
 digraph G {
-  "0" [label="0[]:Step_starts" shape="ellipse" ];
-  "1" [label="1[]:Step_terminates" shape="ellipse" ];
-  "36" [label="36[]:Step_starts" shape="ellipse" ];
-  "37" [label="37[]:Step_terminates" shape="ellipse" ];
-  "3" [label="3[]:Step_starts:
+  "0" [label="0[]:starts" shape="ellipse" ];
+  "1" [label="1[]:terminates" shape="ellipse" ];
+  "36" [label="36[]:starts" shape="ellipse" ];
+  "37" [label="37[]:terminates" shape="ellipse" ];
+  "3" [label="3[]:starts:
 void functioninit3Variable(){
 createGlobalVar,int,Variable2_0_2_10currentValue
 }" shape="ellipse" ];
-  "4" [label="4[]:Step_terminates" shape="ellipse" ];
-  "5" [label="5[]:Step:
+  "4" [label="4[]:terminates" shape="ellipse" ];
+  "5" [label="5[]:undefined:
 void function5initializeVar(){
 createVar,int,Variable2_0_2_101387
 assignVar,Variable2_0_2_101387,1
 setGlobalVar,int,Variable2_0_2_10currentValue,Variable2_0_2_101387
 }" shape="ellipse" ];
-  "6" [label="6[]:Step_starts:
+  "6" [label="6[]:starts:
 void functioninit6Variable(){
 createGlobalVar,int,Variable4_0_4_10currentValue
 }" shape="ellipse" ];
-  "7" [label="7[]:Step_terminates" shape="ellipse" ];
-  "8" [label="8[]:Step:
+  "7" [label="7[]:terminates" shape="ellipse" ];
+  "8" [label="8[]:undefined:
 void function8initializeVar(){
 createVar,int,Variable4_0_4_101387
 assignVar,Variable4_0_4_101387,3
 setGlobalVar,int,Variable4_0_4_10currentValue,Variable4_0_4_101387
 }" shape="ellipse" ];
-  "9" [label="9[]:Step_starts" shape="ellipse" ];
-  "10" [label="10[]:Step_terminates" shape="ellipse" ];
-  "14" [label="14[15]:Choice" shape="diamond" ];
-  "15" [label="15[14]:OrJoin" shape="invtriangle" ];
-  "16" [label="16[]:Step_starts:
+  "9" [label="9[]:starts" shape="ellipse" ];
+  "10" [label="10[]:terminates" shape="ellipse" ];
+  "14" [label="14[15]:undefined" shape="diamond" ];
+  "15" [label="15[14]:multipleSynchro" shape="invtriangle" ];
+  "16" [label="16[]:starts:
 int function16accessVarRef(){
 createVar,int,VarRef8_4_8_61593
 setVarFromGlobal,int,VarRef8_4_8_61593,Variable2_0_2_10currentValue
@@ -37,32 +37,32 @@ createVar,int,VarRef8_4_8_6terminates
 assignVar,VarRef8_4_8_6terminates,VarRef8_4_8_61593
 return,VarRef8_4_8_6terminates
 }" shape="ellipse" ];
-  "17" [label="17[]:Step_terminates" shape="ellipse" ];
-  "18" [label="18[]:Step_starts" shape="ellipse" ];
-  "19" [label="19[]:Step_terminates" shape="ellipse" ];
-  "27" [label="27[]:Step_starts" shape="ellipse" ];
-  "28" [label="28[]:Step_terminates" shape="ellipse" ];
-  "41" [label="41[]:Step_starts" shape="ellipse" ];
-  "42" [label="42[]:Step_terminates" shape="ellipse" ];
-  "44" [label="44[]:Step_starts" shape="ellipse" ];
-  "45" [label="45[]:Step_terminates" shape="ellipse" ];
-  "21" [label="21[]:Step_starts" shape="ellipse" ];
-  "22" [label="22[]:Step_terminates" shape="ellipse" ];
-  "24" [label="24[]:Step:
+  "17" [label="17[]:terminates" shape="ellipse" ];
+  "18" [label="18[]:starts" shape="ellipse" ];
+  "19" [label="19[]:terminates" shape="ellipse" ];
+  "27" [label="27[]:starts" shape="ellipse" ];
+  "28" [label="28[]:terminates" shape="ellipse" ];
+  "41" [label="41[]:starts" shape="ellipse" ];
+  "42" [label="42[]:terminates" shape="ellipse" ];
+  "44" [label="44[]:starts" shape="ellipse" ];
+  "45" [label="45[]:terminates" shape="ellipse" ];
+  "21" [label="21[]:starts" shape="ellipse" ];
+  "22" [label="22[]:terminates" shape="ellipse" ];
+  "24" [label="24[]:undefined:
 void function24executeAssignment2(int resRight){
 createVar,int,Assignment9_4_9_112534
 assignVar,Assignment9_4_9_112534,resRight
 setGlobalVar,int,Variable2_0_2_10currentValue,Assignment9_4_9_112534
 }" shape="ellipse" ];
-  "30" [label="30[]:Step_starts" shape="ellipse" ];
-  "31" [label="31[]:Step_terminates" shape="ellipse" ];
-  "33" [label="33[]:Step:
+  "30" [label="30[]:starts" shape="ellipse" ];
+  "31" [label="31[]:terminates" shape="ellipse" ];
+  "33" [label="33[]:undefined:
 void function33executeAssignment2(int resRight){
 createVar,int,Assignment11_4_11_92534
 assignVar,Assignment11_4_11_92534,resRight
 setGlobalVar,int,Variable4_0_4_10currentValue,Assignment11_4_11_92534
 }" shape="ellipse" ];
-  "25" [label="25[]:Step_starts:
+  "25" [label="25[]:starts:
 int function25accessVarRef(){
 createVar,int,VarRef9_9_9_111593
 setVarFromGlobal,int,VarRef9_9_9_111593,Variable4_0_4_10currentValue
@@ -70,8 +70,8 @@ createVar,int,VarRef9_9_9_11terminates
 assignVar,VarRef9_9_9_11terminates,VarRef9_9_9_111593
 return,VarRef9_9_9_11terminates
 }" shape="ellipse" ];
-  "26" [label="26[]:Step_terminates" shape="ellipse" ];
-  "34" [label="34[]:Step_starts:
+  "26" [label="26[]:terminates" shape="ellipse" ];
+  "34" [label="34[]:starts:
 int function34accessVarRef(){
 createVar,int,VarRef11_7_11_91593
 setVarFromGlobal,int,VarRef11_7_11_91593,Variable2_0_2_10currentValue
@@ -79,7 +79,7 @@ createVar,int,VarRef11_7_11_9terminates
 assignVar,VarRef11_7_11_9terminates,VarRef11_7_11_91593
 return,VarRef11_7_11_9terminates
 }" shape="ellipse" ];
-  "35" [label="35[]:Step_terminates" shape="ellipse" ];
+  "35" [label="35[]:terminates" shape="ellipse" ];
   "0" -> "36" [label=""];
   "37" -> "1" [label=""];
   "36" -> "3" [label=""];

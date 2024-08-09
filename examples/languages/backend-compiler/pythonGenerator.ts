@@ -1,20 +1,27 @@
 import { CompositeGeneratorNode } from "langium";
 import { IGenerator } from "./GeneratorInterface";
-import { TypedElement } from "../ccfg/ccfglib";
+import { TypedElement } from "ccfg";
 
 
 export class PythonGenerator implements IGenerator {
+    debug: boolean;
 
-    debug: boolean = false;
-
+    constructor(debug: boolean = false) {
+        this.debug = debug;
+    }
     setDebug(debug: boolean): void {
         this.debug = debug;
     }
-
-
+    
+    goToFlag(codeFile: CompositeGeneratorNode, queueUID: number): string[] {
+        throw new Error("Method not implemented.");
+    }
+    
     setLoopFlag( queueUID: number): string[] {
         return [`flag${queueUID} = True\n`];
     }
+
+
     createLoop( uid: number, insideLoop: string[]): string[] {
         let res = [`while flag${uid} == True: \n`,`\tflag${uid} = False \n`];
         for (let i = 0; i < insideLoop.length; i++) {

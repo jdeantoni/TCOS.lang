@@ -1,38 +1,52 @@
-import { CompositeGeneratorNode } from "langium";
 import { IGenerator } from "./GeneratorInterface";
-import { TypedElement } from "../ccfg/ccfglib";
+import { TypedElement } from "ccfg";
 
 
-export class JsGenerator implements IGenerator {
+export class CppGenerator implements IGenerator {
+    debug: boolean;
 
-    debug: boolean = false;
-
+    constructor(debug: boolean = false) {
+        this.debug = debug;
+    }
     setDebug(debug: boolean): void {
         this.debug = debug;
     }
     
     nameFile(filename: string): string {
-        return `${filename}.js`;
+        return `${filename}.cpp`;
     }
-    createBase(): string[] {  
-        let res:string[] = []  
-
+    createBase(): string[] {    
+        let res:string[] = []
         res.push(`
-class Void{}
-let sigma = new Map();
-
-`);// global variables
+        #include <string>
+        #include <unordered_map>
+        #include <thread>
+        #include <mutex>
+        #include <iostream>
+        #include <chrono>
+        #include "../utils/LockingQueue.hpp"
+        
+        using namespace std::chrono_literals;
+        `)  // imports
+        
+        res.push(`
+        class Void{
+        };
+        
+        std::unordered_map<std::string, void*> sigma;
+        std::mutex sigma_mutex;  // protects sigma
+        
+        `);// global variables
         return res
     }
     endFile():string[] {
-        return [`main();\n`]
+        return []
     }
     createFunction( fname: string, params: TypedElement[], returnType: string,insideFunction:string[]): string[] {
         let res:string[] = []
-        res.push("async function function" + fname + `(${params.map(p => (p as TypedElement).name).join(", ")}){\n`)
-
+        res.push(returnType + " function" + fname + `(${params.map(p => (p as TypedElement).toString()).join(", ")}){\n`)
         if (this.debug){
-            res.push(`\tconsole.log("\tfunction${fname} started");\n`)
+            res.push(`std::cout << "\tfunction${fname} started" << std::endl;\n`)
         }
         for (let i = 0; i < insideFunction.length; i++) {
             res.push("\t"+insideFunction[i])
@@ -42,31 +56,27 @@ let sigma = new Map();
     }
     createMainFunction(insideMain:string[]): string[] {
         let res:string[] = []
-        res.push("async function main(){\n\t");
+        res.push("int main(){\n\t")
         for (let i = 0; i < insideMain.length; i++) {
             res.push("\t"+insideMain[i])
         }
-        if (this.debug){
-            res.push(`\tfor (let v of sigma){\n`)
-            res.push(`\t\tconsole.log(v[0]+" = " + v[1]);\n`)
-            res.push(`\t}\n`)
-        }
+        res.push("for(auto entry : sigma){ std::cout << entry.first << \" : \" << *((int*)entry.second) << std::endl;}\n");
         res.push("}\n")
         return res
     }
     createFuncCall( fname: string, params: string[], typeName: string): string[] {
         if (typeName == "void"){
-            return [`await function${fname}(${params.join(", ")});\n`]
+            return [`function${fname}(${params.join(", ")});\n`]
         }
         
-        return ["let result"+fname+" = await function"+fname + `(${params.join(", ")});\n`]
+        return [typeName+ " result"+fname+" = function"+fname + `(${params.join(", ")});\n`]
     }
     createIf( guards: string[],insideOfIf:string[]): string[] {
         let createIfString:string[] = []
 
         createIfString.push("if (" + guards.join(" && ") + "){\n")
-        if (this.debug){
-            createIfString.push(`\tconsole.log("(${guards.join(" && ")}) is TRUE");\n`)
+        if(this.debug){
+            createIfString.push(`std::cout << "(${guards.join(" && ")}) is TRUE" << std::endl;\n`)
         }
         insideOfIf.forEach(element => {
             createIfString.push("\t"+element)
@@ -74,58 +84,53 @@ let sigma = new Map();
         createIfString.push("}\n")
         return createIfString
     }
-
     createAndOpenThread( uid: number,insideThreadCode:string[]): string[] {
         let threadCode:string[] = []
-        threadCode = [...threadCode,`async function thread${uid}(){
-            `]
-        if (this.debug){
-            threadCode.push(`\tconsole.log("thread${uid} started");\n`)
+        threadCode = [...threadCode,`std::thread thread${uid}([&](){\n`]
+        if(this.debug){
+            threadCode.push(`std::cout << "thread${uid} started" << std::endl;\n`)
         }
         for (let i = 0; i < insideThreadCode.length; i++) {
-            threadCode = [...threadCode, "\t" + insideThreadCode[i]];
+            threadCode = [...threadCode, "\t"+insideThreadCode[i]]
         }
-        threadCode = [...threadCode,`}\n`]
-        threadCode = [...threadCode, `thread${uid}();\n`]
+        threadCode = [...threadCode,`});\n`, `thread${uid}.detach();\n`]
         return threadCode
+
+
     }
     createQueue( queueUID: number): string[] {
-        return [`var queue${queueUID} = [];\n`]
+        return [`LockingQueue<Void> queue${queueUID};\n`]
     }
     createLockingQueue( typeName: string, queueUID: number): string[] {
-        return [`var queue${queueUID} = [];\n`]
+        return [`LockingQueue<${typeName}> queue${queueUID};\n`]
     }
     receiveFromQueue( queueUID: number, typeName: string, varName: string): string[] {
-        return [`{\n`,`${varName} = queue${queueUID}.pop();\n`,`\twhile (${varName} == undefined){\n`,`\t\tawait new Promise(resolve => setTimeout(resolve, 100));\n`,`\t\t${varName} = queue${queueUID}.pop();\n`,`\t}\n`,`}\n`]
-
+        return ["queue" + queueUID + ".waitAndPop("+varName+");\n"]
     }
     sendToQueue( queueUID: number, typeName: string, varName: string): string[] {
-        return [`queue${queueUID}.push(${varName});\n`]
-    }
-    createSynchronizer( synchUID: number): string[] {
-        return [`var sync${synchUID} = [];\n`]
-    }
-    activateSynchronizer( synchUID: number): string[] {
-        return [`sync${synchUID}.push(42);\n`]
-    }
-    waitForSynchronizer( synchUID: number): string[] {
-        return [`{\n`,`\tfakeVar${synchUID} = sync${synchUID}.pop();\n`,`\twhile (fakeVar${synchUID} == undefined){\n`,`\t\tawait new Promise(resolve => setTimeout(resolve, 100));\n`,`\t\tfakeVar${synchUID} = sync${synchUID}.pop();\n`,`\t}\n`,`}\n`]
+        return ["queue" + queueUID + ".push(" + varName + ");\n"]
 
     }
+    createSynchronizer( synchUID: number): string[] {
+        return [`bool flag${synchUID} = true;\n`,`LockingQueue<Void> synch${synchUID};\n`]
+    }
+    activateSynchronizer( synchUID: number): string[] {
+        return ["{Void fakeParam"+synchUID+";\n " ,"synch" + synchUID + ".push(fakeParam"+synchUID+");}\n"]
+    }
+    waitForSynchronizer( synchUID: number): string[] {
+        return ["{Void joinPopped"+synchUID+";\n " ,"synch" + synchUID + ".waitAndPop(joinPopped"+synchUID+");}\n"]
+    }
     createLoop( uid:number, insideLoop: string[]): string[] {
-        let res = []
-        res.push(`var flag${uid} = true;\n`)
-        res.push(`while(flag${uid}){\n`)
-        res.push(`\tflag${uid} = false;\n`)
+        let res = ["flag"+uid+"= true;\nwhile (flag"+uid+ " == true){\n\tflag"+uid+" = false;\n"]
         for (let i = 0; i < insideLoop.length; i++) {
             res.push("\t"+insideLoop[i])
         }
-        res.push(`}\n`)
+        res.push("}\n")
         return res
     }
-
+    
     setLoopFlag( uid:number): string[] {
-        return [`flag${uid} = true;\n`]
+        return ["flag"+uid+ " = true;\n"]
     }
     createEqualsVerif(firstValue: string, secondValue: string): string {
         return firstValue + " == " + secondValue
@@ -137,22 +142,21 @@ let sigma = new Map();
         return ["return " + varName + ";\n"]
     }
     createVar( type: string, varName: string): string[] {
-        return ["let " + varName + ";\n"]
-
+        return [type + " " + varName + ";\n"]
     }
     createGlobalVar( type: string, varName: string): string[] {
-        return [`sigma.set("${varName}", undefined);\n`]
+        return [`{const std::lock_guard<std::mutex> lock(sigma_mutex);`,"sigma[\"" + varName + "\"] = new "+type+"();}\n"]
     }
     setVarFromGlobal( type: string, varName: string, value: string): string[] {
-        return [`${varName} = sigma.get("${value}");\n`]
+        return [`{const std::lock_guard<std::mutex> lock(sigma_mutex);`,varName + " = *(" + type + "*)sigma[\"" + value + "\"];}\n"]
     }
     setGlobalVar( type: string, varName: string, value: string): string[] {
-        return [`sigma.set("${varName}", ${value});\n`]
+        return [`{const std::lock_guard<std::mutex> lock(sigma_mutex);`,"*(("+type+"*)sigma[\"" + varName + "\"]) = "+value +";}\n"]
     }
     operation( varName: string, n1: string, op: string, n2: string): string[] {
         return [varName + " = " + n1 + " " + op + " " + n2 + ";\n"]
     }
     createSleep( duration: string): string[] {
-        return ["await new Promise(resolve => setTimeout(resolve, " + duration + "));\n"]
+        return [`std::this_thread::sleep_for(${duration}ms);\n`]
     }
 }
