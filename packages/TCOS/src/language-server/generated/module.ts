@@ -9,7 +9,7 @@ import { StructuralOperationalSemanticsGrammar } from './grammar.js';
 
 export const StructuralOperationalSemanticsLanguageMetaData = {
     languageId: 'structural-operational-semantics',
-    fileExtensions: ['.sos'],
+    fileExtensions: ['.sos', '.tcos'],
     caseInsensitive: false
 } as const satisfies LanguageMetaData;
 

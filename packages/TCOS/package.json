@@ -1,8 +1,8 @@
 {
-    "name": "sos",
-    "displayName": "sos",
-    "description": "Please enter a brief description here",
-    "version": "0.0.1",
+    "name": "tcos",
+    "displayName": "tcos",
+    "description": "TCOS is a meta langage to specify the behavioural semantics of programming languages",
+    "version": "1.0.0",
     "engines": {
         "vscode": "^1.56.0"
     },
@@ -15,10 +15,13 @@
                 "id": "structural-operational-semantics",
                 "aliases": [
                     "StructuralOperationalSemantics",
-                    "structural-operational-semantics"
+                    "structural-operational-semantics",
+                    "tcos",
+                    "TimedAndConcurrentOperationalSemantics"
                 ],
                 "extensions": [
-                    ".sos"
+                    ".sos",
+                    ".tcos"
                 ],
                 "configuration": "./language-configuration.json"
             }

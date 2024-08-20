@@ -1,20 +1,19 @@
 {
   "name": "backend-compiler",
   "displayName": "backend-compiler",
-  "description": "Please enter a brief description here",
-  "version": "0.0.1",
+  "description": "This is the backend interface that compiles a CCFG into executable code.",
+  "version": "1.0.0",
   "engines": {
     "vscode": "^1.56.0"
   },
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "GeneratorInterface.ts",
+  "types": "dist/GeneratorInterface.d.ts",
   "categories": [
     "Programming Languages"
   ],
   "files": [
-    "bin",
-    "out",
-    "src"
+    ".",
+    "dist"
   ],
   "exports": {
     "./compilerBackend": {
@@ -23,9 +22,9 @@
       "types": "./dist/compilerBackend.d.ts"
     },
     "./GeneratorInterface": {
-      "import": "./dist/generatorInterface.js",
-      "require": "./dist/generatorInterface.js",
-      "types": "./dist/generatorInterface.d.ts"
+      "import": "./dist/GeneratorInterface.js",
+      "require": "./dist/GeneratorInterface.js",
+      "types": "./dist/GeneratorInterface.d.ts"
     },
     "./cppGenerator": {
       "import": "./dist/cppGenerator.js",
@@ -38,9 +37,9 @@
       "types": "./dist/jsGenerator.d.ts"
     },
     "./pythonGenerator": {
-      "import": "./dist/cppGenerator.js",
-      "require": "./dist/cppGenerator.js",
-      "types": "./dist/cppGenerator.d.ts"
+      "import": "./dist/pythonGenerator.js",
+      "require": "./dist/pythonGenerator.js",
+      "types": "./dist/pythonGenerator.d.ts"
     }
   },
   "scripts": {
@@ -54,7 +53,8 @@
     "langium": "~1.0.0",
     "vscode-languageclient": "^8.0.2",
     "vscode-languageserver": "^8.0.2",
-    "vscode-uri": "^3.0.2"
+    "vscode-uri": "^3.0.2",
+    "ccfg": "^1.0.0"
   },
   "devDependencies": {
     "@types/node": "^14.17.3",

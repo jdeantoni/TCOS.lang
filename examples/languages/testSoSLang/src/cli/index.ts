@@ -88,7 +88,7 @@ export default function(): void {
         .option('-d, --debug ', 'ask for debugging message during execution of the generated code')
         .option('--python', 'compile into python', 'output.cpp')
         .option('--js', 'compile into js', 'output.cpp')
-        .description('generates the concurrent control flow graph representation of the given source file')
+        .description('generates the concurrent control flow graph representation and the executable code of the given source file')
         .action(generateAction);
 
     program.parse(process.argv);
@@ -96,8 +96,8 @@ export default function(): void {
 
 
 function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model,debug:boolean): CCFG {
-    var compilerFrontEnd = new SimpleLCompilerFrontEnd();
-    var ccfg = compilerFrontEnd.generateCCFG(model,debug);
+    var compilerFrontEnd = new SimpleLCompilerFrontEnd(debug);
+    var ccfg = compilerFrontEnd.generateCCFG(model);
    
     ccfg.addSyncEdge()
 

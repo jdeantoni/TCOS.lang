@@ -34,7 +34,7 @@ function doGenerateCode(codeFile, ccfg, debug, generator) {
     allCode = [...allCode, ...generator.createMainFunction(insideMain)];
     allCode = [...allCode, ...generator.endFile()];
     codeFile.append(allCode.join(""));
-    console.log(codeFile);
+    //console.log(codeFile);
 }
 function compileFunctionDefs(ccfg, generator) {
     let res = [];
