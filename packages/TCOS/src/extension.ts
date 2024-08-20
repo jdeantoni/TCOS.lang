@@ -37,7 +37,7 @@ function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
         debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions }
     };
 
-    const fileSystemWatcher = vscode.workspace.createFileSystemWatcher('**/*.sos');
+    const fileSystemWatcher = vscode.workspace.createFileSystemWatcher('**/*.(sos|tcos)');
     context.subscriptions.push(fileSystemWatcher);
 
     // Options to control the language client

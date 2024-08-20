@@ -32,9 +32,7 @@ export interface CompilerFrontEnd {
 export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
     constructor(debugMode: boolean = false){ 
         debug = debugMode
-        console.log("debug mode: " + debug)
     }
-
 
     globalCCFG: CCFG = new CCFG();
 
@@ -46,7 +44,6 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
             }
             node = node.ref
         }
-        
         if(node.$type == "Model"){
             return this.createModelLocalCCFG(node as Model);
         }
@@ -907,7 +904,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
         return localCCFG;
     }
 
-    generateCCFG(root: Model, debug: boolean = false): CCFG {
+    generateCCFG(root: Model): CCFG {
 
         //pass 1: create local CCFGs for all nodes
         console.log("pass 1: create local CCFGs for all nodes")

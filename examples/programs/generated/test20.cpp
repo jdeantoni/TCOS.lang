@@ -211,10 +211,17 @@ int main(){
 	function8initializeVar();
 	functioninit9Variable();
 	function11initializeVar();
+	bool flag49 = true;
+	LockingQueue<Void> synch49;
+	bool flag115 = true;
+	LockingQueue<Void> synch115;
+	LockingQueue<bool> queue97;
+	LockingQueue<bool> queue98;
+	LockingQueue<int> queue24;
+	LockingQueue<int> queue64;
 	std::thread thread15([&](){
 		std::thread thread27([&](){
 			int result27accessVarRef = function27accessVarRef();
-			LockingQueue<int> queue24;
 			queue24.push(result27accessVarRef);
 		});
 		thread27.detach();
@@ -229,16 +236,14 @@ int main(){
 		queue24.waitAndPop(AndJoinPopped_24_1);
 		int result24finishPlus = function24finishPlus(AndJoinPopped_24_0, AndJoinPopped_24_1);
 		function18executeAssignment2(result24finishPlus);
-		bool flag115 = true;
-		LockingQueue<Void> synch115;
 		{Void fakeParam115;
  		synch115.push(fakeParam115);}
 	});
 	thread15.detach();
 	std::thread thread29([&](){
+		LockingQueue<int> queue38;
 		std::thread thread41([&](){
 			int result41accessVarRef = function41accessVarRef();
-			LockingQueue<int> queue38;
 			queue38.push(result41accessVarRef);
 		});
 		thread41.detach();
@@ -260,14 +265,11 @@ int main(){
 	{Void joinPopped115;
  	synch115.waitAndPop(joinPopped115);}
 	int result50accessVarRef = function50accessVarRef();
-	bool flag49 = true;
-	LockingQueue<Void> synch49;
 	int VarRef7_4_7_6terminate;
 	VarRef7_4_7_6terminate = result50accessVarRef;
 	if (VarRef7_4_7_6terminate == true){
 		std::thread thread67([&](){
 			int result67accessVarRef = function67accessVarRef();
-			LockingQueue<int> queue64;
 			queue64.push(result67accessVarRef);
 		});
 		thread67.detach();
@@ -286,9 +288,9 @@ int main(){
  		synch49.push(fakeParam49);}
 	}
 	if (VarRef7_4_7_6terminate == false){
+		LockingQueue<int> queue81;
 		std::thread thread84([&](){
 			int result84accessVarRef = function84accessVarRef();
-			LockingQueue<int> queue81;
 			queue81.push(result84accessVarRef);
 		});
 		thread84.detach();
@@ -310,15 +312,11 @@ int main(){
  	synch49.waitAndPop(joinPopped49);}
 	std::thread thread100([&](){
 		bool result100evalBooleanConst = function100evalBooleanConst();
-		bool flag98 = true;
-		LockingQueue<Void> synch98;
 		queue98.push(result100evalBooleanConst);
 		bool BooleanConst16_6_16_10terminate;
 		BooleanConst16_6_16_10terminate = result100evalBooleanConst;
 		if (BooleanConst16_6_16_10terminate == false){
 			bool result95evaluateConjunction2 = function95evaluateConjunction2();
-			bool flag97 = true;
-			LockingQueue<Void> synch97;
 			queue97.push(result95evaluateConjunction2);
 		}
 	});

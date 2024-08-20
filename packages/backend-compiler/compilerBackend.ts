@@ -41,7 +41,7 @@ function doGenerateCode(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: boo
     allCode = [...allCode, ...generator.createMainFunction(insideMain)];
     allCode = [...allCode, ...generator.endFile()];
     codeFile.append(allCode.join(""));
-    console.log(codeFile);
+    //console.log(codeFile);
 }
 
 

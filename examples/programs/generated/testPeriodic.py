@@ -6,31 +6,26 @@ returnQueue = LifoQueue()
 sigma: dict = {}
 sigma_mutex = threading.Lock()
 def functioninit3Variable(): 
-	print("	functioninit3Variable started") 
 	sigma_mutex.acquire()
 	sigma["Variable0_0_0_10currentValue"] = int()
 	sigma_mutex.release()
 def function5initializeVar(): 
-	print("	function5initializeVar started") 
 	
 	Variable0_0_0_101387 = 1 
 	sigma_mutex.acquire()
 	sigma["Variable0_0_0_10currentValue"] = Variable0_0_0_101387
 	sigma_mutex.release()
 def functioninit6Variable(): 
-	print("	functioninit6Variable started") 
 	sigma_mutex.acquire()
 	sigma["Variable1_0_1_10currentValue"] = int()
 	sigma_mutex.release()
 def function8initializeVar(): 
-	print("	function8initializeVar started") 
 	
 	Variable1_0_1_101387 = 0 
 	sigma_mutex.acquire()
 	sigma["Variable1_0_1_10currentValue"] = Variable1_0_1_101387
 	sigma_mutex.release()
 def function9periodicStart(): 
-	print("	function9periodicStart started") 
 	sigma_mutex.acquire()
 	sigma["PeriodicBloc3_0_5_3blocTrigger"] = int()
 	sigma_mutex.release()
@@ -38,17 +33,14 @@ def function9periodicStart():
 	sigma["PeriodicBloc3_0_5_3blocTrigger"] = 1000
 	sigma_mutex.release()
 def function35executeAssignment2(resRight): 
-	print("	function35executeAssignment2 started") 
 	
 	Assignment7_0_7_72534 = resRight 
 	sigma_mutex.acquire()
 	sigma["Variable1_0_1_10currentValue"] = Assignment7_0_7_72534
 	sigma_mutex.release()
 def functioninit44Timer(): 
-	print("	functioninit44Timer started") 
 	time.sleep(1000//1000) 
 def function36accessVarRef(): 
-	print("	function36accessVarRef started") 
 	
 	sigma_mutex.acquire()
 	VarRef7_5_7_71593 = sigma["Variable0_0_0_10currentValue"]
@@ -57,14 +49,12 @@ def function36accessVarRef():
 	VarRef7_5_7_7terminates = VarRef7_5_7_71593 
 	return VarRef7_5_7_7terminates 
 def function21executeAssignment2(resRight): 
-	print("	function21executeAssignment2 started") 
 	
 	Assignment4_4_4_162534 = resRight 
 	sigma_mutex.acquire()
 	sigma["Variable0_0_0_10currentValue"] = Assignment4_4_4_162534
 	sigma_mutex.release()
 def function27finishPlus(n2, n1): 
-	print("	function27finishPlus started") 
 	
 	Plus4_9_4_164397 = n1 
 	
@@ -75,7 +65,6 @@ def function27finishPlus(n2, n1):
 	Plus4_9_4_16terminates = Plus4_9_4_164396 
 	return Plus4_9_4_16terminates 
 def function30accessVarRef(): 
-	print("	function30accessVarRef started") 
 	
 	sigma_mutex.acquire()
 	VarRef4_13_4_151593 = sigma["Variable0_0_0_10currentValue"]
@@ -84,7 +73,6 @@ def function30accessVarRef():
 	VarRef4_13_4_15terminates = VarRef4_13_4_151593 
 	return VarRef4_13_4_15terminates 
 def function28accessVarRef(): 
-	print("	function28accessVarRef started") 
 	
 	sigma_mutex.acquire()
 	VarRef4_10_4_121593 = sigma["Variable0_0_0_10currentValue"]
@@ -107,16 +95,13 @@ def main():
 		functioninit44Timer(); 
 		queue27 = Queue() 
 		def codeThread15():
-			print("thread15 started") 
 			def codeThread30():
-				print("thread30 started") 
 				result30accessVarRef = function30accessVarRef(); 
 				queue27.put(result30accessVarRef) 
 			thread30 = threading.Thread(target=codeThread30) 
 			thread30.start() 
 			thread30.join() 
 			def codeThread28():
-				print("thread28 started") 
 				result28accessVarRef = function28accessVarRef(); 
 				queue27.put(result28accessVarRef) 
 			thread28 = threading.Thread(target=codeThread28) 
@@ -127,7 +112,9 @@ def main():
 			
 			AndJoinPopped_27_1 = queue27.get() 
 			result27finishPlus = function27finishPlus(AndJoinPopped_27_0, AndJoinPopped_27_1); 
-			function21executeAssignment2(result27finishPlus); 
+			function21executeAssignment2(result27finishPlus);
+			for v in sigma: 
+				print(v, sigma[v])
 		thread15 = threading.Thread(target=codeThread15) 
 		thread15.start() 
 		thread15.join() 

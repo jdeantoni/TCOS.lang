@@ -2,7 +2,8 @@
   "name": "structural-operational-semantics",
   "scopeName": "source.structural-operational-semantics",
   "fileTypes": [
-    ".sos"
+    ".sos",
+    ".tcos"
   ],
   "patterns": [
     {
