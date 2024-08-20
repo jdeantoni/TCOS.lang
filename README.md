@@ -104,6 +104,6 @@ note: the `--debug` function can be used with any compiler backend (c++, python 
 in the packages folder:
 
  * in the CCFG folder: `npm install` `npm run build` `npm link`
- * in the backend-compiler folder: `npm install` `npm link ccfg` `npm run build`
+ * in the backend-compiler folder: `npm install` `npm link ccfg` `npm run build` `npm link`
  * in the TCOS folder: `npm install` `npm link ccfg backend-compiler` `npm run build`
     
