@@ -3,28 +3,66 @@ import { Command } from 'commander';
 import { Model } from '../language-server/generated/ast';
 import { SimpleLLanguageMetaData } from '../language-server/generated/module';
 import { createSimpleLServices } from '../language-server/simple-l-module';
-import { extractAstNode } from './cli-util';
+import { extractAstNode, extractDestinationAndName } from './cli-util';
 import { NodeFileSystem } from 'langium/node';
-import { generatefromCCFG } from './compilerBackend';
-import { IGenerator } from './GeneratorInterface';
-import { PythonGenerator } from './pythonGenerator';
-import { CppGenerator } from './cppGenerator';
-import { JsGenerator } from './jsGenerator';
+import { generatefromCCFG } from 'backend-compiler/compilerBackend';
+import { CompositeGeneratorNode, toString } from 'langium';
+import path from 'path';
+import fs from 'fs';
+import { CCFG } from 'ccfg';
+import { SimpleLCompilerFrontEnd } from './generated/simpleLCompilerFrontEnd';
+import { IGenerator } from 'backend-compiler/GeneratorInterface';
+import { PythonGenerator } from 'backend-compiler/pythonGenerator';
+import { CppGenerator } from 'backend-compiler/cppGenerator';
+import { JsGenerator } from 'backend-compiler/jsGenerator';
+
 
 export const generateAction = async (fileName: string, opts: GenerateOptions): Promise<void> => {
+    console.log("started")
     const services = createSimpleLServices(NodeFileSystem).SimpleL;
     const model = await extractAstNode<Model>(fileName, services);
-    let generatedFilePath;
+
+    const data = extractDestinationAndName(fileName, opts.targetDirectory);
+    
+
+    const generatedDotFilePath = `${path.join(data.destination, data.name)}.dot`;
+    const dotFile = new CompositeGeneratorNode();
+
+
+    
+    let debug: boolean = false;
+    let ccfg = doGenerateCCFG(dotFile, model,debug);
+    const codeFile = new CompositeGeneratorNode();
+    console.log(data.destination)
+
+    if (!fs.existsSync(data.destination)) {
+        fs.mkdirSync(data.destination, { recursive: true });
+    }
+    fs.writeFileSync(generatedDotFilePath, toString(dotFile));
+
+    let filePath = path.join(data.destination, data.name);
+    
+
     let generator:IGenerator;
     if (opts.python) {
-        generator = new PythonGenerator();
+        generator = new PythonGenerator(debug);
     } else if(opts.js != undefined && opts.js){
         generator = new JsGenerator();
     } else {
-        generator = new CppGenerator();
+        generator = new CppGenerator(debug);
     }
-    generatedFilePath = generatefromCCFG(model, fileName, opts.targetDirectory, opts.debug,generator);
-    console.log(chalk.green(`CCFG and Code generated successfully: ${generatedFilePath}`));
+
+    let generatedCodeFilePath = generator.nameFile(filePath);
+
+
+
+    generatefromCCFG(ccfg, codeFile, generator, filePath,debug)
+    if (!fs.existsSync(data.destination)) {
+        fs.mkdirSync(data.destination, { recursive: true });
+    }
+    fs.writeFileSync(generatedCodeFilePath, toString(codeFile));
+
+    console.log(chalk.green(`CCFG and Code generated successfully: ${generatedCodeFilePath}`));
 };
 
 export type GenerateOptions = {
@@ -35,6 +73,7 @@ export type GenerateOptions = {
 }
 
 export default function(): void {
+    console.log("started")
     const program = new Command();
 
     program
@@ -53,4 +92,18 @@ export default function(): void {
         .action(generateAction);
 
     program.parse(process.argv);
+}
+
+
+function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model,debug:boolean): CCFG {
+    var compilerFrontEnd = new SimpleLCompilerFrontEnd();
+    var ccfg = compilerFrontEnd.generateCCFG(model,debug);
+   
+    ccfg.addSyncEdge()
+
+    ccfg.detectCycles();
+    ccfg.collectCycles()
+
+    codeFile.append(ccfg.toDot());
+    return ccfg;
 }

@@ -2,25 +2,25 @@ import fs from 'fs';
 import { CompositeGeneratorNode, toString } from 'langium';
 import path from 'path';
 import { FSMModel } from '../language-server/generated/ast';
-import { extractDestinationAndName } from './cli-util';
+import { FilePathData } from './cli-util';
 import { CCFGVisitor } from './generated/testFSM';
 
-import { CCFG } from '../ccfg/ccfglib';
+import { CCFG } from 'ccfg';
 
-export function generateDot(model: FSMModel, filePath: string, destination: string | undefined): string {
-    const data = extractDestinationAndName(filePath, destination);
+export function generateDot(model: FSMModel, data:FilePathData ): CCFG {
+    
     const generatedFilePath = `${path.join(data.destination, data.name)}.dot`;
 
     const dotFile = new CompositeGeneratorNode();
     
-    doGenerateCCFG(dotFile, model);
+    const ccfg = doGenerateCCFG(dotFile, model);
 
 
     if (!fs.existsSync(data.destination)) {
         fs.mkdirSync(data.destination, { recursive: true });
     }
     fs.writeFileSync(generatedFilePath, toString(dotFile));
-    return generatedFilePath;
+    return ccfg;
 }
 
 

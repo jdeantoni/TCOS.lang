@@ -1249,7 +1249,7 @@ function writePreambule(fileNode: CompositeGeneratorNode, data: FilePathData) {
     fileNode.append(`
 import fs from 'fs';
 import { AstNode, Reference, isReference, streamAst } from "langium";
-import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole} from "../../ccfg/ccfglib.js";`, NL)
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole} from "ccfg";`, NL)
 }
 
 

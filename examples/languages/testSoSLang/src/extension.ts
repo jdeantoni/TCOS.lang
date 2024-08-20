@@ -20,6 +20,7 @@ export function deactivate(): Thenable<void> | undefined {
 }
 
 function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
+    console.log('Starting language client');
     const serverModule = context.asAbsolutePath(path.join('out', 'language-server', 'main'));
     // The debug options for the server
     // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging.
@@ -57,3 +58,4 @@ function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
     client.start();
     return client;
 }
+

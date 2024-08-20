@@ -1,11 +1,7 @@
-import fs from 'fs';
-import {  CompositeGeneratorNode, MultiMap, toString } from 'langium';
-import path from 'path';
-import { Model } from '../language-server/generated/ast';
-import { extractDestinationAndName } from './cli-util.js';
-import { SimpleLCompilerFrontEnd } from './generated/simpleLCompilerFrontEnd';
-import { CCFG, Edge, Node } from '../ccfg/ccfglib.js';
-import {IGenerator} from './GeneratorInterface.js';
+
+import {  CompositeGeneratorNode, MultiMap } from 'langium';
+import { CCFG, Edge, Node } from 'ccfg';
+import {IGenerator} from './GeneratorInterface';
 import chalk from 'chalk';
 
 
@@ -20,36 +16,13 @@ const verifyEqual = "verifyEqual" //verifyEqual,varName1,varName2
 const addSleep = "addSleep" //addSleep,duration
 let debug = false;
 
-export function generatefromCCFG(model: Model, filePath: string, targetDirectory: string | undefined, doDebug: boolean|undefined, generator:IGenerator): string {
-    const data = extractDestinationAndName(filePath, targetDirectory);
-    
-
-    const generatedDotFilePath = `${path.join(data.destination, data.name)}.dot`;
-    const dotFile = new CompositeGeneratorNode();
-
-    
-    let ccfg = doGenerateCCFG(dotFile, model);
-
-    const generatedCodeFilePath = generator.nameFile(`${path.join(data.destination, data.name)}`);
-    const codeFile = new CompositeGeneratorNode();
-    let debug: boolean = false;
-
-    if (!fs.existsSync(data.destination)) {
-        fs.mkdirSync(data.destination, { recursive: true });
-    }
-    fs.writeFileSync(generatedDotFilePath, toString(dotFile));
+export function generatefromCCFG(ccfg: CCFG, codeFile:CompositeGeneratorNode, generator:IGenerator, filePath:string,debug:boolean): void {
 
 
-    debug = doDebug != undefined ? doDebug : false;
 
     doGenerateCode(codeFile, ccfg, debug, generator);
 
-    if (!fs.existsSync(data.destination)) {
-        fs.mkdirSync(data.destination, { recursive: true });
-    }
-    fs.writeFileSync(generatedCodeFilePath, toString(codeFile));
-
-    return generatedDotFilePath;
+    
 }
 function doGenerateCode(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: boolean, generator: IGenerator) {
     let initNode = ccfg.initialState;
@@ -68,26 +41,14 @@ function doGenerateCode(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: boo
     allCode = [...allCode, ...generator.createMainFunction(insideMain)];
     allCode = [...allCode, ...generator.endFile()];
     codeFile.append(allCode.join(""));
+    console.log(codeFile);
 }
 
 
 
-function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model): CCFG {
-    var compilerFrontEnd = new SimpleLCompilerFrontEnd();
-    var ccfg = compilerFrontEnd.generateCCFG(model,debug);
-   
-    ccfg.addSyncEdge()
-
-    ccfg.detectCycles();
-    ccfg.collectCycles()
-
-    codeFile.append(ccfg.toDot());
-    return ccfg;
-}
 
 function compileFunctionDefs(ccfg: CCFG,generator:IGenerator): string[] {
     let res: string[] = [];
-    let functionsDefs = "";
     for (let node of ccfg.nodes) {
         // if(node.getType() == "ContainerNode"){
         //     functionsDefs += compileFunctionDefs((node as ContainerNode).internalccfg);
@@ -239,7 +200,6 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, generator: IGenerator, vis
                         }
                     }
                 }
-               
             }
         }
 
@@ -348,7 +308,6 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, generator: IGenerator, vis
                     
 
     // from here --------------------------------
-                    
                     thisNodeCode = [...thisNodeCode, ...generator.createSynchronizer(syncUID)];
                 }
             }
@@ -489,7 +448,13 @@ function addQueuePushCode(queueUID: number | undefined, currentNode: Node, ccfg:
 //        let ptn = ptns[0];
         if(!createdQueueIds.includes(queueUID)){
             createdQueueIds.push(queueUID);
-            res = [...res, ...generator.createSynchronizer(queueUID)];
+            if (syncNode.returnType != undefined && syncNode.returnType != "void") {
+                
+                res = [...res, ...generator.createLockingQueue(syncNode.returnType,queueUID)];
+            } else {
+                
+                res = [...res, ...generator.createSynchronizer(queueUID)];
+            }
         }
         //codeFile.append(`{\n`)
         if (currentNode.returnType == undefined || currentNode.returnType == "void" || f == undefined) {

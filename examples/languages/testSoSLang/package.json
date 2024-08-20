@@ -10,17 +10,26 @@
         "Programming Languages"
     ],
     "contributes": {
-        "languages": [{
-            "id": "simple-l",
-            "aliases": ["simpleL", "simple-l"],
-            "extensions": [".simple"],
-            "configuration": "./language-configuration.json"
-        }],
-        "grammars": [{
-            "language": "simple-l",
-            "scopeName": "source.simple-l",
-            "path": "./syntaxes/simple-l.tmLanguage.json"
-        }]
+        "languages": [
+            {
+                "id": "simple-l",
+                "aliases": [
+                    "simpleL",
+                    "simple-l"
+                ],
+                "extensions": [
+                    ".simple"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "simple-l",
+                "scopeName": "source.simple-l",
+                "path": "./syntaxes/simple-l.tmLanguage.json"
+            }
+        ]
     },
     "activationEvents": [
         "onLanguage:simple-l"
@@ -33,7 +42,7 @@
     "bin": {
         "simple-l-cli": "./bin/cli"
     },
-    "main": "./out/extension.js",
+    "main": "./out/testSoSLang/src/extension.js",
     "scripts": {
         "vscode:prepublish": "npm run build && npm run lint",
         "build": "tsc -b tsconfig.json",
