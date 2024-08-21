@@ -5,15 +5,16 @@ import { SimpleLLanguageMetaData } from '../language-server/generated/module';
 import { createSimpleLServices } from '../language-server/simple-l-module';
 import { extractAstNode, extractDestinationAndName } from './cli-util';
 import { NodeFileSystem } from 'langium/node';
-import { generatefromCCFG } from 'backend-compiler/compilerBackend';
+import { interpretfromCCFG } from 'interpreter/api';
 import { CompositeGeneratorNode, toString } from 'langium';
 import path from 'path';
 import fs from 'fs';
 import { CCFG } from 'ccfg';
 import { SimpleLCompilerFrontEnd } from './generated/simpleLCompilerFrontEnd';
 import { IGenerator } from 'backend-compiler/GeneratorInterface';
+import { generatefromCCFG } from 'backend-compiler/compilerBackend';
 import { PythonGenerator } from 'backend-compiler/pythonGenerator';
-import { CppGenerator } from 'backend-compiler/cppGenerator';
+import { CppGenerator } from 'backend-compiler/cppGenerator'; 
 import { JsGenerator } from 'backend-compiler/jsGenerator';
 
 
@@ -32,37 +33,42 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
     
     let debug: boolean = false;
     let ccfg = doGenerateCCFG(dotFile, model,debug);
-    const codeFile = new CompositeGeneratorNode();
-    console.log(data.destination)
 
-    if (!fs.existsSync(data.destination)) {
-        fs.mkdirSync(data.destination, { recursive: true });
-    }
-    fs.writeFileSync(generatedDotFilePath, toString(dotFile));
+    if (opts.isInterpreted) {
+        let generator: IGenerator = new JsGenerator();
+        interpretfromCCFG(ccfg, generator, debug);
+        console.log(chalk.green(`CCFG interpreted successfully`));
+    }else{
+        //Compile the CCFG to code
+        const codeFile = new CompositeGeneratorNode();
 
-    let filePath = path.join(data.destination, data.name);
+        if (!fs.existsSync(data.destination)) {
+            fs.mkdirSync(data.destination, { recursive: true });
+        }
+        fs.writeFileSync(generatedDotFilePath, toString(dotFile));
+        
     
-
-    let generator:IGenerator;
-    if (opts.python) {
-        generator = new PythonGenerator(debug);
-    } else if(opts.js != undefined && opts.js){
-        generator = new JsGenerator();
-    } else {
-        generator = new CppGenerator(debug);
+        let generator:IGenerator;
+        if (opts.python != undefined && opts.python) {
+            generator = new PythonGenerator();
+        } 
+        else if(opts.js != undefined && opts.js){
+            generator = new JsGenerator();
+        } else{
+           generator = new CppGenerator();
+        }
+        
+   
+       let filePath = path.join(data.destination, data.name);
+       let generatedCodeFilePath = generator.nameFile(filePath);
+       generatefromCCFG(ccfg, codeFile, generator, filePath,debug)
+       if (!fs.existsSync(data.destination)) {
+           fs.mkdirSync(data.destination, { recursive: true });
+       }
+       fs.writeFileSync(generatedCodeFilePath, toString(codeFile));
+       console.log(chalk.green(`CCFG and code generated successfully: ${data.destination}`));
     }
-
-    let generatedCodeFilePath = generator.nameFile(filePath);
-
-
-
-    generatefromCCFG(ccfg, codeFile, generator, filePath,debug)
-    if (!fs.existsSync(data.destination)) {
-        fs.mkdirSync(data.destination, { recursive: true });
-    }
-    fs.writeFileSync(generatedCodeFilePath, toString(codeFile));
-
-    console.log(chalk.green(`CCFG and Code generated successfully: ${generatedCodeFilePath}`));
+    
 };
 
 export type GenerateOptions = {
@@ -70,6 +76,7 @@ export type GenerateOptions = {
     debug ?: boolean;
     python ?: boolean;
     js ?: boolean;
+    isInterpreted ?: boolean;
 }
 
 export default function(): void {
@@ -85,9 +92,10 @@ export default function(): void {
         .command('generate')
         .argument('<file>', `source file (possible file extensions: ${fileExtensions})`)
         .option('-t, --targetDirectory <dir>', 'destination directory of generating', 'generated')
-        .option('-d, --debug ', 'ask for debugging message during execution of the generated code')
-        .option('--python', 'compile into python', 'output.cpp')
-        .option('--js', 'compile into js', 'output.cpp')
+        .option('-d, --debug ', 'ask for debugging message during execution of the generated code', false)
+        .option('--python', 'compile into python', false)
+        .option('--js', 'compile into js', false)
+        .option('-i, --isInterpreted', 'interpret the CCFG, false by default', false)
         .description('generates the concurrent control flow graph representation and the executable code of the given source file')
         .action(generateAction);
 

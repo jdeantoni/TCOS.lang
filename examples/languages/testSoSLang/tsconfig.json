@@ -2,7 +2,7 @@
     "sourceMap": true,
     "compilerOptions": {
       "target": "ES6",
-      "module": "commonjs",
+      "module": "Node16",
       "lib": ["ESNext"],
       "sourceMap": true,
       "outDir": "out",
@@ -10,7 +10,7 @@
       "noUnusedLocals": true,
       "noImplicitReturns": true,
       "noImplicitOverride": true,
-      "moduleResolution": "node",
+      "moduleResolution": "Node16",
       "esModuleInterop": true,
       "skipLibCheck": true,
       "forceConsistentCasingInFileNames": true
