@@ -5,8 +5,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc ",
-    "watch": "tsc -w"
+    "build": "tsc --declaration",
+    "watch": "tsc -w --declaration"
   },
   "author": "",
   "license": "MIT",

@@ -3,8 +3,143 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CollectionHole = exports.TimerHole = exports.Hole = exports.AndJoin = exports.OrJoin = exports.Fork = exports.Join = exports.Choice = exports.Step = exports.SyncEdge = exports.CCFG = exports.Edge = exports.Node = exports.NodeType = exports.TypedElement = void 0;
+exports.CollectionHole = exports.TimerHole = exports.Hole = exports.AndJoin = exports.OrJoin = exports.Fork = exports.Join = exports.Choice = exports.Step = exports.SyncEdge = exports.CCFG = exports.Edge = exports.Node = exports.NodeType = exports.TypedElement = exports.AddSleepInstruction = exports.VerifyEqualInstruction = exports.OperationInstruction = exports.SetGlobalVarInstruction = exports.SetVarFromGlobalInstruction = exports.AssignVarInstruction = exports.CreateGlobalVarInstruction = exports.CreateVarInstruction = exports.ReturnInstruction = exports.Instruction = void 0;
 const chalk_1 = __importDefault(require("chalk"));
+class Instruction {
+    $instructionType = "";
+    constructor(type) {
+        this.$instructionType = type;
+    }
+    toString() {
+        return "undefined instruction";
+    }
+}
+exports.Instruction = Instruction;
+class ReturnInstruction extends Instruction {
+    varName = "";
+    constructor(varName) {
+        super("returnInstruction");
+        this.varName = varName;
+    }
+    toString() {
+        return "return," + this.varName;
+    }
+}
+exports.ReturnInstruction = ReturnInstruction;
+class CreateVarInstruction extends Instruction {
+    varName = "";
+    type = "";
+    constructor(name, type) {
+        super("createVarInstruction");
+        this.varName = name;
+        this.type = type;
+    }
+    toString() {
+        return "createVar," + this.type + "," + this.varName;
+    }
+}
+exports.CreateVarInstruction = CreateVarInstruction;
+class CreateGlobalVarInstruction extends Instruction {
+    varName = "";
+    type = "";
+    constructor(name, type) {
+        super("createGlobalVarInstruction");
+        this.varName = name;
+        this.type = type;
+    }
+    toString() {
+        return "createGlobalVar," + this.type + "," + this.varName;
+    }
+}
+exports.CreateGlobalVarInstruction = CreateGlobalVarInstruction;
+class AssignVarInstruction extends Instruction {
+    value = "";
+    varName = "";
+    type = "";
+    constructor(varName, value, type = "") {
+        super("assignVarInstruction");
+        this.value = value;
+        this.varName = varName;
+        this.type = type;
+    }
+    toString() {
+        return "assignVar," + this.varName + "," + this.value;
+    }
+}
+exports.AssignVarInstruction = AssignVarInstruction;
+class SetVarFromGlobalInstruction extends Instruction {
+    varName = "";
+    globalVarName = "";
+    type = "";
+    constructor(name, globalVarName, type = "") {
+        super("setVarFromGlobalInstruction");
+        this.varName = name;
+        this.globalVarName = globalVarName;
+        this.type = type;
+    }
+    toString() {
+        return "setVarFromGlobal," + this.type + "," + this.varName + "," + this.globalVarName;
+    }
+}
+exports.SetVarFromGlobalInstruction = SetVarFromGlobalInstruction;
+class SetGlobalVarInstruction extends Instruction {
+    globalVarName = "";
+    value = "";
+    type = "";
+    constructor(globalVarName, value, type = "") {
+        super("setGlobalVarInstruction");
+        this.value = value;
+        this.globalVarName = globalVarName;
+        this.type = type;
+    }
+    toString() {
+        return "setGlobalVar," + this.type + "," + this.globalVarName + "," + this.value;
+    }
+}
+exports.SetGlobalVarInstruction = SetGlobalVarInstruction;
+class OperationInstruction extends Instruction {
+    varName = "";
+    n1 = "";
+    op = "";
+    n2 = "";
+    type = "";
+    constructor(varName, n1, op, n2, type = "") {
+        super("operationInstruction");
+        this.varName = varName;
+        this.n1 = n1;
+        this.op = op;
+        this.n2 = n2;
+        this.type = type;
+    }
+    toString() {
+        return "operation," + this.varName + "," + this.n1 + "," + this.op + "," + this.n2;
+    }
+}
+exports.OperationInstruction = OperationInstruction;
+class VerifyEqualInstruction extends Instruction {
+    n1 = "";
+    n2 = "";
+    constructor(n1, n2) {
+        super("verifyEqualInstruction");
+        this.n1 = n1;
+        this.n2 = n2;
+    }
+    toString() {
+        return "verifyEqual," + this.n1 + "," + this.n2;
+    }
+}
+exports.VerifyEqualInstruction = VerifyEqualInstruction;
+class AddSleepInstruction extends Instruction {
+    duration = "";
+    constructor(duration) {
+        super("addSleepInstruction");
+        this.duration = duration;
+    }
+    toString() {
+        return "addSleep," + this.duration;
+    }
+}
+exports.AddSleepInstruction = AddSleepInstruction;
 class TypedElement {
     name = "";
     type = undefined;
@@ -480,14 +615,14 @@ class CCFG {
     dotGetEdgeLabel(edge) {
         return edge.guards.map(g => 
         /* a.replaceAll("\"","\\\"")).join("\n")+"\n~~~"+*/
-        g.replaceAll("\"", "\\\"")).join("\n");
+        g.toString().replaceAll("\"", "\\\"")).join("\n");
         /*+"~~~\n";*/
     }
     dotGetNodeLabel(node) {
         if (node.functionsDefs.length == 0) {
             return node.uid.toString() + "[" + node.syncNodeIds.map(i => i).join(',') + "]" + ":" + node.getType() + ((node.type == undefined || node.type == NodeType.multipleSynchro) ? "" : "_" + node.type);
         }
-        return node.uid.toString() + "[" + node.syncNodeIds.map(i => i).join(',') + "]" + ":" + node.getType() + ((node.type == undefined || node.type == NodeType.multipleSynchro) ? "" : "_" + node.type) + ":\n" + node.returnType + " function" + node.functionsNames + "(" + node.params.map(p => p.toString()).join(", ") + "){\n" + node.functionsDefs.map(a => a.replaceAll("\"", "\\\"")).join("\n") + "\n}";
+        return node.uid.toString() + "[" + node.syncNodeIds.map(i => i).join(',') + "]" + ":" + node.getType() + ((node.type == undefined || node.type == NodeType.multipleSynchro) ? "" : "_" + node.type) + ":\n" + node.returnType + " function" + node.functionsNames + "(" + node.params.map(p => p.toString()).join(", ") + "){\n" + node.functionsDefs.map(a => a.toString().replaceAll("\"", "\\\"")).join("\n") + "\n}";
     }
     dotGetNodeShape(node) {
         switch (node.getType()) {

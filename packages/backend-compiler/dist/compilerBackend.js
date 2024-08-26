@@ -51,34 +51,41 @@ function compileFunctionDefs(ccfg, generator) {
                     // console.log("function name: "+fname);
                     let allFDefs = [];
                     for (let fdef of node.functionsDefs) {
-                        let b = fdef.split(",");
-                        if (b[0] == ret) {
-                            allFDefs = [...allFDefs, ...generator.returnVar(b[1])];
+                        if (fdef.$instructionType == "ReturnInstruction") {
+                            let b = fdef;
+                            allFDefs = [...allFDefs, ...generator.returnVar(b.varName)];
                         }
-                        else if (b[0] == createVar) {
-                            allFDefs = [...allFDefs, ...generator.createVar(b[1], b[2])];
+                        else if (fdef.$instructionType == "CreateVarInstruction") {
+                            let b = fdef;
+                            allFDefs = [...allFDefs, ...generator.createVar(b.type, b.varName)];
                         }
-                        else if (b[0] == assignVar) {
-                            allFDefs = [...allFDefs, ...generator.assignVar(b[1], b[2])];
+                        else if (fdef.$instructionType == "AssignVarInstruction") {
+                            let b = fdef;
+                            allFDefs = [...allFDefs, ...generator.assignVar(b.varName, b.value)];
                         }
-                        else if (b[0] == setVarFromGlobal) {
-                            allFDefs = [...allFDefs, ...generator.setVarFromGlobal(b[1], b[2], b[3])];
+                        else if (fdef.$instructionType == "setVarFromGlobalInstruction") {
+                            let b = fdef;
+                            allFDefs = [...allFDefs, ...generator.setVarFromGlobal(b.type, b.varName, b.globalVarName)];
                         }
-                        else if (b[0] == createGlobalVar) {
-                            allFDefs = [...allFDefs, ...generator.createGlobalVar(b[1], b[2])];
+                        else if (fdef.$instructionType == "createGlobalVarInstruction") {
+                            let b = fdef;
+                            allFDefs = [...allFDefs, ...generator.createGlobalVar(b.type, b.varName)];
                         }
-                        else if (b[0] == setGlobalVar) {
-                            allFDefs = [...allFDefs, ...generator.setGlobalVar(b[1], b[2], b[3])];
+                        else if (fdef.$instructionType == "setGlobalVarInstruction") {
+                            let b = fdef;
+                            allFDefs = [...allFDefs, ...generator.setGlobalVar(b.type, b.globalVarName, b.value)];
                         }
-                        else if (b[0] == operation) {
-                            allFDefs = [...allFDefs, ...generator.operation(b[1], b[2], b[3], b[4])];
+                        else if (fdef.$instructionType == "operationInstruction") {
+                            let b = fdef;
+                            allFDefs = [...allFDefs, ...generator.operation(b.varName, b.n1, b.op, b.n2)];
                         }
-                        else if (b[0] == addSleep) {
-                            allFDefs = [...allFDefs, ...generator.createSleep(b[1])];
+                        else if (fdef.$instructionType == "addSleepInstruction") {
+                            let b = fdef;
+                            allFDefs = [...allFDefs, ...generator.createSleep(b.duration)];
                         }
                         else {
-                            console.log("Unknown function definition: " + b[0]);
-                            allFDefs = [...allFDefs, fdef];
+                            console.log("Unknown function definition: " + fdef.toString());
+                            allFDefs = [...allFDefs, fdef.toString()];
                         }
                     }
                     //console.log("function name: "+fname+ " allFDefs = "+allFDefs);
@@ -295,10 +302,10 @@ function visitAllNodes(ccfg, currentNode, generator, visitIsStarting = false) {
                 for (let edge of edgeToVisit) {
                     let guards = [];
                     for (let guard of edge.guards) {
-                        const guardList = guard.split(",");
                         //console.log(guardList)
-                        if (guardList[0] === verifyEqual) {
-                            guards.push(generator.createEqualsVerif(guardList[1], guardList[2]));
+                        if (guard.$instructionType === "verifyEqualInstruction") {
+                            let g = guard;
+                            guards.push(generator.createEqualsVerif(g.n1, g.n2));
                         }
                     }
                     let insideOfIf;
@@ -482,7 +489,7 @@ function addComparisonVariableDeclaration(currentNode, generator) {
             let realPtn = realPtns[i];
             if (realPtn.returnType != "void") {
                 let lastDefStatement = realPtn.functionsDefs[realPtn.functionsDefs.length - 1];
-                let lastDefStatementSplit = lastDefStatement.split(",");
+                let lastDefStatementSplit = lastDefStatement.toString().split(",");
                 let returnedVariableName = lastDefStatementSplit[lastDefStatementSplit.length - 1];
                 returnedVariableName = returnedVariableName.substring(0, returnedVariableName.length - 1); //remove semicolum
                 let ptn = ptnsWithJoin[0];

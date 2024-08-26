@@ -7,15 +7,7 @@ import { inferType } from '../language-server/type-system/infer.js';
 import chalk from 'chalk';
 
 
-const createVar = "createVar"
-const createGlobalVar = "createGlobalVar"
-const assignVar = "assignVar"
-const setVarFromGlobal = "setVarFromGlobal"
-const setGlobalVar = "setGlobalVar"
-const operation = "operation"
-const ret ="return"
-const verifyEqual = "verifyEqual"
-const addSleep = "addSleep"
+
 
 const DEBUG = true
 
@@ -948,11 +940,11 @@ function visitValuedEventRefComparison(valuedEventRefComparison: ValuedEventRefC
 
         //guardactions
         if(valuedEventRefComparison.$type == "ImplicitValuedEventRefConstantComparison"){
-            res = res + `\`${verifyEqual},\${this.getASTNodeUID(node.${(valuedEventRefComparison.membercall as MemberCall).element?.$refText})}${"terminate"},${(typeof(v) == "string")?v:v.$cstNode?.text}\``
+            res = res + `new VerifyEqualInstruction(\${this.getASTNodeUID(node.${(valuedEventRefComparison.membercall as MemberCall).element?.$refText})}${"terminate"},${(typeof(v) == "string")?v:v.$cstNode?.text})`
         }
         if(valuedEventRefComparison.$type == "ExplicitValuedEventRefConstantComparison"){
             let prev = (valuedEventRefComparison.membercall as MemberCall)?.previous
-            res = res + `\`${verifyEqual},\${this.getASTNodeUID(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRefComparison.membercall as MemberCall).element?.$refText},${(typeof(v) == "string")?v:v.$cstNode?.text}\``
+            res = res + `new VerifyEqualInstruction(\${this.getASTNodeUID(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRefComparison.membercall as MemberCall).element?.$refText},${(typeof(v) == "string")?v:v.$cstNode?.text})`
         }
         
     }
@@ -973,13 +965,15 @@ function visitValuedEventRef(valuedEventRef: ValuedEventRef | undefined): [strin
         let varType = inferType(v, new Map())
         let typeName = getCPPVariableTypeName(varType.$type)
         if(v != undefined && valuedEventRef.$type == "ImplicitValuedEventRef"){
-            res = res + `\`${typeName} \${this.getASTNodeUID(node)}${v.$cstNode?.offset} = ${v.name};\``//valuedEventRef  \${getName(node.${(valuedEventRef.membercall as MemberCall).element?.$refText})}${"terminates"}\``
+            res = res + `new CreateVarInstruction(\${this.getASTNodeUID(node)}${v.$cstNode?.offset},${typeName})`
+            res = res + `new SetVarInstruction(\${this.getASTNodeUID(node)}${v.$cstNode?.offset},${v.name},${typeName})`
             let param:TypedElement = new TypedElement(v,v.name, typeName)
             return [res, param]
         }
         if(v != undefined && valuedEventRef.$type == "ExplicitValuedEventRef"){
             // let prev = (valuedEventRef.membercall as MemberCall)?.previous
-            res = res + `\`${typeName} \${this.getASTNodeUID(node)}${v.$cstNode?.offset} = ${v.name};\`` //valuedEventRef \${getName(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRef.membercall as MemberCall).element?.$refText};\``
+            res = res + `new CreateVarInstruction(\${this.getASTNodeUID(node)}${v.$cstNode?.offset},${typeName})`
+            res = res + `new SetVarInstruction(\${this.getASTNodeUID(node)}${v.$cstNode?.offset},${v.name},${typeName})`
             let param:TypedElement = new TypedElement(v,v.name, typeName)
             return [res, param]
         }
@@ -1029,17 +1023,17 @@ function getVariableDeclarationCode(runtimeState: VariableDeclaration[] | undefi
             }else{
                  if(vardDecl.value != undefined && vardDecl.value.$type == "MemberCall"){
                    //res = res + sep + `\`sigma["\${getASTNodeUID(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?`\${node.${(vardDecl.value as MemberCall).element?.$refText}}`:""});\``
-                   res = res + sep + `\`${createGlobalVar},${getVariableType(vardDecl.type)},\${this.getASTNodeUID(node)}${vardDecl.name}\``
+                   res = res + sep + `new CreateGlobalVarInstruction(\${this.getASTNodeUID(node)}${vardDecl.name},${getVariableType(vardDecl.type)})`
                    sep = ","
-                   res = res + sep + `\`${setGlobalVar},${getVariableType(vardDecl.type)},\${this.getASTNodeUID(node)}${vardDecl.name},${(vardDecl.value != undefined)?`\${node.${(vardDecl.value as MemberCall).element?.$refText}}`:""}\`` 
+                   res = res + sep + `new SetGlobalVarInstruction(\${this.getASTNodeUID(node)}${vardDecl.name},${(vardDecl.value != undefined)?`\${node.${(vardDecl.value as MemberCall).element?.$refText}}`:""},${getVariableType(vardDecl.type)})` 
                    
                 //    `\`${assignVar},\${getASTNodeUID(node)}${vardDecl.name},${(vardDecl.value != undefined)?(vardDecl.value as MemberCall).element?.$refText:""}\``
                 }else{
                     //res = res + sep + `\`sigma["\${getASTNodeUID(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?vardDecl.value.$cstNode?.text:""});\``
-                    res = res + sep + `\`${createGlobalVar},${getVariableType(vardDecl.type)},\${this.getASTNodeUID(node)}${vardDecl.name}\``
+                    res = res + sep + `new createGlobalVarInstruction(\${this.getASTNodeUID(node)}${vardDecl.name},${getVariableType(vardDecl.type)})`
                     sep = ","
                     if (vardDecl.value != undefined){
-                        res = res + sep + `\`${setGlobalVar},${getVariableType(vardDecl.type)},\${this.getASTNodeUID(node)}${vardDecl.name},${(vardDecl.value != undefined)?vardDecl.value.$cstNode?.text:""}\`` 
+                        res = res + sep + ` new SetGlobalVarInstruction(\${this.getASTNodeUID(node)}${vardDecl.name},${(vardDecl.value != undefined)?vardDecl.value.$cstNode?.text:""},${getVariableType(vardDecl.type)})` 
                     }
                 }
                 sep= ","
@@ -1080,23 +1074,23 @@ function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefine
             rightRes  = createVariableFromMemberCall(rhs as MemberCall, rhsTypeName);
             res = res + rightRes+","
             let applyOp = (valuedEmission.data as BinaryExpression).operator
-            res = res + `\`${createVar},${typeName},\${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,`
-            res = res + `\`${operation},\${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset},\${this.getASTNodeUID(node)}${lhs.$cstNode?.offset},${applyOp},\${this.getASTNodeUID(node)}${rhs.$cstNode?.offset}\``
+            res = res + `new CreateVarInstruction(\${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset},${typeName}),`
+            res = res + `new OperationInstruction(\${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset},\${this.getASTNodeUID(node)}${lhs.$cstNode?.offset},${applyOp},\${this.getASTNodeUID(node)}${rhs.$cstNode?.offset},${typeName}),`
         }
         if(valuedEmission.data != undefined && valuedEmission.data.$type == "BooleanExpression" || valuedEmission.data.$type == "NumberExpression" || valuedEmission.data.$type == "StringExpression"){
             // write a node that sends the value specified 
-            res = res  +`\`${createVar},${typeName},\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\``+ ","
-            res = res  +`\`${assignVar},\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name},${valuedEmission.data.$cstNode?.text}\``+ ","
-            res = res  +`\`${ret},\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\``+ ","
+            res = res  +`new CreateVarInstruction(\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name},${typeName})`+ ","
+            res = res  +`new AssignVarInstruction(\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name},${valuedEmission.data.$cstNode?.text},${typeName})`+ ","
+            res = res  +`new ReturnInstruction(\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name})`+ ","
             return [res, typeName]
         }
         if(res.length > 0){
             res = res + ","
         }
-        res = res+ `\`${createVar},${typeName},\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\`,`
-        res = res+ `\`${assignVar},\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name},\${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,`
-        res = res+ `\`${ret},\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\``
-        
+        res = res  +`new CreateVarInstruction(\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name},${typeName})`+ ","
+        res = res+ `new AssignVarInstruction(\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name},\${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset},${typeName}),`
+        res = res  +`new ReturnInstruction(\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name})`+ ","
+
         return [res, typeName]
     }
     return [res , "void"]
@@ -1112,16 +1106,16 @@ function createVariableFromMemberCall(data: MemberCall, typeName: string): strin
     }
 
     if (elem?.$type == "VariableDeclaration") {
-        res = res+ `\`${createVar},${typeName},\${this.getASTNodeUID(node)}${data.$cstNode?.offset}\`,`
-        res = res+ `\`${setVarFromGlobal},${typeName},\${this.getASTNodeUID(node)}${data.$cstNode?.offset},\${this.getASTNodeUID(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name}\``
+        res = res+ `new CreateVarInstruction(\${this.getASTNodeUID(node)}${data.$cstNode?.offset},${typeName}),`
+        res = res+ `new SetVarFromGlobalInstruction(\${this.getASTNodeUID(node)}${data.$cstNode?.offset},\${this.getASTNodeUID(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name},${typeName})`
     } 
     else if (elem?.$type == "TemporaryVariable") {
-        res = res+ `\`${createVar},${typeName},\${this.getASTNodeUID(node)}${data.$cstNode?.offset}\`,`
-        res = res+ `\`${assignVar},\${this.getASTNodeUID(node)}${data.$cstNode?.offset},${elem.name}\`` 
+        res = res+ `new CreateVarInstruction(\${this.getASTNodeUID(node)}${data.$cstNode?.offset},${typeName}),`
+        res = res+ `new AssignVarInstruction(\${this.getASTNodeUID(node)}${data.$cstNode?.offset},${elem.name},${typeName})` 
     }
     else /*if (elem?.$type == "Assignment")*/ {
-                res = res+ `\`${createVar},${typeName},\${this.getASTNodeUID(node)}${data.$cstNode?.offset}\`,`
-        res = res+ `\`${assignVar},\${this.getASTNodeUID(node)}${data.$cstNode?.offset},\${node.${data.$cstNode?.text}}\``
+                res = res+ `new CreateVarInstruction(\${this.getASTNodeUID(node)}${data.$cstNode?.offset},${typeName}),`
+        res = res+ `new AssignVarInstruction(\${this.getASTNodeUID(node)}${data.$cstNode?.offset},\${node.${data.$cstNode?.text}},${typeName})`
     }
     return res
 }
@@ -1168,9 +1162,9 @@ function visitStateModifications(ruleCF: RuleControlFlow, actionsstring: string)
         sep = ","
         
         if(rhsElem.$type == "TemporaryVariable"){
-            actionsstring = actionsstring + sep + `\`${setGlobalVar},${typeName},\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name},\${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset}\``
+            actionsstring = actionsstring + sep + `new SetGlobalVarInstruction(\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name},\${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset},${typeName})`
         }else{
-            actionsstring = actionsstring + sep + `\`${setGlobalVar},${typeName},\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name},\${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset}\``
+            actionsstring = actionsstring + sep + `new SetGlobalVarInstruction(\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name},\${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset},${typeName})`
         }
     }
     return actionsstring;
@@ -1348,7 +1342,7 @@ function addUtilFunctions(fileNode: CompositeGeneratorNode,rootTypeName: string)
     fillTimerHole(hole: TimerHole, ccfg: CCFG) {
         let node = hole.astNode as AstNode
         let timerHoleLocalCCFG = new CCFG()
-        let startsTimerHoleNode: Node = new Step(node,NodeType.starts,[\`${addSleep},\${hole.duration}\`])
+        let startsTimerHoleNode: Node = new Step(node,NodeType.starts,[new AddSleepInstruction(\${hole.duration})])
         startsTimerHoleNode.returnType = "void"
         startsTimerHoleNode.functionsNames = [\`init\${startsTimerHoleNode.uid}Timer\`]
         timerHoleLocalCCFG.addNode(startsTimerHoleNode)
