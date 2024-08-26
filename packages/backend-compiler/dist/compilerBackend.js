@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generatefromCCFG = void 0;
+exports.compileFunctionDefs = exports.generatefromCCFG = void 0;
 const langium_1 = require("langium");
 const chalk_1 = __importDefault(require("chalk"));
 const createVar = "createVar"; //createVar,type,name
@@ -90,6 +90,7 @@ function compileFunctionDefs(ccfg, generator) {
     }
     return res;
 }
+exports.compileFunctionDefs = compileFunctionDefs;
 let fifoThreadUid = new langium_1.MultiMap();
 let continuations = [];
 let continuationsRecursLevel = [];

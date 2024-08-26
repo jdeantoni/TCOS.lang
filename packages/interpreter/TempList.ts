@@ -7,33 +7,6 @@
     This structure is like a stack. When we finish visiting a subtree, we pop an element (TempList).
 */
 
-//import { Edge } from "../ccfg/ccfglib";
-
-/*export class TempList<DataType> {
-    protected list : Array<DataType>;
-
-    constructor() {//number n is to fix the max number of the elements in the list
-        this.list = new Array<DataType>();
-    }
-
-    last():DataType{
-        let n = this.list.length;
-        return this.list[n-1];
-    }
-
-    getList():Array<DataType>{
-        return this.list;
-    }
-
-    getLength():number{
-        return this.getList().length;
-    }
-    addElement(n:DataType):void{
-        let l:Array<DataType> = this.getList();
-        l.push(n);
-    }
-}*/
-
 interface IStack<T> {
     push(item: T): void;
     pop(): T | undefined;
@@ -76,7 +49,4 @@ export class Stack<T> implements IStack<T> {
       return this.storage.length;
     }
     
-    /*getStorage(): T[] {
-      return this.storage;
-    }*/
   } 

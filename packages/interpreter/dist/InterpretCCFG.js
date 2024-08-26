@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.visitAllNodesInterpret = exports.Thread = exports.interpretfromCCFG = exports.debug = void 0;
 const ccfg_1 = require("ccfg");
+//import { compileFunctionDefs } from 'backend-compiler/compilerBackend.js';
 const TempList_js_1 = require("./TempList.js");
 // import { MockDebugSession } from './degugger/mockDebug.js';
 const createVar = "createVar"; //createVar,type,name
@@ -11,7 +12,8 @@ const createGlobalVar = "createGlobalVar"; //createGlobalVar,type,varName
 const setGlobalVar = "setGlobalVar"; //setGlobalVar,type,varName,value
 const operation = "operation"; //operation,varName,n1,op,n2
 const ret = "return"; //return,varName
-// const verifyEqual = "verifyEqual" //verifyEqual,varName1,varName2
+const verifyEqual = "verifyEqual"; //verifyEqual,varName1,varName2
+const addSleep = "addSleep"; //addSleep,duration
 exports.debug = false;
 let allFunctions = new Map();
 async function interpretfromCCFG(ccfg, generator, isDebug) {
@@ -25,7 +27,8 @@ async function interpretfromCCFG(ccfg, generator, isDebug) {
     if (ccfg.initialState) {
         let threadInit = new Thread(ccfg.initialState);
         ThreadList.push(threadInit);
-        await visitAllNodesInterpret(ccfg.initialState, sigma, ThreadList /*, debugsession*/); //breakpointAdresse should be a debug seesion
+        await visitAllNodesInterpret(ccfg.initialState, sigma, ThreadList, generator /*, debugsession*/); //breakpointAdresse should be a debug seesion
+        console.log(sigma);
     }
 }
 exports.interpretfromCCFG = interpretfromCCFG;
@@ -65,6 +68,9 @@ function compileFunctionDefs(ccfg, generator, sigma, codeFile) {
                     else if (b[0] == operation) {
                         allFDefs = [...allFDefs, ...generator.operation(b[1], b[2], b[3], b[4])];
                     }
+                    else if (b[0] == addSleep) {
+                        allFDefs = [...allFDefs, ...generator.createSleep(b[1])];
+                    }
                     else {
                         console.log("Unknown function definition: " + b[0]);
                         allFDefs = [...allFDefs, fdef];
@@ -100,7 +106,7 @@ exports.Thread = Thread;
  * @param debugsession
  * @returns stop the visit
  */
-async function visitAllNodesInterpret(startNode, sigma, ThreadList /*,  debugsession: MockDebugSession|undefined*/) {
+async function visitAllNodesInterpret(startNode, sigma, ThreadList, generator /*,  debugsession: MockDebugSession|undefined*/) {
     var currentNode = startNode;
     var edgeSelected;
     while (currentNode.outputEdges && ((currentNode.outputEdges[0] && currentNode.outputEdges[0].to) || (currentNode.outputEdges[1] && currentNode.outputEdges[1].to))) {
@@ -117,15 +123,9 @@ async function visitAllNodesInterpret(startNode, sigma, ThreadList /*,  debugses
                 if (currentNode.functionsDefs.length > 0) {
                     nodeCode(currentNode, ThreadList); //retrieve the corresponding function from the node; store retrun value of the function | call function
                 }
+                let threadcurrent = ThreadList.peek();
                 currentNode = currentNode.outputEdges[0].to;
-                ThreadList.peek().currentInstruction = currentNode.outputEdges;
-                /*
-                else{
-                    if(node.cycles.length!=0){
-                        currentNode = node.outputEdges[0].to;
-                    }
-                }
-                */
+                threadcurrent.currentInstruction = currentNode.outputEdges;
                 break;
             }
             case "Fork": {
@@ -145,14 +145,14 @@ async function visitAllNodesInterpret(startNode, sigma, ThreadList /*,  debugses
                     edgeSelected.forEach(edge => {
                         let threadCurrent = new Thread(edge.to);
                         ThreadList.push(threadCurrent);
-                        visitAllNodesInterpret(edge.to, sigma, ThreadList /*, debugsession*/); //visit the sub-tree
+                        visitAllNodesInterpret(edge.to, sigma, ThreadList, generator /*, debugsession*/); //visit the sub-tree
                         return;
                     });
                 }
                 else { // user select only one edge
                     let threadCurrent = new Thread(edgeSelected.to);
                     ThreadList.push(threadCurrent);
-                    visitAllNodesInterpret(edgeSelected.to, sigma, ThreadList /*, debugsession*/); //visit the sub-tree
+                    visitAllNodesInterpret(edgeSelected.to, sigma, ThreadList, generator /*, debugsession*/); //visit the sub-tree
                     return;
                 }
                 return;
@@ -166,7 +166,7 @@ async function visitAllNodesInterpret(startNode, sigma, ThreadList /*,  debugses
                 threadCurrent.currentInstruction = threadCurrent.currentInstruction.filter(edge => edge.to.uid !== threadChild.owner.uid);
                 //pick up sub-tree value
                 if (threadChild.tempValue.size() != 0) { //suppose the size == 0
-                    console.log(threadChild.tempValue.size());
+                    //console.log(threadChild.tempValue.size());
                     threadCurrent.tempValue.push(threadChild.tempValue.peek());
                 }
                 if (threadCurrent.currentInstruction.length !== 0) { //still have children not-executed
@@ -185,49 +185,83 @@ async function visitAllNodesInterpret(startNode, sigma, ThreadList /*,  debugses
             case "Choice": {
                 // in js: 0 represent false; 1 represent true
                 console.log(currentNode.uid + ": (" + currentNode.getType() + ")->");
+                //verify the function of this node
+                if (currentNode.functionsDefs.length != 0) {
+                    nodeCode(currentNode, ThreadList);
+                    let boolChoiceNode = ThreadList.peek().tempValue.pop();
+                    if (!boolChoiceNode) { //go to the sibling node
+                        let parent = currentNode.inputEdges[0].from;
+                        parent.outputEdges.forEach(edge => {
+                            if (edge.to.numberOfVisits == 0) {
+                                currentNode = edge.to;
+                                ThreadList.peek().currentInstruction = currentNode.outputEdges;
+                            }
+                        });
+                        break;
+                    }
+                }
+                //For each edge: Define function for each guard and call it
                 let nodeTrue;
-                let nodeFalse;
-                //get resRight
-                let param = [ThreadList.peek().tempValue.peek()];
-                ThreadList.peek().tempValue.pop();
-                //evaluation of each edge of choice
-                currentNode.outputEdges.forEach(edge => {
-                    let f = creatFunctionForEdge(edge, sigma);
-                    let bool = f(param);
-                    if (bool) {
+                var boolResult = undefined;
+                //Choice node has more than 1 output edge, they use the same paramtre stored in the stack
+                if (currentNode.outputEdges.length > 1) {
+                    let param = [];
+                    param = [ThreadList.peek().tempValue.peek()];
+                    currentNode.outputEdges.forEach(edge => {
+                        if (nodeTrue == undefined) {
+                            let f = creatFunctionForEdgeGuard(edge.guards[0], sigma, generator);
+                            let bool = f(param);
+                            if (bool) {
+                                nodeTrue = edge.to;
+                            }
+                        }
+                    });
+                }
+                else { //has only 1 output edge, need to store the value in stack
+                    let edge = currentNode.outputEdges[0];
+                    let functions = getMirrorOfList(creatFunctionListForEdge(edge, sigma, generator));
+                    boolResult = true;
+                    functions.forEach(f => {
+                        let param = [];
+                        param = [ThreadList.peek().tempValue.peek()];
+                        ThreadList.peek().tempValue.pop();
+                        boolResult = boolResult && f(param);
+                    });
+                    if (boolResult) {
                         nodeTrue = edge.to;
                     }
-                    else {
-                        nodeFalse = edge.to;
-                    }
-                });
+                }
+                //if the choice node's code is valided, we take the path includ this node.
                 //go to the next node which evoluation of the guard is true 
-                if (nodeTrue && nodeFalse) {
+                if (nodeTrue) {
+                    //A choice node must have a orjoin node in the ccfg
+                    let threadCurrent = new Thread(currentNode);
+                    ThreadList.push(threadCurrent);
                     currentNode = nodeTrue;
+                    ThreadList.peek().currentInstruction = currentNode.outputEdges;
                 }
                 else {
-                    console.log("trueNode | flaseNode doesn't existe at node.uid =" + currentNode.uid);
-                    return;
+                    let threadCurrent = new Thread(currentNode);
+                    ThreadList.push(threadCurrent);
+                    ThreadList.peek().tempValue.push(boolResult);
+                    currentNode = currentNode.outputEdges[0].to;
+                    ThreadList.peek().currentInstruction = currentNode.outputEdges;
                 }
                 break;
             }
             case "OrJoin": {
                 console.log(currentNode.uid + ": (" + currentNode.getType() + ")->");
-                /*let promiseList = stack.tempPromiseFunction;
-                if(node.cycles.length!=0 && promiseList.getLength()!=0){
-                    //let cycle = node.cycles;
-                    //let next = cycle[0][1];// begin.uid = 39
-                    //visitAllNodes(next,sigma,stack);
-                    //let end = cycle[cycle.length-1];//end.uid = 18
-                    defineAsyncFunction(promiseList);           //call promiseList
-                    stack.tempPromiseFunction.reduce();
-                    stack.tempValueList.reduce();
-
-                    stack.tempPromiseFunction.addTempValue(stack.fork[stack.fork.length-1]);
-                    stack.tempValueList.addTempValue(stack.fork[stack.fork.length-1]);
-                }*/
                 currentNode = currentNode.outputEdges[0].to;
-                ThreadList.peek().currentInstruction = currentNode.outputEdges;
+                //ThreadList.peek().currentInstruction=currentNode.outputEdges;
+                //ThreadList.pop();//pop the children thread from the list
+                let threadChild = ThreadList.pop(); //pop the children thread from the list
+                let threadCurrent = ThreadList.peek(); //parent's thread
+                //delete the child from list
+                threadCurrent.currentInstruction = currentNode.outputEdges;
+                //pick up sub-tree value
+                if (threadChild.tempValue.size() != 0) { //suppose the size == 0
+                    threadCurrent.tempValue.push(threadChild.tempValue.peek());
+                }
                 break;
             }
         }
@@ -274,6 +308,7 @@ function nodeCode(node, ThreadList) {
                 param.push(thread.tempValue.pop());
             }
         }
+        param = getMirrorOfList(param);
         if (node.returnType == "void") {
             console.log(f(param));
         }
@@ -284,25 +319,60 @@ function nodeCode(node, ThreadList) {
 }
 /**
  * creat function depends on the label on the guard
- * @param edge
+ * @param edgeGuard: one element of edge.guards
  * @param sigma
  * @returns Function object
  */
-function creatFunctionForEdge(edge, sigma) {
-    let guard = edge.guards[0].split(","); //["verifyEqual","VarRef2_4_2_6terminate","true"]
+/*function creatFunctionForEdgeGuard(edgeGuard: String, sigma:Map<any,any>,generator:IGenerator) : Array<Function>{
+    let functions:Array<Function> = new Array<Function>;
+    //function param
+    let paramElement = new TypedElement();
+    paramElement.name = "resRight";
+    paramElement.type = "Number" ;
+    let params : TypedElement[] = [paramElement];
+    //function body and function definition
+    let guards: string[] = [];
+    const guardList= edgeGuard.split(",");
+    if (guardList[0] === verifyEqual){
+        guards.push(`let ${guardList[1]} = resRight;`);
+        guards.push(`return ${generator.createEqualsVerif(guardList[1],guardList[2])}`);
+        functions.push(defineFunction("verifyEdges",params,guards,sigma));
+    }
+    //defineFunction(fnamestring, node.params, allFDefs, sigma)
+    return functions;
+}*/
+function creatFunctionForEdgeGuard(edgeGuard, sigma, generator) {
+    //function param
     let paramElement = new ccfg_1.TypedElement();
     paramElement.name = "resRight";
     paramElement.type = "Number";
     let params = [paramElement];
-    let functionBody = [];
-    var code = "return resRight ";
-    if (guard[0] == "verifyEqual") {
-        code += "== ";
+    //function body and function definition
+    let guards = [];
+    const guardList = edgeGuard.split(",");
+    if (guardList[0] === verifyEqual) {
+        guards.push(`let ${guardList[1]} = resRight;`);
+        guards.push(`return ${generator.createEqualsVerif(guardList[1], guardList[2])}`);
     }
-    code += guard[2];
-    code += ";";
-    functionBody.push(code);
-    return defineFunction("verifyEdges0", params, functionBody, sigma);
+    return defineFunction("verifyEdges", params, guards, sigma);
+}
+function creatFunctionListForEdge(edge, sigma, generator) {
+    let functions = [];
+    edge.guards.forEach(guard => {
+        let f = creatFunctionForEdgeGuard(guard, sigma, generator);
+        functions.push(f);
+    });
+    return functions;
+}
+function getMirrorOfList(list) {
+    let listMirror = [];
+    while (list.length > 0) {
+        let ele = list.pop();
+        if (ele != undefined) {
+            listMirror.push(ele);
+        }
+    }
+    return listMirror;
 }
 /*************************** choose next step node ********************************/
 //function to ask question and get user input

@@ -52,6 +52,9 @@
         "langium:watch": "langium generate --watch"
     },
     "dependencies": {
+        "ccfg": "^1.0.0",
+        "backend-compiler": "^1.0.0",
+        "interpreter": "^1.0.0",
         "chalk": "^4.1.2",
         "chevrotain": "^10.4.1",
         "commander": "^8.0.0",

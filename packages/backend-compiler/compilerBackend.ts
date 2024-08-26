@@ -47,7 +47,7 @@ function doGenerateCode(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: boo
 
 
 
-function compileFunctionDefs(ccfg: CCFG,generator:IGenerator): string[] {
+export function compileFunctionDefs(ccfg: CCFG,generator:IGenerator): string[] {
     let res: string[] = [];
     for (let node of ccfg.nodes) {
         // if(node.getType() == "ContainerNode"){

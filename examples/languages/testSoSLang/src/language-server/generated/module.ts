@@ -21,5 +21,4 @@ export const SimpleLGeneratedModule: Module<LangiumServices, LangiumGeneratedSer
     Grammar: () => SimpleLGrammar(),
     LanguageMetaData: () => SimpleLLanguageMetaData,
     parser: {}
-    
 };
