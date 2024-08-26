@@ -1,5 +1,68 @@
 import { AstNode } from "langium";
 import { integer } from "vscode-languageclient";
+export declare class Instruction {
+    readonly $instructionType: string;
+    constructor(type: string);
+    toString(): string;
+}
+export declare class ReturnInstruction extends Instruction {
+    varName: string;
+    constructor(varName: string);
+    toString(): string;
+}
+export declare class CreateVarInstruction extends Instruction {
+    varName: string;
+    type: string;
+    constructor(name: string, type: string);
+    toString(): string;
+}
+export declare class CreateGlobalVarInstruction extends Instruction {
+    varName: string;
+    type: string;
+    constructor(name: string, type: string);
+    toString(): string;
+}
+export declare class AssignVarInstruction extends Instruction {
+    value: string;
+    varName: string;
+    type: string;
+    constructor(varName: string, value: string, type?: string);
+    toString(): string;
+}
+export declare class SetVarFromGlobalInstruction extends Instruction {
+    varName: string;
+    globalVarName: string;
+    type: string;
+    constructor(name: string, globalVarName: string, type?: string);
+    toString(): string;
+}
+export declare class SetGlobalVarInstruction extends Instruction {
+    globalVarName: string;
+    value: string;
+    type: string;
+    constructor(globalVarName: string, value: string, type?: string);
+    toString(): string;
+}
+export declare class OperationInstruction extends Instruction {
+    varName: string;
+    n1: string;
+    op: string;
+    n2: string;
+    type: string;
+    constructor(varName: string, n1: string, op: string, n2: string, type?: string);
+    toString(): string;
+}
+export declare class VerifyEqualInstruction extends Instruction {
+    n1: string;
+    n2: string;
+    constructor(n1: string, n2: string);
+    toString(): string;
+}
+export declare class AddSleepInstruction extends Instruction {
+    duration: string;
+    constructor(duration: string);
+    toString(): string;
+}
 export declare class TypedElement {
     name: string;
     type: (string | undefined);
@@ -21,13 +84,13 @@ export declare abstract class Node {
     syncNodeIds: integer[];
     functionsNames: string[];
     params: TypedElement[];
-    functionsDefs: string[];
+    functionsDefs: Instruction[];
     returnType: string | undefined;
     numberOfVisits: integer;
     isCycleInitiator: boolean;
     cycles: Node[][];
     isVisited: boolean;
-    constructor(astNode?: AstNode, type?: NodeType, theActions?: string[]);
+    constructor(astNode?: AstNode, type?: NodeType, theActions?: Instruction[]);
     getType(): string;
     isBefore(n2: Node): boolean;
     cyclePossessAnAndJoin(): boolean;
@@ -38,7 +101,7 @@ export declare class Edge {
     to: Node;
     label?: string;
     astNode: AstNode | undefined;
-    guards: string[];
+    guards: Instruction[];
     uid: integer;
     constructor(from: Node, to: Node, label?: string);
 }
@@ -116,7 +179,7 @@ export declare class SyncEdge extends Edge {
     constructor(from: Node, to: Node, label?: string);
 }
 export declare class Step extends Node {
-    constructor(astNode?: AstNode, type?: NodeType, theActions?: string[]);
+    constructor(astNode?: AstNode, type?: NodeType, theActions?: Instruction[]);
 }
 export declare class Choice extends Node {
     constructor(astNode?: AstNode);
