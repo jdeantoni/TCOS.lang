@@ -1,5 +1,6 @@
 import fs from 'fs';
-import { AstNode, CompositeGeneratorNode, Grammar,  NL, toString } from 'langium';
+import { AstNode, Grammar} from 'langium';
+import { CompositeGeneratorNode ,NL,toString} from 'langium/generate';
 import { Assignment, BinaryExpression, CollectionRuleSync, EventCombination, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, NaryEventExpression, RWRule, RuleOpening, SingleRuleSync, SoSSpec, TypeReference, ValuedEventEmission, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration } from '../language-server/generated/ast.js'; //VariableDeclaration
 import { extractDestinationAndName, FilePathData } from './cli-util.js';
 import path from 'path';
@@ -1248,7 +1249,7 @@ function isParticipantCollectionBased(participant: TypedElement[]): boolean {
 function writePreambule(fileNode: CompositeGeneratorNode, data: FilePathData) {
     fileNode.append(`
 import fs from 'fs';
-import { AstNode, Reference, isReference, streamAst } from "langium";
+import { AstNode, Reference, isReference, AstUtils } from "langium";
 import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole} from "ccfg";`, NL)
 }
 
@@ -1264,7 +1265,7 @@ function addUtilFunctions(fileNode: CompositeGeneratorNode,rootTypeName: string)
         //pass 1: create local CCFGs for all nodes
         console.log("pass 1: create local CCFGs for all nodes")
         let astNodeToLocalCCFG = new Map<AstNode, CCFG>()
-        for (let n of streamAst(root)){
+        for (let n of AstUtils.streamAst(root)){
             let localCCFG = this.createLocalCCFG(n)
             if(debug){
                 let dotContent = localCCFG.toDot();

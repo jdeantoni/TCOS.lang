@@ -1,5 +1,6 @@
 import fs from 'fs';
-import {CompositeGeneratorNode, Grammar, NL, streamAst, toString } from 'langium';
+import {AstUtils, Grammar } from 'langium';
+import {CompositeGeneratorNode, NL, toString} from 'langium/generate'
 import {  RWRule, RuleOpening, SoSSpec, TemporaryVariable, isRWRule, isRuleOpening, isTemporaryVariable, isValuedEventEmission, isVariableDeclaration } from '../language-server/generated/ast.js'; //VariableDeclaration
 import { extractDestinationAndName, FilePathData } from './cli-util.js';
 // import { print } from '../utils/sos-utils';
@@ -303,7 +304,7 @@ function generateThegenerateCCSLFunction(fileNode: CompositeGeneratorNode, model
         for (var node of streamAllContents(model)) {
     `);
 
-    for(let node of streamAst(model)){
+    for(let node of AstUtils.streamAst(model)){
         if(isRuleOpening(node)){
             fileNode.append(`
             if(is${(node as RuleOpening).onRule?.$refText}(node)){

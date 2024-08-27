@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.JsGenerator = void 0;
-class JsGenerator {
+export class JsGenerator {
     debug = false;
     setDebug(debug = false) {
         this.debug = debug;
@@ -142,4 +139,3 @@ let sigma = new Map();
         return ["await new Promise(resolve => setTimeout(resolve, " + duration + "));\n"];
     }
 }
-exports.JsGenerator = JsGenerator;

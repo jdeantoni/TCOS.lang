@@ -1,11 +1,5 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.generatefromCCFG = void 0;
-const langium_1 = require("langium");
-const chalk_1 = __importDefault(require("chalk"));
+import { MultiMap } from 'langium';
+import chalk from 'chalk';
 const createVar = "createVar"; //createVar,type,name
 const assignVar = "assignVar"; //assignVar,name,value
 const setVarFromGlobal = "setVarFromGlobal"; //setVarFromGlobal,type,varName,globalVarName
@@ -16,14 +10,13 @@ const ret = "return"; //return,varName
 const verifyEqual = "verifyEqual"; //verifyEqual,varName1,varName2
 const addSleep = "addSleep"; //addSleep,duration
 let debug = false;
-function generatefromCCFG(ccfg, codeFile, generator, filePath, debug) {
+export function generatefromCCFG(ccfg, codeFile, generator, filePath, debug) {
     doGenerateCode(codeFile, ccfg, debug, generator);
 }
-exports.generatefromCCFG = generatefromCCFG;
 function doGenerateCode(codeFile, ccfg, debug, generator) {
     let initNode = ccfg.initialState;
     if (initNode == undefined) {
-        console.log(chalk_1.default.red("No initial state found in the CCFG, aborting"));
+        console.log(chalk.red("No initial state found in the CCFG, aborting"));
         return;
     }
     generator.setDebug(debug);
@@ -90,7 +83,7 @@ function compileFunctionDefs(ccfg, generator) {
     }
     return res;
 }
-let fifoThreadUid = new langium_1.MultiMap();
+let fifoThreadUid = new MultiMap();
 let continuations = [];
 let continuationsRecursLevel = [];
 let visitedUID = [];
@@ -309,7 +302,7 @@ function visitAllNodes(ccfg, currentNode, generator, visitIsStarting = false) {
                         if (currentNode.returnType == undefined) {
                             let ptns = getPreviousTypedNodes(currentNode.inputEdges[0]);
                             if (ptns.length > 1) {
-                                console.log(chalk_1.default.red(currentNode.uid + " : multiple previous typed nodes not handled here"));
+                                console.log(chalk.red(currentNode.uid + " : multiple previous typed nodes not handled here"));
                             }
                             let ptn = ptns[0];
                             insideOfIf = [...insideOfIf, ...addQueuePushCode(edge.to.uid, ptn, ccfg, ptn.functionsNames[0], generator)];

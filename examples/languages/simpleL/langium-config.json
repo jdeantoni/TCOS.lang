@@ -2,11 +2,11 @@
     "projectName": "SimpleL",
     "languages": [{
         "id": "simple-l",
-        "grammar": "src/language-server/simple-l.langium",
+        "grammar": "src/language/simple-l.langium",
         "fileExtensions": [".simple"],
         "textMate": {
             "out": "syntaxes/simple-l.tmLanguage.json"
         }
     }],
-    "out": "src/language-server/generated"
+    "out": "src/language/generated"
 }

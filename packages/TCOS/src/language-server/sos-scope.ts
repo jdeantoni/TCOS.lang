@@ -6,14 +6,15 @@
 
 import {
     AstNode,
-    DefaultScopeComputation, DefaultScopeProvider, EMPTY_SCOPE, getContainerOfType, isReference, LangiumServices, ReferenceInfo,Scope, ScopeOptions, stream, streamAllContents, StreamScope
+    AstUtils,
+    DefaultScopeComputation, DefaultScopeProvider, EMPTY_SCOPE, isReference, ReferenceInfo,Scope, ScopeOptions, stream , StreamScope
 } from 'langium';
 
+
 import { AbstractRule, Assignment, CollectionRuleSync, CrossReference, isAbstractRule, isAlternatives, isAssignment, isCollectionRuleSync, isMemberCall, isRuleOpening, isRuleSync, isRWRule, 
-         isSoSSpec, isTemporaryVariable, MemberCall, MethodMember, Parameter,isCrossReference, isGrammar,
+         isSoSSpec, isTemporaryVariable, MemberCall, Parameter,isCrossReference, isGrammar,
          ParserRule, RuleOpening, RWRule, SoSSpec, TypeReference, VariableDeclaration,
-         Alternatives,
-         FieldMember,
+         Alternatives, MethodMember, FieldMember, 
          isParserRule} from './generated/ast.js';
 import { getRuleOpeningChain, inferType } from './type-system/infer.js';
 import { isParserRuleType, isRuleOpeningType } from './type-system/descriptions.js';
@@ -21,6 +22,7 @@ import { AbstractElement } from './generated/ast.js';
 import { isGroup } from './generated/ast.js';
 import { Group } from './generated/ast.js';
 import { getType } from '../utils/sos-utils.js';
+import { LangiumServices } from 'langium/lsp';
 
 
 
@@ -41,7 +43,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
             const memberCall = context.container as MemberCall;
             const previous = memberCall.previous;
             if (!previous) {
-                const ruleOpeningItem = getContainerOfType(context.container, isRuleOpening);
+                const ruleOpeningItem = AstUtils.getContainerOfType(context.container, isRuleOpening);
                 
                // return super.getScope(context);
                 if (ruleOpeningItem) {
@@ -51,7 +53,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
             
             //TODO: should never write a so crappy code ! To be refactored !
             if (isMemberCall(previous) && previous.element !== undefined){
-                const collectionRuleSync = getContainerOfType(previous.$container, isCollectionRuleSync);
+                const collectionRuleSync = AstUtils.getContainerOfType(previous.$container, isCollectionRuleSync);
                 if(collectionRuleSync){
                     if((collectionRuleSync.collection as MemberCall).element?.ref){
                         let collectionElemRef = (collectionRuleSync.collection as MemberCall).element?.ref
@@ -60,7 +62,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                             if (isCrossReference(terminal)){
                                 if(isParserRule((terminal as CrossReference).type.ref)){
                                     const parserRuleItem = (terminal as CrossReference).type.ref
-                                    const sosSpec = getContainerOfType(context.container, isSoSSpec)
+                                    const sosSpec = AstUtils.getContainerOfType(context.container, isSoSSpec)
                                     if(sosSpec){
                                         for(var ro of sosSpec.rtdAndRules){
                                             if (isRuleOpening(ro)){
@@ -83,7 +85,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                             if (isCrossReference(terminal)){
                                 if(isParserRule((terminal as CrossReference).type.ref)){
                                     const parserRuleItem = (terminal as CrossReference).type.ref
-                                    const sosSpec = getContainerOfType(context.container, isSoSSpec)
+                                    const sosSpec = AstUtils.getContainerOfType(context.container, isSoSSpec)
                                     if(sosSpec){
                                         for(var ro of sosSpec.rtdAndRules){
                                             if (isRuleOpening(ro)){
@@ -98,7 +100,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                             }
                         }
                 }
-                const ruleOpeningItem = getContainerOfType(previous.$container, isRuleOpening);
+                const ruleOpeningItem = AstUtils.getContainerOfType(previous.$container, isRuleOpening);
                 if (ruleOpeningItem) {
                     return this.scopeRuleOpeningMembers(ruleOpeningItem,previous);
                 }
@@ -110,7 +112,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                // return this.scopeRuleOpeningMembers(previousType.literal);
             }else if (isParserRuleType(previousType)) {
                 //either the rule has been open and then we need the cope of this ruleOpening or not and then only "assigments" have to be considered
-                const sosSpecItem: SoSSpec | undefined = getContainerOfType(previous?.$container, isSoSSpec);
+                const sosSpecItem: SoSSpec | undefined = AstUtils.getContainerOfType(previous?.$container, isSoSSpec);
                 if (sosSpecItem){
                     for(var ro of sosSpecItem.rtdAndRules){
                         if (isRuleOpening(ro)){
@@ -122,7 +124,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                     }
                 }
                 if(isMemberCall(previous)){
-                    const ruleOpeningItem: RuleOpening | undefined = getContainerOfType(previous?.$container, isRuleOpening);
+                    const ruleOpeningItem: RuleOpening | undefined = AstUtils.getContainerOfType(previous?.$container, isRuleOpening);
                 //     console.log(chalk.red("previous is ", previous.$type))
                 //     if(isReference(previous.element)){
                 //         console.log(chalk.red("isReference", previous.element.$refText))
@@ -312,7 +314,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         if (context && context.element && context.element.ref && isAssignment(context.element.ref) 
             && isCrossReference((context.element.ref as unknown as Assignment).terminal)){
             var parserRule = ((context.element.ref as unknown as Assignment).terminal as CrossReference).type.ref
-            var sosSpec =  getContainerOfType(ruleOpeningItem?.$container, isSoSSpec);
+            var sosSpec =  AstUtils.getContainerOfType(ruleOpeningItem?.$container, isSoSSpec);
             var contextRuleOpeningItem = undefined
             if (sosSpec){
                 for(let rule of sosSpec?.rtdAndRules){
@@ -341,7 +343,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                     /**
                      * TODO: add temporary variable in scope with recursive call
                      */
-                    for(let expr of streamAllContents((rule as RWRule).premise.eventExpression)){
+                    for(let expr of AstUtils.streamAllContents((rule as RWRule).premise.eventExpression)){
                         if(isTemporaryVariable(expr)){
                             allMembers.push(expr)
                         }
@@ -371,7 +373,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         for(let v of ruleOpeningItem.runtimeState){
             if ((v as VariableDeclaration).type?.primitive?.name == "Timer"){
                 const starts: FieldMember = {
-                    $container: v,
+                    $container: ruleOpeningItem,
                     $type: 'FieldMember',
                     name: "starts",
                     $cstNode: ruleOpeningItem.$cstNode,
@@ -384,7 +386,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                 };
                 starts.type.primitive = { name: 'event', $container: starts.type, $type: 'SoSPrimitiveType' };
                 const terminates: FieldMember = {
-                    $container: v,
+                    $container: ruleOpeningItem,
                     $type: 'FieldMember',
                     name: "terminates",
                     $cstNode: ruleOpeningItem.$cstNode,
@@ -479,7 +481,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
 
     private getAllRules(element: AbstractElement): AbstractRule[] {
         var allAbstractRules: AbstractRule[] = [];
-        const grammar = getContainerOfType(element.$container, isGrammar);
+        const grammar = AstUtils.getContainerOfType(element.$container, isGrammar);
 
         if (grammar) {
             allAbstractRules = allAbstractRules.concat(grammar.rules)

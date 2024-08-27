@@ -1,11 +1,11 @@
-import type { Program } from '../language/generated/ast.js';
+import type { Model } from '../language/generated/ast.js';
 import chalk from 'chalk';
 import { Command } from 'commander';
-import { ParLangLanguageMetaData } from '../language/generated/module.js';
-import { createParLangServices } from '../language/par-lang-module.js';
+import { SimpleLLanguageMetaData } from '../language/generated/module.js';
+import { createSimpleLServices } from '../language/simple-l-module.js';
 import { extractAstNode, extractDestinationAndName } from './cli-util.js';
 import { NodeFileSystem } from 'langium/node';
-import * as url from 'node:url';
+// import * as url from 'node:url';
 import * as fs from 'fs';
 import * as path from 'node:path';
 import { generatefromCCFG } from 'backend-compiler/compilerBackend';
@@ -14,14 +14,14 @@ import { PythonGenerator } from 'backend-compiler/pythonGenerator';
 import { CppGenerator } from 'backend-compiler/cppGenerator';
 import { JsGenerator } from 'backend-compiler/jsGenerator';
 import { CompositeGeneratorNode, toString } from 'langium/generate';
-import { ParLangCompilerFrontEnd } from './generated/parLangCompilerFrontEnd.js';
+import { SimpleLCompilerFrontEnd } from './generated/simpleLCompilerFrontEnd.js';
 import { CCFG } from 'ccfg';
-const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
+// const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 
 export const generateAction = async (fileName: string, opts: GenerateOptions): Promise<void> => {
-    const services = createParLangServices(NodeFileSystem).ParLang;
-    const model = await extractAstNode<Program>(fileName, services);
+    const services = createSimpleLServices(NodeFileSystem).SimpleL;
+    const model = await extractAstNode<Model>(fileName, services);
 
     const data = extractDestinationAndName(fileName, opts.targetDirectory);
     
@@ -72,7 +72,7 @@ export type GenerateOptions = {
 export default function(): void {
     const program = new Command();
 
-    const fileExtensions = ParLangLanguageMetaData.fileExtensions.join(', ');
+    const fileExtensions = SimpleLLanguageMetaData.fileExtensions.join(', ');
     program
     .command('generate')
     .argument('<file>', `source file (possible file extensions: ${fileExtensions})`)
@@ -86,9 +86,9 @@ export default function(): void {
     program.parse(process.argv);
 }
 
-function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Program,debug:boolean): CCFG {
-    var compilerFrontEnd = new ParLangCompilerFrontEnd(debug);
-    var ccfg = compilerFrontEnd.generateCCFG(model);
+function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model,debug:boolean): CCFG {
+    var compilerFrontEnd = new SimpleLCompilerFrontEnd();
+    var ccfg = compilerFrontEnd.generateCCFG(model, debug);
    
     ccfg.addSyncEdge()
 

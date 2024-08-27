@@ -1,6 +1,6 @@
 semantics SimpleL
 
-import "./testSoSLang/src/language-server/simple-l.langium"
+import "./simpleL/src/language/simple-l.langium"
 
 
 

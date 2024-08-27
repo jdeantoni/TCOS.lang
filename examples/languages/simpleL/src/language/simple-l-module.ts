@@ -1,9 +1,7 @@
-import {
-    createDefaultModule, createDefaultSharedModule, DefaultSharedModuleContext, inject,
-    LangiumServices, LangiumSharedServices, Module, PartialLangiumServices
-} from 'langium';
-import { SimpleLGeneratedModule, SimpleLGeneratedSharedModule } from './generated/module';
-import { SimpleLValidator, registerValidationChecks } from './simple-l-validator';
+import { type Module, inject } from 'langium';
+import { createDefaultModule, createDefaultSharedModule, type DefaultSharedModuleContext, type LangiumServices, type LangiumSharedServices, type PartialLangiumServices } from 'langium/lsp';
+import { SimpleLGeneratedModule, SimpleLGeneratedSharedModule } from './generated/module.js';
+import { SimpleLValidator, registerValidationChecks } from './simple-l-validator.js';
 
 /**
  * Declaration of custom services - add your own service classes here.
@@ -61,5 +59,10 @@ export function createSimpleLServices(context: DefaultSharedModuleContext): {
     );
     shared.ServiceRegistry.register(SimpleL);
     registerValidationChecks(SimpleL);
+    if (!context.connection) {
+        // We don't run inside a language server
+        // Therefore, initialize the configuration provider instantly
+        shared.workspace.ConfigurationProvider.initialized({});
+    }
     return { shared, SimpleL };
 }

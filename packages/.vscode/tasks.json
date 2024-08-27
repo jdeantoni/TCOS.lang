@@ -9,6 +9,7 @@
 			"detail": "langium generate"
 		},
 		{
+			"path": "TCOS",
 			"type": "npm",
 			"script": "build",
 			"problemMatcher": [],

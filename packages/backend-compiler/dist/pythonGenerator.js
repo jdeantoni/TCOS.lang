@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.PythonGenerator = void 0;
-class PythonGenerator {
+export class PythonGenerator {
     debug;
     constructor(debug = false) {
         this.debug = debug;
@@ -9,9 +6,9 @@ class PythonGenerator {
     setDebug(debug) {
         this.debug = debug;
     }
-    goToFlag(codeFile, queueUID) {
-        throw new Error("Method not implemented.");
-    }
+    // goToFlag(codeFile: CompositeGeneratorNode, queueUID: number): string[] {
+    //     throw new Error("Method not implemented.");
+    // }
     setLoopFlag(queueUID) {
         return [`flag${queueUID} = True\n`];
     }
@@ -112,7 +109,7 @@ class PythonGenerator {
     endThread(uid) {
         return [`return \n`];
     }
-    endSection(codeFile) {
+    endSection() {
         this.nbTabs--;
     }
     createQueue(queueUID) {
@@ -158,4 +155,3 @@ class PythonGenerator {
         return [`time.sleep(${duration}//1000) \n`];
     }
 }
-exports.PythonGenerator = PythonGenerator;

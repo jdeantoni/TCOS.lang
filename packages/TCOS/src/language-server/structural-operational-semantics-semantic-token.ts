@@ -1,8 +1,8 @@
 // import { SemanticTokenTypes } from 'vscode-languageserver';
 // import { AstNode } from 'langium';
-import { AbstractSemanticTokenProvider,
-         AstNode,
-         SemanticTokenAcceptor} from 'langium';
+import { AstNode} from 'langium';
+import { AbstractSemanticTokenProvider, SemanticTokenAcceptor} from 'langium/lsp';
+
 // import { isAction, isAssignment, isAtomType, isConclusion, isParameter, isParameterReference, isReturnType, isRuleCall, isTypeAttribute } from './generated/ast';
 
 export class SoSSemanticTokenProvider extends AbstractSemanticTokenProvider {

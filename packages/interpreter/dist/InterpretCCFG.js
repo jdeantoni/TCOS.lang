@@ -1,8 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.visitAllNodesInterpret = exports.Thread = exports.interpretfromCCFG = exports.debug = void 0;
-const ccfg_1 = require("ccfg");
-const TempList_js_1 = require("./TempList.js");
+import { TypedElement } from 'ccfg';
+import { Stack } from './TempList.js';
 // import { MockDebugSession } from './degugger/mockDebug.js';
 const createVar = "createVar"; //createVar,type,name
 const assignVar = "assignVar"; //assignVar,name,value
@@ -12,11 +9,11 @@ const setGlobalVar = "setGlobalVar"; //setGlobalVar,type,varName,value
 const operation = "operation"; //operation,varName,n1,op,n2
 const ret = "return"; //return,varName
 // const verifyEqual = "verifyEqual" //verifyEqual,varName1,varName2
-exports.debug = false;
+export var debug = false;
 let allFunctions = new Map();
-async function interpretfromCCFG(ccfg, generator, isDebug) {
+export async function interpretfromCCFG(ccfg, generator, isDebug) {
     const sigma = new Map();
-    var ThreadList = new TempList_js_1.Stack();
+    var ThreadList = new Stack();
     // var debugsession: MockDebugSession | undefined =undefined;
     if (isDebug) {
         //debugsession = new MockDebugSession(fileAccessor);
@@ -28,14 +25,13 @@ async function interpretfromCCFG(ccfg, generator, isDebug) {
         await visitAllNodesInterpret(ccfg.initialState, sigma, ThreadList /*, debugsession*/); //breakpointAdresse should be a debug seesion
     }
 }
-exports.interpretfromCCFG = interpretfromCCFG;
 function compileFunctionDefs(ccfg, generator, sigma, codeFile) {
     let functionsDefs = new Map();
     for (let node of ccfg.nodes) {
         // if(node.getType() == "ContainerNode"){
         //     functionsDefs += compileFunctionDefs((node as ContainerNode).internalccfg);
         // }else{
-        if (!exports.debug && node.functionsDefs.length == 0) {
+        if (!debug && node.functionsDefs.length == 0) {
             continue;
         }
         if (node.returnType != undefined) {
@@ -81,17 +77,16 @@ function compileFunctionDefs(ccfg, generator, sigma, codeFile) {
     return functionsDefs;
 }
 /****************************************************************************** INTERPRETER *******************************************************************************/
-class Thread {
+export class Thread {
     tempValue; //The temparal values retrun by function in node (Modify as a stack)
     owner; //The strated Node of a thread (the value of the attribute would not be changed)
     currentInstruction; //A list of edge or edges to the next step(varies depending on the visit process. from attribute of edge = current node)
     constructor(owner) {
-        this.tempValue = new TempList_js_1.Stack();
+        this.tempValue = new Stack();
         this.owner = owner;
         this.currentInstruction = [...owner.outputEdges];
     }
 }
-exports.Thread = Thread;
 /**
  * browse the ccfg sart with a given node
  * @param startNode
@@ -100,7 +95,7 @@ exports.Thread = Thread;
  * @param debugsession
  * @returns stop the visit
  */
-async function visitAllNodesInterpret(startNode, sigma, ThreadList /*,  debugsession: MockDebugSession|undefined*/) {
+export async function visitAllNodesInterpret(startNode, sigma, ThreadList /*,  debugsession: MockDebugSession|undefined*/) {
     var currentNode = startNode;
     var edgeSelected;
     while (currentNode.outputEdges && ((currentNode.outputEdges[0] && currentNode.outputEdges[0].to) || (currentNode.outputEdges[1] && currentNode.outputEdges[1].to))) {
@@ -234,7 +229,6 @@ async function visitAllNodesInterpret(startNode, sigma, ThreadList /*,  debugses
     }
     console.log(sigma);
 }
-exports.visitAllNodesInterpret = visitAllNodesInterpret;
 /**
  * evaluate the functions that are in the nodes,define function;
  * @param functionName
@@ -290,7 +284,7 @@ function nodeCode(node, ThreadList) {
  */
 function creatFunctionForEdge(edge, sigma) {
     let guard = edge.guards[0].split(","); //["verifyEqual","VarRef2_4_2_6terminate","true"]
-    let paramElement = new ccfg_1.TypedElement();
+    let paramElement = new TypedElement();
     paramElement.name = "resRight";
     paramElement.type = "Number";
     let params = [paramElement];

@@ -7,9 +7,9 @@
     We have a global variable sigma to store the value of variables defined in the program. And the calss Thread allow us to simulate
     the execution of a thread.
 */
-import { CompositeGeneratorNode } from 'langium';
+import { CompositeGeneratorNode } from 'langium/generate';
 import { CCFG, Edge, Node,TypedElement } from 'ccfg';
-import { IGenerator } from 'backend-compiler/GeneratorInterface.js';
+import { IGenerator } from 'backend-compiler/GeneratorInterface';
 import { Stack } from './TempList.js';
 // import { MockDebugSession } from './degugger/mockDebug.js';
 
