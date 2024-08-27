@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.CppGenerator = void 0;
-class CppGenerator {
+export class CppGenerator {
     debug;
     constructor(debug = false) {
         this.debug = debug;
@@ -150,4 +147,3 @@ class CppGenerator {
         return [`std::this_thread::sleep_for(${duration}ms);\n`];
     }
 }
-exports.CppGenerator = CppGenerator;

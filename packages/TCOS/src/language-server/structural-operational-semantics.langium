@@ -15,6 +15,8 @@ RuleOpening:
     (name=ID)? 'open' onRule=[ParserRule:ID] '{'
     (runtimeState+=(VariableDeclaration))*
     (rules+=RWRule)* 
+	(methods+=MethodMember)*
+	(fields+=FieldMember)*
 
     '}' 
 ;
@@ -37,11 +39,11 @@ EventExpression:
 EventEmission:
 	SimpleEventEmission | ValuedEventEmission | RuleSync;
 
-Data:
-	EventValueRef | Constant | ValuedEventRefConstantComparison;
+// Data:
+// 	EventValueRef | Constant | ValuedEventRefConstantComparison;
 
-Expression:
-	EventValueRef | Constant | ValuedEventRefConstantComparison | UnaryMinus | FunctionCallExpr | ClassicalExpression;
+// Expression:
+// 	EventValueRef | Constant | ValuedEventRefConstantComparison | UnaryMinus | FunctionCallExpr | ClassicalExpression;
 
 EString returns string:
 	STRING | ID;
@@ -114,13 +116,13 @@ ImplicitValuedEventRefConstantComparison:
 
 
 
-EventValueRef:
-	value=[ValuedEventRef:EString]
-	;
+// EventValueRef:
+// 	value=[ValuedEventRef:EString]
+// 	;
 
-Constant:
-	literal=EString
-	;
+// Constant:
+// 	literal=EString
+// 	;
 
 SimpleEventEmission:
 	('emits')? event=MemberCall
@@ -134,13 +136,13 @@ ValuedEventEmission:
 	('emits')? event=MemberCall '[' data=ClassicalExpression']'
 	;
 
-UnaryMinus:
-	'-' expression=Expression
-;
+// UnaryMinus:
+// 	'-' expression=Expression
+// ;
 
-FunctionCallExpr:
-	name=ID
-		'(' (parameters+=Expression ( "," parameters+=Expression)*)? ')';
+// FunctionCallExpr:
+// 	name=ID
+// 		'(' (parameters+=Expression ( "," parameters+=Expression)*)? ')';
 
 
 SelectionPolicy:
@@ -206,9 +208,9 @@ MemberCall infers ClassicalExpression:
     )*;
 
 MethodMember:
-     name=ID '(' (parameters+=Parameter (',' parameters+=Parameter)*)? ')' ':' returnType=TypeReference;  //body=ExpressionBlock;
+      name=ID '(' (parameters+=Parameter (',' parameters+=Parameter)*)? ')' ':' returnType=TypeReference;  //body=ExpressionBlock;
 FieldMember:
-    name=ID ':' type=TypeReference;
+     name=ID ':' type=TypeReference;
 
 Primary infers ClassicalExpression:
     '(' ClassicalExpression ')' |
@@ -254,15 +256,15 @@ SoSPrimitiveType:
     name=("string" | "integer" | "boolean" | "void" | "event" | "Timer"); 
 
 
-type NamedElement = /*Parameter | FunctionDeclaration |*/ MethodMember |VariableDeclaration | RuleOpening | TemporaryVariable | SoSPrimitiveType | RWRule  ;  
+type NamedElement = /*Parameter | FunctionDeclaration | */FieldMember | MethodMember |VariableDeclaration | RuleOpening | TemporaryVariable | SoSPrimitiveType | RWRule  ;  
 
 // hidden terminal WS: /\s+/;
 // terminal ID: /[_a-zA-Z][\w_]*/;
-terminal NUMBER returns number: /[0-9]+(\.[0-9]+)?/;
+// terminal NUMBER returns number: /[0-9]+(\.[0-9]+)?/;
 // terminal STRING: /"[^"]*"/;
 
 // hidden terminal ML_COMMENT: /\/\*[\s\S]*?\*\//;
 // hidden terminal SL_COMMENT: /\/\/[^\n\r]*/;
 
-QualifiedName returns string:
-    ID ('.' ID)*; 
+// QualifiedName returns string:
+//     ID ('.' ID)*; 

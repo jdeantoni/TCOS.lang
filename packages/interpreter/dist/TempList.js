@@ -1,4 +1,3 @@
-"use strict";
 /* The temporary values ​​that concern the execution of forks are stored in an Array of list(TempList).
     Each TempList contains a number of elements that are values ​​returned by subtrees of a fork.
 
@@ -7,9 +6,7 @@
 
     This structure is like a stack. When we finish visiting a subtree, we pop an element (TempList).
 */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.Stack = void 0;
-class Stack {
+export class Stack {
     capacity;
     storage = [];
     constructor(capacity = Infinity) {
@@ -43,4 +40,3 @@ class Stack {
         return this.storage.length;
     }
 }
-exports.Stack = Stack;

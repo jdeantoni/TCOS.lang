@@ -1,5 +1,4 @@
-import { CompositeGeneratorNode } from "langium";
-import { IGenerator } from "./GeneratorInterface";
+import { IGenerator } from "./GeneratorInterface.js";
 import { TypedElement } from "ccfg";
 
 
@@ -13,9 +12,9 @@ export class PythonGenerator implements IGenerator {
         this.debug = debug;
     }
     
-    goToFlag(codeFile: CompositeGeneratorNode, queueUID: number): string[] {
-        throw new Error("Method not implemented.");
-    }
+    // goToFlag(codeFile: CompositeGeneratorNode, queueUID: number): string[] {
+    //     throw new Error("Method not implemented.");
+    // }
     
     setLoopFlag( queueUID: number): string[] {
         return [`flag${queueUID} = True\n`];
@@ -123,7 +122,7 @@ export class PythonGenerator implements IGenerator {
     endThread( uid: number): string[] {
         return [`return \n`];
     }
-    endSection(codeFile: CompositeGeneratorNode): void {
+    endSection(): void {
         this.nbTabs--;
     }
     createQueue( queueUID: number): string[] {

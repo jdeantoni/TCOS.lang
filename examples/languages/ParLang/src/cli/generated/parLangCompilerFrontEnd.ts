@@ -1,6 +1,6 @@
 
 import fs from 'fs';
-import { AstNode, Reference, isReference, streamAst } from "langium";
+import { AstNode, Reference, isReference, AstUtils } from "langium";
 import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole} from "ccfg";
 import { Program,Seq,Par,Perio,Stmt1,Stmt2 } from "../../language/generated/ast.js";
 
@@ -347,7 +347,7 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
         //pass 1: create local CCFGs for all nodes
         console.log("pass 1: create local CCFGs for all nodes")
         let astNodeToLocalCCFG = new Map<AstNode, CCFG>()
-        for (let n of streamAst(root)){
+        for (let n of AstUtils.streamAst(root)){
             let localCCFG = this.createLocalCCFG(n)
             if(debug){
                 let dotContent = localCCFG.toDot();

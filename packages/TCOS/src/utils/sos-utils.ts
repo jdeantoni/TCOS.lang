@@ -1,7 +1,7 @@
 import { isAbstractRule, isCrossReference,CrossReference, TemporaryVariable, isBinaryExpression, isRuleCall, isTemporaryVariable } from "../language-server/generated/ast.js"
 import { MemberCall, NamedElement, AbstractRule, TypeReference, VariableDeclaration, 
          isTypeReference, isVariableDeclaration, RuleOpening, isMemberCall, isRWRule, isMethodMember,
-         isNamedElement, isAssignment, RuleCall, Expression } from "../language-server/generated/ast.js"
+         isNamedElement, isAssignment, RuleCall/*, Expression*/ } from "../language-server/generated/ast.js"
 import { isNumberExpression } from "../language-server/generated/ast.js"
 import { AstNode, Reference, isReference } from "langium"
 
@@ -10,7 +10,7 @@ export function getType(elem: TypeReference | undefined): NamedElement| Abstract
 export function getType(elem: NamedElement | undefined): NamedElement| AbstractRule;
 export function getType(elem: TemporaryVariable): NamedElement | AbstractRule;
 export function getType(elem: VariableDeclaration): NamedElement| AbstractRule;
-export function getType(elem: Expression): NamedElement| AbstractRule;
+// export function getType(elem: Expression): NamedElement| AbstractRule;
 
 export function getType(elem:any): NamedElement| AbstractRule {
     if(isAssignment(elem)){
@@ -79,7 +79,7 @@ export function getType(elem:any): NamedElement| AbstractRule {
 
 
 export function print(elem: TemporaryVariable, separator:string): string;
-export function print(elem: Expression | undefined, separator:string) : string;
+// export function print(elem: Expression | undefined, separator:string) : string;
 export function print(elem: MemberCall, separator:string): string;
 export function print(elem: NamedElement | undefined, separator:string): string;
 export function print(elem: VariableDeclaration | undefined, separator:string): string;

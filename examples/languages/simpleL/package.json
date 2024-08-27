@@ -1,5 +1,5 @@
 {
-    "name": "ParLang",
+    "name": "simpleL",
     "description": "Please enter a brief description here",
     "version": "0.0.1",
     "files": [
@@ -17,26 +17,31 @@
         "vscode:prepublish": "npm run build && npm run lint"
     },
     "dependencies": {
-        "chalk": "~5.3.0",
-        "commander": "~11.0.0",
         "langium": "~3.1.0",
         "vscode-languageclient": "~9.0.1",
-        "vscode-languageserver": "~9.0.1"
+        "vscode-languageserver": "~9.0.1",
+        "chalk": "~5.3.0",
+        "commander": "~11.0.0"
     },
     "devDependencies": {
-        "@types/node": "~16.18.41",
-        "@types/vscode": "~1.67.0",
-        "@typescript-eslint/eslint-plugin": "~6.4.1",
-        "@typescript-eslint/parser": "~6.4.1",
-        "concurrently": "~8.2.1",
-        "esbuild": "~0.19.2",
-        "eslint": "~8.47.0",
+        "@types/node": "^18.0.0",
+        "@typescript-eslint/parser": "~7.3.1",
+        "@typescript-eslint/eslint-plugin": "~7.3.1",
+        "eslint": "~8.57.0",
         "langium-cli": "~3.1.0",
-        "typescript": "~5.1.6"
+        "typescript": "~5.1.6",
+        "@types/vscode": "~1.67.0",
+        "concurrently": "~8.2.1",
+        "esbuild": "~0.20.2"
     },
-    "displayName": "ParLang",
+    "volta": {
+        "node": "18.19.1",
+        "npm": "10.2.4"
+    },
+    "displayName": "simpleL",
     "engines": {
-        "vscode": "^1.67.0"
+        "vscode": "^1.67.0",
+        "node": ">=18.0.0"
     },
     "categories": [
         "Programming Languages"
@@ -44,30 +49,28 @@
     "contributes": {
         "languages": [
             {
-                "id": "par-lang",
+                "id": "simple-l",
                 "aliases": [
-                    "ParLang",
-                    "par-lang"
+                    "simpleL",
+                    "simple-l"
                 ],
-                "extensions": [
-                    ".parlang"
-                ],
+                "extensions": [".simple"],
                 "configuration": "./language-configuration.json"
             }
         ],
         "grammars": [
             {
-                "language": "par-lang",
-                "scopeName": "source.par-lang",
-                "path": "syntaxes/par-lang.tmLanguage.json"
+                "language": "simple-l",
+                "scopeName": "source.simple-l",
+                "path": "syntaxes/simple-l.tmLanguage.json"
             }
         ]
     },
     "activationEvents": [
-        "onLanguage:par-lang"
+        "onLanguage:simple-l"
     ],
     "main": "./out/extension/main.cjs",
     "bin": {
-        "par-lang-cli": "./bin/cli.js"
+        "simple-l-cli": "./bin/cli.js"
     }
 }

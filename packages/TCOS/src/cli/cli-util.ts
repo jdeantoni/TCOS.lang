@@ -1,7 +1,8 @@
 import chalk from 'chalk';
 import path from 'path';
 import fs from 'fs';
-import { Grammar,  LangiumDocument, LangiumServices} from 'langium';
+import { Grammar,  LangiumDocument} from 'langium';
+import { LangiumServices } from 'langium/lsp';
 import { URI } from 'vscode-uri';
 import { SoSSpec, isGrammar } from '../language-server/generated/ast.js';
 import { WorkspaceFolder } from 'vscode-languageserver';
@@ -41,7 +42,7 @@ export async function extractDocuments(fileName: string, services: LangiumServic
     //         process.exit(1);
     //     }
     // });
-    const mainDocument = services.shared.workspace.LangiumDocuments.getOrCreateDocument(URI.file(path.resolve(fileName)));
+    const mainDocument: LangiumDocument =await  services.shared.workspace.LangiumDocuments.getOrCreateDocument(URI.file(path.resolve(fileName)));
 
     return [mainDocument, documents];
 }

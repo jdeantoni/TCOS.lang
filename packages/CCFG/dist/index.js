@@ -1,25 +1,18 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.CollectionHole = exports.TimerHole = exports.Hole = exports.AndJoin = exports.OrJoin = exports.Fork = exports.Join = exports.Choice = exports.Step = exports.SyncEdge = exports.CCFG = exports.Edge = exports.Node = exports.NodeType = exports.TypedElement = void 0;
-const chalk_1 = __importDefault(require("chalk"));
-class TypedElement {
+import chalk from "chalk";
+export class TypedElement {
     name = "";
     type = undefined;
     toString() {
         return (this.type == undefined ? "undefined" : this.type) + " " + this.name;
     }
 }
-exports.TypedElement = TypedElement;
-var NodeType;
+export var NodeType;
 (function (NodeType) {
     NodeType["starts"] = "starts";
     NodeType["terminates"] = "terminates";
     NodeType["multipleSynchro"] = "multipleSynchro";
-})(NodeType = exports.NodeType || (exports.NodeType = {}));
-class Node {
+})(NodeType = NodeType || (NodeType = {}));
+export class Node {
     static uidCounter = 0;
     uid;
     owningCCFG = undefined;
@@ -83,8 +76,7 @@ class Node {
         });
     }
 }
-exports.Node = Node;
-class Edge {
+export class Edge {
     static edgeUIDCounter = 0;
     from;
     to;
@@ -100,12 +92,11 @@ class Edge {
         this.uid = Edge.edgeUIDCounter++;
     }
 }
-exports.Edge = Edge;
 /**
  * Represents a Control Flow Graph (CCFG).
  * A CCFG consists of nodes and edges that represent the control flow of a program.
  */
-class CCFG {
+export class CCFG {
     nodes;
     edges;
     syncEdges = [];
@@ -147,7 +138,7 @@ class CCFG {
     addEdge(from, to, label = "") {
         let res = this.edges.find(e => e.from === from && e.to === to);
         if (res != undefined) {
-            console.log(chalk_1.default.grey("warning, edge already exists from " + from.uid + ":" + from.type + " to " + to.uid + ":" + to.type));
+            console.log(chalk.grey("warning, edge already exists from " + from.uid + ":" + from.type + " to " + to.uid + ":" + to.type));
             return res;
         }
         const edge = new Edge(from, to);
@@ -378,7 +369,7 @@ class CCFG {
     }
     detectCyclesRec(node, visited, recursionStack) {
         if (recursionStack.includes(node)) {
-            console.log(chalk_1.default.gray("info: cycle detected on node #" + node.uid + " (" + node.type + ")"));
+            console.log(chalk.gray("info: cycle detected on node #" + node.uid + " (" + node.type + ")"));
             if (node.getType() == "OrJoin") {
                 node.isCycleInitiator = true;
             }
@@ -409,7 +400,7 @@ class CCFG {
             const cycle = path.slice(cycleStartIndex);
             // if (! node.cycles.some( c => c == cycle)){
             // node.cycles.push(cycle);
-            console.log(chalk_1.default.gray("info: cycle detected on node #" + node.uid + " (" + node.type + ")\n\t" + cycle.map(n => n.uid).join(" -> ") + " -> " + node.uid));
+            console.log(chalk.gray("info: cycle detected on node #" + node.uid + " (" + node.type + ")\n\t" + cycle.map(n => n.uid).join(" -> ") + " -> " + node.uid));
             for (const n of cycle) {
                 if (!n.cycles.some(c => c === cycle)) {
                     n.cycles.push(cycle);
@@ -513,7 +504,7 @@ class CCFG {
     }
     fillHole(h, ccfg) {
         if (h.inputEdges.length == 0 && h.outputEdges.length == 0) {
-            console.log(chalk_1.default.red("error: hole has no input and no output edge"));
+            console.log(chalk.red("error: hole has no input and no output edge"));
             return;
         }
         for (let inputEdge of h.inputEdges) {
@@ -533,64 +524,54 @@ class CCFG {
         this.edges = [...this.edges, ...ccfg.edges];
     }
 }
-exports.CCFG = CCFG;
-class SyncEdge extends Edge {
+export class SyncEdge extends Edge {
     constructor(from, to, label) {
         super(from, to, label);
     }
 }
-exports.SyncEdge = SyncEdge;
-class Step extends Node {
+export class Step extends Node {
     constructor(astNode, type, theActions = []) {
         super(astNode, type, theActions);
     }
 }
-exports.Step = Step;
-class Choice extends Node {
+export class Choice extends Node {
     constructor(astNode) {
         super(astNode);
     }
 }
-exports.Choice = Choice;
-class Join extends Node {
+export class Join extends Node {
     constructor(astNode) {
         super(astNode, NodeType.multipleSynchro);
     }
 }
-exports.Join = Join;
-class Fork extends Node {
+export class Fork extends Node {
     constructor(astNode) {
         super(astNode);
     }
 }
-exports.Fork = Fork;
-class OrJoin extends Join {
+export class OrJoin extends Join {
     constructor(astNode) {
         super(astNode);
     }
 }
-exports.OrJoin = OrJoin;
-class AndJoin extends Join {
+export class AndJoin extends Join {
     constructor(astNode) {
         super(astNode);
     }
 }
-exports.AndJoin = AndJoin;
-class Hole extends Node {
+export class Hole extends Node {
     constructor(astNode) {
         super(astNode);
     }
 }
-exports.Hole = Hole;
-class TimerHole extends Hole {
+export class TimerHole extends Hole {
     duration = 0;
     constructor(astNode, d) {
         super(astNode);
         this.duration = d;
     }
 }
-exports.TimerHole = TimerHole;
-class CollectionHole extends Hole {
+export class CollectionHole extends Hole {
     astNodeCollection;
     constructor(astNode) {
         super(undefined);
@@ -599,7 +580,6 @@ class CollectionHole extends Hole {
     isSequential = false;
     parallelSyncPolicy = "lastOf";
 }
-exports.CollectionHole = CollectionHole;
 // export class Timer extends Node {
 //     constructor(value: any) {
 //         super(value);

@@ -1,7 +1,7 @@
-import { startLanguageServer } from 'langium';
+import { startLanguageServer } from 'langium/lsp';
 import { NodeFileSystem } from 'langium/node';
-import { createConnection, ProposedFeatures } from 'vscode-languageserver/node';
-import { createSimpleLServices } from './simple-l-module';
+import { createConnection, ProposedFeatures } from 'vscode-languageserver/node.js';
+import { createSimpleLServices } from './simple-l-module.js';
 
 // Create a connection to the client
 const connection = createConnection(ProposedFeatures.all);
@@ -11,4 +11,3 @@ const { shared } = createSimpleLServices({ connection, ...NodeFileSystem });
 
 // Start the language server with the shared services
 startLanguageServer(shared);
-

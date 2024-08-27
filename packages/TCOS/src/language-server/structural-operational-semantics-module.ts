@@ -1,7 +1,11 @@
+import {inject, Module } from 'langium';
+
+import {createLangiumGrammarServices} from 'langium/grammar';
+
 import {
-    createDefaultModule, createDefaultSharedModule, createLangiumGrammarServices, DefaultSharedModuleContext, inject,
-    LangiumServices, LangiumSharedServices, Module, PartialLangiumServices
-} from 'langium';
+    createDefaultModule, createDefaultSharedModule, DefaultSharedModuleContext,
+    LangiumServices, LangiumSharedServices, PartialLangiumServices
+} from 'langium/lsp';
 import { registerValidationChecks } from '../../node_modules/langium/lib/grammar/validation/validator.js';
 
 import { StructuralOperationalSemanticsGeneratedModule, StructuralOperationalSemanticsGeneratedSharedModule } from './generated/module.js';

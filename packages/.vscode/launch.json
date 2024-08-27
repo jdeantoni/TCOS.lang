@@ -9,7 +9,7 @@
 			"type": "extensionHost",
 			"request": "launch",
 			"args": [
-				"--extensionDevelopmentPath=${workspaceFolder}"
+				"--extensionDevelopmentPath=${workspaceFolder}../../../examples/languages"
 			],
 			"outFiles": [
 				"${workspaceFolder}/out/**/*.js"

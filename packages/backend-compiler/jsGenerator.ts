@@ -1,4 +1,4 @@
-import { IGenerator } from "./GeneratorInterface";
+import { IGenerator } from "./GeneratorInterface.js";
 import { TypedElement } from "ccfg";
 
 
