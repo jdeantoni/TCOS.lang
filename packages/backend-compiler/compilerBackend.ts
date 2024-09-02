@@ -1,8 +1,7 @@
 
-import {MultiMap } from 'langium';
-import { CompositeGeneratorNode } from 'langium/generate';
+import {  CompositeGeneratorNode, MultiMap } from 'langium';
 import { AddSleepInstruction, AssignVarInstruction, CCFG, CreateGlobalVarInstruction, CreateVarInstruction, Edge, Node, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction } from 'ccfg';
-import {IGenerator} from './GeneratorInterface.js';
+import {IGenerator} from './GeneratorInterface';
 import chalk from 'chalk';
 
 
