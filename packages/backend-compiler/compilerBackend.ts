@@ -1,28 +1,19 @@
 
-import {  CompositeGeneratorNode, MultiMap } from 'langium';
-import { AddSleepInstruction, AssignVarInstruction, CCFG, CreateGlobalVarInstruction, CreateVarInstruction, Edge, Node, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction } from 'ccfg';
-import {IGenerator} from './GeneratorInterface';
+import { MultiMap } from 'langium';
+import { CompositeGeneratorNode } from 'langium/generate';
+import { AddSleepInstruction, AssignVarInstruction, CCFG, CreateGlobalVarInstruction, CreateVarInstruction, Edge, Instruction, Node, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction } from 'ccfg';
+import {IGenerator} from './GeneratorInterface.js';
 import chalk from 'chalk';
 
 
-const createVar = "createVar"   //createVar,type,name
-const assignVar = "assignVar"   //assignVar,name,value
-const setVarFromGlobal = "setVarFromGlobal" //setVarFromGlobal,type,varName,globalVarName
-const createGlobalVar = "createGlobalVar" //createGlobalVar,type,varName
-const setGlobalVar = "setGlobalVar" //setGlobalVar,type,varName,value
-const operation = "operation" //operation,varName,n1,op,n2
-const ret ="return" //return,varName
-const verifyEqual = "verifyEqual" //verifyEqual,varName1,varName2
-const addSleep = "addSleep" //addSleep,duration
 let debug = false;
 
 export function generatefromCCFG(ccfg: CCFG, codeFile:CompositeGeneratorNode, generator:IGenerator, filePath:string,debug:boolean): void {
 
-
+    console.log("Generating code from ");
 
     doGenerateCode(codeFile, ccfg, debug, generator);
 
-    
 }
 function doGenerateCode(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: boolean, generator: IGenerator) {
     let initNode = ccfg.initialState;
@@ -57,38 +48,40 @@ function compileFunctionDefs(ccfg: CCFG,generator:IGenerator): string[] {
                 continue
             }
             if(node.returnType != undefined){
-                if(typeof node.functionsDefs[0] == "string"){
+                console.log("node return type = "+node.returnType);
+                if( node.functionsDefs[0] instanceof Instruction){
+
                     for (let fname of node.functionsNames) {
-                    // console.log("function name: "+fname);
+                    console.log("function name: "+fname);
                         let allFDefs:string[] = [];
                         for (let fdef of node.functionsDefs) {
-                            if  (fdef.$instructionType == "ReturnInstruction") {
+                            if  (fdef instanceof ReturnInstruction) {
                                 let b = fdef as ReturnInstruction;
                                 allFDefs= [...allFDefs, ...generator.returnVar(b.varName)];
-                            }else if (fdef.$instructionType =="CreateVarInstruction"){
+                            }else if (fdef instanceof CreateVarInstruction){
                                 let b = fdef as CreateVarInstruction;
                                 allFDefs = [...allFDefs, ...generator.createVar(b.type, b.varName)];
-                            }else if (fdef.$instructionType == "AssignVarInstruction"){
+                            }else if (fdef instanceof AssignVarInstruction){
                                 let b = fdef as AssignVarInstruction;
                                 allFDefs=[...allFDefs, ...generator.assignVar(b.varName, b.value)];
-                            } else if (fdef.$instructionType=="setVarFromGlobalInstruction"){
+                            } else if (fdef instanceof SetVarFromGlobalInstruction){
                                 let b = fdef as SetVarFromGlobalInstruction;
                                 allFDefs =[...allFDefs, ...generator.setVarFromGlobal(b.type, b.varName, b.globalVarName)];
-                            } else if (fdef.$instructionType=="createGlobalVarInstruction"){
+                            } else if (fdef instanceof CreateGlobalVarInstruction){
                                 let b = fdef as CreateGlobalVarInstruction;
                                 allFDefs=[...allFDefs, ...generator.createGlobalVar(b.type, b.varName)];
-                            } else if (fdef.$instructionType=="setGlobalVarInstruction"){
+                            } else if (fdef instanceof SetGlobalVarInstruction){
                                 let b = fdef as SetGlobalVarInstruction;
                                 allFDefs=[...allFDefs, ...generator.setGlobalVar(b.type, b.globalVarName, b.value)];
-                            } else if (fdef.$instructionType=="operationInstruction"){
+                            } else if (fdef instanceof OperationInstruction){
                                 let b = fdef as OperationInstruction;
                                 allFDefs=[...allFDefs, ...generator.operation( b.varName, b.n1, b.op, b.n2)];
-                            } else if (fdef.$instructionType=="addSleepInstruction"){
+                            } else if (fdef instanceof AddSleepInstruction){
                                 let b = fdef as AddSleepInstruction;
                                 allFDefs=[...allFDefs, ...generator.createSleep(b.duration)];
                             } 
                             else{
-                                console.log("Unknown function definition: "+fdef.toString());
+                                console.log("Unknown function definition: "+ fdef.$instructionType+ " pop"+fdef.toString());
                                 allFDefs = [...allFDefs, fdef.toString()];
                             }
 

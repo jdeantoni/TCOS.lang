@@ -32,6 +32,9 @@ export interface CompilerFrontEnd {
 export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
     constructor(debugMode: boolean = false){ 
         debug = debugMode
+        if (debug){
+            console.log("CompilerFrontEnd created")
+        }
     }
 
     globalCCFG: CCFG = new CCFG();

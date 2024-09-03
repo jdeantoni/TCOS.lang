@@ -65,6 +65,9 @@ export interface CompilerFrontEnd {
 export class ${langName}CompilerFrontEnd implements CompilerFrontEnd {
     constructor(debugMode: boolean = false){ 
         debug = debugMode
+        if (debug){
+            console.log("CompilerFrontEnd created")
+        }
     }
 
     globalCCFG: CCFG = new CCFG();
