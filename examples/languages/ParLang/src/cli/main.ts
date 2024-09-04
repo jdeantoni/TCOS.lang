@@ -3,24 +3,44 @@ import chalk from 'chalk';
 import { Command } from 'commander';
 import { ParLangLanguageMetaData } from '../language/generated/module.js';
 import { createParLangServices } from '../language/par-lang-module.js';
-import { extractAstNode } from './cli-util.js';
+import { extractAstNode, extractDestinationAndName } from './cli-util.js';
 import { NodeFileSystem } from 'langium/node';
 import * as url from 'node:url';
-import * as fs from 'node:fs/promises';
+import * as fs from 'fs';
 import * as path from 'node:path';
-import { generatefromCCFG } from './compilerBackend.js';
-import { IGenerator } from './GeneratorInterface.js';
-import { PythonGenerator } from './pythonGenerator.js';
-import { CppGenerator } from './cppGenerator.js';
-import { JsGenerator } from './jsGenerator.js';
+import { generatefromCCFG } from 'backend-compiler/compilerBackend';
+import { IGenerator } from 'backend-compiler/GeneratorInterface';
+import { PythonGenerator } from 'backend-compiler/pythonGenerator';
+import { CppGenerator } from 'backend-compiler/cppGenerator';
+import { JsGenerator } from 'backend-compiler/jsGenerator';
+import { CompositeGeneratorNode, toString } from 'langium/generate';
+import { ParLangCompilerFrontEnd } from './generated/parLangCompilerFrontEnd.js';
+import { CCFG } from 'ccfg';
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
-const packagePath = path.resolve(__dirname, '..', '..', 'package.json');
-const packageContent = await fs.readFile(packagePath, 'utf-8');
 
 export const generateAction = async (fileName: string, opts: GenerateOptions): Promise<void> => {
     const services = createParLangServices(NodeFileSystem).ParLang;
     const model = await extractAstNode<Program>(fileName, services);
+
+    const data = extractDestinationAndName(fileName, opts.targetDirectory);
+    
+
+    const generatedDotFilePath = `${path.join(data.destination, data.name)}.dot`;
+    const dotFile = new CompositeGeneratorNode();
+
+
+    
+    let debug: boolean = false;
+    let ccfg = doGenerateCCFG(dotFile, model,debug);
+    const codeFile = new CompositeGeneratorNode();
+    
+    if (!fs.existsSync(data.destination)) {
+        fs.mkdirSync(data.destination, { recursive: true });
+    }
+    fs.writeFileSync(generatedDotFilePath, toString(dotFile));
+
+
     let generator:IGenerator;
      if (opts.python != undefined && opts.python) {
          generator = new PythonGenerator();
@@ -30,8 +50,16 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
      } else{
         generator = new CppGenerator();
      }
-    const generatedFilePath = generatefromCCFG(model, fileName, opts.targetDirectory, opts.debug,generator);
-    console.log(chalk.green(`CCFG and code generated successfully: ${generatedFilePath}`));
+     
+
+    let filePath = path.join(data.destination, data.name);
+    let generatedCodeFilePath = generator.nameFile(filePath);
+    generatefromCCFG(ccfg, codeFile, generator, filePath,debug)
+    if (!fs.existsSync(data.destination)) {
+        fs.mkdirSync(data.destination, { recursive: true });
+    }
+    fs.writeFileSync(generatedCodeFilePath, toString(codeFile));
+    console.log(chalk.green(`CCFG and code generated successfully: ${data.destination}`));
 };
 
 export type GenerateOptions = {
@@ -43,8 +71,6 @@ export type GenerateOptions = {
 
 export default function(): void {
     const program = new Command();
-
-    program.version(JSON.parse(packageContent).version);
 
     const fileExtensions = ParLangLanguageMetaData.fileExtensions.join(', ');
     program
@@ -58,4 +84,17 @@ export default function(): void {
     .action(generateAction);
 
     program.parse(process.argv);
+}
+
+function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Program,debug:boolean): CCFG {
+    var compilerFrontEnd = new ParLangCompilerFrontEnd(debug);
+    var ccfg = compilerFrontEnd.generateCCFG(model);
+   
+    ccfg.addSyncEdge()
+
+    ccfg.detectCycles();
+    ccfg.collectCycles()
+
+    codeFile.append(ccfg.toDot());
+    return ccfg;
 }

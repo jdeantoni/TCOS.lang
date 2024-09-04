@@ -1,0 +1,12 @@
+{
+    "projectName": "StructuralOperationalSemantics",
+    "languages": [{
+        "id": "structural-operational-semantics",
+        "grammar": "src/language-server/structural-operational-semantics.langium",
+        "fileExtensions": [".sos",".tcos"],
+        "textMate": {
+            "out": "syntaxes/structural-operational-semantics.tmLanguage.json"
+        }
+    }],
+    "out": "src/language-server/generated"
+}

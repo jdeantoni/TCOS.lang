@@ -1,0 +1,38 @@
+import { CompositeGeneratorNode } from "langium";
+import { IGenerator } from "./GeneratorInterface";
+import { TypedElement } from "ccfg";
+export declare class PythonGenerator implements IGenerator {
+    debug: boolean;
+    constructor(debug?: boolean);
+    setDebug(debug: boolean): void;
+    goToFlag(codeFile: CompositeGeneratorNode, queueUID: number): string[];
+    setLoopFlag(queueUID: number): string[];
+    createLoop(uid: number, insideLoop: string[]): string[];
+    createEqualsVerif(firstValue: string, secondValue: string): string;
+    nbTabs: number;
+    nameFile(filename: string): string;
+    createBase(): string[];
+    endFile(): string[];
+    createFunction(fname: string, params: TypedElement[], returnType: string, insideFunction: string[]): string[];
+    createMainFunction(insideMain: string[]): string[];
+    createFuncCall(fname: string, params: string[], typeName: string): string[];
+    createIf(guards: string[], insideOfIf: string[]): string[];
+    createSynchronizer(synchUID: number): string[];
+    waitForSynchronizer(synchUID: number): string[];
+    activateSynchronizer(synchUID: number): string[];
+    createAndOpenThread(uid: number, insideThreadCode: string[]): string[];
+    endThread(uid: number): string[];
+    endSection(codeFile: CompositeGeneratorNode): void;
+    createQueue(queueUID: number): string[];
+    createLockingQueue(typeName: string, queueUID: number): string[];
+    receiveFromQueue(queueUID: number, typeName: string, varName: string): string[];
+    sendToQueue(queueUID: number, typeName: string, varName: string): string[];
+    assignVar(varName: string, value: string): string[];
+    returnVar(varName: string): string[];
+    createVar(type: string, varName: string): string[];
+    createGlobalVar(type: string, varName: string): string[];
+    setVarFromGlobal(type: string, varName: string, value: string): string[];
+    setGlobalVar(type: string, varName: string, value: string): string[];
+    operation(varName: string, n1: string, op: string, n2: string): string[];
+    createSleep(duration: string): string[];
+}
