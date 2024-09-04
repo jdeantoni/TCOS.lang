@@ -48,11 +48,9 @@ function compileFunctionDefs(ccfg: CCFG,generator:IGenerator): string[] {
                 continue
             }
             if(node.returnType != undefined){
-                console.log("node return type = "+node.returnType);
                 if( node.functionsDefs[0] instanceof Instruction){
 
                     for (let fname of node.functionsNames) {
-                    console.log("function name: "+fname);
                         let allFDefs:string[] = [];
                         for (let fdef of node.functionsDefs) {
                             if  (fdef instanceof ReturnInstruction) {
