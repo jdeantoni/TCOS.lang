@@ -2,6 +2,145 @@ import chalk from "chalk";
 import { AstNode } from "langium";
 import { integer } from "vscode-languageclient";
 
+
+
+export class Instruction{
+    readonly $instructionType: string = ""
+    constructor(type: string){
+        this.$instructionType = type
+    }
+    toString(): string {
+        return "undefined instruction"
+    }
+}
+
+export class ReturnInstruction extends Instruction{
+    varName: string = ""
+    constructor(varName: string){
+        super("returnInstruction")
+        this.varName = varName
+
+    }
+    toString(): string {
+        return "return,"+this.varName
+    }
+}
+
+export class CreateVarInstruction extends Instruction{
+    varName: string = ""
+    type: string = ""
+    constructor(name: string, type: string){
+        super("createVarInstruction")
+        this.varName = name
+        this.type = type
+    }
+    toString(): string {
+        return "createVar,"+this.type+","+this.varName
+    }
+}
+
+export class CreateGlobalVarInstruction extends Instruction{
+    varName: string = ""
+    type: string = ""
+    constructor(name: string, type: string){
+        super("createGlobalVarInstruction")
+        this.varName = name
+        this.type = type
+    }
+    toString(): string {
+        return "createGlobalVar,"+this.type+","+this.varName    
+    }
+}
+
+export class AssignVarInstruction extends Instruction{
+    value: string = ""
+    varName: string = ""
+    type: string = ""
+    constructor( varName: string,value:string,type: string = ""){
+        super("assignVarInstruction")
+        this.value = value
+        this.varName = varName
+        this.type = type
+    }
+    toString(): string {
+        return "assignVar,"+this.varName+","+this.value   
+    }
+    
+}
+
+export class SetVarFromGlobalInstruction extends Instruction{
+    varName: string = ""
+    globalVarName: string = ""
+    type: string = ""
+    constructor(name: string, globalVarName: string,type: string = ""){
+        super("setVarFromGlobalInstruction")
+        this.varName = name
+        this.globalVarName = globalVarName
+        this.type = type
+    }
+    toString(): string {
+        return "setVarFromGlobal,"+this.type+","+this.varName+","+this.globalVarName
+    }
+}
+
+export class SetGlobalVarInstruction extends Instruction{
+    globalVarName: string = ""
+    value: string = ""
+    type: string = ""
+    constructor(globalVarName: string, value: string,type: string = ""){
+        super("setGlobalVarInstruction")
+        this.value = value
+        this.globalVarName = globalVarName
+        this.type = type
+    }
+    toString(): string {
+        return "setGlobalVar,"+this.type+","+this.globalVarName+","+this.value
+    }
+}
+
+export class OperationInstruction extends Instruction{
+    varName: string = ""
+    n1: string = ""
+    op: string = ""
+    n2: string = ""
+    type: string = ""
+    constructor(varName: string, n1: string, op: string, n2: string,type: string = ""){
+        super("operationInstruction")
+        this.varName = varName
+        this.n1 = n1
+        this.op = op
+        this.n2 = n2
+        this.type = type
+    }
+    toString(): string {
+        return "operation,"+this.varName+","+this.n1+","+this.op+","+this.n2
+    }
+}
+
+export class VerifyEqualInstruction extends Instruction{
+    n1: string = ""
+    n2: string = ""
+    constructor(n1: string, n2: string){
+        super("verifyEqualInstruction")
+        this.n1 = n1
+        this.n2 = n2
+    }
+    toString(): string {
+        return "verifyEqual,"+this.n1+","+this.n2
+    }
+}
+
+export class AddSleepInstruction extends Instruction{
+    duration: string = ""
+    constructor(duration: string){
+        super("addSleepInstruction")
+        this.duration = duration
+    }
+    toString(): string {
+        return "addSleep,"+this.duration
+    }
+}
+
 export class TypedElement {
     name: string = ""
     type: (string | undefined) = undefined
@@ -33,7 +172,7 @@ export abstract class Node {
     syncNodeIds: integer[] = [];
     functionsNames: string[] = [];
     params: TypedElement[] = []
-    functionsDefs: string[];
+    functionsDefs: Instruction[];
     returnType: string|undefined = undefined;
 
 
@@ -43,7 +182,7 @@ export abstract class Node {
 
     isVisited: boolean = false;
 
-    constructor(astNode?:AstNode, type?: NodeType, theActions: string[] = []) {
+    constructor(astNode?:AstNode, type?: NodeType, theActions: Instruction[] = []) {
         this.uid = Node.uidCounter++;
         this.astNode = astNode;
         this.type = type;
@@ -104,7 +243,7 @@ export class Edge {
     to: Node;
     label?: string;
     astNode: AstNode | undefined;
-    guards: string[];
+    guards: Instruction[];
     uid: integer;
     constructor(from: Node, to: Node, label?: string) {
         this.from = from;
@@ -532,7 +671,7 @@ export class CCFG {
         return edge.guards.map(
             g => 
             /* a.replaceAll("\"","\\\"")).join("\n")+"\n~~~"+*/
-            g.replaceAll("\"","\\\"")).join("\n")
+            g.toString().replaceAll("\"","\\\"")).join("\n")
             /*+"~~~\n";*/
     }
 
@@ -540,8 +679,9 @@ export class CCFG {
         if(node.functionsDefs.length == 0){
             return node.uid.toString()+"["+node.syncNodeIds.map(i =>i).join(',')+"]"+":"+node.getType()+((node.type==undefined || node.type == NodeType.multipleSynchro)?"":"_"+node.type);
         }
+        
         return node.uid.toString()+"["+node.syncNodeIds.map(i =>i).join(',')+"]"+":"+node.getType()+((node.type==undefined || node.type == NodeType.multipleSynchro)?"":"_"+node.type)+":\n"+node.returnType+" function"+node.functionsNames+"("+node.params.map(p => (p as TypedElement).toString()).join(", ")+"){\n"+node.functionsDefs.map(
-            a => a.replaceAll("\"","\\\"")).join("\n")+"\n}";
+            a => a.toString().replaceAll("\"","\\\"")).join("\n")+"\n}";
     }
 
     dotGetNodeShape(node: Node): string {
@@ -602,7 +742,7 @@ export class SyncEdge extends Edge {
 
 export class Step extends Node {
     
-    constructor(astNode?:AstNode, type?: NodeType, theActions: string[] = []) {
+    constructor(astNode?:AstNode, type?: NodeType, theActions: Instruction[] = []) {
         super(astNode, type, theActions);
     }
 }

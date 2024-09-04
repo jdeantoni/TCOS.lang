@@ -8,18 +8,11 @@
     the execution of a thread.
 */
 import { CompositeGeneratorNode } from 'langium/generate';
-import { CCFG, Edge, Node,TypedElement } from 'ccfg';
+import { AddSleepInstruction, AssignVarInstruction, CCFG, CreateGlobalVarInstruction, CreateVarInstruction, Edge, Node,OperationInstruction,ReturnInstruction,SetGlobalVarInstruction,SetVarFromGlobalInstruction,TypedElement } from 'ccfg';
 import { IGenerator } from 'backend-compiler/GeneratorInterface';
 import { Stack } from './TempList.js';
 // import { MockDebugSession } from './degugger/mockDebug.js';
 
-const createVar = "createVar"   //createVar,type,name
-const assignVar = "assignVar"   //assignVar,name,value
-const setVarFromGlobal = "setVarFromGlobal" //setVarFromGlobal,type,varName,globalVarName
-const createGlobalVar = "createGlobalVar" //createGlobalVar,type,varName
-const setGlobalVar = "setGlobalVar" //setGlobalVar,type,varName,value
-const operation = "operation" //operation,varName,n1,op,n2
-const ret ="return" //return,varName
 // const verifyEqual = "verifyEqual" //verifyEqual,varName1,varName2
 export var debug = false; 
 
@@ -61,24 +54,34 @@ function compileFunctionDefs(ccfg: CCFG,generator:IGenerator,sigma:Map<string,an
                     // console.log("function name: "+fname);
                         let allFDefs:string[] = [];
                         for (let fdef of node.functionsDefs) {
-                            let b = fdef.split(",");
-                            if (b[0] == ret) {
-                                allFDefs= [...allFDefs, ...generator.returnVar(b[1])];
-                            }else if (b[0]==createVar){
-                                allFDefs = [...allFDefs, ...generator.createVar(b[1], b[2])];
-                            }else if (b[0]==assignVar){
-                                allFDefs=[...allFDefs, ...generator.assignVar(b[1], b[2])];
-                            } else if (b[0]==setVarFromGlobal){
-                                allFDefs =[...allFDefs, ...generator.setVarFromGlobal(b[1], b[2], b[3])];
-                            } else if (b[0]==createGlobalVar){
-                                allFDefs=[...allFDefs, ...generator.createGlobalVar(b[1], b[2])];
-                            } else if (b[0]==setGlobalVar){
-                                allFDefs=[...allFDefs, ...generator.setGlobalVar(b[1], b[2], b[3])];
-                            } else if (b[0]==operation){
-                                allFDefs=[...allFDefs, ...generator.operation(b[1], b[2], b[3], b[4])];
-                            } else{
-                                console.log("Unknown function definition: "+b[0]);
-                                allFDefs = [...allFDefs, fdef];
+                            if  (fdef instanceof ReturnInstruction) {
+                                let b = fdef as ReturnInstruction;
+                                allFDefs= [...allFDefs, ...generator.returnVar(b.varName)];
+                            }else if (fdef instanceof CreateVarInstruction){
+                                let b = fdef as CreateVarInstruction;
+                                allFDefs = [...allFDefs, ...generator.createVar(b.type, b.varName)];
+                            }else if (fdef instanceof AssignVarInstruction){
+                                let b = fdef as AssignVarInstruction;
+                                allFDefs=[...allFDefs, ...generator.assignVar(b.varName, b.value)];
+                            } else if (fdef instanceof SetVarFromGlobalInstruction){
+                                let b = fdef as SetVarFromGlobalInstruction;
+                                allFDefs =[...allFDefs, ...generator.setVarFromGlobal(b.type, b.varName, b.globalVarName)];
+                            } else if (fdef instanceof CreateGlobalVarInstruction){
+                                let b = fdef as CreateGlobalVarInstruction;
+                                allFDefs=[...allFDefs, ...generator.createGlobalVar(b.type, b.varName)];
+                            } else if (fdef instanceof SetGlobalVarInstruction){
+                                let b = fdef as SetGlobalVarInstruction;
+                                allFDefs=[...allFDefs, ...generator.setGlobalVar(b.type, b.globalVarName, b.value)];
+                            } else if (fdef instanceof OperationInstruction){
+                                let b = fdef as OperationInstruction;
+                                allFDefs=[...allFDefs, ...generator.operation( b.varName, b.n1, b.op, b.n2)];
+                            } else if (fdef instanceof AddSleepInstruction){
+                                let b = fdef as AddSleepInstruction;
+                                allFDefs=[...allFDefs, ...generator.createSleep(b.duration)];
+                            } 
+                            else{
+                                console.log("Unknown function definition: "+ fdef.$instructionType+ " pop"+fdef.toString());
+                                allFDefs = [...allFDefs, fdef.toString()];
                             }
 
                         }
@@ -335,7 +338,7 @@ function nodeCode(node:Node,ThreadList:Stack<Thread>):void{
  * @returns Function object
  */
 function creatFunctionForEdge(edge:Edge, sigma:Map<any,any>) : Function{
-    let guard : string[] = edge.guards[0].split(",");//["verifyEqual","VarRef2_4_2_6terminate","true"]
+    let guard : string[] = edge.guards[0].toString().split(",");//["verifyEqual","VarRef2_4_2_6terminate","true"]
     let paramElement = new TypedElement();
     paramElement.name = "resRight";
     paramElement.type = "Number" ;

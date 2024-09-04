@@ -1,29 +1,19 @@
 
-import {MultiMap } from 'langium';
+import { MultiMap } from 'langium';
 import { CompositeGeneratorNode } from 'langium/generate';
-import { CCFG, Edge, Node } from 'ccfg';
+import { AddSleepInstruction, AssignVarInstruction, CCFG, CreateGlobalVarInstruction, CreateVarInstruction, Edge, Instruction, Node, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction } from 'ccfg';
 import {IGenerator} from './GeneratorInterface.js';
 import chalk from 'chalk';
 
 
-const createVar = "createVar"   //createVar,type,name
-const assignVar = "assignVar"   //assignVar,name,value
-const setVarFromGlobal = "setVarFromGlobal" //setVarFromGlobal,type,varName,globalVarName
-const createGlobalVar = "createGlobalVar" //createGlobalVar,type,varName
-const setGlobalVar = "setGlobalVar" //setGlobalVar,type,varName,value
-const operation = "operation" //operation,varName,n1,op,n2
-const ret ="return" //return,varName
-const verifyEqual = "verifyEqual" //verifyEqual,varName1,varName2
-const addSleep = "addSleep" //addSleep,duration
 let debug = false;
 
 export function generatefromCCFG(ccfg: CCFG, codeFile:CompositeGeneratorNode, generator:IGenerator, filePath:string,debug:boolean): void {
 
-
+    console.log("Generating code from ");
 
     doGenerateCode(codeFile, ccfg, debug, generator);
 
-    
 }
 function doGenerateCode(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: boolean, generator: IGenerator) {
     let initNode = ccfg.initialState;
@@ -58,32 +48,39 @@ function compileFunctionDefs(ccfg: CCFG,generator:IGenerator): string[] {
                 continue
             }
             if(node.returnType != undefined){
-                if(typeof node.functionsDefs[0] == "string"){
+                if( node.functionsDefs[0] instanceof Instruction){
+
                     for (let fname of node.functionsNames) {
-                    // console.log("function name: "+fname);
                         let allFDefs:string[] = [];
                         for (let fdef of node.functionsDefs) {
-                            let b = fdef.split(",");
-                            if (b[0] == ret) {
-                                allFDefs= [...allFDefs, ...generator.returnVar(b[1])];
-                            }else if (b[0]==createVar){
-                                allFDefs = [...allFDefs, ...generator.createVar(b[1], b[2])];
-                            }else if (b[0]==assignVar){
-                                allFDefs=[...allFDefs, ...generator.assignVar(b[1], b[2])];
-                            } else if (b[0]==setVarFromGlobal){
-                                allFDefs =[...allFDefs, ...generator.setVarFromGlobal(b[1], b[2], b[3])];
-                            } else if (b[0]==createGlobalVar){
-                                allFDefs=[...allFDefs, ...generator.createGlobalVar(b[1], b[2])];
-                            } else if (b[0]==setGlobalVar){
-                                allFDefs=[...allFDefs, ...generator.setGlobalVar(b[1], b[2], b[3])];
-                            } else if (b[0]==operation){
-                                allFDefs=[...allFDefs, ...generator.operation(b[1], b[2], b[3], b[4])];
-                            } else if (b[0]==addSleep){
-                                allFDefs=[...allFDefs, ...generator.createSleep(b[1])];
+                            if  (fdef instanceof ReturnInstruction) {
+                                let b = fdef as ReturnInstruction;
+                                allFDefs= [...allFDefs, ...generator.returnVar(b.varName)];
+                            }else if (fdef instanceof CreateVarInstruction){
+                                let b = fdef as CreateVarInstruction;
+                                allFDefs = [...allFDefs, ...generator.createVar(b.type, b.varName)];
+                            }else if (fdef instanceof AssignVarInstruction){
+                                let b = fdef as AssignVarInstruction;
+                                allFDefs=[...allFDefs, ...generator.assignVar(b.varName, b.value)];
+                            } else if (fdef instanceof SetVarFromGlobalInstruction){
+                                let b = fdef as SetVarFromGlobalInstruction;
+                                allFDefs =[...allFDefs, ...generator.setVarFromGlobal(b.type, b.varName, b.globalVarName)];
+                            } else if (fdef instanceof CreateGlobalVarInstruction){
+                                let b = fdef as CreateGlobalVarInstruction;
+                                allFDefs=[...allFDefs, ...generator.createGlobalVar(b.type, b.varName)];
+                            } else if (fdef instanceof SetGlobalVarInstruction){
+                                let b = fdef as SetGlobalVarInstruction;
+                                allFDefs=[...allFDefs, ...generator.setGlobalVar(b.type, b.globalVarName, b.value)];
+                            } else if (fdef instanceof OperationInstruction){
+                                let b = fdef as OperationInstruction;
+                                allFDefs=[...allFDefs, ...generator.operation( b.varName, b.n1, b.op, b.n2)];
+                            } else if (fdef instanceof AddSleepInstruction){
+                                let b = fdef as AddSleepInstruction;
+                                allFDefs=[...allFDefs, ...generator.createSleep(b.duration)];
                             } 
                             else{
-                                console.log("Unknown function definition: "+b[0]);
-                                allFDefs = [...allFDefs, fdef];
+                                console.log("Unknown function definition: "+ fdef.$instructionType+ " pop"+fdef.toString());
+                                allFDefs = [...allFDefs, fdef.toString()];
                             }
 
                         }
@@ -326,11 +323,11 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, generator: IGenerator, vis
             
             let guards: string[] = [];
             for(let guard of edge.guards){
-                const guardList=guard.split(",")
                 //console.log(guardList)
                 
-                if (guardList[0] === verifyEqual){
-                    guards.push(generator.createEqualsVerif(guardList[1],guardList[2]))
+                if (guard.$instructionType=== "verifyEqualInstruction"){
+                    let g = guard as VerifyEqualInstruction;
+                    guards.push(generator.createEqualsVerif(g.n1,g.n2))
                 } 
             }
 
@@ -532,7 +529,7 @@ function addComparisonVariableDeclaration(currentNode: Node,generator:IGenerator
             let realPtn = realPtns[i];
             if(realPtn.returnType != "void"){
                 let lastDefStatement = realPtn.functionsDefs[realPtn.functionsDefs.length-1];
-                let lastDefStatementSplit = lastDefStatement.split(",");
+                let lastDefStatementSplit = lastDefStatement.toString().split(",");
                 let returnedVariableName = lastDefStatementSplit[lastDefStatementSplit.length-1];
                 returnedVariableName = returnedVariableName.substring(0, returnedVariableName.length-1); //remove semicolum
                 let ptn = ptnsWithJoin[0];
