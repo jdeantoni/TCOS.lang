@@ -10,6 +10,7 @@ export declare class Thread {
     currentInstruction: Edge[];
     constructor(owner: Node);
 }
+
 /**
  * browse the ccfg sart with a given node
  * @param startNode
@@ -19,4 +20,4 @@ export declare class Thread {
  * @returns stop the visit
  */
 export declare function visitAllNodesInterpret(startNode: Node, sigma: Map<string, any>, ThreadList: Stack<Thread>): Promise<void>;
-/*************************** choose next step node ********************************/
+

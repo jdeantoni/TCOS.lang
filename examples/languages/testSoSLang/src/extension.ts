@@ -3,12 +3,17 @@ import * as path from 'path';
 import {
     LanguageClient, LanguageClientOptions, ServerOptions, TransportKind
 } from 'vscode-languageclient/node';
+import { generateCCFG } from './cli';
+
 
 let client: LanguageClient;
 
 // This function is called when the extension is activated.
-export function activate(context: vscode.ExtensionContext): void {
+// We define the exported object
+export function activate(context: vscode.ExtensionContext):any[] {
     client = startLanguageClient(context);
+    let exportsObject :any[] =[generateCCFG];
+    return exportsObject;
 }
 
 // This function is called when the extension is deactivated.
@@ -59,3 +64,6 @@ function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
     return client;
 }
 
+//export default generateCCFG;
+//export {generateCCFG};
+//module.exports = generateCCFG;

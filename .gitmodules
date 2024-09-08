@@ -1,0 +1,6 @@
+[submodule "examples/languages/examples/languages/vscode-mock-debug"]
+	path = examples/languages/examples/languages/vscode-mock-debug
+	url = https://github.com/microsoft/vscode-mock-debug.git
+[submodule "examples/languages/vscode-mock-debug"]
+	path = examples/languages/vscode-mock-debug
+	url = https://github.com/microsoft/vscode-mock-debug.git

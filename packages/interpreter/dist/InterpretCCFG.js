@@ -114,7 +114,7 @@ async function visitAllNodesInterpret(startNode, sigma, ThreadList, generator /*
         // if(debugsession){
         /*if(debugsession.getBreakpoints().includes(currentNode)){
             debugsession.pauseExecution();
-            return;
+            await debugsession.Stepnext();
         }*/
         // }
         switch (currentNode.getType()) {

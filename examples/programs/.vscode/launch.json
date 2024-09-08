@@ -1,0 +1,24 @@
+{
+	// Use IntelliSense to learn about possible attributes.
+	// Hover to view descriptions of existing attributes.
+	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "mock",
+			"request": "launch",
+			"name": "Debug test20.simple",
+			"program": "${workspaceFolder}/test20.simple",
+			"stopOnEntry": true,
+			"trace": true
+		},
+		{
+			"type": "mock",
+			"request": "attach",
+			"name": "Attach readme.md",
+			"program": "${workspaceFolder}/test20.simple",
+			"stopOnEntry": true,
+			"trace": true
+		}
+	]
+}

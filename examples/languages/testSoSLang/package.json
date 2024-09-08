@@ -1,6 +1,7 @@
 {
-    "name": "testSoSLang",
+    "name": "testsoslang",
     "displayName": "testSoSLang",
+    "publisher": "kairos",
     "description": "Please enter a brief description here",
     "version": "0.0.1",
     "engines": {
@@ -32,8 +33,15 @@
         ]
     },
     "activationEvents": [
-        "onLanguage:simple-l"
+        "onLanguage:simple"
     ],
+    "exports": {
+        "./api": {
+          "import": "./out/cli/index.js",
+          "default": "./out/cli/index.js",
+          "types": "./out/cli/index.d.js"
+        }
+    },
     "files": [
         "bin",
         "out",
@@ -42,11 +50,12 @@
     "bin": {
         "simple-l-cli": "./bin/cli"
     },
-    "main": "./out/testSoSLang/src/extension.js",
+    "main": "./out/extension.js",
     "scripts": {
         "vscode:prepublish": "npm run build && npm run lint",
-        "build": "tsc -b tsconfig.json",
-        "watch": "tsc -b tsconfig.json --watch",
+        "compile": "tsc -p ./",
+        "build": "tsc  -b tsconfig.json",
+        "watch": "tsc  -b tsconfig.json --watch",
         "lint": "eslint src --ext ts",
         "langium:generate": "langium generate",
         "langium:watch": "langium generate --watch"

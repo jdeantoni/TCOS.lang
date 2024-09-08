@@ -12,8 +12,6 @@ import { CCFG, Edge, Node,TypedElement } from 'ccfg';
 import { IGenerator } from 'backend-compiler/GeneratorInterface.js';
 //import { compileFunctionDefs } from 'backend-compiler/compilerBackend.js';
 import { Stack } from './TempList.js';
-import { gunzip } from 'zlib';
-import { BlobOptions } from 'buffer';
 // import { MockDebugSession } from './degugger/mockDebug.js';
 
 const createVar = "createVar"   //createVar,type,name
@@ -34,16 +32,16 @@ let allFunctions : Map<string,Function> = new Map();
 export async function interpretfromCCFG(ccfg:CCFG, generator:IGenerator, isDebug:boolean):Promise<void>{
     const sigma: Map<string, any> = new Map<string, any>();
     var ThreadList : Stack<Thread> = new Stack();
-    // var debugsession: MockDebugSession | undefined =undefined;
+
     if(isDebug){
-        //debugsession = new MockDebugSession(fileAccessor);
+        var debugsession = new MockDebugSession();
     }
     allFunctions  = compileFunctionDefs(ccfg,generator,sigma,undefined);
 
     if(ccfg.initialState){
         let threadInit = new Thread(ccfg.initialState);
         ThreadList.push(threadInit);
-        await visitAllNodesInterpret(ccfg.initialState, sigma, ThreadList,generator/*, debugsession*/);//breakpointAdresse should be a debug seesion
+        await visitAllNodesInterpret(ccfg.initialState, sigma, ThreadList,generator, debugsession);//breakpointAdresse should be a debug seesion
         console.log(sigma);
     }  
 }
@@ -109,20 +107,6 @@ function compileFunctionDefs(ccfg: CCFG,generator:IGenerator,sigma:Map<string,an
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /****************************************************************************** INTERPRETER *******************************************************************************/
 export class Thread {
     tempValue : Stack<any>;      //The temparal values retrun by function in node (Modify as a stack)
@@ -136,6 +120,7 @@ export class Thread {
     }
 }
 
+
 /**
  * browse the ccfg sart with a given node
  * @param startNode 
@@ -144,18 +129,18 @@ export class Thread {
  * @param debugsession 
  * @returns stop the visit
  */
-export async function visitAllNodesInterpret(startNode : Node, sigma: Map<string, any>, ThreadList : Stack<Thread>, generator:IGenerator/*,  debugsession: MockDebugSession|undefined*/){ 
+export async function visitAllNodesInterpret(startNode : Node, sigma: Map<string, any>, ThreadList : Stack<Thread>, generator:IGenerator,  debugsession: MockDebugSession|undefined){ 
 
     var currentNode : Node = startNode;
     var edgeSelected : Edge|Edge[]|undefined;
     while(currentNode.outputEdges && ((currentNode.outputEdges[0] && currentNode.outputEdges[0].to) || (currentNode.outputEdges[1] && currentNode.outputEdges[1].to))){
         /***** Check breakpoint ******/
-        // if(debugsession){
-            /*if(debugsession.getBreakpoints().includes(currentNode)){
+        if(debugsession){
+            if(debugsession.getBreakpoints().includes(currentNode)){
                 debugsession.pauseExecution();
-                return;
-            }*/
-        // }
+                await debugsession.Stepnext();
+            }
+        }
         switch(currentNode.getType()){
             case "Step":{
                 console.log(currentNode.uid + ": (" + currentNode.getType() + ")->");
@@ -186,13 +171,13 @@ export async function visitAllNodesInterpret(startNode : Node, sigma: Map<string
                     edgeSelected.forEach(edge => {
                             let threadCurrent = new Thread(edge.to);
                             ThreadList.push(threadCurrent);
-                            visitAllNodesInterpret(edge.to, sigma, ThreadList,generator/*, debugsession*/);//visit the sub-tree
+                            visitAllNodesInterpret(edge.to, sigma, ThreadList,generator, debugsession);//visit the sub-tree
                             return;
                     });   
                 }else{// user select only one edge
                     let threadCurrent = new Thread(edgeSelected.to);
                     ThreadList.push(threadCurrent);
-                    visitAllNodesInterpret(edgeSelected.to, sigma, ThreadList,generator/*, debugsession*/);//visit the sub-tree
+                    visitAllNodesInterpret(edgeSelected.to, sigma, ThreadList,generator, debugsession);//visit the sub-tree
                     return;
                 }
                 return;       

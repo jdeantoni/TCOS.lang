@@ -16,29 +16,28 @@ import { generatefromCCFG } from 'backend-compiler/compilerBackend';
 import { PythonGenerator } from 'backend-compiler/pythonGenerator';
 import { CppGenerator } from 'backend-compiler/cppGenerator'; 
 import { JsGenerator } from 'backend-compiler/jsGenerator';
+//import { MockDebugSession } from 'vscode-mock-debug';
 
 
 export const generateAction = async (fileName: string, opts: GenerateOptions): Promise<void> => {
     console.log("started")
-    const services = createSimpleLServices(NodeFileSystem).SimpleL;
-    const model = await extractAstNode<Model>(fileName, services);
-
     const data = extractDestinationAndName(fileName, opts.targetDirectory);
-    
-
     const generatedDotFilePath = `${path.join(data.destination, data.name)}.dot`;
     const dotFile = new CompositeGeneratorNode();
-
-
-    
+    const services = createSimpleLServices(NodeFileSystem).SimpleL;
+    const model = await extractAstNode<Model>(fileName, services);
     let debug: boolean = false;
     let ccfg = doGenerateCCFG(dotFile, model,debug);
+    
 
+    //let ccfgPromise : Promise<CCFG> = generateCCFG(fileName);
+    //const ccfg :CCFG = await ccfgPromise;
     if (opts.isInterpreted) {
         let generator: IGenerator = new JsGenerator();
         interpretfromCCFG(ccfg, generator, debug);
         console.log(chalk.green(`CCFG interpreted successfully`));
-    }else{
+    }
+    else{
         //Compile the CCFG to code
         const codeFile = new CompositeGeneratorNode();
 
@@ -58,7 +57,6 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
            generator = new CppGenerator();
         }
         
-   
        let filePath = path.join(data.destination, data.name);
        let generatedCodeFilePath = generator.nameFile(filePath);
        generatefromCCFG(ccfg, codeFile, generator, filePath,debug)
@@ -68,8 +66,17 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
        fs.writeFileSync(generatedCodeFilePath, toString(codeFile));
        console.log(chalk.green(`CCFG and code generated successfully: ${data.destination}`));
     }
-    
 };
+
+export async function generateCCFG(fileName:string):Promise<CCFG>{
+    const services = createSimpleLServices(NodeFileSystem).SimpleL;
+    const model = await extractAstNode<Model>(fileName, services);
+    const dotFile = new CompositeGeneratorNode();
+    let debug: boolean = false;
+    let ccfg = doGenerateCCFG(dotFile, model,debug);
+    console.log(chalk.green(`CCFG generated successfully`));
+    return ccfg;
+}
 
 export type GenerateOptions = {
     targetDirectory ?: string;
@@ -77,10 +84,10 @@ export type GenerateOptions = {
     python ?: boolean;
     js ?: boolean;
     isInterpreted ?: boolean;
+    isInterpretedWithDebug ?: boolean;
 }
 
-export default function(): void {
-    console.log("started")
+export function setupProgram(): Command {
     const program = new Command();
 
     program
@@ -96,12 +103,18 @@ export default function(): void {
         .option('--python', 'compile into python', false)
         .option('--js', 'compile into js', false)
         .option('-i, --isInterpreted', 'interpret the CCFG, false by default', false)
+        .option('-id, --isInterpreterWithDebug','interpert the CCFG, with debugger',false)
         .description('generates the concurrent control flow graph representation and the executable code of the given source file')
         .action(generateAction);
-
-    program.parse(process.argv);
+    
+    return program;
 }
 
+export default function(): void {
+    console.log("started")
+    const program = setupProgram();
+    program.parse(process.argv);
+}
 
 function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model,debug:boolean): CCFG {
     var compilerFrontEnd = new SimpleLCompilerFrontEnd(debug);
