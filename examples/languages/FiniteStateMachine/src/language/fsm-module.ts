@@ -1,6 +1,6 @@
 import { type Module, inject } from 'langium';
 import { createDefaultModule, createDefaultSharedModule, type DefaultSharedModuleContext, type LangiumServices, type LangiumSharedServices, type PartialLangiumServices } from 'langium/lsp';
-import { FsmGeneratedModule, FsmGeneratedSharedModule } from './generated/module.js';
+import { FiniteStateMachineGeneratedModule,  FsmGeneratedSharedModule } from './generated/module.js';
 import { FsmValidator, registerValidationChecks } from './fsm-validator.js';
 
 /**
@@ -54,7 +54,7 @@ export function createFsmServices(context: DefaultSharedModuleContext): {
     );
     const Fsm = inject(
         createDefaultModule({ shared }),
-        FsmGeneratedModule,
+        FiniteStateMachineGeneratedModule,
         FsmModule
     );
     shared.ServiceRegistry.register(Fsm);

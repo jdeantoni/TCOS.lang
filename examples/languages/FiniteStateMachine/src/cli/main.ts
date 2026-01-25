@@ -5,7 +5,7 @@ import { FiniteStateMachineLanguageMetaData } from '../language/generated/module
 import { createFsmServices } from '../language/fsm-module.js';
 import { extractAstNode, extractDestinationAndName } from './cli-util.js';
 import { NodeFileSystem } from 'langium/node';
-import * as url from 'node:url';
+// import * as url from 'node:url';
 import * as fs from 'fs';
 import * as path from 'node:path';
 import { generatefromCCFG } from 'backend-compiler/compilerBackend';
@@ -16,7 +16,7 @@ import { JsGenerator } from 'backend-compiler/jsGenerator';
 import { CompositeGeneratorNode, toString } from 'langium/generate';
 import { TestFSMCompilerFrontEnd } from './generated/testFSM_variantCompilerFrontEnd.js';
 import { CCFG } from 'ccfg';
-const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
+// const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 
 export const generateAction = async (fileName: string, opts: GenerateOptions): Promise<void> => {
