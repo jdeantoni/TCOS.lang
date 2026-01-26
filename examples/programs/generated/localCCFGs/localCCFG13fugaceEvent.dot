@@ -1,0 +1,7 @@
+digraph G {
+  "12" [label="12[]:Step_starts" shape="ellipse" ];
+  "13" [label="13[]:Step_starts" shape="ellipse" ];
+  "14" [label="14[]:Step_terminates" shape="ellipse" ];
+  "13" -> "12" [label=""];
+  "12" -> "14" [label=""];
+}

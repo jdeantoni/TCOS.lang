@@ -169,6 +169,9 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
         }else
         if (isACollectionHole(h)){
             let refNode : string = `node.${h.startingParticipants.slice(0,h.startingParticipants.length-2).filter(p => p.type != "event").map(p => p.name).join('.')}`
+            if (isReferenceBased(h.startingParticipants)){
+                refNode = refNode + ".map(t => t.ref).filter(ref => ref !== undefined).map(ref => ref as AstNode)"
+            }
             file.append(`
         let ${h.startingParticipants.slice(0,h.startingParticipants.length-2).filter(p => p.type != "event").map(p => p.name).join('_')}Hole: CollectionHole = new CollectionHole(${refNode})
         ${h.startingParticipants.slice(0,h.startingParticipants.length-2).filter(p => p.type != "event").map(p => p.name).join('_')}Hole.isSequential = ${(h as CollectionHoleSpecifier).isSequential}
@@ -201,23 +204,34 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
     for (let ruleCF of rulesCF) {
         if (ruleCF != startingRules[0]) {
             let premiseNodeName : string= getPreviousNodeNameFromPremiseParticipants(ruleCF, conceptName, holes)
-            //manage premise (most of the time the premise's node is already existing since a hole.)
-            
+            //manage premise (most of the time the premise's node is already existing since a hole. (but sometimes from event in varDeclaration))
+
             if (ruleCF.premiseParticipants.length > 1) {
                 file.append(`
         let ${premiseNodeName}: Node = new ${premiseNodeName.endsWith("OrJoinNode")?"OrJoin":"AndJoin"}(node)
-        localCCFG.addNode(${premiseNodeName})
-                `);
+        localCCFG.addNode(${premiseNodeName})\n `);
                 for (let participants of ruleCF.premiseParticipants) {
                     if (holes.map(h => h.startingParticipants).some(p => areParticipantsEqualsOrCoupled(p, participants))) {
                         if (DEBUG) file.append(`             //mark a`);
                         file.append(`
-        localCCFG.addEdge(${participants.filter(p => p.type != "event").map(p => p.name).join('_')}Hole,${premiseNodeName})
-                            `);
+        localCCFG.addEdge(${participants.filter(p => p.type != "event").map(p => p.name).join('_')}Hole,${premiseNodeName})\n`);
                     } else {
-                        file.append(`
-                //premise participants in parallel collection but not a hole: ${participants.map(p => p.toJSON())}
-                        `);
+                        file.append(`               //premise participants in parallel collection but not a hole: ${participants.map(p => p.toJSON())}`);
+                        if (participants.length > 1) { //it does not come from a variable declaration event
+                            file.append(`
+        let ${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode : BroadcastEventReception = new BroadcastEventReception(node.${participants.filter(p => p.type != "event").map(p => p.name).join('_')}?.ref??node, "${participants.filter(p => p.type != "event").map(p => p.name).join('_')}")
+        localCCFG.addNode(${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode)
+        localCCFG.addEdge(${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode,${premiseNodeName})
+        `);
+                        }else{ // this is an event from a variable Declaration
+                            let ruleName : string = ""
+                            if ((participants[0].astNode as VariableDeclaration).$container.$type == "RuleOpening") {
+                                ruleName = ((participants[0].astNode as VariableDeclaration).$container as RuleOpening).onRule?.$refText ?? ""
+                            }
+                            file.append(`
+        localCCFG.addEdge(${participants[0].name+ruleName}Node,${premiseNodeName})
+        `);
+                        }
                     }
                 }
             }
@@ -384,13 +398,19 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
         } 
         else {
                 if(DEBUG) file.append(`            //mark 1 ${participants.map(p=>p.toJSON())}`);
+                let participantName: string = ""
+                if (participants.length == 1) { //simple event
+                    participantName = participants[0].name ??""
+                }else{
+                    participantName = participants.filter(p=> p.type == "event").map(p => p.name).join('_')
+                }
             file.append(`
-        {let e = localCCFG.addEdge(${previousNodeName},${participants.filter(p=> p.type == "event").map(p => p.name).join('_')}${(ruleCF.rule.$container as RuleOpening)?.onRule?.ref?.name}Node)
+        {let e = localCCFG.addEdge(${previousNodeName},${participantName}${(ruleCF.rule.$container as RuleOpening)?.onRule?.ref?.name}Node)
         e.guards = [...e.guards, ...[${guardString}]]}
         `);
             // }
             
-        console.log(`${participants.filter(p=>p.type == "event").map(p => p.name).join('_')}${(ruleCF.rule.$container as RuleOpening)?.onRule?.ref?.name}Node`)
+        console.log(`${participantName}${(ruleCF.rule.$container as RuleOpening)?.onRule?.ref?.name}Node`)
     
         }
     }
@@ -424,6 +444,29 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
                 if(DEBUG) file.append(`
                 //conclusion participants in sequential collection but not a hole: ${participants.map(p=>p.toJSON())}
                 `);
+                    if (participants.length > 1) { //it does not come from a variable declaration event
+                        throw new Error("not implemented: multiple participants in conclusion without hole for sequential event emission");
+                    }else{ // this is an event from a variable Declaration
+                        if (participants[0].isBroadcast){
+                            file.append(`
+        let ${participants[0].name}EmissionNode : BroadcastEventEmission = new BroadcastEventEmission(node.${participants[0].name}?.ref??node, "${participants[0].name}")
+        localCCFG.addNode(${participants[0].name}EmissionNode)
+        localCCFG.addEdge(${previousNodeName},${participants[0].name}EmissionNode)
+        ${previousNodeName} = ${participants[0].name}EmissionNode
+        `);
+                        }else{
+                            let ruleName : string = ""
+                            if ((participants[0].astNode as VariableDeclaration).$container.$type == "RuleOpening") {
+                                ruleName = ((participants[0].astNode as VariableDeclaration).$container as RuleOpening).onRule?.$refText ?? ""
+                            }
+                            file.append(`
+        localCCFG.addEdge(${previousNodeName},${participants[0].name+ruleName}Node)
+        ${previousNodeName} = ${participants[0].name+ruleName}Node
+    `);
+                        }
+                            
+                    }
+
             }
         }
     }
@@ -1023,13 +1066,17 @@ function visitValuedEventRef(valuedEventRef: ValuedEventRef | undefined): [strin
 function visitVariableDeclaration(runtimeState: VariableDeclaration[] | undefined, file : CompositeGeneratorNode): void {
     if (runtimeState != undefined) {
         for(let vardDecl of runtimeState){
-            if(vardDecl.type != undefined && vardDecl.type.$cstNode?.text == "Event"){
+            if(vardDecl.type != undefined){
+                let ruleName : string = ""
+                if (vardDecl.$container.$type == "RuleOpening") {
+                    ruleName = (vardDecl.$container as RuleOpening).onRule?.$refText ?? ""
+                }
                 file.append(`
-                let starts${vardDecl.name}Node: Node = new Step(node,NodeType.starts,[])\n
-                localCCFG.addNode(starts${vardDecl.name}Node)
-                let terminates${vardDecl.name}Node: Node = new Step(node,NodeType.terminates,[])\n
-                localCCFG.addNode(terminates${vardDecl.name}Node)
-                localCCFG.addEdge(starts${vardDecl.name}Node,terminates${vardDecl.name}Node)
+                let ${vardDecl.name+ruleName}Node: Node = new Step(node,NodeType.starts,[])\n
+                localCCFG.addNode(${vardDecl.name+ruleName}Node)
+                // let terminates${vardDecl.name+ruleName}Node: Node = new Step(node,NodeType.terminates,[])\n
+                // localCCFG.addNode(terminates${vardDecl.name+ruleName}Node)
+                // localCCFG.addEdge(starts${vardDecl.name+ruleName}Node,terminates${vardDecl.name+ruleName}Node)
                 `)
             }
         }
@@ -1049,7 +1096,7 @@ function getVariableDeclarationCode(runtimeState: VariableDeclaration[] | undefi
        // res = res + `\`const std::lock_guard<std::mutex> lock(sigma_mutex);\`,`
         let sep = ""
         for(let vardDecl of runtimeState){
-            if(vardDecl.type != undefined && vardDecl.type.$cstNode?.text == "Event"){
+            if(vardDecl.type != undefined && vardDecl.type.$cstNode?.text == "event"){
                 continue
             }else{
                  if(vardDecl.value != undefined && vardDecl.value.$type == "MemberCall"){

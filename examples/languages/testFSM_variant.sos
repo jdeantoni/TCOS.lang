@@ -12,12 +12,10 @@ open FSMModel{
 }
 
 open FSM {
-    var currentState:State;
 
                     when starts
-    ----------------------------------------- init
-     <this,σ> ~> currentState := initialState;
-                 <initialState,σ>
+    --------------------------------- init
+     <this,σ> ~> <initialState,σ>
 
 //                 when starts
 //         [currentState.outTransitions.size == 0]
@@ -49,7 +47,7 @@ open State {
 
           when firstOf(outTransitions.terminates)
     ----------------------------------------------                  end
-          <this,σ> ~> outTransitions->sequential.foreach(transition => transition.terminates);
+          <this,σ> ~> //outTransitions->sequential.foreach(transition => transition.terminates);
                       terminates
 }
 
@@ -62,7 +60,7 @@ open Transition{
         <this,σ> ~> waitEvent
 
              
-      when (<guardEvent,σ> ^ waitEvent )
+      when (guardEvent.terminates ^ waitEvent )
     ------------------------------------------------------ fire
          <this,σ> ~> broadcasts sentEvent;
                      emits terminates ;

@@ -1,7 +1,7 @@
 
 import fs from 'fs';
 import { AstNode, Reference, isReference, AstUtils } from "langium";
-import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole, AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction} from "ccfg";
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole, AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction, BroadcastEventEmission, BroadcastEventReception} from "ccfg";
 import { FSMModel,FSM,Event,State,Transition } from "../../language/generated/ast.js";
 
 var debug = false
@@ -115,7 +115,7 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
     createFSMLocalCCFG(node: FSM): CCFG {
         let localCCFG = new CCFG()
     
-        let startsFSMNode: Node = new Step(node,NodeType.starts,[new CreateGlobalVarInstruction(`${this.getASTNodeUID(node)}currentState`,`unknown`)])
+        let startsFSMNode: Node = new Step(node,NodeType.starts,[])
         if(startsFSMNode.functionsDefs.length>0){
             startsFSMNode.returnType = "void"
         }
@@ -128,14 +128,6 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         let initialStateHole: Hole = new Hole(node.initialState.ref)
         localCCFG.addNode(initialStateHole)
         
-        {
-        let initStateModificationNode: Node = new Step(node, undefined, [new CreateVarInstruction(`${this.getASTNodeUID(node)}546`,`unknown`),new AssignVarInstruction(`${this.getASTNodeUID(node)}546`,`${node.initialState}`,`unknown`),new SetGlobalVarInstruction(`${this.getASTNodeUID(node)}currentState`,`${this.getASTNodeUID(node)}546`,`unknown`)])
-        localCCFG.addNode(initStateModificationNode)
-        {let e = localCCFG.addEdge(startsFSMNode,initStateModificationNode)
-        e.guards = [...e.guards, ...[]]}
-        startsFSMNode = initStateModificationNode
-        }
-    
         startsFSMNode.params = [...startsFSMNode.params, ...[]]
         startsFSMNode.returnType = "void"
         startsFSMNode.functionsNames = [`${startsFSMNode.uid}init`] // overwrite existing name
@@ -161,7 +153,15 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
     createEventLocalCCFG(node: Event): CCFG {
         let localCCFG = new CCFG()
     
-        let startsEventNode: Node = new Step(node,NodeType.starts,[new CreateGlobalVarInstruction(`${this.getASTNodeUID(node)}waitFeedBack`,`unknown`)])
+                let waitFeedBackEventNode: Node = new Step(node,NodeType.starts,[])
+
+                localCCFG.addNode(waitFeedBackEventNode)
+                // let terminateswaitFeedBackEventNode: Node = new Step(node,NodeType.terminates,[])
+
+                // localCCFG.addNode(terminateswaitFeedBackEventNode)
+                // localCCFG.addEdge(startswaitFeedBackEventNode,terminateswaitFeedBackEventNode)
+                
+        let startsEventNode: Node = new Step(node,NodeType.starts,[])
         if(startsEventNode.functionsDefs.length>0){
             startsEventNode.returnType = "void"
         }
@@ -170,9 +170,6 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         localCCFG.initialState = startsEventNode
         let terminatesEventNode: Node = new Step(node,NodeType.terminates)
         localCCFG.addNode(terminatesEventNode)
-
-        let waitFeedBackEventNode: Node = new Step(node,NodeType.terminates)
-        localCCFG.addNode(waitFeedBackEventNode)
         
         startsEventNode.params = [...startsEventNode.params, ...[]]
         startsEventNode.returnType = "void"
@@ -197,8 +194,7 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
    //conclusion: outTransitions:[Transition:ID][],transition:unknown,starts:event
 // rule end
    //premise: outTransitions:[Transition:ID][],terminates:event
-   //conclusion: outTransitions:[Transition:ID][],transition:unknown,terminates:event
-	//terminates:event
+   //conclusion: terminates:event
 
     /**
      * returns the local CCFG of the State node
@@ -218,7 +214,7 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         let terminatesStateNode: Node = new Step(node,NodeType.terminates)
         localCCFG.addNode(terminatesStateNode)
         
-        let outTransitionsHole: CollectionHole = new CollectionHole(node.outTransitions.map(t => t.ref).filter((ref): ref is Transition => ref !== undefined))
+        let outTransitionsHole: CollectionHole = new CollectionHole(node.outTransitions.map(t => t.ref).filter(ref => ref !== undefined).map(ref => ref as AstNode))
         outTransitionsHole.isSequential = false
         outTransitionsHole.parallelSyncPolicy = "firstOf"
         localCCFG.addNode(outTransitionsHole)
@@ -234,13 +230,10 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         outTransitionsHole.returnType = "void"
         outTransitionsHole.functionsNames = [`${outTransitionsHole.uid}end`] // overwrite existing name
         outTransitionsHole.functionsDefs =[...outTransitionsHole.functionsDefs, ...[]] // GG
-                //mark 1.5
-        localCCFG.addEdge(outTransitionsHole,outTransitionsHole)
+                //mark 1 { "name": "terminates", "type": "event"}
+        {let e = localCCFG.addEdge(outTransitionsHole,terminatesStateNode)
+        e.guards = [...e.guards, ...[]]}
         
-                //conclusion participants in sequential collection but not a hole: { "name": "outTransitions", "type": "[Transition:ID]"},{ "name": "transition", "type": "unknown"},{ "name": "terminates", "type": "event"}
-                
-                //conclusion participants in sequential collection but not a hole: { "name": "terminates", "type": "event"}
-                
         return localCCFG;
     }
 // rule init
@@ -261,15 +254,15 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
     createTransitionLocalCCFG(node: Transition): CCFG {
         let localCCFG = new CCFG()
     
-                let startswaitEventNode: Node = new Step(node,NodeType.starts,[])
+                let waitEventTransitionNode: Node = new Step(node,NodeType.starts,[])
 
-                localCCFG.addNode(startswaitEventNode)
-                let terminateswaitEventNode: Node = new Step(node,NodeType.terminates,[])
+                localCCFG.addNode(waitEventTransitionNode)
+                // let terminateswaitEventTransitionNode: Node = new Step(node,NodeType.terminates,[])
 
-                localCCFG.addNode(terminateswaitEventNode)
-                localCCFG.addEdge(startswaitEventNode,terminateswaitEventNode)
+                // localCCFG.addNode(terminateswaitEventTransitionNode)
+                // localCCFG.addEdge(startswaitEventTransitionNode,terminateswaitEventTransitionNode)
                 
-        let startsTransitionNode: Node = new Step(node,NodeType.starts,[])
+        let startsTransitionNode: Node = new Step(node,NodeType.starts,[new CreateGlobalVarInstruction(`${this.getASTNodeUID(node)}waitEvent`,`unknown`)])
         if(startsTransitionNode.functionsDefs.length>0){
             startsTransitionNode.returnType = "void"
         }
@@ -287,16 +280,18 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         startsTransitionNode.functionsNames = [`${startsTransitionNode.uid}init`] // overwrite existing name
         startsTransitionNode.functionsDefs =[...startsTransitionNode.functionsDefs, ...[]] // GG
                 //mark 1 { "name": "waitEvent", "type": "Event"}
-        {let e = localCCFG.addEdge(startsTransitionNode,terminatesTransitionNode)
+        {let e = localCCFG.addEdge(startsTransitionNode,waitEventTransitionNode)
         e.guards = [...e.guards, ...[]]}
         
         let fireAndJoinNode: Node = new AndJoin(node)
         localCCFG.addNode(fireAndJoinNode)
-                
                 //premise participants in parallel collection but not a hole: { "name": "guardEvent", "type": "[Event:ID]"},{ "name": "terminates", "type": "event"}
-                        
-                //premise participants in parallel collection but not a hole: { "name": "waitEvent", "type": "Event"}
-                        
+        let guardEventReceptionNode : BroadcastEventReception = new BroadcastEventReception(node.guardEvent?.ref??node, "guardEvent")
+        localCCFG.addNode(guardEventReceptionNode)
+        localCCFG.addEdge(guardEventReceptionNode,fireAndJoinNode)
+                       //premise participants in parallel collection but not a hole: { "name": "waitEvent", "type": "Event"}
+        localCCFG.addEdge(waitEventTransitionNode,fireAndJoinNode)
+        
         fireAndJoinNode.params = [...fireAndJoinNode.params, ...[]]
         fireAndJoinNode.returnType = "void"
         fireAndJoinNode.functionsNames = [`${fireAndJoinNode.uid}fire`] // overwrite existing name
@@ -304,8 +299,16 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
     
                 //conclusion participants in sequential collection but not a hole: { "name": "sentEvent", "type": "[Event:ID]"}
                 
+        let sentEventEmissionNode : BroadcastEventEmission = new BroadcastEventEmission(node.sentEvent?.ref??node, "sentEvent")
+        localCCFG.addNode(sentEventEmissionNode)
+        localCCFG.addEdge(fireAndJoinNode,sentEventEmissionNode)
+        fireAndJoinNode = sentEventEmissionNode
+        
                 //conclusion participants in sequential collection but not a hole: { "name": "terminates", "type": "event"}
-                                    //mark 2
+                
+        localCCFG.addEdge(fireAndJoinNode,terminatesTransitionNode)
+        fireAndJoinNode = terminatesTransitionNode
+                        //mark 2
         localCCFG.addEdge(fireAndJoinNode,targetHole)
                     fireAndJoinNode = targetHole
                     
@@ -321,7 +324,6 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
             let localCCFG = this.createLocalCCFG(n)
             if(debug){
                 let dotContent = localCCFG.toDot();
-                fs.mkdirSync(`./generated/localCCFGs`, { recursive: true });
                 fs.writeFileSync(`./generated/localCCFGs/localCCFG${localCCFG.initialState?.functionsNames[0].replace(/initd+/g,"")}.dot`, dotContent);
             }
             astNodeToLocalCCFG.set(n, localCCFG)
@@ -333,7 +335,7 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         let holeNodes : Hole[] = this.retrieveHoles(globalCCFG)
         //fix point loop until all holes are filled
         while (holeNodes.length > 0) {
-            if (debug) console.log("holes to fill: "+holeNodes.length +holeNodes.map(h => " "+h.owningCCFG+" "+h.uid).toString())
+            if (debug) console.log("holes to fill: "+holeNodes.length)
             for (let holeNode of holeNodes) {
                 if (holeNode.getType() == "TimerHole") {
                     if (debug) console.log("filling timer hole: "+holeNode.uid)

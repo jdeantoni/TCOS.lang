@@ -1,9 +1,0 @@
-digraph G {
-  "19" [label="19[]:Step_starts" shape="ellipse" ];
-  "20" [label="20[]:Step_terminates" shape="ellipse" ];
-  "21" [label="21[]:CollectionHole" shape="cylinder" ];
-  "22" [label="22[]:OrJoin" shape="invtriangle" ];
-  "19" -> "22" [label=""];
-  "21" -> "22" [label=""];
-  "22" -> "21" [label=""];
-}
