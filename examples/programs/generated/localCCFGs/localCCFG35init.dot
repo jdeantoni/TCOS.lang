@@ -1,0 +1,11 @@
+digraph G {
+  "33" [label="33[]:Step_starts" shape="ellipse" ];
+  "34" [label="34[]:Step_terminates" shape="ellipse" ];
+  "35" [label="35[]:Step_starts" shape="ellipse" ];
+  "36" [label="36[]:Step_terminates" shape="ellipse" ];
+  "37" [label="37[]:Hole" shape="cylinder" ];
+  "38" [label="38[]:AndJoin" shape="invtriangle" ];
+  "33" -> "34" [label=""];
+  "35" -> "36" [label=""];
+  "38" -> "37" [label=""];
+}

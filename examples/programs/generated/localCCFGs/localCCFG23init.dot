@@ -1,0 +1,9 @@
+digraph G {
+  "23" [label="23[]:Step_starts" shape="ellipse" ];
+  "24" [label="24[]:Step_terminates" shape="ellipse" ];
+  "25" [label="25[]:CollectionHole" shape="cylinder" ];
+  "26" [label="26[]:OrJoin" shape="invtriangle" ];
+  "23" -> "26" [label=""];
+  "25" -> "26" [label=""];
+  "26" -> "25" [label=""];
+}

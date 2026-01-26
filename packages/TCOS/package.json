@@ -50,6 +50,7 @@
         "vscode:prepublish": "npm run build && npm run lint",
         "build": "tsc -b tsconfig.json && node esbuild.mjs",
         "watch": "tsc -b tsconfig.json --watch",
+        "build:watch": "concurrently \"tsc -b tsconfig.json --watch\" \"node esbuild.mjs --watch\"",
         "lint": "eslint src --ext ts",
         "langium:generate": "langium generate",
         "langium:watch": "langium generate --watch"

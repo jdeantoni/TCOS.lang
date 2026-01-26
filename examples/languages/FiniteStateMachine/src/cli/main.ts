@@ -88,7 +88,7 @@ export default function(): void {
 
 function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: FSMModel,debug:boolean): CCFG {
     var compilerFrontEnd = new TestFSMCompilerFrontEnd(debug);
-    var ccfg = compilerFrontEnd.generateCCFG(model);
+    var ccfg = compilerFrontEnd.generateCCFG(model, true);
    
     ccfg.addSyncEdge()
 

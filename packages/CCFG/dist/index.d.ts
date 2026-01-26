@@ -209,3 +209,11 @@ export declare class CollectionHole extends Hole {
     isSequential: boolean;
     parallelSyncPolicy: string;
 }
+export declare class BroadcastEventEmission extends Node {
+    eventName: string;
+    constructor(astNode: AstNode, eventName: string);
+}
+export declare class BroadcastEventReception extends Node {
+    eventName: string;
+    constructor(astNode: AstNode, eventName: string);
+}

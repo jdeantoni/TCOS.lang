@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { AstNode, Grammar} from 'langium';
 import { CompositeGeneratorNode ,NL,toString} from 'langium/generate';
-import { Assignment, BinaryExpression, CollectionRuleSync, EventCombination, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, NaryEventExpression, RWRule, RuleOpening, SingleRuleSync, SoSSpec, TypeReference, ValuedEventEmission, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration } from '../language-server/generated/ast.js'; //VariableDeclaration
+import { Assignment, BinaryExpression, CollectionRuleSync, EventCombination, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, NaryEventExpression, RWRule, RuleOpening, SimpleEventEmission, SingleRuleSync, SoSSpec, TypeReference, ValuedEventEmission, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration } from '../language-server/generated/ast.js'; //VariableDeclaration
 import { extractDestinationAndName, FilePathData } from './cli-util.js';
 import path from 'path';
 import { inferType } from '../language-server/type-system/infer.js';
@@ -129,10 +129,11 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
      * @returns the local CCFG (with holes)
      */
     create${conceptName}LocalCCFG(node: ${conceptName}): CCFG {`);
-
-    visitVariableDeclaration(openedRule.runtimeState as VariableDeclaration[], file);
     file.append(`
         let localCCFG = new CCFG()
+    `)
+    visitVariableDeclaration(openedRule.runtimeState as VariableDeclaration[], file);
+    file.append(`
         let starts${conceptName}Node: Node = new Step(node,NodeType.starts,[${getVariableDeclarationCode(openedRule.runtimeState as VariableDeclaration[])}])
         if(starts${conceptName}Node.functionsDefs.length>0){
             starts${conceptName}Node.returnType = "void"
@@ -199,7 +200,7 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
 
     for (let ruleCF of rulesCF) {
         if (ruleCF != startingRules[0]) {
-            let premiseNodeName : string= getPreviousNodeNameFromPremiseParticipants(ruleCF, conceptName)
+            let premiseNodeName : string= getPreviousNodeNameFromPremiseParticipants(ruleCF, conceptName, holes)
             //manage premise (most of the time the premise's node is already existing since a hole.)
             
             if (ruleCF.premiseParticipants.length > 1) {
@@ -279,11 +280,15 @@ function isReferenceBased(participants: TypedElement[]): boolean {
     return participants.some(p => p.type != undefined && p.type[0] == "[")
 }
 
-function getPreviousNodeNameFromPremiseParticipants(ruleCF: RuleControlFlow, conceptName: string) : string{
+function getPreviousNodeNameFromPremiseParticipants(ruleCF: RuleControlFlow, conceptName: string, holes: HoleSpecifier[]) : string{
     if (ruleCF.premiseParticipants.length == 1) {
         let participants = ruleCF.premiseParticipants[0];
         if (participants.length == 1) { //simple event
-            return participants[0].name+conceptName+"Hole"
+            if (holes.some(h => areParticipantsEqualsOrCoupled(h.startingParticipants, participants))) {
+                return participants[0].name+conceptName+"Hole"
+            }else{
+                return participants[0].name+conceptName+"Node"
+            }
         }
         if (isParticipantCollectionBased(participants)) {
             if (ruleCF.rule.premise.eventExpression.$type == "NaryEventExpression") { //parallel sync premise on collection
@@ -363,8 +368,8 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
     file.append(`
         ${previousNodeName}.params = [...${previousNodeName}.params, ...[${formattedParams}]]
         ${previousNodeName}.returnType = "${functionType}"
-        ${previousNodeName}.functionsNames = [\`\${${previousNodeName}.uid}${ruleCF.rule.name}\`] //overwrite existing name
-        ${previousNodeName}.functionsDefs =[...${previousNodeName}.functionsDefs, ...[${eventEmissionActions}]] //GG
+        ${previousNodeName}.functionsNames = [\`\${${previousNodeName}.uid}${ruleCF.rule.name}\`] // overwrite existing name
+        ${previousNodeName}.functionsDefs =[...${previousNodeName}.functionsDefs, ...[${eventEmissionActions}]] // GG
     `);
 
 
@@ -376,12 +381,15 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
         {let e = localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type != "event").map(p => p.name?.replace(/\(\)/,"")).join('_')}Hole)
         e.guards = [...e.guards, ...[${guardString}]]}
             `);
-        } else {
-            if(DEBUG) file.append(`            //mark 1 ${participants.map(p=>p.toJSON())}`);
+        } 
+        else {
+                if(DEBUG) file.append(`            //mark 1 ${participants.map(p=>p.toJSON())}`);
             file.append(`
-        {let e = localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type == "event").map(p => p.name).join('_')}${(ruleCF.rule.$container as RuleOpening)?.onRule?.ref?.name}Node)
+        {let e = localCCFG.addEdge(${previousNodeName},${participants.filter(p=> p.type == "event").map(p => p.name).join('_')}${(ruleCF.rule.$container as RuleOpening)?.onRule?.ref?.name}Node)
         e.guards = [...e.guards, ...[${guardString}]]}
         `);
+            // }
+            
         console.log(`${participants.filter(p=>p.type == "event").map(p => p.name).join('_')}${(ruleCF.rule.$container as RuleOpening)?.onRule?.ref?.name}Node`)
     
         }
@@ -404,7 +412,7 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
         `)
     }
 
-    if (ruleCF.rule.conclusion.eventEmissionOperator == ";") {
+    if (ruleCF.rule.conclusion.eventEmissionOperator[0] == ";") {
         for (let participants of ruleCF.conclusionParticipants) {
             if (holes.map(h => h.startingParticipants).some(p => areParticipantsEquals(p,participants))) {
                 if(DEBUG) file.append(`                    //mark 2`);
@@ -419,7 +427,7 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
             }
         }
     }
-    if (ruleCF.rule.conclusion.eventEmissionOperator == "||") {
+    if (ruleCF.rule.conclusion.eventEmissionOperator[0] == "||") {
         file.append(`
         let fork${ruleCF.rule.name}Node: Node = new Fork(node)
         localCCFG.addNode(fork${ruleCF.rule.name}Node)
@@ -442,7 +450,7 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
 
 
 /**
- * traverse all the rules and identifies the holes. A hole is a participant that is the conclusion of a rule and the premise of another rule
+ * traverse all the rules and identifies the holes. A hole is a participant that is the conclusion of a rule and the premise of another rule (BUT FOR BROADCAST ?)
  * 
  * @param rulesCF: the list of rules of the opened concept 
  * @returns the list of holes, given as a list of TypedElements (the participants of a memberCall) (the ending event is not relevant) 
@@ -459,20 +467,25 @@ function identifiesHoles(rulesCF: RuleControlFlow[]): HoleSpecifier[] {
             for(let conclusionP of currentConclusionParticipants){
                 for(let premiseP of anotherRulePremiseParticipants){
                     if(areParticipantsCoupled(conclusionP, premiseP)){
-                        if(conclusionP.some(te => te.isCollection)){
-                            let holeSpecifier = new CollectionHoleSpecifier(conclusionP, premiseP)
-                            holeSpecifier.isSequential = currentRule.rule.conclusion.eventemissions[0].$type == "CollectionRuleSync" && (currentRule.rule.conclusion.eventemissions[0] as CollectionRuleSync).order == "sequential"
-                            holeSpecifier.parallelSyncPolicy = (anotherRule.rule.premise.eventExpression.$type == "NaryEventExpression") ?(anotherRule.rule.premise.eventExpression as NaryEventExpression).policy.operator+"" : "undefined"
-                            if(res.map(h => h.startingParticipants).some(p => areParticipantsEquals(p, holeSpecifier.startingParticipants)) == false){
-                                res.push(holeSpecifier)
+                        if (conclusionP.some(te => te.isBroadcast)){
+                            //broadcasted events do not create holes ? what do they do ?
+                            console.log(chalk.yellow("broadcasted event detected in hole identification, skipping hole creation for participants: "+conclusionP.map(tp => tp.name+":"+tp.type+(tp.isCollection?"[]":"")).join(", ")))
+                        }else{
+                            if(conclusionP.some(te => te.isCollection)){
+                                let holeSpecifier = new CollectionHoleSpecifier(conclusionP, premiseP)
+                                holeSpecifier.isSequential = currentRule.rule.conclusion.eventemissions[0].$type == "CollectionRuleSync" && (currentRule.rule.conclusion.eventemissions[0] as CollectionRuleSync).order == "sequential"
+                                holeSpecifier.parallelSyncPolicy = (anotherRule.rule.premise.eventExpression.$type == "NaryEventExpression") ?(anotherRule.rule.premise.eventExpression as NaryEventExpression).policy.operator+"" : "undefined"
+                                if(res.map(h => h.startingParticipants).some(p => areParticipantsEquals(p, holeSpecifier.startingParticipants)) == false){
+                                    res.push(holeSpecifier)
+                                }
                             }
-                        }
-                        else{
-                            let holeSpecifier = new HoleSpecifier(conclusionP, premiseP)
-                            if(res.map(h => h.startingParticipants).some(p => areParticipantsEquals(p, holeSpecifier.startingParticipants)) == false){
-                                res.push(holeSpecifier)
-                            }
-                        }                        
+                            else{
+                                let holeSpecifier = new HoleSpecifier(conclusionP, premiseP)
+                                if(res.map(h => h.startingParticipants).some(p => areParticipantsEquals(p, holeSpecifier.startingParticipants)) == false){
+                                    res.push(holeSpecifier)
+                                }
+                            }     
+                        }                   
                     }
                 }
             } 
@@ -497,6 +510,7 @@ function identifiesHolesAndSemiHoles(rulesCF: RuleControlFlow[]): HoleSpecifier[
         for (let p of currentConclusionParticipants) {
             if (p[p.length - 1].name == "starts") {
                 if (!res.some(h => areParticipantsEquals(h.startingParticipants, p))) {
+                    console.log(chalk.yellow("adding semi-hole for participants: "+p.map(tp => tp.name+":"+tp.type+(tp.isCollection?"[]":"")).join(", ")))
                     res.push(new HoleSpecifier(p, undefined))
                 }
             }
@@ -678,12 +692,14 @@ class TypedElement {
     name: (string | undefined)
     type: (string | undefined)
     isCollection: boolean
+    isBroadcast: boolean = false
 
-    constructor(astNode: AstNode | undefined, name: string | undefined, type: string | undefined, isCollection: boolean = false) {
+    constructor(astNode: AstNode | undefined, name: string | undefined, type: string | undefined, isCollection: boolean = false, isBroadcast: boolean = false) {
         this.astNode = astNode
         this.name = name
         this.type = type
         this.isCollection = isCollection
+        this.isBroadcast = isBroadcast
     }
 
     equals(other: TypedElement): boolean {
@@ -740,6 +756,12 @@ function getEventEmissionParticipants(eventEmission: EventEmission): TypedElemen
     }
     if (eventEmission.$type == "CollectionRuleSync") {
         res = getCollectionRuleSyncEventExpressionParticipants(eventEmission as CollectionRuleSync)
+    }
+    if (eventEmission.$type == "BroadcastedEventEmission") {
+                console.log(chalk.yellow("BroadcastedEventEmission detected in getEventEmissionParticipants "+eventEmission.$cstNode?.text))
+                res.push(getExplicitEventExpressionParticipants((eventEmission.eventEmission as SimpleEventEmission).event as MemberCall, true))
+                // TODO: too restrictive since the eventemission in the broadcast can be also a valued event emission or event a collection one
+
     }
 
     return res
@@ -870,7 +892,7 @@ function getCollectionRuleSyncEventExpressionParticipants(rule: CollectionRuleSy
  * @param membercall a member call
  * @returns a typed element list of the event expression participants
  */
-function getExplicitEventExpressionParticipants(membercall: MemberCall): TypedElement[] {
+function getExplicitEventExpressionParticipants(membercall: MemberCall, isBroadcast: boolean = false): TypedElement[] {
     let res: TypedElement[] = []
 
     if (membercall?.element?.ref != undefined) {
@@ -884,7 +906,8 @@ function getExplicitEventExpressionParticipants(membercall: MemberCall): TypedEl
                 membercall,
                 ass.feature,
                 type,
-                ass.operator == "+="
+                ass.operator == "+=",
+                isBroadcast
             )
             res.push(typedElement)
         } else {
@@ -895,13 +918,15 @@ function getExplicitEventExpressionParticipants(membercall: MemberCall): TypedEl
             let typedElement: TypedElement = new TypedElement(
                 namedElem,
                 name,
-                type
+                type,
+                false,
+                isBroadcast
             )
             res.push(typedElement)
         }
     }
     if (membercall.previous != undefined) {
-        return res = [...getExplicitEventExpressionParticipants(membercall.previous as MemberCall), ...res]
+        return res = [...getExplicitEventExpressionParticipants(membercall.previous as MemberCall, isBroadcast), ...res]
     }
     return res
 }
@@ -1000,9 +1025,9 @@ function visitVariableDeclaration(runtimeState: VariableDeclaration[] | undefine
         for(let vardDecl of runtimeState){
             if(vardDecl.type != undefined && vardDecl.type.$cstNode?.text == "Event"){
                 file.append(`
-                let starts${vardDecl.name}Node: Node = new Step("starts${vardDecl.name}"+getASTNodeUID(node))\n
+                let starts${vardDecl.name}Node: Node = new Step(node,NodeType.starts,[])\n
                 localCCFG.addNode(starts${vardDecl.name}Node)
-                let terminates${vardDecl.name}Node: Node = new Step("terminates${vardDecl.name}"+getASTNodeUID(node))\n
+                let terminates${vardDecl.name}Node: Node = new Step(node,NodeType.terminates,[])\n
                 localCCFG.addNode(terminates${vardDecl.name}Node)
                 localCCFG.addEdge(starts${vardDecl.name}Node,terminates${vardDecl.name}Node)
                 `)

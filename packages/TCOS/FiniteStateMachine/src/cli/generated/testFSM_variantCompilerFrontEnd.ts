@@ -2,7 +2,6 @@
 import fs from 'fs';
 import { AstNode, Reference, isReference, AstUtils } from "langium";
 import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole, AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction} from "ccfg";
-import { FSMModel,FSM,Event,State,Transition } from "../../language/generated/ast.js";
 
 var debug = false
 
@@ -170,9 +169,6 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         localCCFG.initialState = startsEventNode
         let terminatesEventNode: Node = new Step(node,NodeType.terminates)
         localCCFG.addNode(terminatesEventNode)
-
-        let waitFeedBackEventNode: Node = new Step(node,NodeType.terminates)
-        localCCFG.addNode(waitFeedBackEventNode)
         
         startsEventNode.params = [...startsEventNode.params, ...[]]
         startsEventNode.returnType = "void"
@@ -218,7 +214,7 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         let terminatesStateNode: Node = new Step(node,NodeType.terminates)
         localCCFG.addNode(terminatesStateNode)
         
-        let outTransitionsHole: CollectionHole = new CollectionHole(node.outTransitions.map(t => t.ref).filter((ref): ref is Transition => ref !== undefined))
+        let outTransitionsHole: CollectionHole = new CollectionHole(node.outTransitions)
         outTransitionsHole.isSequential = false
         outTransitionsHole.parallelSyncPolicy = "firstOf"
         localCCFG.addNode(outTransitionsHole)
@@ -287,7 +283,7 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         startsTransitionNode.functionsNames = [`${startsTransitionNode.uid}init`] // overwrite existing name
         startsTransitionNode.functionsDefs =[...startsTransitionNode.functionsDefs, ...[]] // GG
                 //mark 1 { "name": "waitEvent", "type": "Event"}
-        {let e = localCCFG.addEdge(startsTransitionNode,terminatesTransitionNode)
+        {let e = localCCFG.addEdge(startsTransitionNode,TransitionNode)
         e.guards = [...e.guards, ...[]]}
         
         let fireAndJoinNode: Node = new AndJoin(node)
@@ -321,7 +317,6 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
             let localCCFG = this.createLocalCCFG(n)
             if(debug){
                 let dotContent = localCCFG.toDot();
-                fs.mkdirSync(`./generated/localCCFGs`, { recursive: true });
                 fs.writeFileSync(`./generated/localCCFGs/localCCFG${localCCFG.initialState?.functionsNames[0].replace(/initd+/g,"")}.dot`, dotContent);
             }
             astNodeToLocalCCFG.set(n, localCCFG)
@@ -333,7 +328,7 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         let holeNodes : Hole[] = this.retrieveHoles(globalCCFG)
         //fix point loop until all holes are filled
         while (holeNodes.length > 0) {
-            if (debug) console.log("holes to fill: "+holeNodes.length +holeNodes.map(h => " "+h.owningCCFG+" "+h.uid).toString())
+            if (debug) console.log("holes to fill: "+holeNodes.length)
             for (let holeNode of holeNodes) {
                 if (holeNode.getType() == "TimerHole") {
                     if (debug) console.log("filling timer hole: "+holeNode.uid)

@@ -3,6 +3,7 @@ grammar StructuralOperationalSemantics
 
 import "../../node_modules/langium/src/grammar/langium-grammar";
 
+
 entry SoSSpec:
    ('semantics')? name=ID
    imports=ImportStatement
@@ -37,6 +38,12 @@ EventExpression:
 // 	BooleanConjunction | BooleanDisjunction | DataComparison;
 
 EventEmission:
+	LocalEventEmission | BroadcastedEventEmission;
+
+BroadcastedEventEmission:
+	"broadcasts" eventEmission=LocalEventEmission;
+
+LocalEventEmission:
 	SimpleEventEmission | ValuedEventEmission | RuleSync;
 
 // Data:
@@ -56,7 +63,7 @@ Premise:
 
 Conclusion:
 	'<''this'',''σ''>' '~>' (statemodifications+=StateModification)*
-							(eventemissions+=EventEmission (eventEmissionOperator=("||"|";") eventemissions+=EventEmission )*)?
+							(eventemissions+=EventEmission (eventEmissionOperator+=("||"|";") eventemissions+=EventEmission )*)?
 							//WARNING: this is a quick and dirty addition of sequential or parallel emission but should be refactored with a composite pattern
 	;
 

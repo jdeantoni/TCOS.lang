@@ -1,0 +1,65 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Extension (Extension Host)",
+      "type": "extensionHost",
+      "request": "launch",
+      "runtimeExecutable": "${execPath}",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}"
+      ],
+      "preLaunchTask": "npm: build",
+      "outFiles": [
+        "${workspaceFolder}/out/**/*.cjs",
+        "${workspaceFolder}/out/**/*.js"
+      ],
+      "sourceMaps": true
+    },
+    {
+      "name": "Attach Language Server (6009)",
+      "type": "node",
+      "request": "attach",
+      "port": 6009,
+      "restart": true,
+      "sourceMaps": true,
+      "outFiles": [
+        "${workspaceFolder}/out/language-server/**/*.cjs",
+        "${workspaceFolder}/out/language-server/**/*.js"
+      ]
+    },
+    {
+      "name": "Debug CLI",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/cli.js",
+      "args": [
+        "generate",
+        "../../examples/languages/testFSM_variant.sos",
+        "-d",
+        "FiniteStateMachine/"
+      ],
+      "cwd": "${workspaceFolder}",
+      "outFiles": [
+        "${workspaceFolder}/out/**/*.js"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ],
+      "sourceMaps": true,
+      "skipFiles": ["<node_internals>/**"],
+      "console": "integratedTerminal"
+    }
+  ]
+  ,
+  "compounds": [
+    {
+      "name": "Extension + Server (Watch)",
+      "configurations": [
+        "Run Extension (Extension Host)",
+        "Attach Language Server (6009)"
+      ]
+    }
+  ]
+}

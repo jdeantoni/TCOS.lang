@@ -623,6 +623,10 @@ export class CCFG {
                 return "cylinder";
             case "CollectionHole":
                 return "cylinder";
+            case "BroadcastEventEmission":
+                return "cds";
+            case "BroadcastEventReception":
+                return "cds";
             default:
                 return "box";
         }
@@ -704,6 +708,20 @@ export class CollectionHole extends Hole {
     }
     isSequential = false;
     parallelSyncPolicy = "lastOf";
+}
+export class BroadcastEventEmission extends Node {
+    eventName = "";
+    constructor(astNode, eventName) {
+        super(astNode);
+        this.eventName = eventName;
+    }
+}
+export class BroadcastEventReception extends Node {
+    eventName = "";
+    constructor(astNode, eventName) {
+        super(astNode);
+        this.eventName = eventName;
+    }
 }
 // export class Timer extends Node {
 //     constructor(value: any) {

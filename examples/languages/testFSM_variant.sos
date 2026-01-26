@@ -27,10 +27,18 @@ open FSM {
 
 open Event {
 
+  var waitFeedBack : event;
+
             when starts
     --------------------------   fugaceEvent
-      <this,σ> ~> terminates    
+      <this,σ> ~> waitFeedBack    
+
+
+      when waitFeedBack //^ lastOf(waitFeedBack)) //waitFeedBack to be changed by listeners(starts) emits feedback
+    --------------------------------------- feedbackReceived
+          <this,σ> ~> terminates
 }
+
 
 open State {
 
@@ -46,18 +54,18 @@ open State {
 }
 
 open Transition{
-    var isSensitive:boolean = false;
+
+    var waitEvent : Event;
 
             when starts
     --------------------------------------- init
-        <this,σ> ~> isSensitive := true;
+        <this,σ> ~> waitEvent
 
              
-      when <guardEvent,σ> [isSensitive == true]
+      when (<guardEvent,σ> ^ waitEvent )
     ------------------------------------------------------ fire
-         <this,σ> ~> isSensitive := false;
-                     <sentEvent,σ>;
-                     terminates ;
+         <this,σ> ~> broadcasts sentEvent;
+                     emits terminates ;
                      <target,σ>
         
 }

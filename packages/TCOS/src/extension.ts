@@ -3,6 +3,10 @@ import * as path from 'path';
 import {
     LanguageClient, LanguageClientOptions, ServerOptions, TransportKind
 } from 'vscode-languageclient/node.js';
+import { generateAction } from './cli/index.js';
+import { SoSScopeProvider } from './language-server/sos-scope.js';
+import { LangiumServices } from 'langium/lsp';
+import { ReferenceInfo } from 'langium';
 
 // require('./language-server/sos-scope.ts');
 
@@ -32,8 +36,9 @@ function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
 
     // If the extension is launched in debug mode then the debug server options are used
     // Otherwise the run options are used
+    // Always enable inspector for attach capability, even in run mode
     const serverOptions: ServerOptions = {
-        run: { module: serverModule, transport: TransportKind.ipc },
+        run: { module: serverModule, transport: TransportKind.ipc, options: debugOptions },
         debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions }
     };
 
@@ -61,8 +66,8 @@ function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
     client.start();
    
     // //the 2 following lines force loading and then allow brealkpoints
-    //  generateAction("../sos_examples/fake.sos", {destination:"generated"})
-    //  new SoSScopeProvider(null).getScope(undefined);
+    generateAction("../sos_examples/fake.sos", {destination:"generated"})
+    new SoSScopeProvider(null as unknown as LangiumServices).getScope(null as unknown as ReferenceInfo);
 
     
     return client;
