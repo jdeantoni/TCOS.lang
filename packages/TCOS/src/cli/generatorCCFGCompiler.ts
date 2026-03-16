@@ -647,10 +647,9 @@ function retrieveStartingRules(rulesCF: RuleControlFlow[]) {
     let startingRule = [];
     for (let r of rulesCF) {
         for (let participants of r.premiseParticipants) {
-            for (let p of participants) {
-                if (p.name != undefined && p.name == "starts") {
-                    startingRule.push(r);
-                }
+            let p= participants[0] ;
+            if (p.name != undefined && p.name == "starts") {
+                startingRule.push(r);
             }
         }
     }
@@ -1321,7 +1320,7 @@ function writePreambule(fileNode: CompositeGeneratorNode, data: FilePathData) {
     fileNode.append(`
 import fs from 'fs';
 import { AstNode, Reference, isReference, AstUtils } from "langium";
-import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole, AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction} from "ccfg";`, NL)
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole, AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction, BroadcastEventEmission, BroadcastEventReception} from "ccfg";`, NL)
 }
 
 
