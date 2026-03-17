@@ -1,5 +1,5 @@
 testFSM
-import "fsm/src/language-server/finite-state-machine.langium"
+import "FiniteStateMachine/src/language/finite-state-machine.langium"
 
 open FSMModel{
                          when starts
@@ -12,25 +12,27 @@ open FSMModel{
 }
 
 open FSM {
-    var currentState:State;
 
                     when starts
-    ----------------------------------------- init
-     <this,σ> ~> currentState := initialState;
-                 <initialState,σ>
-
-//                 when starts
-//         [currentState.outTransitions.size == 0]
-//     ----------------------------------------------                  end
-//                   <this,σ> ~> terminates                    
+    --------------------------------- init
+     <this,σ> ~> <initialState,σ>
+              
 }
 
 open Event {
 
+  var waitFeedBack : event;
+
             when starts
-    --------------------------   fugaceEvent
-      <this,σ> ~> terminates    
+    --------------------------   RTCEvent
+      <this,σ> ~> waitFeedBack    
+
+
+            when waitFeedBack //^ lastOf(starts.listeners).terminates
+    --------------------------------------- feedbackReceived
+          <this,σ> ~> terminates
 }
+
 
 open State {
 
@@ -39,25 +41,26 @@ open State {
     <this,σ> ~> outTransitions->concurrent.foreach(transition => <transition,σ>)
 
 
-          when firstOf(outTransitions.terminates)
+          when firstOf(outTransitions.terminates)    // quid d'un "only" firstOf qui ferait aussi le abort ?
     ----------------------------------------------                  end
-          <this,σ> ~> outTransitions->sequential.foreach(transition => transition.terminates);
+          <this,σ> ~> //outTransitions.others.abort;
                       terminates
 }
 
 open Transition{
-    var isSensitive:boolean = false;
+
+    var waitEvent : event;
 
             when starts
     --------------------------------------- init
-        <this,σ> ~> isSensitive := true;
+        <this,σ> ~> waitEvent
 
              
-      when <guardEvent,σ> [isSensitive == true]
+      when (guardEvent.starts ^ waitEvent )
     ------------------------------------------------------ fire
-         <this,σ> ~> isSensitive := false;
-                     <sentEvent,σ>;
-                     terminates ;
+         <this,σ> ~> broadcasts sentEvent;
+                     emits terminates;
+                    //  emits source.terminates;
                      <target,σ>
         
 }

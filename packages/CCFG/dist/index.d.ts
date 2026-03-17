@@ -113,6 +113,7 @@ export declare class CCFG {
     nodes: Node[];
     edges: Edge[];
     syncEdges: SyncEdge[];
+    alreadyUsedToFillHole: boolean;
     initialState: Node | undefined;
     constructor();
     cleanVisit(): void;
@@ -208,4 +209,12 @@ export declare class CollectionHole extends Hole {
     constructor(astNode: AstNode[]);
     isSequential: boolean;
     parallelSyncPolicy: string;
+}
+export declare class BroadcastEventEmission extends Node {
+    eventName: string;
+    constructor(astNode: AstNode, eventName: string);
+}
+export declare class BroadcastEventReception extends Node {
+    eventName: string;
+    constructor(astNode: AstNode, eventName: string);
 }

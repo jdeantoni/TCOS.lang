@@ -15,65 +15,65 @@
         std::unordered_map<std::string, void*> sigma;
         std::mutex sigma_mutex;  // protects sigma
         
-        void function3perioStart(){
-std::cout << "	function3perioStart started" << std::endl;
+        void function4perioStart(){
+std::cout << "	function4perioStart started" << std::endl;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["Perio0_0_2_1blocTrigger"] = new int();}
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Perio0_0_2_1blocTrigger"]) = 1000;}
 }
-void functioninit31Timer(){
-std::cout << "	functioninit31Timer started" << std::endl;
+void functioninit34Timer(){
+std::cout << "	functioninit34Timer started" << std::endl;
 	std::this_thread::sleep_for(1000ms);
 }
-void function19fugaceStmt1(){
-std::cout << "	function19fugaceStmt1 started" << std::endl;
+void function21fugaceStmt1(){
+std::cout << "	function21fugaceStmt1 started" << std::endl;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["Stmt11_6_1_11fakeState"] = new int();}
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Stmt11_6_1_11fakeState"]) = 0;}
 }
-void function29fugaceStmt1(){
-std::cout << "	function29fugaceStmt1 started" << std::endl;
+void function32fugaceStmt1(){
+std::cout << "	function32fugaceStmt1 started" << std::endl;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["Stmt11_33_1_38fakeState"] = new int();}
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Stmt11_33_1_38fakeState"]) = 0;}
 }
 int main(){
-		function3perioStart();
-	bool flag8 = true;
-	LockingQueue<Void> synch8;
-	{Void fakeParam8;
- 	synch8.push(fakeParam8);}
-	flag8 = true;
-	flag8= true;
-while (flag8 == true){
-	flag8 = false;
-		{Void joinPopped8;
- 		synch8.waitAndPop(joinPopped8);}
-		functioninit31Timer();
-		bool flag14 = true;
-		LockingQueue<Void> synch14;
-		std::thread thread9([&](){
-		std::cout << "thread9 started" << std::endl;
-			std::thread thread15([&](){
-			std::cout << "thread15 started" << std::endl;
-				function19fugaceStmt1();
-				{Void fakeParam14;
- 				synch14.push(fakeParam14);}
+		function4perioStart();
+	bool flag9 = true;
+	LockingQueue<Void> synch9;
+	{Void fakeParam9;
+ 	synch9.push(fakeParam9);}
+	flag9 = true;
+	flag9= true;
+while (flag9 == true){
+	flag9 = false;
+		{Void joinPopped9;
+ 		synch9.waitAndPop(joinPopped9);}
+		functioninit34Timer();
+		bool flag15 = true;
+		LockingQueue<Void> synch15;
+		std::thread thread10([&](){
+		std::cout << "thread10 started" << std::endl;
+			std::thread thread16([&](){
+			std::cout << "thread16 started" << std::endl;
+				function21fugaceStmt1();
+				{Void fakeParam15;
+ 				synch15.push(fakeParam15);}
 			});
-			thread15.detach();
-			std::thread thread23([&](){
-			std::cout << "thread23 started" << std::endl;
-				function29fugaceStmt1();
-				{Void fakeParam14;
- 				synch14.push(fakeParam14);}
+			thread16.detach();
+			std::thread thread25([&](){
+			std::cout << "thread25 started" << std::endl;
+				function32fugaceStmt1();
+				{Void fakeParam15;
+ 				synch15.push(fakeParam15);}
 			});
-			thread23.detach();
+			thread25.detach();
 		});
-		thread9.detach();
-		{Void fakeParam8;
- 		synch8.push(fakeParam8);}
-		flag8 = true;
-		{Void joinPopped14;
- 		synch14.waitAndPop(joinPopped14);}
-		{Void joinPopped14;
- 		synch14.waitAndPop(joinPopped14);}
+		thread10.detach();
+		{Void fakeParam9;
+ 		synch9.push(fakeParam9);}
+		flag9 = true;
+		{Void joinPopped15;
+ 		synch15.waitAndPop(joinPopped15);}
+		{Void joinPopped15;
+ 		synch15.waitAndPop(joinPopped15);}
 	}
 for(auto entry : sigma){ std::cout << entry.first << " : " << *((int*)entry.second) << std::endl;}
 }

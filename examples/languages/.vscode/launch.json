@@ -30,6 +30,29 @@
                 "${workspaceFolder}/out/**/*.js",
                 "${workspaceFolder}/node_modules/langium"
             ]
-        }
+        },
+        {
+      "name": "Debug FSM Compiler CLI",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/FiniteStateMachine/bin/cli.js",
+      "args": [
+        "generate",
+        "../programs/testFSM.fsm",
+        "-d",
+        "../programs/generated"
+      ],
+      "cwd": "${workspaceFolder}",
+      "outFiles": [
+        "${workspaceFolder}/out/**/*.js"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ],
+      "sourceMaps": true,
+      "skipFiles": ["<node_internals>/**"],
+      "console": "integratedTerminal"
+    }
     ]
 }

@@ -153,7 +153,7 @@ export class TypedElement {
 export enum NodeType {
     starts = "starts",
     terminates = "terminates",
-    multipleSynchro = "multipleSynchro",
+    multipleSynchro = "multipleSynchro"
 }
 
 export abstract class Node {
@@ -261,8 +261,8 @@ export class Edge {
 export class CCFG {
     nodes: Node[];
     edges: Edge[];
-    syncEdges: SyncEdge[] = []
-    ;
+    syncEdges: SyncEdge[] = [];
+    alreadyUsedToFillHole: boolean = false;
 
     initialState: Node | undefined;
 
@@ -702,6 +702,10 @@ export class CCFG {
                 return "cylinder";
             case "CollectionHole":
                 return "cylinder";
+            case "BroadcastEventEmission":
+                return "cds";
+            case "BroadcastEventReception":
+                return "cds";
             default:
                 return "box";
         }
@@ -802,6 +806,22 @@ export class CollectionHole extends Hole {
     }
     isSequential: boolean = false;
     parallelSyncPolicy: string = "lastOf";
+}
+
+export class BroadcastEventEmission extends Node {
+    eventName: string = ""
+    constructor(astNode:AstNode, eventName: string) {
+        super(astNode);
+        this.eventName = eventName;
+    }
+}
+
+export class BroadcastEventReception extends Node {
+    eventName: string = ""
+    constructor(astNode:AstNode, eventName: string) {
+        super(astNode);
+        this.eventName = eventName;
+    }
 }
 
 // export class Timer extends Node {

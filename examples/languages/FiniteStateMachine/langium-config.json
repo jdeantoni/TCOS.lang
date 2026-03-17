@@ -1,0 +1,15 @@
+{
+    "projectName": "Fsm",
+    "languages": [{
+        "id": "fsm",
+        "grammar": "src/language/fsm.langium",
+        "fileExtensions": [".fsm"],
+        "textMate": {
+            "out": "syntaxes/fsm.tmLanguage.json"
+        },
+        "monarch": {
+            "out": "src/syntaxes/fsm.monarch.ts"
+        }
+    }],
+    "out": "src/language/generated"
+}

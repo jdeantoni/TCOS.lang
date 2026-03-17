@@ -32,10 +32,10 @@ function compileFunctionDefs(ccfg, generator) {
             continue;
         }
         if (node.returnType != undefined) {
-            console.log("node return type = " + node.returnType);
+            //console.log("node return type = " + node.returnType);
             if (node.functionsDefs[0] instanceof Instruction) {
                 for (let fname of node.functionsNames) {
-                    console.log("function name: " + fname);
+                    //console.log("function name: " + fname);
                     let allFDefs = [];
                     for (let fdef of node.functionsDefs) {
                         if (fdef instanceof ReturnInstruction) {
@@ -160,12 +160,12 @@ function visitAllNodes(ccfg, currentNode, generator, visitIsStarting = false) {
                 for (let syncUID of currentNode.syncNodeIds) {
                     let n = ccfg.getNodeByUID(syncUID);
                     if (n != undefined) {
-                        let ptns = getPreviousTypedNodes(n.inputEdges[0]);
+                        let ptns = getPreviousTypedNodes(n.inputEdges[0], true);
                         if (ptns.length > 1) {
                             throw new Error("multiple previous typed nodes not handled here");
                         }
                         let ptn = ptns[0];
-                        if (ptn.returnType != undefined) {
+                        if (ptn !== undefined && ptn.returnType != undefined) {
                             if (!createdQueueIds.includes(syncUID)) {
                                 createdQueueIds.push(syncUID);
                                 if (ptn.returnType != "void" && ptn.returnType != undefined) {
@@ -240,9 +240,11 @@ function visitAllNodes(ccfg, currentNode, generator, visitIsStarting = false) {
                         throw new Error("multiple previous typed nodes not handled here");
                     }
                     let ptn = ptns[0];
-                    paramType = ptn.returnType;
-                    if (paramType != undefined) {
-                        break;
+                    if (ptn !== undefined){
+                        paramType = ptn.returnType;
+                        if (paramType != undefined) {
+                            break;
+                        }
                     }
                 }
                 if (currentNode.functionsDefs.length == 0) {

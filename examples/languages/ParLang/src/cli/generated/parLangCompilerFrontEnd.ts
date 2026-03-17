@@ -1,7 +1,7 @@
 
 import fs from 'fs';
 import { AstNode, Reference, isReference, AstUtils } from "langium";
-import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole} from "ccfg";
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole, AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction, BroadcastEventEmission, BroadcastEventReception} from "ccfg";
 import { Program,Seq,Par,Perio,Stmt1,Stmt2 } from "../../language/generated/ast.js";
 
 var debug = false
@@ -24,6 +24,9 @@ export interface CompilerFrontEnd {
 export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
     constructor(debugMode: boolean = false){ 
         debug = debugMode
+        if (debug){
+            console.log("CompilerFrontEnd created")
+        }
     }
 
     globalCCFG: CCFG = new CCFG();
@@ -71,6 +74,7 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
      */
     createProgramLocalCCFG(node: Program): CCFG {
         let localCCFG = new CCFG()
+    
         let startsProgramNode: Node = new Step(node,NodeType.starts,[])
         if(startsProgramNode.functionsDefs.length>0){
             startsProgramNode.returnType = "void"
@@ -86,16 +90,16 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
         
         startsProgramNode.params = [...startsProgramNode.params, ...[]]
         startsProgramNode.returnType = "void"
-        startsProgramNode.functionsNames = [`${startsProgramNode.uid}startsProgram`] //overwrite existing name
-        startsProgramNode.functionsDefs =[...startsProgramNode.functionsDefs, ...[]] //GG
+        startsProgramNode.functionsNames = [`${startsProgramNode.uid}startsProgram`] // overwrite existing name
+        startsProgramNode.functionsDefs =[...startsProgramNode.functionsDefs, ...[]] // GG
                 //mark 0
         {let e = localCCFG.addEdge(startsProgramNode,stmtHole)
         e.guards = [...e.guards, ...[]]}
             
         stmtHole.params = [...stmtHole.params, ...[]]
         stmtHole.returnType = "void"
-        stmtHole.functionsNames = [`${stmtHole.uid}finishProgram`] //overwrite existing name
-        stmtHole.functionsDefs =[...stmtHole.functionsDefs, ...[]] //GG
+        stmtHole.functionsNames = [`${stmtHole.uid}finishProgram`] // overwrite existing name
+        stmtHole.functionsDefs =[...stmtHole.functionsDefs, ...[]] // GG
                 //mark 1 { "name": "terminates", "type": "event"}
         {let e = localCCFG.addEdge(stmtHole,terminatesProgramNode)
         e.guards = [...e.guards, ...[]]}
@@ -119,6 +123,7 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
      */
     createSeqLocalCCFG(node: Seq): CCFG {
         let localCCFG = new CCFG()
+    
         let startsSeqNode: Node = new Step(node,NodeType.starts,[])
         if(startsSeqNode.functionsDefs.length>0){
             startsSeqNode.returnType = "void"
@@ -137,24 +142,24 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
         
         startsSeqNode.params = [...startsSeqNode.params, ...[]]
         startsSeqNode.returnType = "void"
-        startsSeqNode.functionsNames = [`${startsSeqNode.uid}startsLhsSeq`] //overwrite existing name
-        startsSeqNode.functionsDefs =[...startsSeqNode.functionsDefs, ...[]] //GG
+        startsSeqNode.functionsNames = [`${startsSeqNode.uid}startsLhsSeq`] // overwrite existing name
+        startsSeqNode.functionsDefs =[...startsSeqNode.functionsDefs, ...[]] // GG
                 //mark 0
         {let e = localCCFG.addEdge(startsSeqNode,lhsHole)
         e.guards = [...e.guards, ...[]]}
             
         lhsHole.params = [...lhsHole.params, ...[]]
         lhsHole.returnType = "void"
-        lhsHole.functionsNames = [`${lhsHole.uid}startsRhsSeq`] //overwrite existing name
-        lhsHole.functionsDefs =[...lhsHole.functionsDefs, ...[]] //GG
+        lhsHole.functionsNames = [`${lhsHole.uid}startsRhsSeq`] // overwrite existing name
+        lhsHole.functionsDefs =[...lhsHole.functionsDefs, ...[]] // GG
                 //mark 0
         {let e = localCCFG.addEdge(lhsHole,rhsHole)
         e.guards = [...e.guards, ...[]]}
             
         rhsHole.params = [...rhsHole.params, ...[]]
         rhsHole.returnType = "void"
-        rhsHole.functionsNames = [`${rhsHole.uid}finishSeq`] //overwrite existing name
-        rhsHole.functionsDefs =[...rhsHole.functionsDefs, ...[]] //GG
+        rhsHole.functionsNames = [`${rhsHole.uid}finishSeq`] // overwrite existing name
+        rhsHole.functionsDefs =[...rhsHole.functionsDefs, ...[]] // GG
                 //mark 1 { "name": "terminates", "type": "event"}
         {let e = localCCFG.addEdge(rhsHole,terminatesSeqNode)
         e.guards = [...e.guards, ...[]]}
@@ -177,6 +182,7 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
      */
     createParLocalCCFG(node: Par): CCFG {
         let localCCFG = new CCFG()
+    
         let startsParNode: Node = new Step(node,NodeType.starts,[])
         if(startsParNode.functionsDefs.length>0){
             startsParNode.returnType = "void"
@@ -195,8 +201,8 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
         
         startsParNode.params = [...startsParNode.params, ...[]]
         startsParNode.returnType = "void"
-        startsParNode.functionsNames = [`${startsParNode.uid}startsPar`] //overwrite existing name
-        startsParNode.functionsDefs =[...startsParNode.functionsDefs, ...[]] //GG
+        startsParNode.functionsNames = [`${startsParNode.uid}startsPar`] // overwrite existing name
+        startsParNode.functionsDefs =[...startsParNode.functionsDefs, ...[]] // GG
     
         let forkstartsParNode: Node = new Fork(node)
         localCCFG.addNode(forkstartsParNode)
@@ -209,15 +215,15 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
                     
         let finishParAndJoinNode: Node = new AndJoin(node)
         localCCFG.addNode(finishParAndJoinNode)
-                             //mark a
+              //mark a
         localCCFG.addEdge(lhsHole,finishParAndJoinNode)
-                                         //mark a
+             //mark a
         localCCFG.addEdge(rhsHole,finishParAndJoinNode)
-                            
+
         finishParAndJoinNode.params = [...finishParAndJoinNode.params, ...[]]
         finishParAndJoinNode.returnType = "void"
-        finishParAndJoinNode.functionsNames = [`${finishParAndJoinNode.uid}finishPar`] //overwrite existing name
-        finishParAndJoinNode.functionsDefs =[...finishParAndJoinNode.functionsDefs, ...[]] //GG
+        finishParAndJoinNode.functionsNames = [`${finishParAndJoinNode.uid}finishPar`] // overwrite existing name
+        finishParAndJoinNode.functionsDefs =[...finishParAndJoinNode.functionsDefs, ...[]] // GG
                 //mark 1 { "name": "terminates", "type": "event"}
         {let e = localCCFG.addEdge(finishParAndJoinNode,terminatesParNode)
         e.guards = [...e.guards, ...[]]}
@@ -239,7 +245,16 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
      */
     createPerioLocalCCFG(node: Perio): CCFG {
         let localCCFG = new CCFG()
-        let startsPerioNode: Node = new Step(node,NodeType.starts,[`createGlobalVar,int,${this.getASTNodeUID(node)}blocTrigger`,`setGlobalVar,int,${this.getASTNodeUID(node)}blocTrigger,${node.p}`])
+    
+                let blocTriggerPerioNode: Node = new Step(node,NodeType.starts,[])
+
+                localCCFG.addNode(blocTriggerPerioNode)
+                // let terminatesblocTriggerPerioNode: Node = new Step(node,NodeType.terminates,[])
+
+                // localCCFG.addNode(terminatesblocTriggerPerioNode)
+                // localCCFG.addEdge(startsblocTriggerPerioNode,terminatesblocTriggerPerioNode)
+                
+        let startsPerioNode: Node = new Step(node,NodeType.starts,[new CreateGlobalVarInstruction(`${this.getASTNodeUID(node)}blocTrigger`,`int`),new SetGlobalVarInstruction(`${this.getASTNodeUID(node)}blocTrigger`,`${node.p}`,`int`)])
         if(startsPerioNode.functionsDefs.length>0){
             startsPerioNode.returnType = "void"
         }
@@ -257,16 +272,16 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
         
         startsPerioNode.params = [...startsPerioNode.params, ...[]]
         startsPerioNode.returnType = "void"
-        startsPerioNode.functionsNames = [`${startsPerioNode.uid}perioStart`] //overwrite existing name
-        startsPerioNode.functionsDefs =[...startsPerioNode.functionsDefs, ...[]] //GG
+        startsPerioNode.functionsNames = [`${startsPerioNode.uid}perioStart`] // overwrite existing name
+        startsPerioNode.functionsDefs =[...startsPerioNode.functionsDefs, ...[]] // GG
                 //mark 0
         {let e = localCCFG.addEdge(startsPerioNode,blocTriggerHole)
         e.guards = [...e.guards, ...[]]}
             
         blocTriggerHole.params = [...blocTriggerHole.params, ...[]]
         blocTriggerHole.returnType = "void"
-        blocTriggerHole.functionsNames = [`${blocTriggerHole.uid}perioExpires`] //overwrite existing name
-        blocTriggerHole.functionsDefs =[...blocTriggerHole.functionsDefs, ...[]] //GG
+        blocTriggerHole.functionsNames = [`${blocTriggerHole.uid}perioExpires`] // overwrite existing name
+        blocTriggerHole.functionsDefs =[...blocTriggerHole.functionsDefs, ...[]] // GG
     
         let forkperioExpiresNode: Node = new Fork(node)
         localCCFG.addNode(forkperioExpiresNode)
@@ -290,7 +305,16 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
      */
     createStmt1LocalCCFG(node: Stmt1): CCFG {
         let localCCFG = new CCFG()
-        let startsStmt1Node: Node = new Step(node,NodeType.starts,[`createGlobalVar,int,${this.getASTNodeUID(node)}fakeState`,`setGlobalVar,int,${this.getASTNodeUID(node)}fakeState,0`])
+    
+                let fakeStateStmt1Node: Node = new Step(node,NodeType.starts,[])
+
+                localCCFG.addNode(fakeStateStmt1Node)
+                // let terminatesfakeStateStmt1Node: Node = new Step(node,NodeType.terminates,[])
+
+                // localCCFG.addNode(terminatesfakeStateStmt1Node)
+                // localCCFG.addEdge(startsfakeStateStmt1Node,terminatesfakeStateStmt1Node)
+                
+        let startsStmt1Node: Node = new Step(node,NodeType.starts,[new CreateGlobalVarInstruction(`${this.getASTNodeUID(node)}fakeState`,`int`), new SetGlobalVarInstruction(`${this.getASTNodeUID(node)}fakeState`,`0`,`int`)])
         if(startsStmt1Node.functionsDefs.length>0){
             startsStmt1Node.returnType = "void"
         }
@@ -302,8 +326,8 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
         
         startsStmt1Node.params = [...startsStmt1Node.params, ...[]]
         startsStmt1Node.returnType = "void"
-        startsStmt1Node.functionsNames = [`${startsStmt1Node.uid}fugaceStmt1`] //overwrite existing name
-        startsStmt1Node.functionsDefs =[...startsStmt1Node.functionsDefs, ...[]] //GG
+        startsStmt1Node.functionsNames = [`${startsStmt1Node.uid}fugaceStmt1`] // overwrite existing name
+        startsStmt1Node.functionsDefs =[...startsStmt1Node.functionsDefs, ...[]] // GG
                 //mark 1 { "name": "terminates", "type": "event"}
         {let e = localCCFG.addEdge(startsStmt1Node,terminatesStmt1Node)
         e.guards = [...e.guards, ...[]]}
@@ -321,6 +345,7 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
      */
     createStmt2LocalCCFG(node: Stmt2): CCFG {
         let localCCFG = new CCFG()
+    
         let startsStmt2Node: Node = new Step(node,NodeType.starts,[])
         if(startsStmt2Node.functionsDefs.length>0){
             startsStmt2Node.returnType = "void"
@@ -333,8 +358,8 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
         
         startsStmt2Node.params = [...startsStmt2Node.params, ...[]]
         startsStmt2Node.returnType = "void"
-        startsStmt2Node.functionsNames = [`${startsStmt2Node.uid}fugaceStmt2`] //overwrite existing name
-        startsStmt2Node.functionsDefs =[...startsStmt2Node.functionsDefs, ...[]] //GG
+        startsStmt2Node.functionsNames = [`${startsStmt2Node.uid}fugaceStmt2`] // overwrite existing name
+        startsStmt2Node.functionsDefs =[...startsStmt2Node.functionsDefs, ...[]] // GG
                 //mark 1 { "name": "terminates", "type": "event"}
         {let e = localCCFG.addEdge(startsStmt2Node,terminatesStmt2Node)
         e.guards = [...e.guards, ...[]]}
@@ -369,8 +394,8 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
                     this.fillTimerHole(holeNode as TimerHole, globalCCFG)
                     continue
                 }if (holeNode.getType() == "CollectionHole") {
-                    if (debug) console.log("filling timer hole: "+holeNode.uid)
-                        this.fillCollectionHole(holeNode as CollectionHole, globalCCFG)
+                    if (debug) console.log("filling collection hole: "+holeNode.uid)
+                        this.fillCollectionHole(holeNode as CollectionHole, globalCCFG, astNodeToLocalCCFG)
                         continue
                 }else{
                     if (debug) console.log("filling hole: "+holeNode.uid)
@@ -378,7 +403,17 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
                         throw new Error("Hole has undefined astNode :"+holeNode.uid)
                     }
                     let holeNodeLocalCCFG = astNodeToLocalCCFG.get(holeNode.astNode) as CCFG
-                    globalCCFG.fillHole(holeNode, holeNodeLocalCCFG)
+                    if (holeNodeLocalCCFG.alreadyUsedToFillHole) { //is already filled as a consequence of another hole being filled in this same iteration of the loop
+                        let sourceEdge = holeNode.inputEdges[0];
+                        let newEdge = globalCCFG.addEdge(sourceEdge.from, holeNodeLocalCCFG.initialState as Node, sourceEdge.label)
+                        newEdge.guards = [...newEdge.guards, ...sourceEdge.guards]
+                        //clean global CCFG from old hole and edge to hole
+                        globalCCFG.nodes = globalCCFG.nodes.filter(node => node !== holeNode)
+                        globalCCFG.edges = globalCCFG.edges.filter(edge => edge !== sourceEdge)
+                    }else{
+                        globalCCFG.fillHole(holeNode, holeNodeLocalCCFG)
+                        holeNodeLocalCCFG.alreadyUsedToFillHole = true
+                    }
                 }
             }
             holeNodes = this.retrieveHoles(globalCCFG)
@@ -387,7 +422,7 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
         return globalCCFG
     }
 
-    fillCollectionHole(hole: CollectionHole, ccfg: CCFG) {
+    fillCollectionHole(hole: CollectionHole, globalCCFG: CCFG, astNodeToLocalCCFG: Map<AstNode, CCFG>) {
         let holeNodeLocalCCFG = new CCFG()
         let startsCollectionHoleNode: Node = new Step(hole.astNode,NodeType.starts,[])
         holeNodeLocalCCFG.addNode(startsCollectionHoleNode)
@@ -403,7 +438,17 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
                 previousNode = collectionHole
             }
             holeNodeLocalCCFG.addEdge(previousNode,terminatesCollectionHoleNode)
-            ccfg.fillHole(hole, holeNodeLocalCCFG)
+            if (holeNodeLocalCCFG.alreadyUsedToFillHole) { //is already filled as a consequence of another hole being filled in this same iteration of the loop
+                let sourceEdge = hole.inputEdges[0];
+                let newEdge = globalCCFG.addEdge(sourceEdge.from, holeNodeLocalCCFG.initialState as Node, sourceEdge.label)
+                newEdge.guards = [...newEdge.guards, ...sourceEdge.guards]
+                //clean global CCFG from old hole and edge to hole
+                globalCCFG.nodes = globalCCFG.nodes.filter(node => node !== hole)
+                globalCCFG.edges = globalCCFG.edges.filter(edge => edge !== sourceEdge)
+            }else{
+                globalCCFG.fillHole(hole, holeNodeLocalCCFG)
+                holeNodeLocalCCFG.alreadyUsedToFillHole = true
+            }
         }
         else{
             let forkNode = new Fork(hole.astNode)
@@ -416,6 +461,8 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
                 joinNode = new OrJoin(hole.astNode)
             } 
             holeNodeLocalCCFG.addNode(joinNode)
+            joinNode.syncNodeIds.push(forkNode.uid)
+            forkNode.syncNodeIds.push(joinNode.uid)
             holeNodeLocalCCFG.addEdge(joinNode,terminatesCollectionHoleNode)
             for (let e of hole.astNodeCollection){
                 let collectionHole : Hole = new Hole(e)
@@ -423,7 +470,17 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
                 holeNodeLocalCCFG.addEdge(forkNode,collectionHole)
                 holeNodeLocalCCFG.addEdge(collectionHole,joinNode)
             }
-            ccfg.fillHole(hole, holeNodeLocalCCFG)
+             if (holeNodeLocalCCFG.alreadyUsedToFillHole) { //is already filled as a consequence of another hole being filled in this same iteration of the loop
+                let sourceEdge = hole.inputEdges[0];
+                let newEdge = globalCCFG.addEdge(sourceEdge.from, holeNodeLocalCCFG.initialState as Node, sourceEdge.label)
+                newEdge.guards = [...newEdge.guards, ...sourceEdge.guards]
+                //clean global CCFG from old hole and edge to hole
+                globalCCFG.nodes = globalCCFG.nodes.filter(node => node !== hole)
+                globalCCFG.edges = globalCCFG.edges.filter(edge => edge !== sourceEdge)
+            }else{
+                globalCCFG.fillHole(hole, holeNodeLocalCCFG)
+                holeNodeLocalCCFG.alreadyUsedToFillHole = true
+            }
         }
         return
     }
@@ -431,7 +488,7 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
     fillTimerHole(hole: TimerHole, ccfg: CCFG) {
         let node = hole.astNode as AstNode
         let timerHoleLocalCCFG = new CCFG()
-        let startsTimerHoleNode: Node = new Step(node,NodeType.starts,[`addSleep,${hole.duration}`])
+        let startsTimerHoleNode: Node = new Step(node,NodeType.starts,[new AddSleepInstruction(hole.duration.toString())])
         startsTimerHoleNode.returnType = "void"
         startsTimerHoleNode.functionsNames = [`init${startsTimerHoleNode.uid}Timer`]
         timerHoleLocalCCFG.addNode(startsTimerHoleNode)
