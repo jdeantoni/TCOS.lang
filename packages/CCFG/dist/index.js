@@ -225,6 +225,7 @@ export class CCFG {
     nodes;
     edges;
     syncEdges = [];
+    alreadyUsedToFillHole = false;
     initialState;
     constructor() {
         this.nodes = [];

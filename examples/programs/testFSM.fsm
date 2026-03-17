@@ -12,5 +12,5 @@ fsm fsm1 [S1]
     }
     
     t1: S1 ---when e1/ea--> S2
-//    t3: s1 ---when e2/eb--> s1
+   // t3: S1 ---when e2/eb--> S1
     t2: S2 ---when e2/eb--> S1

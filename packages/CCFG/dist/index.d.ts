@@ -113,6 +113,7 @@ export declare class CCFG {
     nodes: Node[];
     edges: Edge[];
     syncEdges: SyncEdge[];
+    alreadyUsedToFillHole: boolean;
     initialState: Node | undefined;
     constructor();
     cleanVisit(): void;

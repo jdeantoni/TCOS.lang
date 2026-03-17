@@ -1,6 +1,0 @@
-digraph G {
-  "15" [label="15[]:Step_starts" shape="ellipse" ];
-  "16" [label="16[]:Step_terminates" shape="ellipse" ];
-  "17" [label="17[]:Hole" shape="cylinder" ];
-  "15" -> "17" [label=""];
-}

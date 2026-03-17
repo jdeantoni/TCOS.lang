@@ -29,15 +29,15 @@
       ]
     },
     {
-      "name": "Debug CLI",
+      "name": "Debug TCOS compiler FrontEnd CLI on FSM",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/bin/cli.js",
       "args": [
         "generate",
-        "../../examples/languages/testFSM_variant.sos",
-        "-d",
-        "FiniteStateMachine/"
+        "../../examples/languages/testFSM_variant.sos"//,
+        // "-d",
+        // "FiniteStateMachine/"
       ],
       "cwd": "${workspaceFolder}",
       "outFiles": [

@@ -261,8 +261,8 @@ export class Edge {
 export class CCFG {
     nodes: Node[];
     edges: Edge[];
-    syncEdges: SyncEdge[] = []
-    ;
+    syncEdges: SyncEdge[] = [];
+    alreadyUsedToFillHole: boolean = false;
 
     initialState: Node | undefined;
 

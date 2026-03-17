@@ -62,7 +62,8 @@ Premise:
 
 
 Conclusion:
-	'<''this'',''σ''>' '~>' (statemodifications+=StateModification)*
+	'<''this'',''σ''>' '~>' (abortion+= CollectionAbortionRule)*
+							(statemodifications+=StateModification)*
 							(eventemissions+=EventEmission (eventEmissionOperator+=("||"|";") eventemissions+=EventEmission )*)?
 							//WARNING: this is a quick and dirty addition of sequential or parallel emission but should be refactored with a composite pattern
 	;
@@ -162,6 +163,8 @@ RuleSync:
 SingleRuleSync:
     '<'member=MemberCall',' 'σ' '>' ;//'.' status=(SyncExpression);
 
+CollectionAbortionRule:
+   collection=MemberCall '->' 'abort'(others?='.others')?;
 
 CollectionRuleSync:
    collection=MemberCall '->' (order=("concurrent"|"sequential") '.')'foreach''('varDecl=TemporaryVariable ('=>'|'|') singleRule=EventEmission')';

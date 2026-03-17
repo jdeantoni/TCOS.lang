@@ -138,7 +138,7 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
             
         return localCCFG;
     }
-// rule fugaceEvent
+// rule RTCEvent
    //premise: starts:event
    //conclusion: waitFeedBack:event
 // rule feedbackReceived
@@ -173,7 +173,7 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         
         startsEventNode.params = [...startsEventNode.params, ...[]]
         startsEventNode.returnType = "void"
-        startsEventNode.functionsNames = [`${startsEventNode.uid}fugaceEvent`] // overwrite existing name
+        startsEventNode.functionsNames = [`${startsEventNode.uid}RTCEvent`] // overwrite existing name
         startsEventNode.functionsDefs =[...startsEventNode.functionsDefs, ...[]] // GG
                 //mark 1 { "name": "waitFeedBack", "type": "event"}
         {let e = localCCFG.addEdge(startsEventNode,waitFeedBackEventNode)
@@ -238,10 +238,10 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
     }
 // rule init
    //premise: starts:event
-   //conclusion: waitEvent:Event
+   //conclusion: waitEvent:event
 // rule fire
-   //premise: guardEvent:[Event:ID],terminates:event
-	//waitEvent:Event
+   //premise: guardEvent:[Event:ID],starts:event
+	//waitEvent:event
    //conclusion: sentEvent:[Event:ID]
 	//terminates:event
 	//target:[State:ID],starts:event
@@ -262,7 +262,7 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
                 // localCCFG.addNode(terminateswaitEventTransitionNode)
                 // localCCFG.addEdge(startswaitEventTransitionNode,terminateswaitEventTransitionNode)
                 
-        let startsTransitionNode: Node = new Step(node,NodeType.starts,[new CreateGlobalVarInstruction(`${this.getASTNodeUID(node)}waitEvent`,`unknown`)])
+        let startsTransitionNode: Node = new Step(node,NodeType.starts,[])
         if(startsTransitionNode.functionsDefs.length>0){
             startsTransitionNode.returnType = "void"
         }
@@ -279,17 +279,17 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         startsTransitionNode.returnType = "void"
         startsTransitionNode.functionsNames = [`${startsTransitionNode.uid}init`] // overwrite existing name
         startsTransitionNode.functionsDefs =[...startsTransitionNode.functionsDefs, ...[]] // GG
-                //mark 1 { "name": "waitEvent", "type": "Event"}
+                //mark 1 { "name": "waitEvent", "type": "event"}
         {let e = localCCFG.addEdge(startsTransitionNode,waitEventTransitionNode)
         e.guards = [...e.guards, ...[]]}
         
         let fireAndJoinNode: Node = new AndJoin(node)
         localCCFG.addNode(fireAndJoinNode)
-                //premise participants in parallel collection but not a hole: { "name": "guardEvent", "type": "[Event:ID]"},{ "name": "terminates", "type": "event"}
+                //premise participants in parallel collection but not a hole: { "name": "guardEvent", "type": "[Event:ID]"},{ "name": "starts", "type": "event"}
         let guardEventReceptionNode : BroadcastEventReception = new BroadcastEventReception(node.guardEvent?.ref??node, "guardEvent")
         localCCFG.addNode(guardEventReceptionNode)
         localCCFG.addEdge(guardEventReceptionNode,fireAndJoinNode)
-                       //premise participants in parallel collection but not a hole: { "name": "waitEvent", "type": "Event"}
+                       //premise participants in parallel collection but not a hole: { "name": "waitEvent", "type": "event"}
         localCCFG.addEdge(waitEventTransitionNode,fireAndJoinNode)
         
         fireAndJoinNode.params = [...fireAndJoinNode.params, ...[]]
@@ -308,7 +308,7 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
                 
         localCCFG.addEdge(fireAndJoinNode,terminatesTransitionNode)
         fireAndJoinNode = terminatesTransitionNode
-                        //mark 2
+                        //mark 2 { "name": "target", "type": "[State:ID]"},{ "name": "starts", "type": "event"} ------ { "name": "target", "type": "[State:ID]"},{ "name": "starts", "type": "event"}
         localCCFG.addEdge(fireAndJoinNode,targetHole)
                     fireAndJoinNode = targetHole
                     
@@ -342,8 +342,8 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
                     this.fillTimerHole(holeNode as TimerHole, globalCCFG)
                     continue
                 }if (holeNode.getType() == "CollectionHole") {
-                    if (debug) console.log("filling timer hole: "+holeNode.uid)
-                        this.fillCollectionHole(holeNode as CollectionHole, globalCCFG)
+                    if (debug) console.log("filling collection hole: "+holeNode.uid)
+                        this.fillCollectionHole(holeNode as CollectionHole, globalCCFG, astNodeToLocalCCFG)
                         continue
                 }else{
                     if (debug) console.log("filling hole: "+holeNode.uid)
@@ -351,7 +351,17 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
                         throw new Error("Hole has undefined astNode :"+holeNode.uid)
                     }
                     let holeNodeLocalCCFG = astNodeToLocalCCFG.get(holeNode.astNode) as CCFG
-                    globalCCFG.fillHole(holeNode, holeNodeLocalCCFG)
+                    if (holeNodeLocalCCFG.alreadyUsedToFillHole) { //is already filled as a consequence of another hole being filled in this same iteration of the loop
+                        let sourceEdge = holeNode.inputEdges[0];
+                        let newEdge = globalCCFG.addEdge(sourceEdge.from, holeNodeLocalCCFG.initialState as Node, sourceEdge.label)
+                        newEdge.guards = [...newEdge.guards, ...sourceEdge.guards]
+                        //clean global CCFG from old hole and edge to hole
+                        globalCCFG.nodes = globalCCFG.nodes.filter(node => node !== holeNode)
+                        globalCCFG.edges = globalCCFG.edges.filter(edge => edge !== sourceEdge)
+                    }else{
+                        globalCCFG.fillHole(holeNode, holeNodeLocalCCFG)
+                        holeNodeLocalCCFG.alreadyUsedToFillHole = true
+                    }
                 }
             }
             holeNodes = this.retrieveHoles(globalCCFG)
@@ -360,7 +370,7 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         return globalCCFG
     }
 
-    fillCollectionHole(hole: CollectionHole, ccfg: CCFG) {
+    fillCollectionHole(hole: CollectionHole, globalCCFG: CCFG, astNodeToLocalCCFG: Map<AstNode, CCFG>) {
         let holeNodeLocalCCFG = new CCFG()
         let startsCollectionHoleNode: Node = new Step(hole.astNode,NodeType.starts,[])
         holeNodeLocalCCFG.addNode(startsCollectionHoleNode)
@@ -376,7 +386,17 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
                 previousNode = collectionHole
             }
             holeNodeLocalCCFG.addEdge(previousNode,terminatesCollectionHoleNode)
-            ccfg.fillHole(hole, holeNodeLocalCCFG)
+            if (holeNodeLocalCCFG.alreadyUsedToFillHole) { //is already filled as a consequence of another hole being filled in this same iteration of the loop
+                let sourceEdge = hole.inputEdges[0];
+                let newEdge = globalCCFG.addEdge(sourceEdge.from, holeNodeLocalCCFG.initialState as Node, sourceEdge.label)
+                newEdge.guards = [...newEdge.guards, ...sourceEdge.guards]
+                //clean global CCFG from old hole and edge to hole
+                globalCCFG.nodes = globalCCFG.nodes.filter(node => node !== hole)
+                globalCCFG.edges = globalCCFG.edges.filter(edge => edge !== sourceEdge)
+            }else{
+                globalCCFG.fillHole(hole, holeNodeLocalCCFG)
+                holeNodeLocalCCFG.alreadyUsedToFillHole = true
+            }
         }
         else{
             let forkNode = new Fork(hole.astNode)
@@ -388,7 +408,9 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
             }else{
                 joinNode = new OrJoin(hole.astNode)
             } 
-            holeNodeLocalCCFG.addNode(joinNode)
+            holeNodeLocalCCFG.addNode(joinNode);
+            joinNode.syncNodeIds.push(forkNode.uid);
+            forkNode.syncNodeIds.push(joinNode.uid);
             holeNodeLocalCCFG.addEdge(joinNode,terminatesCollectionHoleNode)
             for (let e of hole.astNodeCollection){
                 let collectionHole : Hole = new Hole(e)
@@ -396,7 +418,17 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
                 holeNodeLocalCCFG.addEdge(forkNode,collectionHole)
                 holeNodeLocalCCFG.addEdge(collectionHole,joinNode)
             }
-            ccfg.fillHole(hole, holeNodeLocalCCFG)
+             if (holeNodeLocalCCFG.alreadyUsedToFillHole) { //is already filled as a consequence of another hole being filled in this same iteration of the loop
+                let sourceEdge = hole.inputEdges[0];
+                let newEdge = globalCCFG.addEdge(sourceEdge.from, holeNodeLocalCCFG.initialState as Node, sourceEdge.label)
+                newEdge.guards = [...newEdge.guards, ...sourceEdge.guards]
+                //clean global CCFG from old hole and edge to hole
+                globalCCFG.nodes = globalCCFG.nodes.filter(node => node !== hole)
+                globalCCFG.edges = globalCCFG.edges.filter(edge => edge !== sourceEdge)
+            }else{
+                globalCCFG.fillHole(hole, holeNodeLocalCCFG)
+                holeNodeLocalCCFG.alreadyUsedToFillHole = true
+            }
         }
         return
     }
