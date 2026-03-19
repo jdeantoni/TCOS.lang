@@ -90,17 +90,20 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         startsFSMModelNode.returnType = "void"
         startsFSMModelNode.functionsNames = [`${startsFSMModelNode.uid}FSMstart`] // overwrite existing name
         startsFSMModelNode.functionsDefs =[...startsFSMModelNode.functionsDefs, ...[]] // GG
-                //mark 1.5
-        localCCFG.addEdge(startsFSMModelNode,fsmsHole)
+    
+        {let e = localCCFG.addEdge(startsFSMModelNode,fsmsHole)
+        e.guards = [...e.guards, ...[]]}
         
+
         fsmsHole.params = [...fsmsHole.params, ...[]]
         fsmsHole.returnType = "void"
         fsmsHole.functionsNames = [`${fsmsHole.uid}FSMend`] // overwrite existing name
         fsmsHole.functionsDefs =[...fsmsHole.functionsDefs, ...[]] // GG
-                //mark 1 { "name": "terminates", "type": "event"}
+    
         {let e = localCCFG.addEdge(fsmsHole,terminatesFSMModelNode)
         e.guards = [...e.guards, ...[]]}
-        
+    
+
         return localCCFG;
     }
 // rule init
@@ -132,10 +135,11 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         startsFSMNode.returnType = "void"
         startsFSMNode.functionsNames = [`${startsFSMNode.uid}init`] // overwrite existing name
         startsFSMNode.functionsDefs =[...startsFSMNode.functionsDefs, ...[]] // GG
-                //mark 0
+    
         {let e = localCCFG.addEdge(startsFSMNode,initialStateHole)
         e.guards = [...e.guards, ...[]]}
-            
+        
+
         return localCCFG;
     }
 // rule RTCEvent
@@ -175,22 +179,25 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         startsEventNode.returnType = "void"
         startsEventNode.functionsNames = [`${startsEventNode.uid}RTCEvent`] // overwrite existing name
         startsEventNode.functionsDefs =[...startsEventNode.functionsDefs, ...[]] // GG
-                //mark 1 { "name": "waitFeedBack", "type": "event"}
+    
         {let e = localCCFG.addEdge(startsEventNode,waitFeedBackEventNode)
         e.guards = [...e.guards, ...[]]}
-        
+    
+
         waitFeedBackEventNode.params = [...waitFeedBackEventNode.params, ...[]]
         waitFeedBackEventNode.returnType = "void"
         waitFeedBackEventNode.functionsNames = [`${waitFeedBackEventNode.uid}feedbackReceived`] // overwrite existing name
         waitFeedBackEventNode.functionsDefs =[...waitFeedBackEventNode.functionsDefs, ...[]] // GG
-                //mark 1 { "name": "terminates", "type": "event"}
+    
         {let e = localCCFG.addEdge(waitFeedBackEventNode,terminatesEventNode)
         e.guards = [...e.guards, ...[]]}
-        
+    
+
         return localCCFG;
     }
 // rule init
    //premise: starts:event
+	//terminates:event
    //conclusion: outTransitions:[Transition:ID][],transition:unknown,starts:event
 // rule end
    //premise: outTransitions:[Transition:ID][],terminates:event
@@ -223,17 +230,20 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         startsStateNode.returnType = "void"
         startsStateNode.functionsNames = [`${startsStateNode.uid}init`] // overwrite existing name
         startsStateNode.functionsDefs =[...startsStateNode.functionsDefs, ...[]] // GG
-                //mark 1.5
-        localCCFG.addEdge(startsStateNode,outTransitionsHole)
+    
+        {let e = localCCFG.addEdge(startsStateNode,outTransitionsHole)
+        e.guards = [...e.guards, ...[]]}
         
+
         outTransitionsHole.params = [...outTransitionsHole.params, ...[]]
         outTransitionsHole.returnType = "void"
         outTransitionsHole.functionsNames = [`${outTransitionsHole.uid}end`] // overwrite existing name
         outTransitionsHole.functionsDefs =[...outTransitionsHole.functionsDefs, ...[]] // GG
-                //mark 1 { "name": "terminates", "type": "event"}
+    
         {let e = localCCFG.addEdge(outTransitionsHole,terminatesStateNode)
         e.guards = [...e.guards, ...[]]}
-        
+    
+
         return localCCFG;
     }
 // rule init
@@ -279,10 +289,11 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         startsTransitionNode.returnType = "void"
         startsTransitionNode.functionsNames = [`${startsTransitionNode.uid}init`] // overwrite existing name
         startsTransitionNode.functionsDefs =[...startsTransitionNode.functionsDefs, ...[]] // GG
-                //mark 1 { "name": "waitEvent", "type": "event"}
+    
         {let e = localCCFG.addEdge(startsTransitionNode,waitEventTransitionNode)
         e.guards = [...e.guards, ...[]]}
-        
+    
+
         let fireAndJoinNode: Node = new AndJoin(node)
         localCCFG.addNode(fireAndJoinNode)
                 //premise participants in parallel collection but not a hole: { "name": "guardEvent", "type": "[Event:ID]"},{ "name": "starts", "type": "event"}
@@ -300,17 +311,29 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         fireAndJoinNode.functionsNames = [`${fireAndJoinNode.uid}fire`] // overwrite existing name
         fireAndJoinNode.functionsDefs =[...fireAndJoinNode.functionsDefs, ...[]] // GG
     
-        let forkfireNode: Node = new Fork(node)
-        localCCFG.addNode(forkfireNode)
-        localCCFG.addEdge(fireAndJoinNode,forkfireNode)
+        let sentEventEmissionNode0 : BroadcastEventEmission = new BroadcastEventEmission(node.sentEvent?.ref??node, "sentEvent")
+        localCCFG.addNode(sentEventEmissionNode0)
+        sentEventEmissionNode0.functionsNames = [`${sentEventEmissionNode0.uid}emitsentEvent`]
+        sentEventEmissionNode0.functionsDefs = [new CreateEventChannelInstruction(`${this.getASTNodeUID(node.sentEvent?.ref??node)}sentEvent`,1,`void`), new EmitEventInstruction(`${this.getASTNodeUID(node.sentEvent?.ref??node)}sentEvent`,`${this.getASTNodeUID(node.sentEvent?.ref??node)}sentEventPayload`,true)]
+        sentEventEmissionNode0.returnType = "void"
+        {let e = localCCFG.addEdge(fireAndJoinNode,sentEventEmissionNode0)
+        e.guards = [...e.guards, ...[]]}
+        
+
+        let forkfireStage1: Node = new Fork(node)
+        localCCFG.addNode(forkfireStage1)
+        {let e = localCCFG.addEdge(sentEventEmissionNode0,forkfireStage1)
+        e.guards = [...e.guards, ...[]]}
             
 
-                //conclusion participants in parallel collection but not a hole: { "name": "sentEvent", "type": "[Event:ID]"}
-                
-                //conclusion participants in parallel collection but not a hole: { "name": "terminates", "type": "event"}
-                                    //mark 3
-        localCCFG.addEdge(forkfireNode,targetHole)
-                    
+        {let e = localCCFG.addEdge(forkfireStage1,terminatesTransitionNode)
+        e.guards = [...e.guards, ...[]]}
+    
+
+        {let e = localCCFG.addEdge(forkfireStage1,targetHole)
+        e.guards = [...e.guards, ...[]]}
+        
+
         return localCCFG;
     }
 

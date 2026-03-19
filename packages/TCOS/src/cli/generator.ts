@@ -1,12 +1,19 @@
 import fs from 'fs';
 import {AstUtils, Grammar } from 'langium';
 import {CompositeGeneratorNode, NL, toString} from 'langium/generate'
-import {  RWRule, RuleOpening, SoSSpec, TemporaryVariable, isRWRule, isRuleOpening, isTemporaryVariable, isValuedEventEmission, isVariableDeclaration } from '../language-server/generated/ast.js'; //VariableDeclaration
+import {  CompositeEventEmission, EventEmission, RWRule, RuleOpening, SoSSpec, TemporaryVariable, isParallelEventEmission, isRWRule, isRuleOpening, isSequentialEventEmission, isTemporaryVariable, isValuedEventEmission, isVariableDeclaration } from '../language-server/generated/ast.js'; //VariableDeclaration
 import { extractDestinationAndName, FilePathData } from './cli-util.js';
 // import { print } from '../utils/sos-utils';
 import { inferType } from '../language-server/type-system/infer.js';
 import path from 'path';
-import { EventEmission } from '../language-server/generated/ast.js';
+
+//TODO avoid duplication with the one in sos-scope.ts, maybe by creating a common utils file
+function flattenAllEmissions(ce: CompositeEventEmission): EventEmission[] {
+    if (isParallelEventEmission(ce) || isSequentialEventEmission(ce)) {
+        return [ce.lefteventemission, ...flattenAllEmissions(ce.righteventemission)];
+    }
+    return [ce as EventEmission];
+}
 
 
 
@@ -57,7 +64,8 @@ export function generateSigma(model: SoSSpec, grammar: Grammar[], filePath: stri
                     //         call ${rwr.conclusion.ruleStart}
                     //     `)
                     // }
-                    for(var os of rwr.conclusion.eventemissions){
+                    const _emissions = rwr.conclusion.eventemissions ? flattenAllEmissions(rwr.conclusion.eventemissions) : [];
+                    for(var os of _emissions){
                         if (isValuedEventEmission(os) && isVariableDeclaration(os.data)){
                             fileNode.append(`
                             return varList[\${allRtdPositions.get(node)}];`)
@@ -189,7 +197,8 @@ function getRwrRuleType(rwr: RWRule) {
             return "bool"
         }
     }
-    if (rwr.conclusion.eventemissions.some((em : EventEmission) => isValuedEventEmission(em))) {
+    const _emissionsForType = rwr.conclusion.eventemissions ? flattenAllEmissions(rwr.conclusion.eventemissions) : [];
+    if (_emissionsForType.some((em: EventEmission) => isValuedEventEmission(em))) {
         return "void"
     }
     return "error in type inference for rule "+rwr.name+" in rule opened on "+(rwr.$container as RuleOpening).onRule

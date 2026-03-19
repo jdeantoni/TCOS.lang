@@ -36,7 +36,7 @@ open Event {
 
 open State {
 
-            when starts            
+            when starts  // quid d'un "only" firstOf qui ferait aussi le abort ?)          
     --------------------------------------- init
     <this,σ> ~> outTransitions->concurrent.foreach(transition => <transition,σ>)
 
@@ -59,7 +59,6 @@ open Transition{
       when (guardEvent.starts ^ waitEvent )
     ------------------------------------------------------ fire
          <this,σ> ~> broadcasts sentEvent;
-                     emits terminates;
-                     <target,σ>
+                     (emits terminates || <target,σ>)
         
 }

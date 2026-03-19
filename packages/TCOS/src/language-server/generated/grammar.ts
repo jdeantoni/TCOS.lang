@@ -634,8 +634,8 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           },
           {
             "$type": "Assignment",
-            "feature": "eventemissions",
-            "operator": "+=",
+            "feature": "lefteventemission",
+            "operator": "=",
             "terminal": {
               "$type": "RuleCall",
               "rule": {
@@ -650,8 +650,8 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           },
           {
             "$type": "Assignment",
-            "feature": "eventemissions",
-            "operator": "+=",
+            "feature": "righteventemission",
+            "operator": "=",
             "terminal": {
               "$type": "RuleCall",
               "rule": {
@@ -681,8 +681,8 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
         "elements": [
           {
             "$type": "Assignment",
-            "feature": "eventemissions",
-            "operator": "+=",
+            "feature": "lefteventemission",
+            "operator": "=",
             "terminal": {
               "$type": "RuleCall",
               "rule": {
@@ -697,8 +697,8 @@ export const StructuralOperationalSemanticsGrammar = (): Grammar => loadedStruct
           },
           {
             "$type": "Assignment",
-            "feature": "eventemissions",
-            "operator": "+=",
+            "feature": "righteventemission",
+            "operator": "=",
             "terminal": {
               "$type": "RuleCall",
               "rule": {

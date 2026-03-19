@@ -64,9 +64,20 @@ Premise:
 Conclusion:
 	'<''this'',''σ''>' '~>' (abortion+= CollectionAbortionRule)*
 							(statemodifications+=StateModification)*
-							(eventemissions+=EventEmission (eventEmissionOperator+=("||"|";") eventemissions+=EventEmission )*)?
+							(eventemissions=CompositeEventEmission)?
 							//WARNING: this is a quick and dirty addition of sequential or parallel emission but should be refactored with a composite pattern
 	;
+
+CompositeEventEmission:
+	EventEmission | ParallelEventEmission | SequentialEventEmission;
+
+ParallelEventEmission:
+	'('lefteventemission=EventEmission '||' righteventemission=CompositeEventEmission ')'
+	;
+SequentialEventEmission:
+	lefteventemission=EventEmission ';' righteventemission=CompositeEventEmission
+	;	
+
 
 EventRef:
 	ExplicitEventRef | SingleRuleSync;

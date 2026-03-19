@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { AstNode, Grammar} from 'langium';
 import { CompositeGeneratorNode ,NL,toString} from 'langium/generate';
-import { Assignment, BinaryExpression, CollectionRuleSync, EventCombination, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, NaryEventExpression, RWRule, RuleOpening, SimpleEventEmission, SingleRuleSync, SoSSpec, TypeReference, ValuedEventEmission, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration } from '../language-server/generated/ast.js'; //VariableDeclaration
+import { Assignment, BinaryExpression, CollectionRuleSync, CompositeEventEmission, EventCombination, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, NaryEventExpression, RWRule, RuleOpening, SimpleEventEmission, SingleRuleSync, SoSSpec, TypeReference, ValuedEventEmission, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration, isParallelEventEmission, isSequentialEventEmission } from '../language-server/generated/ast.js'; //VariableDeclaration
 import { extractDestinationAndName, FilePathData } from './cli-util.js';
 import path from 'path';
 import { inferType } from '../language-server/type-system/infer.js';
@@ -368,7 +368,8 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
 
     let eventEmissionActions = ""
     let functionType = "void"
-    for(let emission of ruleCF.rule.conclusion.eventemissions){
+    const _allLeafEmissions = ruleCF.rule.conclusion.eventemissions ? flattenCompositeEmission(ruleCF.rule.conclusion.eventemissions) : []
+    for(let emission of _allLeafEmissions){
         if(emission.$type == "ValuedEventEmission"){
             let [visitedEmission, returnType] =  visitValuedEventEmission(emission as ValuedEventEmission,file)
             functionType = returnType
@@ -389,133 +390,140 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
         ${previousNodeName}.functionsDefs =[...${previousNodeName}.functionsDefs, ...[${eventEmissionActions}]] // GG
     `);
 
+    // Generic conclusion processing preserving seq/par structure by stages.
+    // Each stage is a list of parallel emissions; stages are chained sequentially.
+    const conclusion = ruleCF.rule.conclusion.eventemissions;
+    if (!conclusion) {
+        return;
+    }
 
-    if (ruleCF.conclusionParticipants.length == 1 && isRuleConclusionCollectionBased(ruleCF) == false) {
-        let participants = ruleCF.conclusionParticipants[0];
-        if (holes.map(h => h.startingParticipants).some(p => areParticipantsEqualsOrCoupled(p,participants))) {
-            if(DEBUG) file.append(`            //mark 0`);
+    const stages = buildEmissionStages(conclusion);
+    let localPrev = previousNodeName;
+    let stageCounter = 0;
+    let emissionCounter = 0;
+
+    for (const stage of stages) {
+        // Expand a stage to participant branches (an emission can theoretically map to several branches).
+        const stageBranches: TypedElement[][] = [];
+        for (const emission of stage) {
+            stageBranches.push(...getEventEmissionParticipants(emission));
+        }
+        if (stageBranches.length === 0) {
+            stageCounter++;
+            continue;
+        }
+
+        if (stageBranches.length === 1) {
+            localPrev = appendConclusionBranch(file, ruleCF, holes, localPrev, stageBranches[0], guardString, emissionCounter++);
+        } else {
+            const forkNodeName = `fork${ruleCF.rule.name}Stage${stageCounter}`;
             file.append(`
-        {let e = localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type != "event").map(p => p.name?.replace(/\(\)/,"")).join('_')}Hole)
+        let ${forkNodeName}: Node = new Fork(node)
+        localCCFG.addNode(${forkNodeName})
+        {let e = localCCFG.addEdge(${localPrev},${forkNodeName})
         e.guards = [...e.guards, ...[${guardString}]]}
-            `);
-        } 
-        else {
-                if(DEBUG) file.append(`            //mark 1 ${participants.map(p=>p.toJSON())}`);
-                let participantName: string = ""
-                if (participants.length == 1) { //simple event
-                    participantName = participants[0].name ??""
-                }else{
-                    participantName = participants.filter(p=> p.type == "event").map(p => p.name).join('_')
-                }
-            file.append(`
-        {let e = localCCFG.addEdge(${previousNodeName},${participantName}${(ruleCF.rule.$container as RuleOpening)?.onRule?.ref?.name}Node)
-        e.guards = [...e.guards, ...[${guardString}]]}
-        `);
-            // }
-            
-        console.log(`${participantName}${(ruleCF.rule.$container as RuleOpening)?.onRule?.ref?.name}Node`)
-    
-        }
-    }
-    //Several participants in the conclusion
-    
-        //collection based conclusion are handles as special holes
-    if (isRuleConclusionCollectionBased(ruleCF)) {
-        let nodeName : string = ""
-        if (ruleCF.rule.premise.eventExpression.$type == "NaryEventExpression") { //parallel sync premise on collection
-            nodeName = ruleCF.conclusionParticipants[0].filter(p => p.type != "event").map(p => p.name).join('_') + "Hole"
-        }
-
-        //sequential collection based premise
-        let participantsNoEvent = ruleCF.conclusionParticipants[0].filter(p => p.type != "event")
-        nodeName =  participantsNoEvent.slice(0,ruleCF.conclusionParticipants[0].length-2).map(p => p.name).join('_') + "Hole"
-        if(DEBUG) file.append(`            //mark 1.5`);
-        file.append(`
-        localCCFG.addEdge(${previousNodeName},${nodeName})
-        `)
-    }
-
-    if (ruleCF.rule.conclusion.eventEmissionOperator[0] == ";") {
-        for (let participants of ruleCF.conclusionParticipants) {
-            if (holes.map(h => h.startingParticipants).some(p => areParticipantsEquals(p,participants))) {
-                if(DEBUG) file.append(`                    //mark 2 ${participants.map(p=>p.toJSON())} ------ ${holes.map(h => h.startingParticipants).map(sp => sp.map(p => p.toJSON()).join(",")).join(" | ")}`);
-                file.append(`
-        localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type != "event").map(p => p.name).join('_')}Hole)
-                    ${previousNodeName} = ${participants.filter(p=>p.type != "event").map(p => p.name).join('_')}Hole
-                    `);
-            } else {
-                if(DEBUG) file.append(`
-                //conclusion participants in sequential collection but not a hole: ${participants.map(p=>p.toJSON())}
-                `);
-                    // if (participants.length > 1) { //it does not come from a variable declaration event
-                    //     throw new Error("not implemented: multiple participants in conclusion without hole for sequential event emission");
-                    // }else{ // this is an event from a variable Declaration
-                        if (participants[0].isBroadcast){
-                            file.append(`
-        let ${participants[0].name}EmissionNode : BroadcastEventEmission = new BroadcastEventEmission(node.${participants[0].name}?.ref??node, "${participants[0].name}")
-        localCCFG.addNode(${participants[0].name}EmissionNode)
-        ${participants[0].name}EmissionNode.functionsNames = [\`\${${participants[0].name}EmissionNode.uid}emit${participants[0].name}\`]
-        //TODO 1: the payload type should be inferred from the event expression of the premise, but for now we put "void" as default (also because currently only simple events are supported in variable declaration)
-        //TODO 2: the listener count is 1 by default but it should be computed at compile time and modified.
-        ${participants[0].name}EmissionNode.functionsDefs = [new CreateEventChannelInstruction(\`\${this.getASTNodeUID(node.${participants[0].name}?.ref??node)}${participants[0].name}\`,1,\`void\`), new EmitEventInstruction(\`\${this.getASTNodeUID(node.${participants[0].name}?.ref??node)}${participants[0].name}\`,\`\${this.getASTNodeUID(node.${participants[0].name}?.ref??node)}${participants[0].name}Payload\`,true)]
-        ${participants[0].name}EmissionNode.returnType = "void"
-        localCCFG.addEdge(${previousNodeName},${participants[0].name}EmissionNode)
-        ${previousNodeName} = ${participants[0].name}EmissionNode
-        `);
-                        }else{
-                            let ruleName : string = ""
-                            if ((participants[0].astNode as VariableDeclaration).$container.$type == "RuleOpening") {
-                                ruleName = ((participants[0].astNode as VariableDeclaration).$container as RuleOpening).onRule?.$refText ?? ""
-                            }
-                            file.append(`
-        localCCFG.addEdge(${previousNodeName},${participants[0].name+ruleName}Node)
-        ${previousNodeName} = ${participants[0].name+ruleName}Node
-    `);
-                        }
-                            
-                    // }
-
-            }
-        }
-    }
-    if (ruleCF.rule.conclusion.eventEmissionOperator[0] == "||") {
-        file.append(`
-        let fork${ruleCF.rule.name}Node: Node = new Fork(node)
-        localCCFG.addNode(fork${ruleCF.rule.name}Node)
-        localCCFG.addEdge(${previousNodeName},fork${ruleCF.rule.name}Node)
             `, NL);
-        for (let participants of ruleCF.conclusionParticipants) {
-            if (holes.map(h => h.startingParticipants).some(p => areParticipantsEqualsOrCoupled(p,participants))) {
-                if(DEBUG) file.append(`                    //mark 3`);
+
+            const branchEnds: string[] = [];
+            for (const branchParticipants of stageBranches) {
+                const endNode = appendConclusionBranch(file, ruleCF, holes, forkNodeName, branchParticipants, guardString, emissionCounter++);
+                branchEnds.push(endNode);
+            }
+
+            const hasNextSequentialStage = stageCounter < stages.length - 1;
+            if (hasNextSequentialStage) {
+                const joinNodeName = `join${ruleCF.rule.name}Stage${stageCounter}`;
                 file.append(`
-        localCCFG.addEdge(fork${ruleCF.rule.name}Node,${participants.filter(p=>p.type != "event").map(p => p.name).join('_')}Hole)
-                    `);
-            } else {
-                if(DEBUG) file.append(`
-                //conclusion participants in parallel collection but not a hole: ${participants.map(p => p.toJSON())}
-                `);
-                //TODO: review the following code, it is very similar to the one in sequential case, maybe they can be merged with some conditionals
-                if (participants[0].isBroadcast) {
+        let ${joinNodeName}: Node = new OrJoin(node)
+        localCCFG.addNode(${joinNodeName})
+                `, NL);
+                for (const endNode of branchEnds) {
                     file.append(`
-        let ${participants[0].name}EmissionNode : BroadcastEventEmission = new BroadcastEventEmission(node.${participants[0].name}?.ref??node, "${participants[0].name}")
-        localCCFG.addNode(${participants[0].name}EmissionNode)
-        ${participants[0].name}EmissionNode.functionsNames = [\`\${${participants[0].name}EmissionNode.uid}emit${participants[0].name}\`]
-        ${participants[0].name}EmissionNode.functionsDefs = [new CreateEventChannelInstruction(\`\${this.getASTNodeUID(node.${participants[0].name}?.ref??node)}${participants[0].name}\`,1,\`void\`), new EmitEventInstruction(\`\${this.getASTNodeUID(node.${participants[0].name}?.ref??node)}${participants[0].name}\`,\`\${this.getASTNodeUID(node.${participants[0].name}?.ref??node)}${participants[0].name}Payload\`,true)]
-        ${participants[0].name}EmissionNode.returnType = "void"
-        localCCFG.addEdge(fork${ruleCF.rule.name}Node,${participants[0].name}EmissionNode)
-        `);
-                } else {
-                    let ruleName : string = ""
-                    if ((participants[0].astNode as VariableDeclaration).$container.$type == "RuleOpening") {
-                        ruleName = ((participants[0].astNode as VariableDeclaration).$container as RuleOpening).onRule?.$refText ?? ""
-                    }
-                    file.append(`
-        localCCFG.addEdge(fork${ruleCF.rule.name}Node,${participants[0].name+ruleName}Node)
-        `);
+        localCCFG.addEdge(${endNode},${joinNodeName})
+                    `, NL);
                 }
+                localPrev = joinNodeName;
             }
         }
+
+        stageCounter++;
     }
+}
+
+function appendConclusionBranch(
+    file: CompositeGeneratorNode,
+    ruleCF: RuleControlFlow,
+    holes: HoleSpecifier[],
+    fromNodeName: string,
+    participants: TypedElement[],
+    guardString: string,
+    emissionCounter: number
+): string {
+    // Prefer hole routing whenever a matching hole exists.
+    if (holes.map(h => h.startingParticipants).some(p => areParticipantsEqualsOrCoupled(p, participants))) {
+        let holeNodeName = participants.filter(p => p.type != "event").map(p => p.name).join('_') + "Hole";
+        if (isParticipantCollectionBased(participants)) {
+            const participantsNoEvent = participants.filter(p => p.type != "event");
+            holeNodeName = participantsNoEvent.slice(0, participants.length - 2).map(p => p.name).join('_') + "Hole";
+        }
+        file.append(`
+        {let e = localCCFG.addEdge(${fromNodeName},${holeNodeName})
+        e.guards = [...e.guards, ...[${guardString}]]}
+        `, NL);
+        return holeNodeName;
+    }
+
+    // Fallback for collection-based routes that are not explicit holes.
+    if (isParticipantCollectionBased(participants)) {
+        const participantsNoEvent = participants.filter(p => p.type != "event");
+        const nodeName = participantsNoEvent.slice(0, participants.length - 2).map(p => p.name).join('_') + "Hole";
+        file.append(`
+        {let e = localCCFG.addEdge(${fromNodeName},${nodeName})
+        e.guards = [...e.guards, ...[${guardString}]]}
+        `, NL);
+        return nodeName;
+    }
+
+    if (participants[0].isBroadcast) {
+        const emissionVarName = `${participants[0].name}EmissionNode${emissionCounter}`;
+        file.append(`
+        let ${emissionVarName} : BroadcastEventEmission = new BroadcastEventEmission(node.${participants[0].name}?.ref??node, "${participants[0].name}")
+        localCCFG.addNode(${emissionVarName})
+        ${emissionVarName}.functionsNames = [\`\${${emissionVarName}.uid}emit${participants[0].name}\`]
+        ${emissionVarName}.functionsDefs = [new CreateEventChannelInstruction(\`\${this.getASTNodeUID(node.${participants[0].name}?.ref??node)}${participants[0].name}\`,1,\`void\`), new EmitEventInstruction(\`\${this.getASTNodeUID(node.${participants[0].name}?.ref??node)}${participants[0].name}\`,\`\${this.getASTNodeUID(node.${participants[0].name}?.ref??node)}${participants[0].name}Payload\`,true)]
+        ${emissionVarName}.returnType = "void"
+        {let e = localCCFG.addEdge(${fromNodeName},${emissionVarName})
+        e.guards = [...e.guards, ...[${guardString}]]}
+        `, NL);
+        return emissionVarName;
+    }
+
+    let ruleName: string = "";
+    if ((participants[0].astNode as VariableDeclaration).$container.$type == "RuleOpening") {
+        ruleName = ((participants[0].astNode as VariableDeclaration).$container as RuleOpening).onRule?.$refText ?? "";
+    }
+    const nodeName = `${participants[0].name + ruleName}Node`;
+    file.append(`
+        {let e = localCCFG.addEdge(${fromNodeName},${nodeName})
+        e.guards = [...e.guards, ...[${guardString}]]}
+    `, NL);
+    return nodeName;
+}
+
+function buildEmissionStages(ce: CompositeEventEmission): EventEmission[][] {
+    if (isSequentialEventEmission(ce)) {
+        return [[ce.lefteventemission], ...buildEmissionStages(ce.righteventemission)];
+    }
+    if (isParallelEventEmission(ce)) {
+        const rightStages = buildEmissionStages(ce.righteventemission);
+        if (rightStages.length === 0) {
+            return [[ce.lefteventemission]];
+        }
+        // Left emission starts in parallel with the first stage of the right process.
+        rightStages[0] = [ce.lefteventemission, ...rightStages[0]];
+        return rightStages;
+    }
+    return [[ce as EventEmission]];
 }
 
 
@@ -543,7 +551,8 @@ function identifiesHoles(rulesCF: RuleControlFlow[]): HoleSpecifier[] {
                         }else{
                             if(conclusionP.some(te => te.isCollection)){
                                 let holeSpecifier = new CollectionHoleSpecifier(conclusionP, premiseP)
-                                holeSpecifier.isSequential = currentRule.rule.conclusion.eventemissions[0].$type == "CollectionRuleSync" && (currentRule.rule.conclusion.eventemissions[0] as CollectionRuleSync).order == "sequential"
+                                const _firstEmission = currentRule.rule.conclusion.eventemissions ? getFirstLeafEmission(currentRule.rule.conclusion.eventemissions) : undefined
+                                holeSpecifier.isSequential = _firstEmission?.$type == "CollectionRuleSync" && (_firstEmission as CollectionRuleSync).order == "sequential"
                                 holeSpecifier.parallelSyncPolicy = (anotherRule.rule.premise.eventExpression.$type == "NaryEventExpression") ?(anotherRule.rule.premise.eventExpression as NaryEventExpression).policy.operator+"" : "undefined"
                                 if(res.map(h => h.startingParticipants).some(p => areParticipantsEquals(p, holeSpecifier.startingParticipants)) == false){
                                     res.push(holeSpecifier)
@@ -686,21 +695,26 @@ function retrieveStartingRules(rulesCF: RuleControlFlow[]) {
 
 
 /**
- * returns the participants of the event expression
- * @param ruleCF  the current rule
- * @returns a boolean indicating if the event emission is collection based
+ * Recursively flattens a CompositeEventEmission tree into its leaf EventEmissions,
+ * preserving left-to-right order. Do NOT use when structure matters (sequential chains,
+ * parallel forks with nested children) — only use for analysis/scanning passes.
  */
-function isRuleConclusionCollectionBased(ruleCF: RuleControlFlow) {
-    let isEventEmissionACollection: boolean = false;
-    for (let participant of ruleCF.conclusionParticipants) {
-        isEventEmissionACollection = isParticipantCollectionBased(participant);
-        if (isEventEmissionACollection) {
-            return true;
-        }
+function flattenCompositeEmission(ce: CompositeEventEmission): EventEmission[] {
+    if (isParallelEventEmission(ce) || isSequentialEventEmission(ce)) {
+        return [ce.lefteventemission, ...flattenCompositeEmission(ce.righteventemission)];
     }
-    return false;
+    return [ce as EventEmission];
 }
 
+/**
+ * Returns the leftmost leaf EventEmission of a CompositeEventEmission tree.
+ */
+function getFirstLeafEmission(ce: CompositeEventEmission): EventEmission | undefined {
+    if (isParallelEventEmission(ce) || isSequentialEventEmission(ce)) {
+        return ce.lefteventemission;
+    }
+    return ce as EventEmission;
+}
 
 /**
  * retrieves a litst of the rule control flows from the openedRule and adds an explanation of the premisses and conclusions of the rules in the file 
@@ -717,8 +731,10 @@ function extractRuleControlFlowsFromRules(fileNode: CompositeGeneratorNode, open
             let premiseEventParticipants: TypedElement[][] = getEventSynchronisationParticipants(rwr.premise.eventExpression);
             if(DEBUG) fileNode.append(`   //premise: ${premiseEventParticipants.map(pa => pa.map(p => p.name + ":" + p.type + (p.isCollection ? "[]" : ""))).join("\n\t//")}`, NL)
             let conclusionEventParticipants: TypedElement[][] = []
-            for (let emission of rwr.conclusion.eventemissions) {
-                conclusionEventParticipants = [...conclusionEventParticipants, ...getEventEmissionParticipants(emission)]
+            if (rwr.conclusion.eventemissions) {
+                for (let emission of flattenCompositeEmission(rwr.conclusion.eventemissions)) {
+                    conclusionEventParticipants = [...conclusionEventParticipants, ...getEventEmissionParticipants(emission)]
+                }
             }
             if(DEBUG) fileNode.append(`   //conclusion: ${conclusionEventParticipants.map(pa => pa.map(p => p.name + ":" + p.type + (p.isCollection ? "[]" : ""))).join("\n\t//")}`, NL)
             let ruleControlFlow = new RuleControlFlow(rwr, premiseEventParticipants, conclusionEventParticipants)

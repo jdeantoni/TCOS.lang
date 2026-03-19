@@ -127,7 +127,11 @@
 	}
 	__ackEvent(__lastEventToken);
 }
-void function36receiveguardEvent(){
+void function30emitsentEvent(){
+	__createEventChannel("Event3_0_3_8sentEvent", 1, "void");
+	__emitEvent("Event3_0_3_8sentEvent", Event3_0_3_8sentEventPayload, true);
+}
+void function37receiveguardEvent(){
 	{
 		auto __event = __waitEvent("Event1_0_1_8guardEvent");
 		Event1_0_1_8guardEventPayload = std::any_cast<std::remove_reference_t<decltype(Event1_0_1_8guardEventPayload)>>(__event.payload);
@@ -135,13 +139,19 @@ void function36receiveguardEvent(){
 	}
 	__ackEvent(__lastEventToken);
 }
+void function38emitsentEvent(){
+	__createEventChannel("Event4_0_4_8sentEvent", 1, "void");
+	__emitEvent("Event4_0_4_8sentEvent", Event4_0_4_8sentEventPayload, true);
+}
 int main(){
 		std::thread thread15([&](){
-		flag53= true;
-while (flag53 == true){
-	flag53 = false;
-			{Void joinPopped53;
- 			synch53.waitAndPop(joinPopped53);}
+		flag55= true;
+while (flag55 == true){
+	flag55 = false;
+			{Void joinPopped55;
+ 			synch55.waitAndPop(joinPopped55);}
+			bool flag48 = true;
+			LockingQueue<Void> synch48;
 			std::thread thread25([&](){
 			});
 			thread25.detach();

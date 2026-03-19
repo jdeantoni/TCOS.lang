@@ -1,18 +1,18 @@
 digraph G {
   "0" [label="0[]:Step_starts" shape="ellipse" ];
   "1" [label="1[]:Step_terminates" shape="ellipse" ];
-  "38" [label="38[]:Step_starts" shape="ellipse" ];
-  "39" [label="39[]:Step_terminates" shape="ellipse" ];
-  "40" [label="40[41]:Fork" shape="triangle" ];
-  "41" [label="41[40]:OrJoin" shape="invtriangle" ];
+  "40" [label="40[]:Step_starts" shape="ellipse" ];
+  "41" [label="41[]:Step_terminates" shape="ellipse" ];
+  "42" [label="42[43]:Fork" shape="triangle" ];
+  "43" [label="43[42]:OrJoin" shape="invtriangle" ];
   "15" [label="15[]:Step_starts" shape="ellipse" ];
   "16" [label="16[]:Step_terminates" shape="ellipse" ];
   "18" [label="18[]:Step_starts" shape="ellipse" ];
   "19" [label="19[]:Step_terminates" shape="ellipse" ];
-  "43" [label="43[]:Step_starts" shape="ellipse" ];
-  "44" [label="44[]:Step_terminates" shape="ellipse" ];
-  "45" [label="45[46]:Fork" shape="triangle" ];
-  "46" [label="46[45]:OrJoin" shape="invtriangle" ];
+  "45" [label="45[]:Step_starts" shape="ellipse" ];
+  "46" [label="46[]:Step_terminates" shape="ellipse" ];
+  "47" [label="47[48]:Fork" shape="triangle" ];
+  "48" [label="48[47,31]:OrJoin" shape="invtriangle" ];
   "24" [label="24[]:Step_starts" shape="ellipse" ];
   "25" [label="25[]:Step_starts" shape="ellipse" ];
   "26" [label="26[]:Step_terminates" shape="ellipse" ];
@@ -22,52 +22,66 @@ void function29receiveguardEvent(){
 waitEvent,Event0_0_0_8guardEvent,Event0_0_0_8guardEventPayload
 ackEvent,Event0_0_0_8guardEventToken
 }" shape="cds" ];
-  "30" [label="30[]:Fork" shape="triangle" ];
+  "30" [label="30[]:BroadcastEventEmission:
+void function30emitsentEvent(){
+createEventChannel,Event3_0_3_8sentEvent,1,void
+emitEvent,Event3_0_3_8sentEvent,Event3_0_3_8sentEventPayload,true
+}" shape="cds" ];
+  "31" [label="31[48]:Fork" shape="triangle" ];
   "21" [label="21[]:Step_starts" shape="ellipse" ];
   "22" [label="22[]:Step_terminates" shape="ellipse" ];
-  "48" [label="48[]:Step_starts" shape="ellipse" ];
-  "49" [label="49[]:Step_terminates" shape="ellipse" ];
-  "50" [label="50[51]:Fork" shape="triangle" ];
-  "51" [label="51[50]:OrJoin" shape="invtriangle" ];
-  "31" [label="31[]:Step_starts" shape="ellipse" ];
+  "50" [label="50[]:Step_starts" shape="ellipse" ];
+  "51" [label="51[]:Step_terminates" shape="ellipse" ];
+  "52" [label="52[53]:Fork" shape="triangle" ];
+  "53" [label="53[52,39]:OrJoin" shape="invtriangle" ];
   "32" [label="32[]:Step_starts" shape="ellipse" ];
-  "33" [label="33[]:Step_terminates" shape="ellipse" ];
-  "35" [label="35[]:AndJoin" shape="invtriangle" ];
-  "36" [label="36[]:BroadcastEventReception:
-void function36receiveguardEvent(){
+  "33" [label="33[]:Step_starts" shape="ellipse" ];
+  "34" [label="34[]:Step_terminates" shape="ellipse" ];
+  "36" [label="36[]:AndJoin" shape="invtriangle" ];
+  "37" [label="37[]:BroadcastEventReception:
+void function37receiveguardEvent(){
 waitEvent,Event1_0_1_8guardEvent,Event1_0_1_8guardEventPayload
 ackEvent,Event1_0_1_8guardEventToken
 }" shape="cds" ];
-  "37" [label="37[53]:Fork" shape="triangle" ];
-  "53" [label="53[37]:OrJoin" shape="invtriangle" style="filled" fillcolor="lightblue"];
-  "0" -> "38" [label=""];
-  "39" -> "1" [label=""];
-  "38" -> "40" [label=""];
-  "41" -> "39" [label=""];
-  "40" -> "15" [label=""];
-  "16" -> "41" [label=""];
-  "15" -> "53" [label=""];
-  "18" -> "43" [label=""];
-  "44" -> "19" [label=""];
-  "43" -> "45" [label=""];
-  "46" -> "44" [label=""];
-  "45" -> "25" [label=""];
-  "26" -> "46" [label=""];
+  "38" [label="38[]:BroadcastEventEmission:
+void function38emitsentEvent(){
+createEventChannel,Event4_0_4_8sentEvent,1,void
+emitEvent,Event4_0_4_8sentEvent,Event4_0_4_8sentEventPayload,true
+}" shape="cds" ];
+  "39" [label="39[53,55]:Fork" shape="triangle" ];
+  "55" [label="55[39]:OrJoin" shape="invtriangle" style="filled" fillcolor="lightblue"];
+  "0" -> "40" [label=""];
+  "41" -> "1" [label=""];
+  "40" -> "42" [label=""];
+  "43" -> "41" [label=""];
+  "42" -> "15" [label=""];
+  "16" -> "43" [label=""];
+  "15" -> "55" [label=""];
+  "18" -> "45" [label=""];
+  "46" -> "19" [label=""];
+  "45" -> "47" [label=""];
+  "48" -> "46" [label=""];
+  "47" -> "25" [label=""];
+  "26" -> "48" [label=""];
   "25" -> "24" [label=""];
   "29" -> "28" [label=""];
   "24" -> "28" [label=""];
   "28" -> "30" [label=""];
-  "30" -> "21" [label=""];
-  "21" -> "48" [label=""];
-  "49" -> "22" [label=""];
-  "48" -> "50" [label=""];
-  "51" -> "49" [label=""];
-  "50" -> "32" [label=""];
-  "33" -> "51" [label=""];
-  "32" -> "31" [label=""];
-  "36" -> "35" [label=""];
-  "31" -> "35" [label=""];
-  "35" -> "37" [label=""];
-  "37" -> "53" [label=""];
-  "53" -> "18" [label=""];
+  "30" -> "31" [label=""];
+  "31" -> "26" [label=""];
+  "31" -> "21" [label=""];
+  "21" -> "50" [label=""];
+  "51" -> "22" [label=""];
+  "50" -> "52" [label=""];
+  "53" -> "51" [label=""];
+  "52" -> "33" [label=""];
+  "34" -> "53" [label=""];
+  "33" -> "32" [label=""];
+  "37" -> "36" [label=""];
+  "32" -> "36" [label=""];
+  "36" -> "38" [label=""];
+  "38" -> "39" [label=""];
+  "39" -> "34" [label=""];
+  "39" -> "55" [label=""];
+  "55" -> "18" [label=""];
 }

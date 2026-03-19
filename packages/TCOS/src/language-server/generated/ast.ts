@@ -595,7 +595,8 @@ export function isNumberLiteral(item: unknown): item is NumberLiteral {
 export interface ParallelEventEmission extends AstNode {
     readonly $container: Conclusion | ParallelEventEmission | SequentialEventEmission;
     readonly $type: 'ParallelEventEmission';
-    eventemissions: Array<CompositeEventEmission | EventEmission>;
+    lefteventemission: EventEmission;
+    righteventemission: CompositeEventEmission;
 }
 
 export const ParallelEventEmission = 'ParallelEventEmission';
@@ -733,7 +734,8 @@ export function isSelectionPolicy(item: unknown): item is SelectionPolicy {
 export interface SequentialEventEmission extends AstNode {
     readonly $container: Conclusion | ParallelEventEmission | SequentialEventEmission;
     readonly $type: 'SequentialEventEmission';
-    eventemissions: Array<CompositeEventEmission | EventEmission>;
+    lefteventemission: EventEmission;
+    righteventemission: CompositeEventEmission;
 }
 
 export const SequentialEventEmission = 'SequentialEventEmission';
@@ -1726,7 +1728,8 @@ export class StructuralOperationalSemanticsAstReflection extends AbstractAstRefl
                 return {
                     name: ParallelEventEmission,
                     properties: [
-                        { name: 'eventemissions', defaultValue: [] }
+                        { name: 'lefteventemission' },
+                        { name: 'righteventemission' }
                     ]
                 };
             }
@@ -1824,7 +1827,8 @@ export class StructuralOperationalSemanticsAstReflection extends AbstractAstRefl
                 return {
                     name: SequentialEventEmission,
                     properties: [
-                        { name: 'eventemissions', defaultValue: [] }
+                        { name: 'lefteventemission' },
+                        { name: 'righteventemission' }
                     ]
                 };
             }
