@@ -1,5 +1,5 @@
 import { MultiMap } from 'langium';
-import { AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, Instruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction } from 'ccfg';
+import { AckEventInstruction, AddSleepInstruction, AssignVarInstruction, CreateEventChannelInstruction, CreateGlobalVarInstruction, CreateVarInstruction, EmitEventInstruction, Instruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, WaitEventInstruction } from 'ccfg';
 import chalk from 'chalk';
 let debug = false;
 export function generatefromCCFG(ccfg, codeFile, generator, filePath, debug) {
@@ -32,10 +32,8 @@ function compileFunctionDefs(ccfg, generator) {
             continue;
         }
         if (node.returnType != undefined) {
-            //console.log("node return type = " + node.returnType);
             if (node.functionsDefs[0] instanceof Instruction) {
                 for (let fname of node.functionsNames) {
-                    //console.log("function name: " + fname);
                     let allFDefs = [];
                     for (let fdef of node.functionsDefs) {
                         if (fdef instanceof ReturnInstruction) {
@@ -69,6 +67,22 @@ function compileFunctionDefs(ccfg, generator) {
                         else if (fdef instanceof AddSleepInstruction) {
                             let b = fdef;
                             allFDefs = [...allFDefs, ...generator.createSleep(b.duration)];
+                        }
+                        else if (fdef instanceof CreateEventChannelInstruction) {
+                            let b = fdef;
+                            allFDefs = [...allFDefs, ...generator.createEventChannel(b.channelName, b.listenerCount, b.payloadKind)];
+                        }
+                        else if (fdef instanceof EmitEventInstruction) {
+                            let b = fdef;
+                            allFDefs = [...allFDefs, ...generator.emitEvent(b.channelName, b.payload, b.awaitAcks)];
+                        }
+                        else if (fdef instanceof WaitEventInstruction) {
+                            let b = fdef;
+                            allFDefs = [...allFDefs, ...generator.waitEvent(b.channelName, b.outPayload)];
+                        }
+                        else if (fdef instanceof AckEventInstruction) {
+                            let b = fdef;
+                            allFDefs = [...allFDefs, ...generator.ackEvent(b.token)];
                         }
                         else {
                             console.log("Unknown function definition: " + fdef.$instructionType + " pop" + fdef.toString());
@@ -160,12 +174,12 @@ function visitAllNodes(ccfg, currentNode, generator, visitIsStarting = false) {
                 for (let syncUID of currentNode.syncNodeIds) {
                     let n = ccfg.getNodeByUID(syncUID);
                     if (n != undefined) {
-                        let ptns = getPreviousTypedNodes(n.inputEdges[0], true);
+                        let ptns = getPreviousTypedNodes(n.inputEdges[0]);
                         if (ptns.length > 1) {
                             throw new Error("multiple previous typed nodes not handled here");
                         }
                         let ptn = ptns[0];
-                        if (ptn !== undefined && ptn.returnType != undefined) {
+                        if (ptn != undefined && ptn.returnType != undefined) {
                             if (!createdQueueIds.includes(syncUID)) {
                                 createdQueueIds.push(syncUID);
                                 if (ptn.returnType != "void" && ptn.returnType != undefined) {
@@ -207,7 +221,12 @@ function visitAllNodes(ccfg, currentNode, generator, visitIsStarting = false) {
                         throw new Error("multiple previous typed nodes not handled here");
                     }
                     let ptn = ptns[0];
-                    let paramType = ptn.returnType;
+                    let paramType  = undefined;
+                    if (ptn != undefined) {
+                        let paramType = ptn.returnType;
+                    }else{
+                        let paramType = "void";
+                    }
                     let paramName = "AndJoinPopped_" + currentNode.uid + "_" + i;
                     if (currentNode.params.length > i && (currentNode.params[i].type != undefined)) {
                         paramType = currentNode.params[i].type;
@@ -240,11 +259,13 @@ function visitAllNodes(ccfg, currentNode, generator, visitIsStarting = false) {
                         throw new Error("multiple previous typed nodes not handled here");
                     }
                     let ptn = ptns[0];
-                    if (ptn !== undefined){
+                    if (ptn != undefined) {
                         paramType = ptn.returnType;
-                        if (paramType != undefined) {
-                            break;
-                        }
+                    }else{
+                        paramType = "void";
+                    }
+                    if (paramType != undefined) {
+                        break;
                     }
                 }
                 if (currentNode.functionsDefs.length == 0) {

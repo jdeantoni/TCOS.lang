@@ -19,6 +19,71 @@ export class JsGenerator implements IGenerator {
         res.push(`
 class Void{}
 let sigma = new Map();
+let eventChannels = new Map();
+let eventTokenToChannel = new Map();
+
+function __createEventChannel(name, listenerCount, payloadKind){
+    eventChannels.set(name, {
+        listenerCount: listenerCount,
+        payloadKind: payloadKind,
+        queue: [],
+        nextToken: 1,
+        pendingAcks: new Map()
+    });
+}
+
+function __getEventChannel(name){
+    if (!eventChannels.has(name)){
+        throw new Error('Unknown event channel: ' + name);
+    }
+    return eventChannels.get(name);
+}
+
+async function __emitEvent(name, payload, awaitAcks){
+    let channel = __getEventChannel(name);
+    let token = channel.nextToken++;
+    let expectedAcks = awaitAcks ? channel.listenerCount : 0;
+    if (expectedAcks > 0){
+        channel.pendingAcks.set(token, expectedAcks);
+        eventTokenToChannel.set(token, name);
+    }
+    channel.queue.push({payload: payload, token: token});
+
+    if (awaitAcks){
+        while ((channel.pendingAcks.get(token) || 0) > 0){
+            await new Promise(resolve => setTimeout(resolve, 10));
+        }
+        channel.pendingAcks.delete(token);
+        eventTokenToChannel.delete(token);
+    }
+}
+
+async function __waitEvent(name){
+    let channel = __getEventChannel(name);
+    let message = channel.queue.shift();
+    while (message == undefined){
+        await new Promise(resolve => setTimeout(resolve, 10));
+        message = channel.queue.shift();
+    }
+    return message;
+}
+
+function __ackEvent(token){
+    let channelName = eventTokenToChannel.get(token);
+    if (channelName == undefined){
+        return;
+    }
+    let channel = __getEventChannel(channelName);
+    let remaining = (channel.pendingAcks.get(token) || 0) - 1;
+    if (remaining <= 0){
+        channel.pendingAcks.delete(token);
+        eventTokenToChannel.delete(token);
+    } else {
+        channel.pendingAcks.set(token, remaining);
+    }
+}
+
+let __lastEventToken = undefined;
 
 `);// global variables
         return res
@@ -153,5 +218,21 @@ let sigma = new Map();
     }
     createSleep( duration: string): string[] {
         return ["await new Promise(resolve => setTimeout(resolve, " + duration + "));\n"]
+    }
+
+    createEventChannel(channelName: string, listenerCount: number, payloadKind: string): string[] {
+        return [`__createEventChannel(${JSON.stringify(channelName)}, ${listenerCount}, ${JSON.stringify(payloadKind)});\n`]
+    }
+
+    emitEvent(channelName: string, payload: string, awaitAcks: boolean): string[] {
+        return [`await __emitEvent(${JSON.stringify(channelName)}, ${payload}, ${awaitAcks});\n`]
+    }
+
+    waitEvent(channelName: string, outPayload: string): string[] {
+        return [`{\n`,`\tconst __event = await __waitEvent(${JSON.stringify(channelName)});\n`,`\t${outPayload} = __event.payload;\n`,`\t${channelName}Token = __event.token;\n`,`\t__lastEventToken = __event.token;\n`,`}\n`]
+    }
+
+    ackEvent(token: string): string[] {
+        return [`__ackEvent(${token});\n`]
     }
 }

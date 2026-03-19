@@ -1,7 +1,7 @@
 
 import fs from 'fs';
 import { AstNode, Reference, isReference, AstUtils } from "langium";
-import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole, AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction, BroadcastEventEmission, BroadcastEventReception} from "ccfg";
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole, AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction, BroadcastEventEmission, BroadcastEventReception, CreateEventChannelInstruction, EmitEventInstruction, WaitEventInstruction, AckEventInstruction} from "ccfg";
 import { FSMModel,FSM,Event,State,Transition } from "../../language/generated/ast.js";
 
 var debug = false
@@ -288,6 +288,9 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
                 //premise participants in parallel collection but not a hole: { "name": "guardEvent", "type": "[Event:ID]"},{ "name": "starts", "type": "event"}
         let guardEventReceptionNode : BroadcastEventReception = new BroadcastEventReception(node.guardEvent?.ref??node, "guardEvent")
         localCCFG.addNode(guardEventReceptionNode)
+        guardEventReceptionNode.functionsNames = [`${guardEventReceptionNode.uid}receiveguardEvent`]
+        guardEventReceptionNode.functionsDefs = [new WaitEventInstruction(`${this.getASTNodeUID(node.guardEvent?.ref??node)}guardEvent`,`${this.getASTNodeUID(node.guardEvent?.ref??node)}guardEventPayload`), new AckEventInstruction(`${this.getASTNodeUID(node.guardEvent?.ref??node)}guardEventToken`)]
+        guardEventReceptionNode.returnType = "void"
         localCCFG.addEdge(guardEventReceptionNode,fireAndJoinNode)
                        //premise participants in parallel collection but not a hole: { "name": "waitEvent", "type": "event"}
         localCCFG.addEdge(waitEventTransitionNode,fireAndJoinNode)
@@ -297,20 +300,16 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         fireAndJoinNode.functionsNames = [`${fireAndJoinNode.uid}fire`] // overwrite existing name
         fireAndJoinNode.functionsDefs =[...fireAndJoinNode.functionsDefs, ...[]] // GG
     
-                //conclusion participants in sequential collection but not a hole: { "name": "sentEvent", "type": "[Event:ID]"}
+        let forkfireNode: Node = new Fork(node)
+        localCCFG.addNode(forkfireNode)
+        localCCFG.addEdge(fireAndJoinNode,forkfireNode)
+            
+
+                //conclusion participants in parallel collection but not a hole: { "name": "sentEvent", "type": "[Event:ID]"}
                 
-        let sentEventEmissionNode : BroadcastEventEmission = new BroadcastEventEmission(node.sentEvent?.ref??node, "sentEvent")
-        localCCFG.addNode(sentEventEmissionNode)
-        localCCFG.addEdge(fireAndJoinNode,sentEventEmissionNode)
-        fireAndJoinNode = sentEventEmissionNode
-        
-                //conclusion participants in sequential collection but not a hole: { "name": "terminates", "type": "event"}
-                
-        localCCFG.addEdge(fireAndJoinNode,terminatesTransitionNode)
-        fireAndJoinNode = terminatesTransitionNode
-                        //mark 2 { "name": "target", "type": "[State:ID]"},{ "name": "starts", "type": "event"} ------ { "name": "target", "type": "[State:ID]"},{ "name": "starts", "type": "event"}
-        localCCFG.addEdge(fireAndJoinNode,targetHole)
-                    fireAndJoinNode = targetHole
+                //conclusion participants in parallel collection but not a hole: { "name": "terminates", "type": "event"}
+                                    //mark 3
+        localCCFG.addEdge(forkfireNode,targetHole)
                     
         return localCCFG;
     }
@@ -408,9 +407,9 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
             }else{
                 joinNode = new OrJoin(hole.astNode)
             } 
-            holeNodeLocalCCFG.addNode(joinNode);
-            joinNode.syncNodeIds.push(forkNode.uid);
-            forkNode.syncNodeIds.push(joinNode.uid);
+            holeNodeLocalCCFG.addNode(joinNode)
+            joinNode.syncNodeIds.push(forkNode.uid)
+            forkNode.syncNodeIds.push(joinNode.uid)
             holeNodeLocalCCFG.addEdge(joinNode,terminatesCollectionHoleNode)
             for (let e of hole.astNodeCollection){
                 let collectionHole : Hole = new Hole(e)

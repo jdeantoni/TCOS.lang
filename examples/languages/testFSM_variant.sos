@@ -60,7 +60,6 @@ open Transition{
     ------------------------------------------------------ fire
          <this,σ> ~> broadcasts sentEvent;
                      emits terminates;
-                    //  emits source.terminates;
                      <target,σ>
         
 }

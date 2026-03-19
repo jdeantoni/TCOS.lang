@@ -221,6 +221,9 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
                             file.append(`
         let ${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode : BroadcastEventReception = new BroadcastEventReception(node.${participants.filter(p => p.type != "event").map(p => p.name).join('_')}?.ref??node, "${participants.filter(p => p.type != "event").map(p => p.name).join('_')}")
         localCCFG.addNode(${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode)
+        ${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode.functionsNames = [\`\${${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode.uid}receive${participants.filter(p => p.type != "event").map(p => p.name).join('_')}\`]
+        ${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode.functionsDefs = [new WaitEventInstruction(\`\${this.getASTNodeUID(node.${participants.filter(p => p.type != "event").map(p => p.name).join('_')}?.ref??node)}${participants.filter(p => p.type != "event").map(p => p.name).join('_')}\`,\`\${this.getASTNodeUID(node.${participants.filter(p => p.type != "event").map(p => p.name).join('_')}?.ref??node)}${participants.filter(p => p.type != "event").map(p => p.name).join('_')}Payload\`), new AckEventInstruction(\`\${this.getASTNodeUID(node.${participants.filter(p => p.type != "event").map(p => p.name).join('_')}?.ref??node)}${participants.filter(p => p.type != "event").map(p => p.name).join('_')}Token\`)]
+        ${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode.returnType = "void"
         localCCFG.addEdge(${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode,${premiseNodeName})
         `);
                         }else{ // this is an event from a variable Declaration
@@ -451,6 +454,11 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
                             file.append(`
         let ${participants[0].name}EmissionNode : BroadcastEventEmission = new BroadcastEventEmission(node.${participants[0].name}?.ref??node, "${participants[0].name}")
         localCCFG.addNode(${participants[0].name}EmissionNode)
+        ${participants[0].name}EmissionNode.functionsNames = [\`\${${participants[0].name}EmissionNode.uid}emit${participants[0].name}\`]
+        //TODO 1: the payload type should be inferred from the event expression of the premise, but for now we put "void" as default (also because currently only simple events are supported in variable declaration)
+        //TODO 2: the listener count is 1 by default but it should be computed at compile time and modified.
+        ${participants[0].name}EmissionNode.functionsDefs = [new CreateEventChannelInstruction(\`\${this.getASTNodeUID(node.${participants[0].name}?.ref??node)}${participants[0].name}\`,1,\`void\`), new EmitEventInstruction(\`\${this.getASTNodeUID(node.${participants[0].name}?.ref??node)}${participants[0].name}\`,\`\${this.getASTNodeUID(node.${participants[0].name}?.ref??node)}${participants[0].name}Payload\`,true)]
+        ${participants[0].name}EmissionNode.returnType = "void"
         localCCFG.addEdge(${previousNodeName},${participants[0].name}EmissionNode)
         ${previousNodeName} = ${participants[0].name}EmissionNode
         `);
@@ -486,6 +494,25 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
                 if(DEBUG) file.append(`
                 //conclusion participants in parallel collection but not a hole: ${participants.map(p => p.toJSON())}
                 `);
+                //TODO: review the following code, it is very similar to the one in sequential case, maybe they can be merged with some conditionals
+                if (participants[0].isBroadcast) {
+                    file.append(`
+        let ${participants[0].name}EmissionNode : BroadcastEventEmission = new BroadcastEventEmission(node.${participants[0].name}?.ref??node, "${participants[0].name}")
+        localCCFG.addNode(${participants[0].name}EmissionNode)
+        ${participants[0].name}EmissionNode.functionsNames = [\`\${${participants[0].name}EmissionNode.uid}emit${participants[0].name}\`]
+        ${participants[0].name}EmissionNode.functionsDefs = [new CreateEventChannelInstruction(\`\${this.getASTNodeUID(node.${participants[0].name}?.ref??node)}${participants[0].name}\`,1,\`void\`), new EmitEventInstruction(\`\${this.getASTNodeUID(node.${participants[0].name}?.ref??node)}${participants[0].name}\`,\`\${this.getASTNodeUID(node.${participants[0].name}?.ref??node)}${participants[0].name}Payload\`,true)]
+        ${participants[0].name}EmissionNode.returnType = "void"
+        localCCFG.addEdge(fork${ruleCF.rule.name}Node,${participants[0].name}EmissionNode)
+        `);
+                } else {
+                    let ruleName : string = ""
+                    if ((participants[0].astNode as VariableDeclaration).$container.$type == "RuleOpening") {
+                        ruleName = ((participants[0].astNode as VariableDeclaration).$container as RuleOpening).onRule?.$refText ?? ""
+                    }
+                    file.append(`
+        localCCFG.addEdge(fork${ruleCF.rule.name}Node,${participants[0].name+ruleName}Node)
+        `);
+                }
             }
         }
     }
@@ -1321,7 +1348,7 @@ function writePreambule(fileNode: CompositeGeneratorNode, data: FilePathData) {
     fileNode.append(`
 import fs from 'fs';
 import { AstNode, Reference, isReference, AstUtils } from "langium";
-import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole, AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction, BroadcastEventEmission, BroadcastEventReception} from "ccfg";`, NL)
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole, AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction, BroadcastEventEmission, BroadcastEventReception, CreateEventChannelInstruction, EmitEventInstruction, WaitEventInstruction, AckEventInstruction} from "ccfg";`, NL)
 }
 
 

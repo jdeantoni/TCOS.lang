@@ -1,7 +1,7 @@
 
 import { MultiMap } from 'langium';
 import { CompositeGeneratorNode } from 'langium/generate';
-import { AddSleepInstruction, AssignVarInstruction, CCFG, CreateGlobalVarInstruction, CreateVarInstruction, Edge, Instruction, Node, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction } from 'ccfg';
+import { AckEventInstruction, AddSleepInstruction, AssignVarInstruction, CCFG, CreateEventChannelInstruction, CreateGlobalVarInstruction, CreateVarInstruction, Edge, EmitEventInstruction, Instruction, Node, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction, WaitEventInstruction } from 'ccfg';
 import {IGenerator} from './GeneratorInterface.js';
 import chalk from 'chalk';
 
@@ -77,7 +77,19 @@ function compileFunctionDefs(ccfg: CCFG,generator:IGenerator): string[] {
                             } else if (fdef instanceof AddSleepInstruction){
                                 let b = fdef as AddSleepInstruction;
                                 allFDefs=[...allFDefs, ...generator.createSleep(b.duration)];
-                            } 
+                            } else if (fdef instanceof CreateEventChannelInstruction){
+                                let b = fdef as CreateEventChannelInstruction;
+                                allFDefs = [...allFDefs, ...generator.createEventChannel(b.channelName, b.listenerCount, b.payloadKind)];
+                            } else if (fdef instanceof EmitEventInstruction){
+                                let b = fdef as EmitEventInstruction;
+                                allFDefs = [...allFDefs, ...generator.emitEvent(b.channelName, b.payload, b.awaitAcks)];
+                            } else if (fdef instanceof WaitEventInstruction){
+                                let b = fdef as WaitEventInstruction;
+                                allFDefs = [...allFDefs, ...generator.waitEvent(b.channelName, b.outPayload)];
+                            } else if (fdef instanceof AckEventInstruction){
+                                let b = fdef as AckEventInstruction;
+                                allFDefs = [...allFDefs, ...generator.ackEvent(b.token)];
+                            }
                             else{
                                 console.log("Unknown function definition: "+ fdef.$instructionType+ " pop"+fdef.toString());
                                 allFDefs = [...allFDefs, fdef.toString()];

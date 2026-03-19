@@ -191,6 +191,23 @@ interface IGenerator {
      * @returns a string array that contains the code to sleep the thread
      **/
     createSleep( duration: string): string[];
+
+    /**
+     * create an event channel used by emit/wait/ack pseudo-actions
+     */
+    createEventChannel(channelName: string, listenerCount: number, payloadKind: string): string[];
+    /**
+     * emit an event payload on a channel and optionally wait for acknowledgments
+     */
+    emitEvent(channelName: string, payload: string, awaitAcks: boolean): string[];
+    /**
+     * wait for the next event on a channel and assign its payload to outPayload
+     */
+    waitEvent(channelName: string, outPayload: string): string[];
+    /**
+     * acknowledge a previously received event token
+     */
+    ackEvent(token: string): string[];
 }
 
 export {IGenerator};
