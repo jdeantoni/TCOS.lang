@@ -1,7 +1,7 @@
 
 import fs from 'fs';
 import { AstNode, Reference, isReference, AstUtils } from "langium";
-import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole, AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction, BroadcastEventEmission, BroadcastEventReception} from "ccfg";
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole, AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction, BroadcastEventEmission, BroadcastEventReception, CreateEventChannelInstruction, EmitEventInstruction, WaitEventInstruction, AckEventInstruction} from "ccfg";
 import { Program,Seq,Par,Perio,Stmt1,Stmt2 } from "../../language/generated/ast.js";
 
 var debug = false
@@ -61,9 +61,13 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
     }
     
 // rule startsProgram
+   //premise expr type: ExplicitEventRef
+   //premise participants count: 1
    //premise: starts:event
    //conclusion: stmt:Statement,starts:event
 // rule finishProgram
+   //premise expr type: SingleRuleSync
+   //premise participants count: 1
    //premise: stmt:Statement,terminates:event
    //conclusion: terminates:event
 
@@ -92,27 +96,36 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
         startsProgramNode.returnType = "void"
         startsProgramNode.functionsNames = [`${startsProgramNode.uid}startsProgram`] // overwrite existing name
         startsProgramNode.functionsDefs =[...startsProgramNode.functionsDefs, ...[]] // GG
-                //mark 0
+    
         {let e = localCCFG.addEdge(startsProgramNode,stmtHole)
         e.guards = [...e.guards, ...[]]}
-            
+        
+        // premise handling for rule finishProgram: 1 participant groups
+
         stmtHole.params = [...stmtHole.params, ...[]]
         stmtHole.returnType = "void"
         stmtHole.functionsNames = [`${stmtHole.uid}finishProgram`] // overwrite existing name
         stmtHole.functionsDefs =[...stmtHole.functionsDefs, ...[]] // GG
-                //mark 1 { "name": "terminates", "type": "event"}
+    
         {let e = localCCFG.addEdge(stmtHole,terminatesProgramNode)
         e.guards = [...e.guards, ...[]]}
-        
+    
+
         return localCCFG;
     }
 // rule startsLhsSeq
+   //premise expr type: ExplicitEventRef
+   //premise participants count: 1
    //premise: starts:event
    //conclusion: lhs:Statement,starts:event
 // rule startsRhsSeq
+   //premise expr type: SingleRuleSync
+   //premise participants count: 1
    //premise: lhs:Statement,terminates:event
    //conclusion: rhs:Statement,starts:event
 // rule finishSeq
+   //premise expr type: SingleRuleSync
+   //premise participants count: 1
    //premise: rhs:Statement,terminates:event
    //conclusion: terminates:event
 
@@ -144,33 +157,42 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
         startsSeqNode.returnType = "void"
         startsSeqNode.functionsNames = [`${startsSeqNode.uid}startsLhsSeq`] // overwrite existing name
         startsSeqNode.functionsDefs =[...startsSeqNode.functionsDefs, ...[]] // GG
-                //mark 0
+    
         {let e = localCCFG.addEdge(startsSeqNode,lhsHole)
         e.guards = [...e.guards, ...[]]}
-            
+        
+        // premise handling for rule startsRhsSeq: 1 participant groups
+
         lhsHole.params = [...lhsHole.params, ...[]]
         lhsHole.returnType = "void"
         lhsHole.functionsNames = [`${lhsHole.uid}startsRhsSeq`] // overwrite existing name
         lhsHole.functionsDefs =[...lhsHole.functionsDefs, ...[]] // GG
-                //mark 0
+    
         {let e = localCCFG.addEdge(lhsHole,rhsHole)
         e.guards = [...e.guards, ...[]]}
-            
+        
+        // premise handling for rule finishSeq: 1 participant groups
+
         rhsHole.params = [...rhsHole.params, ...[]]
         rhsHole.returnType = "void"
         rhsHole.functionsNames = [`${rhsHole.uid}finishSeq`] // overwrite existing name
         rhsHole.functionsDefs =[...rhsHole.functionsDefs, ...[]] // GG
-                //mark 1 { "name": "terminates", "type": "event"}
+    
         {let e = localCCFG.addEdge(rhsHole,terminatesSeqNode)
         e.guards = [...e.guards, ...[]]}
-        
+    
+
         return localCCFG;
     }
 // rule startsPar
+   //premise expr type: ExplicitEventRef
+   //premise participants count: 1
    //premise: starts:event
    //conclusion: lhs:Statement,starts:event
 	//rhs:Statement,starts:event
 // rule finishPar
+   //premise expr type: EventConjunction
+   //premise participants count: 2
    //premise: lhs:Statement,terminates:event
 	//rhs:Statement,terminates:event
    //conclusion: terminates:event
@@ -204,15 +226,22 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
         startsParNode.functionsNames = [`${startsParNode.uid}startsPar`] // overwrite existing name
         startsParNode.functionsDefs =[...startsParNode.functionsDefs, ...[]] // GG
     
-        let forkstartsParNode: Node = new Fork(node)
-        localCCFG.addNode(forkstartsParNode)
-        localCCFG.addEdge(startsParNode,forkstartsParNode)
+        let forkstartsParStage0: Node = new Fork(node)
+        localCCFG.addNode(forkstartsParStage0)
+        {let e = localCCFG.addEdge(startsParNode,forkstartsParStage0)
+        e.guards = [...e.guards, ...[]]}
             
-                    //mark 3
-        localCCFG.addEdge(forkstartsParNode,lhsHole)
-                                        //mark 3
-        localCCFG.addEdge(forkstartsParNode,rhsHole)
-                    
+
+        {let e = localCCFG.addEdge(forkstartsParStage0,lhsHole)
+        e.guards = [...e.guards, ...[]]}
+        
+
+        {let e = localCCFG.addEdge(forkstartsParStage0,rhsHole)
+        e.guards = [...e.guards, ...[]]}
+        
+        // premise handling for rule finishPar: 2 participant groups
+        // Creating AndJoin for conjunction/disjunction
+
         let finishParAndJoinNode: Node = new AndJoin(node)
         localCCFG.addNode(finishParAndJoinNode)
               //mark a
@@ -224,16 +253,21 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
         finishParAndJoinNode.returnType = "void"
         finishParAndJoinNode.functionsNames = [`${finishParAndJoinNode.uid}finishPar`] // overwrite existing name
         finishParAndJoinNode.functionsDefs =[...finishParAndJoinNode.functionsDefs, ...[]] // GG
-                //mark 1 { "name": "terminates", "type": "event"}
+    
         {let e = localCCFG.addEdge(finishParAndJoinNode,terminatesParNode)
         e.guards = [...e.guards, ...[]]}
-        
+    
+
         return localCCFG;
     }
 // rule perioStart
+   //premise expr type: ExplicitEventRef
+   //premise participants count: 1
    //premise: starts:event
    //conclusion: blocTrigger:Timer,starts:event
 // rule perioExpires
+   //premise expr type: SingleRuleSync
+   //premise participants count: 1
    //premise: blocTrigger:Timer,terminates:event
    //conclusion: stmt:Statement,starts:event
 	//blocTrigger:Timer,starts:event
@@ -274,27 +308,36 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
         startsPerioNode.returnType = "void"
         startsPerioNode.functionsNames = [`${startsPerioNode.uid}perioStart`] // overwrite existing name
         startsPerioNode.functionsDefs =[...startsPerioNode.functionsDefs, ...[]] // GG
-                //mark 0
+    
         {let e = localCCFG.addEdge(startsPerioNode,blocTriggerHole)
         e.guards = [...e.guards, ...[]]}
-            
+        
+        // premise handling for rule perioExpires: 1 participant groups
+
         blocTriggerHole.params = [...blocTriggerHole.params, ...[]]
         blocTriggerHole.returnType = "void"
         blocTriggerHole.functionsNames = [`${blocTriggerHole.uid}perioExpires`] // overwrite existing name
         blocTriggerHole.functionsDefs =[...blocTriggerHole.functionsDefs, ...[]] // GG
     
-        let forkperioExpiresNode: Node = new Fork(node)
-        localCCFG.addNode(forkperioExpiresNode)
-        localCCFG.addEdge(blocTriggerHole,forkperioExpiresNode)
+        let forkperioExpiresStage0: Node = new Fork(node)
+        localCCFG.addNode(forkperioExpiresStage0)
+        {let e = localCCFG.addEdge(blocTriggerHole,forkperioExpiresStage0)
+        e.guards = [...e.guards, ...[]]}
             
-                    //mark 3
-        localCCFG.addEdge(forkperioExpiresNode,stmtHole)
-                                        //mark 3
-        localCCFG.addEdge(forkperioExpiresNode,blocTriggerHole)
-                    
+
+        {let e = localCCFG.addEdge(forkperioExpiresStage0,stmtHole)
+        e.guards = [...e.guards, ...[]]}
+        
+
+        {let e = localCCFG.addEdge(forkperioExpiresStage0,blocTriggerHole)
+        e.guards = [...e.guards, ...[]]}
+        
+
         return localCCFG;
     }
 // rule fugaceStmt1
+   //premise expr type: ExplicitEventRef
+   //premise participants count: 1
    //premise: starts:event
    //conclusion: terminates:event
 
@@ -328,13 +371,16 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
         startsStmt1Node.returnType = "void"
         startsStmt1Node.functionsNames = [`${startsStmt1Node.uid}fugaceStmt1`] // overwrite existing name
         startsStmt1Node.functionsDefs =[...startsStmt1Node.functionsDefs, ...[]] // GG
-                //mark 1 { "name": "terminates", "type": "event"}
+    
         {let e = localCCFG.addEdge(startsStmt1Node,terminatesStmt1Node)
         e.guards = [...e.guards, ...[]]}
-        
+    
+
         return localCCFG;
     }
 // rule fugaceStmt2
+   //premise expr type: ExplicitEventRef
+   //premise participants count: 1
    //premise: starts:event
    //conclusion: terminates:event
 
@@ -346,7 +392,15 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
     createStmt2LocalCCFG(node: Stmt2): CCFG {
         let localCCFG = new CCFG()
     
-        let startsStmt2Node: Node = new Step(node,NodeType.starts,[])
+                let fakeStateStmt2Node: Node = new Step(node,NodeType.starts,[])
+
+                localCCFG.addNode(fakeStateStmt2Node)
+                // let terminatesfakeStateStmt2Node: Node = new Step(node,NodeType.terminates,[])
+
+                // localCCFG.addNode(terminatesfakeStateStmt2Node)
+                // localCCFG.addEdge(startsfakeStateStmt2Node,terminatesfakeStateStmt2Node)
+                
+        let startsStmt2Node: Node = new Step(node,NodeType.starts,[new CreateGlobalVarInstruction(`${this.getASTNodeUID(node)}fakeState`,`int`), new SetGlobalVarInstruction(`${this.getASTNodeUID(node)}fakeState`,`0`,`int`)])
         if(startsStmt2Node.functionsDefs.length>0){
             startsStmt2Node.returnType = "void"
         }
@@ -360,10 +414,11 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
         startsStmt2Node.returnType = "void"
         startsStmt2Node.functionsNames = [`${startsStmt2Node.uid}fugaceStmt2`] // overwrite existing name
         startsStmt2Node.functionsDefs =[...startsStmt2Node.functionsDefs, ...[]] // GG
-                //mark 1 { "name": "terminates", "type": "event"}
+    
         {let e = localCCFG.addEdge(startsStmt2Node,terminatesStmt2Node)
         e.guards = [...e.guards, ...[]]}
-        
+    
+
         return localCCFG;
     }
 

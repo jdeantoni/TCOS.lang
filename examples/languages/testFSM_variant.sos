@@ -15,7 +15,8 @@ open FSM {
 
                     when starts
     --------------------------------- init
-     <this,σ> ~> <initialState,σ>
+     <this,σ> ~>  initialState.isInitial := true;
+                  <initialState,σ>
               
 }
 
@@ -35,9 +36,15 @@ open Event {
 
 
 open State {
+    var isInitial : boolean = false;
 
-            when starts  // quid d'un "only" firstOf qui ferait aussi le abort ?)          
-    --------------------------------------- init
+            when starts [isInitial == true]
+    --------------------------------------- firstStartOfInitialState
+    <this,σ> ~> isInitial := false;
+                outTransitions->concurrent.foreach(transition => <transition,σ>)
+
+            when (starts ^ firstOf(inTransitions.terminates)) [isInitial == false]
+    --------------------------------------------------------------------------------- furtherStartOrNotInitialState
     <this,σ> ~> outTransitions->concurrent.foreach(transition => <transition,σ>)
 
 

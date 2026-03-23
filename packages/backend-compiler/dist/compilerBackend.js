@@ -179,7 +179,7 @@ function visitAllNodes(ccfg, currentNode, generator, visitIsStarting = false) {
                             throw new Error("multiple previous typed nodes not handled here");
                         }
                         let ptn = ptns[0];
-                        if (ptn != undefined && ptn.returnType != undefined) {
+                        if (ptn.returnType != undefined) {
                             if (!createdQueueIds.includes(syncUID)) {
                                 createdQueueIds.push(syncUID);
                                 if (ptn.returnType != "void" && ptn.returnType != undefined) {
@@ -221,12 +221,7 @@ function visitAllNodes(ccfg, currentNode, generator, visitIsStarting = false) {
                         throw new Error("multiple previous typed nodes not handled here");
                     }
                     let ptn = ptns[0];
-                    let paramType  = undefined;
-                    if (ptn != undefined) {
-                        let paramType = ptn.returnType;
-                    }else{
-                        let paramType = "void";
-                    }
+                    let paramType = ptn.returnType;
                     let paramName = "AndJoinPopped_" + currentNode.uid + "_" + i;
                     if (currentNode.params.length > i && (currentNode.params[i].type != undefined)) {
                         paramType = currentNode.params[i].type;
@@ -259,11 +254,7 @@ function visitAllNodes(ccfg, currentNode, generator, visitIsStarting = false) {
                         throw new Error("multiple previous typed nodes not handled here");
                     }
                     let ptn = ptns[0];
-                    if (ptn != undefined) {
-                        paramType = ptn.returnType;
-                    }else{
-                        paramType = "void";
-                    }
+                    paramType = ptn.returnType;
                     if (paramType != undefined) {
                         break;
                     }

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { AstNode, Grammar} from 'langium';
 import { CompositeGeneratorNode ,NL,toString} from 'langium/generate';
-import { Assignment, BinaryExpression, CollectionRuleSync, CompositeEventEmission, EventCombination, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, NaryEventExpression, RWRule, RuleOpening, SimpleEventEmission, SingleRuleSync, SoSSpec, TypeReference, ValuedEventEmission, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration, isParallelEventEmission, isSequentialEventEmission } from '../language-server/generated/ast.js'; //VariableDeclaration
+import { Assignment, BinaryExpression, ClassicalExpression, CollectionRuleSync, CompositeEventEmission, EventCombination, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, NaryEventExpression, RWRule, RuleOpening, SimpleEventEmission, SingleRuleSync, SoSSpec, TypeReference, ValuedEventEmission, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration, isParallelEventEmission, isSequentialEventEmission } from '../language-server/generated/ast.js'; //VariableDeclaration
 import { extractDestinationAndName, FilePathData } from './cli-util.js';
 import path from 'path';
 import { inferType } from '../language-server/type-system/infer.js';
@@ -192,21 +192,69 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
         }
     }
 
-    const startingRules = retrieveStartingRules(rulesCF);
+    const startingRules = retrieveStartingRules(rulesCF, conceptName);
     if (startingRules.length > 1) {
         throw new Error("multiple starting rules are not supported");
     }
 
-    let startRule: RuleControlFlow = startingRules[0];
-    handleRuleConclusion(startRule, holes, file, `starts${conceptName}Node`);
+    let startRule: RuleControlFlow | undefined = startingRules[0];
+    
+    if (startRule != undefined) {
+        // Handle premise for starting rule if it has multiple participant groups (conjunction/disjunction)
+        if (startRule.premiseParticipants.length > 1) {
+            let startingPremiseNodeName = getPreviousNodeNameFromPremiseParticipants(startRule, conceptName, holes);
+            if(DEBUG) file.append(`        // premise handling for starting rule ${startRule.rule.name}: ${startRule.premiseParticipants.length} participant groups`, NL);
+            if(DEBUG) file.append(`        // Creating ${startingPremiseNodeName.endsWith("OrJoinNode")?"OrJoin":"AndJoin"} for conjunction/disjunction`, NL);
+            
+            file.append(`
+        let ${startingPremiseNodeName}: Node = new ${startingPremiseNodeName.endsWith("OrJoinNode")?"OrJoin":"AndJoin"}(node)
+        localCCFG.addNode(${startingPremiseNodeName})\n `);
+            
+            for (let participants of startRule.premiseParticipants) {
+                if (holes.map(h => h.startingParticipants).some(p => areParticipantsEqualsOrCoupled(p, participants))) {
+                    if (DEBUG) file.append(`             //premise participant is a hole`);
+                    file.append(`
+        localCCFG.addEdge(${participants.filter(p => p.type != "event").map(p => p.name).join('_')}Hole,${startingPremiseNodeName})\n`);
+                } else {
+                    // For starting rule, handle broadcast reception or variable declaration events
+                    if (participants.length > 1) {
+                        file.append(`
+        let ${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode : BroadcastEventReception = new BroadcastEventReception(node.${participants.filter(p => p.type != "event").map(p => p.name).join('_')}?.ref??node, "${participants.filter(p => p.type != "event").map(p => p.name).join('_')}")
+        localCCFG.addNode(${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode)
+        ${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode.functionsNames = [\`\${${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode.uid}receive${participants.filter(p => p.type != "event").map(p => p.name).join('_')}\`]
+        ${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode.functionsDefs = [new WaitEventInstruction(\`\${this.getASTNodeUID(node.${participants.filter(p => p.type != "event").map(p => p.name).join('_')}?.ref??node)}${participants.filter(p => p.type != "event").map(p => p.name).join('_')}\`,\`\${this.getASTNodeUID(node.${participants.filter(p => p.type != "event").map(p => p.name).join('_')}?.ref??node)}${participants.filter(p => p.type != "event").map(p => p.name).join('_')}Payload\`), new AckEventInstruction(\`\${this.getASTNodeUID(node.${participants.filter(p => p.type != "event").map(p => p.name).join('_')}?.ref??node)}${participants.filter(p => p.type != "event").map(p => p.name).join('_')}Token\`)]
+        ${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode.returnType = "void"
+        localCCFG.addEdge(${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode,${startingPremiseNodeName})
+        `);
+                    } else {
+                        let ruleName : string = ""
+                        if ((participants[0].astNode as VariableDeclaration).$container.$type == "RuleOpening") {
+                            ruleName = ((participants[0].astNode as VariableDeclaration).$container as RuleOpening).onRule?.$refText ?? ""
+                        }
+                        file.append(`
+        localCCFG.addEdge(${participants[0].name+ruleName}Node,${startingPremiseNodeName})
+        `);
+                    }
+                }
+            }
+            
+            // Call handleRuleConclusion with the premise node as the starting point
+            handleRuleConclusion(startRule, holes, file, startingPremiseNodeName);
+        } else {
+            // No conjunction in premise, use original handling
+            handleRuleConclusion(startRule, holes, file, `starts${conceptName}Node`);
+        }
+    }
 
 
     for (let ruleCF of rulesCF) {
-        if (ruleCF != startingRules[0]) {
+        if (ruleCF != startRule) {
             let premiseNodeName : string= getPreviousNodeNameFromPremiseParticipants(ruleCF, conceptName, holes)
             //manage premise (most of the time the premise's node is already existing since a hole. (but sometimes from event in varDeclaration))
+            if(DEBUG) file.append(`        // premise handling for rule ${ruleCF.rule.name}: ${ruleCF.premiseParticipants.length} participant groups`, NL)
 
             if (ruleCF.premiseParticipants.length > 1) {
+                if(DEBUG) file.append(`        // Creating ${premiseNodeName.endsWith("OrJoinNode")?"OrJoin":"AndJoin"} for conjunction/disjunction`, NL)
                 file.append(`
         let ${premiseNodeName}: Node = new ${premiseNodeName.endsWith("OrJoinNode")?"OrJoin":"AndJoin"}(node)
         localCCFG.addNode(${premiseNodeName})\n `);
@@ -333,16 +381,73 @@ function getPreviousNodeNameFromPremiseParticipants(ruleCF: RuleControlFlow, con
     
 }
 
+function formatPremiseGuardOperand(expression: ClassicalExpression | undefined): string | undefined {
+    if (expression == undefined) {
+        return undefined;
+    }
+
+    if (expression.$type == "MemberCall") {
+        const memberCall = expression as MemberCall;
+        if (memberCall.element?.ref != undefined) {
+            const previous = (memberCall.previous as MemberCall | undefined)?.element;
+            return `\`\${this.getASTNodeUID(node${previous != undefined ? "." + previous.$refText : ""})}${memberCall.element.ref.name}\``;
+        }
+        if (memberCall.previous != undefined) {
+            return formatPremiseGuardOperand(memberCall.previous as ClassicalExpression);
+        }
+        return undefined;
+    }
+
+    if (expression.$type == "BooleanExpression" || expression.$type == "NumberExpression" || expression.$type == "StringExpression") {
+        return `\`${expression.$cstNode?.text}\``;
+    }
+
+    return undefined;
+}
+
+function visitPremiseBooleanComparison(expression: ClassicalExpression | undefined): string {
+    if (expression == undefined || expression.$type != "BinaryExpression") {
+        return "";
+    }
+
+    const comparison = expression as BinaryExpression;
+    if (comparison.operator != "==") {
+        return "";
+    }
+
+    const left = formatPremiseGuardOperand(comparison.left);
+    const right = formatPremiseGuardOperand(comparison.right);
+    if (left == undefined || right == undefined) {
+        return "";
+    }
+
+    return `new VerifyEqualInstruction(${left},${right})`;
+}
+
+function buildPremiseGuardString(ruleCF: RuleControlFlow): string {
+    const guards: string[] = [];
+
+    for (const comparison of getValuedEventRefConstantComparison(ruleCF.rule.premise.eventExpression)) {
+        const guard = visitValuedEventRefComparison(comparison);
+        if (guard.length > 0) {
+            guards.push(guard);
+        }
+    }
+
+    for (const comparison of ruleCF.rule.premise.booleanExpression) {
+        const guard = visitPremiseBooleanComparison(comparison);
+        if (guard.length > 0) {
+            guards.push(guard);
+        }
+    }
+
+    return guards.join(",");
+}
+
 function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], file: CompositeGeneratorNode, previousNodeName: string) {
     let actionsstring = ""
     actionsstring = visitStateModifications(ruleCF, actionsstring);
-    let guardString = ""
-    let allEventValuedComparisons = getValuedEventRefConstantComparison(ruleCF.rule.premise.eventExpression)
-    let sep = ""
-    for(let comparison of allEventValuedComparisons){
-        guardString = guardString + sep + visitValuedEventRefComparison(comparison)
-        sep =","
-    }
+    let guardString = buildPremiseGuardString(ruleCF)
     
     if(actionsstring.length>0){
         file.append(`
@@ -358,7 +463,7 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
 
     let params : TypedElement[] = []
     let allValuedEventRef = getValuedEventRef(ruleCF.rule.premise.eventExpression)
-    sep = ""
+    let sep = ""
     for(let valuedEventRef of allValuedEventRef){
         let [actions, param] = visitValuedEventRef(valuedEventRef)
         actionsstring = actionsstring + sep + actions   
@@ -496,6 +601,17 @@ function appendConclusionBranch(
         e.guards = [...e.guards, ...[${guardString}]]}
         `, NL);
         return emissionVarName;
+    }
+
+    // Reference-based participants (for example `<initialState,σ>`) target another concept instance.
+    // They must route through the generated hole node, not through a local variable node.
+    if (isReferenceBased(participants)) {
+        const nodeName = participants.filter(p => p.type != "event").map(p => p.name).join('_') + "Hole";
+        file.append(`
+        {let e = localCCFG.addEdge(${fromNodeName},${nodeName})
+        e.guards = [...e.guards, ...[${guardString}]]}
+        `, NL);
+        return nodeName;
     }
 
     let ruleName: string = "";
@@ -668,6 +784,9 @@ function areParticipantsEqualsOrCoupled(p1: TypedElement[], p2: TypedElement[]):
     }
     
     if(p1[p1.length-1].type == "event" &&  p2[p2.length-1].type == "event"){
+        if (p1.length == 1) {
+            return p1[0].name == p2[0].name && p1[0].type == p2[0].type;
+        }
         return true
     }
 
@@ -679,16 +798,31 @@ function areParticipantsEqualsOrCoupled(p1: TypedElement[], p2: TypedElement[]):
 /**  retrieves the starting rule of the concept
  * @param rulesCF: the rule to be analyzed
  * */
-function retrieveStartingRules(rulesCF: RuleControlFlow[]) {
+function retrieveStartingRules(rulesCF: RuleControlFlow[], conceptName?: string) {
     let startingRule = [];
+    let guardedStartRules: string[] = [];
     for (let r of rulesCF) {
-        for (let participants of r.premiseParticipants) {
-            let p= participants[0] ;
-            if (p.name != undefined && p.name == "starts") {
-                startingRule.push(r);
-            }
+        const hasStartsParticipant = r.premiseParticipants.some(participants => participants[0]?.name == "starts");
+        if (!hasStartsParticipant) {
+            continue;
+        }
+
+        const isGuarded = r.rule.premise.booleanExpression.length > 0;
+        const isPlainStartsPremise = r.premiseParticipants.length == 1
+            && r.premiseParticipants[0].length == 1
+            && r.premiseParticipants[0][0].name == "starts";
+
+        if (!isGuarded && isPlainStartsPremise) {
+            startingRule.push(r);
+        } else {
+            guardedStartRules.push(r.rule.name);
         }
     }
+
+    if (guardedStartRules.length > 0) {
+        console.warn(chalk.yellow(`warning: ${conceptName ?? "concept"} has guarded or composite start-related rule(s) (${guardedStartRules.join(", ")}); they will not be treated as the unique bootstrap start rule.`));
+    }
+
     return startingRule;
 }
 
@@ -728,7 +862,9 @@ function extractRuleControlFlowsFromRules(fileNode: CompositeGeneratorNode, open
         if (rwr.$type == "RWRule") {
 
             if(DEBUG) fileNode.append(`// rule ${rwr.name}`, NL)
+            if(DEBUG) fileNode.append(`   //premise expr type: ${rwr.premise.eventExpression.$type}`, NL)
             let premiseEventParticipants: TypedElement[][] = getEventSynchronisationParticipants(rwr.premise.eventExpression);
+            if(DEBUG) fileNode.append(`   //premise participants count: ${premiseEventParticipants.length}`, NL)
             if(DEBUG) fileNode.append(`   //premise: ${premiseEventParticipants.map(pa => pa.map(p => p.name + ":" + p.type + (p.isCollection ? "[]" : ""))).join("\n\t//")}`, NL)
             let conclusionEventParticipants: TypedElement[][] = []
             if (rwr.conclusion.eventemissions) {
@@ -910,7 +1046,16 @@ function getEventSynchronisationParticipants(eventExpression: EventExpression): 
 
     if (eventExpression.$type == "NaryEventExpression") {
         // console.log(chalk.bgGreenBright("nary event expression"))
-        res.push(getExplicitEventExpressionParticipants(eventExpression.collection as MemberCall))
+        // For firstOf/lastOf on collections, we need to represent this as a participant group
+        // that will trigger OrJoin semantics when combined with other premises via conjunction
+        const collectionParticipants = getExplicitEventExpressionParticipants(eventExpression.collection as MemberCall);
+        
+        if (collectionParticipants.length > 0) {
+            // Treat the entire collection path as a single participant group
+            // The isCollection flag on the participant will trigger special handling
+            res.push(collectionParticipants);
+        }
+        
         return res
     }
 
@@ -1269,23 +1414,28 @@ function visitStateModifications(ruleCF: RuleControlFlow, actionsstring: string)
             let lhsType = inferType(action.lhs, new Map())
             typeName = getCPPVariableTypeName(lhsType.$type);
         }
-        let rhsElem = (action.rhs as MemberCall).element?.ref
-        if (rhsElem == undefined) {
-            return actionsstring
-        }
         let lhsPrev = ((action.lhs as MemberCall).previous as MemberCall)?.element
         let lhsElem = (action.lhs as MemberCall).element?.ref
         if (lhsElem == undefined) {
             return actionsstring
         }
 
-        actionsstring = actionsstring + sep + createVariableFromMemberCall(action.rhs as MemberCall, typeName)
-        sep = ","
-        
-        if(rhsElem.$type == "TemporaryVariable"){
-            actionsstring = actionsstring + sep + `new SetGlobalVarInstruction(\`\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}\`,\`\${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset}\`,\`${typeName}\`)`
-        }else{
-            actionsstring = actionsstring + sep + `new SetGlobalVarInstruction(\`\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}\`,\`\${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset}\`,\`${typeName}\`)`
+        if (action.rhs.$type == "MemberCall") {
+            let rhsElem = (action.rhs as MemberCall).element?.ref
+            if (rhsElem == undefined) {
+                return actionsstring
+            }
+
+            actionsstring = actionsstring + sep + createVariableFromMemberCall(action.rhs as MemberCall, typeName)
+            sep = ","
+            
+            if(rhsElem.$type == "TemporaryVariable"){
+                actionsstring = actionsstring + sep + `new SetGlobalVarInstruction(\`\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}\`,\`\${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset}\`,\`${typeName}\`)`
+            }else{
+                actionsstring = actionsstring + sep + `new SetGlobalVarInstruction(\`\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}\`,\`\${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset}\`,\`${typeName}\`)`
+            }
+        } else if (action.rhs.$type == "BooleanExpression" || action.rhs.$type == "NumberExpression" || action.rhs.$type == "StringExpression") {
+            actionsstring = actionsstring + sep + `new SetGlobalVarInstruction(\`\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}\`,\`${action.rhs.$cstNode?.text}\`,\`${typeName}\`)`
         }
     }
     return actionsstring;

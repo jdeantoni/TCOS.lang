@@ -119,42 +119,73 @@
             token->done();
         }
         
-        void function29receiveguardEvent(){
+        void function18init(){
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((bool*)sigma["State6_4_8_5isInitial"]) = true;}
+}
+void functioninit20State(){
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["State6_4_8_5isInitial"] = new bool();}
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((bool*)sigma["State6_4_8_5isInitial"]) = false;}
+}
+void function23firstStartOfInitialState(){
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((bool*)sigma["State6_4_8_5isInitial"]) = false;}
+}
+void function38receiveguardEvent(){
 	{
-		auto __event = __waitEvent("Event0_0_0_8guardEvent");
-		Event0_0_0_8guardEventPayload = std::any_cast<std::remove_reference_t<decltype(Event0_0_0_8guardEventPayload)>>(__event.payload);
-		__lastEventToken = __event.ack;
+		auto event = __waitEvent("Event0_0_0_8guardEvent");
+		//auto Event0_0_0_8guardEventPayload = std::any_cast<std::remove_reference_t<decltype(Event0_0_0_8guardEventPayload)>>(event.payload);
+		__lastEventToken = event.ack;
 	}
 	__ackEvent(__lastEventToken);
 }
-void function30emitsentEvent(){
+void function39emitsentEvent(){
 	__createEventChannel("Event3_0_3_8sentEvent", 1, "void");
-	__emitEvent("Event3_0_3_8sentEvent", Event3_0_3_8sentEventPayload, true);
+	__emitEvent("Event3_0_3_8sentEvent", 0, true);
 }
-void function37receiveguardEvent(){
+void functioninit27State(){
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["State9_4_11_5isInitial"] = new bool();}
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((bool*)sigma["State9_4_11_5isInitial"]) = false;}
+}
+void function30firstStartOfInitialState(){
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((bool*)sigma["State9_4_11_5isInitial"]) = false;}
+}
+void function46receiveguardEvent(){
 	{
-		auto __event = __waitEvent("Event1_0_1_8guardEvent");
-		Event1_0_1_8guardEventPayload = std::any_cast<std::remove_reference_t<decltype(Event1_0_1_8guardEventPayload)>>(__event.payload);
-		__lastEventToken = __event.ack;
+		auto event = __waitEvent("Event1_0_1_8guardEvent");
+		//Event1_0_1_8guardEventPayload = std::any_cast<std::remove_reference_t<decltype(Event1_0_1_8guardEventPayload)>>(__event.payload);
+		__lastEventToken = event.ack;
 	}
 	__ackEvent(__lastEventToken);
 }
-void function38emitsentEvent(){
+void function47emitsentEvent(){
 	__createEventChannel("Event4_0_4_8sentEvent", 1, "void");
-	__emitEvent("Event4_0_4_8sentEvent", Event4_0_4_8sentEventPayload, true);
+	__emitEvent("Event4_0_4_8sentEvent", 0, true);
 }
 int main(){
 		std::thread thread15([&](){
-		flag55= true;
-while (flag55 == true){
-	flag55 = false;
-			{Void joinPopped55;
- 			synch55.waitAndPop(joinPopped55);}
-			bool flag48 = true;
-			LockingQueue<Void> synch48;
-			std::thread thread25([&](){
+		function18init();
+		bool flag64 = true;
+		LockingQueue<Void> synch64;
+		{Void fakeParam64;
+ 		synch64.push(fakeParam64);}
+		{Void joinPopped64;
+ 		synch64.waitAndPop(joinPopped64);}
+		functioninit20State();
+		function23firstStartOfInitialState();
+		bool flag25 = true;
+		LockingQueue<Void> synch25;
+		{Void fakeParam25;
+ 		synch25.push(fakeParam25);}
+		flag25 = true;
+		flag25= true;
+while (flag25 == true){
+	flag25 = false;
+			{Void joinPopped25;
+ 			synch25.waitAndPop(joinPopped25);}
+			bool flag57 = true;
+			LockingQueue<Void> synch57;
+			std::thread thread34([&](){
 			});
-			thread25.detach();
+			thread34.detach();
 		}
 	});
 	thread15.detach();

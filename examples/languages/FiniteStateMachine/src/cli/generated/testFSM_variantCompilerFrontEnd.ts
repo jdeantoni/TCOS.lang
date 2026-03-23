@@ -57,9 +57,13 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
     }
     
 // rule FSMstart
+   //premise expr type: ExplicitEventRef
+   //premise participants count: 1
    //premise: starts:event
    //conclusion: fsms:FSM[],fsm:unknown,starts:event
 // rule FSMend
+   //premise expr type: NaryEventExpression
+   //premise participants count: 1
    //premise: fsms:FSM[],terminates:event
    //conclusion: terminates:event
 
@@ -94,6 +98,7 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         {let e = localCCFG.addEdge(startsFSMModelNode,fsmsHole)
         e.guards = [...e.guards, ...[]]}
         
+        // premise handling for rule FSMend: 1 participant groups
 
         fsmsHole.params = [...fsmsHole.params, ...[]]
         fsmsHole.returnType = "void"
@@ -107,6 +112,8 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         return localCCFG;
     }
 // rule init
+   //premise expr type: ExplicitEventRef
+   //premise participants count: 1
    //premise: starts:event
    //conclusion: initialState:[State:ID],starts:event
 
@@ -131,6 +138,14 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         let initialStateHole: Hole = new Hole(node.initialState.ref)
         localCCFG.addNode(initialStateHole)
         
+        {
+        let initStateModificationNode: Node = new Step(node, undefined, [new SetGlobalVarInstruction(`${this.getASTNodeUID(node.initialState)}isInitial`,`true`,`bool`)])
+        localCCFG.addNode(initStateModificationNode)
+        {let e = localCCFG.addEdge(startsFSMNode,initStateModificationNode)
+        e.guards = [...e.guards, ...[]]}
+        startsFSMNode = initStateModificationNode
+        }
+    
         startsFSMNode.params = [...startsFSMNode.params, ...[]]
         startsFSMNode.returnType = "void"
         startsFSMNode.functionsNames = [`${startsFSMNode.uid}init`] // overwrite existing name
@@ -143,9 +158,13 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         return localCCFG;
     }
 // rule RTCEvent
+   //premise expr type: ExplicitEventRef
+   //premise participants count: 1
    //premise: starts:event
    //conclusion: waitFeedBack:event
 // rule feedbackReceived
+   //premise expr type: ExplicitEventRef
+   //premise participants count: 1
    //premise: waitFeedBack:event
    //conclusion: terminates:event
 
@@ -183,6 +202,7 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         {let e = localCCFG.addEdge(startsEventNode,waitFeedBackEventNode)
         e.guards = [...e.guards, ...[]]}
     
+        // premise handling for rule feedbackReceived: 1 participant groups
 
         waitFeedBackEventNode.params = [...waitFeedBackEventNode.params, ...[]]
         waitFeedBackEventNode.returnType = "void"
@@ -195,11 +215,20 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
 
         return localCCFG;
     }
-// rule init
+// rule firstStartOfInitialState
+   //premise expr type: ExplicitEventRef
+   //premise participants count: 1
+   //premise: starts:event
+   //conclusion: outTransitions:[Transition:ID][],transition:unknown,starts:event
+// rule furtherStartOrNotInitialState
+   //premise expr type: EventConjunction
+   //premise participants count: 2
    //premise: starts:event
 	//terminates:event
    //conclusion: outTransitions:[Transition:ID][],transition:unknown,starts:event
 // rule end
+   //premise expr type: NaryEventExpression
+   //premise participants count: 1
    //premise: outTransitions:[Transition:ID][],terminates:event
    //conclusion: terminates:event
 
@@ -211,7 +240,15 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
     createStateLocalCCFG(node: State): CCFG {
         let localCCFG = new CCFG()
     
-        let startsStateNode: Node = new Step(node,NodeType.starts,[])
+                let isInitialStateNode: Node = new Step(node,NodeType.starts,[])
+
+                localCCFG.addNode(isInitialStateNode)
+                // let terminatesisInitialStateNode: Node = new Step(node,NodeType.terminates,[])
+
+                // localCCFG.addNode(terminatesisInitialStateNode)
+                // localCCFG.addEdge(startsisInitialStateNode,terminatesisInitialStateNode)
+                
+        let startsStateNode: Node = new Step(node,NodeType.starts,[new CreateGlobalVarInstruction(`${this.getASTNodeUID(node)}isInitial`,`bool`), new SetGlobalVarInstruction(`${this.getASTNodeUID(node)}isInitial`,`false`,`bool`)])
         if(startsStateNode.functionsDefs.length>0){
             startsStateNode.returnType = "void"
         }
@@ -225,15 +262,43 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         outTransitionsHole.isSequential = false
         outTransitionsHole.parallelSyncPolicy = "firstOf"
         localCCFG.addNode(outTransitionsHole)
-        
+                // premise handling for rule firstStartOfInitialState: 1 participant groups
+
+        {
+        let firstStartOfInitialStateStateModificationNode: Node = new Step(node, undefined, [new SetGlobalVarInstruction(`${this.getASTNodeUID(node)}isInitial`,`false`,`bool`)])
+        localCCFG.addNode(firstStartOfInitialStateStateModificationNode)
+        {let e = localCCFG.addEdge(startsStateNode,firstStartOfInitialStateStateModificationNode)
+        e.guards = [...e.guards, ...[new VerifyEqualInstruction(`${this.getASTNodeUID(node)}isInitial`,`true`)]]}
+        startsStateNode = firstStartOfInitialStateStateModificationNode
+        }
+    
         startsStateNode.params = [...startsStateNode.params, ...[]]
         startsStateNode.returnType = "void"
-        startsStateNode.functionsNames = [`${startsStateNode.uid}init`] // overwrite existing name
+        startsStateNode.functionsNames = [`${startsStateNode.uid}firstStartOfInitialState`] // overwrite existing name
         startsStateNode.functionsDefs =[...startsStateNode.functionsDefs, ...[]] // GG
     
         {let e = localCCFG.addEdge(startsStateNode,outTransitionsHole)
-        e.guards = [...e.guards, ...[]]}
+        e.guards = [...e.guards, ...[new VerifyEqualInstruction(`${this.getASTNodeUID(node)}isInitial`,`true`)]]}
         
+        // premise handling for rule furtherStartOrNotInitialState: 2 participant groups
+        // Creating AndJoin for conjunction/disjunction
+
+        let furtherStartOrNotInitialStateAndJoinNode: Node = new AndJoin(node)
+        localCCFG.addNode(furtherStartOrNotInitialStateAndJoinNode)
+                //premise participants in parallel collection but not a hole: { "name": "starts", "type": "event"}
+        localCCFG.addEdge(startsStateNode,furtherStartOrNotInitialStateAndJoinNode)
+                       //premise participants in parallel collection but not a hole: { "name": "terminates", "type": "event"}
+        localCCFG.addEdge(terminatesStateNode,furtherStartOrNotInitialStateAndJoinNode)
+        
+        furtherStartOrNotInitialStateAndJoinNode.params = [...furtherStartOrNotInitialStateAndJoinNode.params, ...[]]
+        furtherStartOrNotInitialStateAndJoinNode.returnType = "void"
+        furtherStartOrNotInitialStateAndJoinNode.functionsNames = [`${furtherStartOrNotInitialStateAndJoinNode.uid}furtherStartOrNotInitialState`] // overwrite existing name
+        furtherStartOrNotInitialStateAndJoinNode.functionsDefs =[...furtherStartOrNotInitialStateAndJoinNode.functionsDefs, ...[]] // GG
+    
+        {let e = localCCFG.addEdge(furtherStartOrNotInitialStateAndJoinNode,outTransitionsHole)
+        e.guards = [...e.guards, ...[new VerifyEqualInstruction(`${this.getASTNodeUID(node)}isInitial`,`false`)]]}
+        
+        // premise handling for rule end: 1 participant groups
 
         outTransitionsHole.params = [...outTransitionsHole.params, ...[]]
         outTransitionsHole.returnType = "void"
@@ -247,9 +312,13 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         return localCCFG;
     }
 // rule init
+   //premise expr type: ExplicitEventRef
+   //premise participants count: 1
    //premise: starts:event
    //conclusion: waitEvent:event
 // rule fire
+   //premise expr type: EventConjunction
+   //premise participants count: 2
    //premise: guardEvent:[Event:ID],starts:event
 	//waitEvent:event
    //conclusion: sentEvent:[Event:ID]
@@ -293,6 +362,8 @@ export class TestFSMCompilerFrontEnd implements CompilerFrontEnd {
         {let e = localCCFG.addEdge(startsTransitionNode,waitEventTransitionNode)
         e.guards = [...e.guards, ...[]]}
     
+        // premise handling for rule fire: 2 participant groups
+        // Creating AndJoin for conjunction/disjunction
 
         let fireAndJoinNode: Node = new AndJoin(node)
         localCCFG.addNode(fireAndJoinNode)

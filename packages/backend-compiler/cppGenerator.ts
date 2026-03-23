@@ -203,16 +203,16 @@ export class CppGenerator implements IGenerator {
 
     }
     createQueue( queueUID: number): string[] {
-        return [`LockingQueue<Void> queue${queueUID};\n`]
+        return [`LockingQueue<Void> sync${queueUID};\n`]
     }
     createLockingQueue( typeName: string, queueUID: number): string[] {
-        return [`LockingQueue<${typeName}> queue${queueUID};\n`]
+        return [`LockingQueue<${typeName}> sync${queueUID};\n`]
     }
     receiveFromQueue( queueUID: number, typeName: string, varName: string): string[] {
-        return ["queue" + queueUID + ".waitAndPop("+varName+");\n"]
+        return ["sync" + queueUID + ".waitAndPop("+varName+");\n"]
     }
     sendToQueue( queueUID: number, typeName: string, varName: string): string[] {
-        return ["queue" + queueUID + ".push(" + varName + ");\n"]
+        return ["sync" + queueUID + ".push(" + varName + ");\n"]
 
     }
     createSynchronizer( synchUID: number): string[] {
@@ -275,9 +275,9 @@ export class CppGenerator implements IGenerator {
     waitEvent(channelName: string, outPayload: string): string[] {
         return [
             `{\n`,
-            `\tauto __event = __waitEvent(${JSON.stringify(channelName)});\n`,
-            `\t${outPayload} = std::any_cast<std::remove_reference_t<decltype(${outPayload})>>(__event.payload);\n`,
-            `\t__lastEventToken = __event.ack;\n`,
+            `\tauto event = __waitEvent(${JSON.stringify(channelName)});\n`,
+            `\t${outPayload} = std::any_cast<std::remove_reference_t<decltype(${outPayload})>>(event.payload);\n`,
+            `\t__lastEventToken = event.ack;\n`,
             `}\n`
         ]
     }
