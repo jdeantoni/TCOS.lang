@@ -14,7 +14,10 @@ let sigma = new Map();
 let eventChannels = new Map();
 let eventTokenToChannel = new Map();
 
-function __createEventChannel(name, listenerCount, payloadKind){
+function com_create_event_channel(name, listenerCount, payloadKind){
+    if (eventChannels.has(name)){
+        return;
+    }
     eventChannels.set(name, {
         listenerCount: listenerCount,
         payloadKind: payloadKind,
@@ -24,15 +27,15 @@ function __createEventChannel(name, listenerCount, payloadKind){
     });
 }
 
-function __getEventChannel(name){
+function com_get_event_channel(name){
     if (!eventChannels.has(name)){
         throw new Error('Unknown event channel: ' + name);
     }
     return eventChannels.get(name);
 }
 
-async function __emitEvent(name, payload, awaitAcks){
-    let channel = __getEventChannel(name);
+async function com_emit_event(name, payload, awaitAcks){
+    let channel = com_get_event_channel(name);
     let token = channel.nextToken++;
     let expectedAcks = awaitAcks ? channel.listenerCount : 0;
     if (expectedAcks > 0){
@@ -50,8 +53,8 @@ async function __emitEvent(name, payload, awaitAcks){
     }
 }
 
-async function __waitEvent(name){
-    let channel = __getEventChannel(name);
+async function com_wait_event(name){
+    let channel = com_get_event_channel(name);
     let message = channel.queue.shift();
     while (message == undefined){
         await new Promise(resolve => setTimeout(resolve, 10));
@@ -60,12 +63,12 @@ async function __waitEvent(name){
     return message;
 }
 
-function __ackEvent(token){
+function com_ack_event(token){
     let channelName = eventTokenToChannel.get(token);
     if (channelName == undefined){
         return;
     }
-    let channel = __getEventChannel(channelName);
+    let channel = com_get_event_channel(channelName);
     let remaining = (channel.pendingAcks.get(token) || 0) - 1;
     if (remaining <= 0){
         channel.pendingAcks.delete(token);
@@ -75,7 +78,7 @@ function __ackEvent(token){
     }
 }
 
-let __lastEventToken = undefined;
+let com_last_event_token = undefined;
 
 `); // global variables
         return res;
@@ -204,15 +207,15 @@ let __lastEventToken = undefined;
         return ["await new Promise(resolve => setTimeout(resolve, " + duration + "));\n"];
     }
     createEventChannel(channelName, listenerCount, payloadKind) {
-        return [`__createEventChannel(${JSON.stringify(channelName)}, ${listenerCount}, ${JSON.stringify(payloadKind)});\n`];
+        return [`com_create_event_channel(${JSON.stringify(channelName)}, ${listenerCount}, ${JSON.stringify(payloadKind)});\n`];
     }
     emitEvent(channelName, payload, awaitAcks) {
-        return [`await __emitEvent(${JSON.stringify(channelName)}, ${payload}, ${awaitAcks});\n`];
+        return [`await com_emit_event(${JSON.stringify(channelName)}, ${payload}, ${awaitAcks});\n`];
     }
     waitEvent(channelName, outPayload) {
-        return [`{\n`, `\tconst __event = await __waitEvent(${JSON.stringify(channelName)});\n`, `\t${outPayload} = __event.payload;\n`, `\t${channelName}Token = __event.token;\n`, `\t__lastEventToken = __event.token;\n`, `}\n`];
+        return [`{\n`, `\tconst com_event = await com_wait_event(${JSON.stringify(channelName)});\n`, `\t${outPayload} = com_event.payload;\n`, `\tcom_last_event_token = com_event.token;\n`, `\t${channelName}Token = com_last_event_token;\n`, `}\n`];
     }
     ackEvent(token) {
-        return [`__ackEvent(${token});\n`];
+        return [`com_ack_event(${token});\n`];
     }
 }

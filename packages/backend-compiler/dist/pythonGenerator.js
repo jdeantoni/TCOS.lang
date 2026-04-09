@@ -33,67 +33,80 @@ export class PythonGenerator {
         // imports ----------------------------------------------------------------------------------------------------
         res.push(`import threading \n`);
         res.push(`import time \n`);
-        res.push(`from queue import Queue, LifoQueue\n`);
+        res.push(`from queue import Queue\n`);
+        res.push(`from dataclasses import dataclass\n`);
         // global variables ---------------------------------------------------------------------------------------
-        res.push(`##std::unordered_map<std::string, void*> sigma; ##std::mutex sigma_mutex;  // protects sigma \n`);
-        res.push(`returnQueue = LifoQueue()\n`);
-        res.push(`sigma: dict = {}\nsigma_mutex = threading.Lock()\n`);
-        res.push(`event_channels: dict = {}\n`);
-        res.push(`event_token_to_channel: dict = {}\n`);
+        res.push(`\n\n`);
+        res.push(`@dataclass()\n`);
+        res.push(`class EventChannel:\n`);
+        res.push(`\tlistener_count: int\n`);
+        res.push(`\tpayload_kind: str\n`);
+        res.push(`\tqueue: Queue[tuple[object, int]]\n`);
+        res.push(`\tnext_token: int\n`);
+        res.push(`\tpending_acks: dict[int, int]\n`);
+        res.push(`\n`);
+        res.push(`sigma: dict[str, object] = {}\n`);
+        res.push(`sigma_mutex = threading.Lock()\n`);
+        res.push(`event_channels: dict[str, EventChannel] = {}\n`);
+        res.push(`event_token_to_channel: dict[int, str] = {}\n`);
         res.push(`event_mutex = threading.Lock()\n`);
-        res.push(`__last_event_token = None\n`);
+        res.push(`com_last_event_token = None # seems weak\n`);
         res.push(`\n`);
-        res.push(`def __create_event_channel(name, listener_count, payload_kind):\n`);
+        res.push(`def com_create_event_channel(name: str, listener_count: int, payload_kind: str) -> None:\n`);
         res.push(`\twith event_mutex:\n`);
-        res.push(`\t\tevent_channels[name] = {\n`);
-        res.push(`\t\t\t"listener_count": listener_count,\n`);
-        res.push(`\t\t\t"payload_kind": payload_kind,\n`);
-        res.push(`\t\t\t"queue": Queue(),\n`);
-        res.push(`\t\t\t"next_token": 1,\n`);
-        res.push(`\t\t\t"pending_acks": {}\n`);
-        res.push(`\t\t}\n`);
+        res.push(`\t\tif name in event_channels:\n`);
+        res.push(`\t\t\treturn\n`);
+        res.push(`\t\tevent_channels[name] = EventChannel(\n`);
+        res.push(`\t\t\t\t\t\t\t\tlistener_count=listener_count,\n`);
+        res.push(`\t\t\t\t\t\t\t\tpayload_kind=payload_kind,\n`);
+        res.push(`\t\t\t\t\t\t\t\tqueue=Queue(),\n`);
+        res.push(`\t\t\t\t\t\t\t\tnext_token=1,\n`);
+        res.push(`\t\t\t\t\t\t\t\tpending_acks={}\n`);
+        res.push(`\t\t\t\t\t\t\t)\n`);
+        res.push(`\t\n`);
         res.push(`\n`);
-        res.push(`def __get_event_channel(name):\n`);
+        res.push(`def com_get_event_channel(name: str) -> EventChannel:\n`);
         res.push(`\tif name not in event_channels:\n`);
         res.push(`\t\traise RuntimeError(f"Unknown event channel: {name}")\n`);
         res.push(`\treturn event_channels[name]\n`);
         res.push(`\n`);
-        res.push(`def __emit_event(name, payload, await_acks):\n`);
-        res.push(`\tchannel = __get_event_channel(name)\n`);
+        res.push(`def com_emit_event(name: str, payload:object, await_acks: bool) -> None:\n`);
+        res.push(`\tchannel: EventChannel = com_get_event_channel(name)\n`);
         res.push(`\twith event_mutex:\n`);
-        res.push(`\t\ttoken = channel["next_token"]\n`);
-        res.push(`\t\tchannel["next_token"] += 1\n`);
-        res.push(`\t\texpected_acks = channel["listener_count"] if await_acks else 0\n`);
+        res.push(`\t\ttoken = channel.next_token\n`);
+        res.push(`\t\tchannel.next_token += 1\n`);
+        res.push(`\t\texpected_acks: int = channel.listener_count if await_acks else 0\n`);
         res.push(`\t\tif expected_acks > 0:\n`);
-        res.push(`\t\t\tchannel["pending_acks"][token] = expected_acks\n`);
+        res.push(`\t\t\tchannel.pending_acks[token] = expected_acks\n`);
         res.push(`\t\t\tevent_token_to_channel[token] = name\n`);
-        res.push(`\tchannel["queue"].put((payload, token))\n`);
+        res.push(`\tchannel.queue.put((payload, token))\n`);
+        res.push(`\t#should it be built-in or a TCOS semantic result ?\n`);
         res.push(`\tif await_acks:\n`);
-        res.push(`\t\twhile True:\n`);
-        res.push(`\t\t\twith event_mutex:\n`);
-        res.push(`\t\t\t\tremaining = channel["pending_acks"].get(token, 0)\n`);
-        res.push(`\t\t\t\tif remaining <= 0:\n`);
-        res.push(`\t\t\t\t\tchannel["pending_acks"].pop(token, None)\n`);
-        res.push(`\t\t\t\t\tevent_token_to_channel.pop(token, None)\n`);
-        res.push(`\t\t\t\t\tbreak\n`);
+        res.push(`\t\tremaining: int = channel.pending_acks.get(token, 0)\n`);
+        res.push(`\t\twhile remaining > 0:\t\n`);
+        res.push(`\t\t\tremaining = channel.pending_acks.get(token, 0)\t\n`);
         res.push(`\t\t\ttime.sleep(0.01)\n`);
+        res.push(`\t\t\n`);
+        res.push(`\t\twith event_mutex:\n`);
+        res.push(`\t\t\tchannel.pending_acks.pop(token, None)\n`);
+        res.push(`\t\t\tevent_token_to_channel.pop(token, None)\n`);
         res.push(`\n`);
-        res.push(`def __wait_event(name):\n`);
-        res.push(`\tchannel = __get_event_channel(name)\n`);
-        res.push(`\treturn channel["queue"].get()\n`);
+        res.push(`def com_wait_event(name:str)-> tuple[object, int]:\n`);
+        res.push(`\tchannel: EventChannel = com_get_event_channel(name)\n`);
+        res.push(`\treturn channel.queue.get(block=True)\n`);
         res.push(`\n`);
-        res.push(`def __ack_event(token):\n`);
+        res.push(`def com_ack_event(token: int) -> None:\n`);
         res.push(`\twith event_mutex:\n`);
-        res.push(`\t\tchannel_name = event_token_to_channel.get(token)\n`);
+        res.push(`\t\tchannel_name: str|None = event_token_to_channel.get(token)\n`);
         res.push(`\t\tif channel_name is None:\n`);
         res.push(`\t\t\treturn\n`);
-        res.push(`\t\tchannel = __get_event_channel(channel_name)\n`);
-        res.push(`\t\tremaining = channel["pending_acks"].get(token, 0) - 1\n`);
+        res.push(`\t\tchannel: EventChannel = com_get_event_channel(channel_name)\n`);
+        res.push(`\t\tremaining = channel.pending_acks.get(token, 0) - 1\n`);
         res.push(`\t\tif remaining <= 0:\n`);
-        res.push(`\t\t\tchannel["pending_acks"].pop(token, None)\n`);
+        res.push(`\t\t\tchannel.pending_acks.pop(token, None)\n`);
         res.push(`\t\t\tevent_token_to_channel.pop(token, None)\n`);
         res.push(`\t\telse:\n`);
-        res.push(`\t\t\tchannel["pending_acks"][token] = remaining\n`);
+        res.push(`\t\t\tchannel.pending_acks[token] = remaining\n`);
         return res;
     }
     endFile() {
@@ -126,7 +139,7 @@ export class PythonGenerator {
     }
     createFuncCall(fname, params, typeName) {
         if (typeName == "void") {
-            return [`function${fname}(${params.join(", ")}); \n`];
+            return [`function${fname}(${params.join(", ")}) \n`];
         }
         else
             return [`result${fname} = function${fname}(${params.join(", ")}); \n`];
@@ -159,7 +172,7 @@ export class PythonGenerator {
         for (let i = 0; i < insideThreadCode.length; i++) {
             res.push("\t" + insideThreadCode[i]);
         }
-        res = [...res, ...[`thread${uid} = threading.Thread(target=codeThread${uid}) \n`, `thread${uid}.start() \n`, `thread${uid}.join() \n`]];
+        res = [...res, ...[`thread${uid} = threading.Thread(target=codeThread${uid}) \n`, `thread${uid}.start() \n`]];
         return res;
     }
     endThread(uid) {
@@ -211,15 +224,15 @@ export class PythonGenerator {
         return [`time.sleep(${duration}//1000) \n`];
     }
     createEventChannel(channelName, listenerCount, payloadKind) {
-        return [`__create_event_channel(${JSON.stringify(channelName)}, ${listenerCount}, ${JSON.stringify(payloadKind)}) \n`];
+        return [`com_create_event_channel(${JSON.stringify(channelName)}, ${listenerCount}, ${JSON.stringify(payloadKind)}) \n`];
     }
-    emitEvent(channelName, payload, awaitAcks) {
-        return [`__emit_event(${JSON.stringify(channelName)}, ${payload}, ${awaitAcks ? "True" : "False"}) \n`];
+    emitEvent(channelName, payload, awaitAcks = false) {
+        return [`com_emit_event(${JSON.stringify(channelName)}, ${payload}, ${awaitAcks ? "True" : "False"}) \n`];
     }
     waitEvent(channelName, outPayload) {
-        return [`global __last_event_token\n`, `(${outPayload}, __last_event_token) = __wait_event(${JSON.stringify(channelName)}) \n`, `${channelName}Token = __last_event_token \n`];
+        return [`global com_last_event_token\n`, `(${outPayload}, com_last_event_token) = com_wait_event(${JSON.stringify(channelName)}) \n`, `${channelName}Token = com_last_event_token \n`];
     }
     ackEvent(token) {
-        return [`__ack_event(${token}) \n`];
+        return [`com_ack_event(${token}) \n`];
     }
 }

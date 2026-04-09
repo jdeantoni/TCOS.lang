@@ -49,7 +49,6 @@ open Perio{
                   
 }
 
-
 open Stmt1  {
 
   var fakeState:integer = 0;
@@ -65,4 +64,32 @@ open Stmt2  {
     ------------------------ fugaceStmt2
     <this,σ> ~> fakeState := fakeState - 1;
                 terminates
+}
+
+open Notify {
+        when starts
+    --------------------------------- startsNotifyAssynchronous
+      <this,σ> ~> broadcasts notifyID;
+                  terminates
+}
+
+open Wait {
+    
+    var waitCom: event;
+
+
+        when starts
+    --------------------------------- startsWait
+      <this,σ> ~> emits waitCom
+
+        when (broadcasted waitID.starts ^ waitCom)
+    --------------------------------- finishWait
+      <this,σ> ~> terminates
+}
+
+open ComID {
+
+      when starts
+    --------------------------------- fugaceCom
+      <this,σ> ~> terminates
 }

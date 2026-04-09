@@ -28,12 +28,16 @@ function doGenerateCode(codeFile: CompositeGeneratorNode, ccfg: CCFG, debug: boo
 
     
     let currentNode = initNode;
-    let insideMain:string[] = visitAllNodes(ccfg, currentNode, /*-1,*/ generator, true);
+    let insideMain:string[] = [
+        ...visitAllNodes(ccfg, currentNode, /*-1,*/ generator, true)
+    ];
     allCode = [...allCode, ...generator.createMainFunction(insideMain)];
     allCode = [...allCode, ...generator.endFile()];
     codeFile.append(allCode.join(""));
     //console.log(codeFile);
 }
+
+
 
 
 
@@ -132,7 +136,7 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, generator: IGenerator, vis
             if(currentNode.isCycleInitiator){
                 if(! continuations.includes(currentNode)){
                     // console.log("add continuation "+currentNode.uid  + " nbVisit = "+currentNode.numberOfVisits)
-                    continuationsRecursLevel.push(recursLevel-1);
+                     continuationsRecursLevel.push(recursLevel-1);
                     currentNode.numberOfVisits = currentNode.inputEdges.length;
                     continuations.push(currentNode);
                 }
@@ -166,6 +170,8 @@ function visitAllNodes(ccfg: CCFG, currentNode: Node, generator: IGenerator, vis
     // }
     switch(currentNode.getType()){
     case "Step":
+    case "BroadcastEventEmission":
+    case "BroadcastEventReception":
         {
         thisNodeCode = [...thisNodeCode, ...addCorrespondingCode(currentNode,ccfg,generator)];
         if(currentNode.outputEdges.length > 1){

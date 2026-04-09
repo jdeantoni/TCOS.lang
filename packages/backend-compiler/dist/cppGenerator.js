@@ -1,5 +1,6 @@
 export class CppGenerator {
     debug;
+    channelPayloadKinds = new Map();
     constructor(debug = false) {
         this.debug = debug;
     }
@@ -36,47 +37,21 @@ export class CppGenerator {
         std::unordered_map<std::string, void*> sigma;
         std::mutex sigma_mutex;  // protects sigma
 
-        struct __AckToken {
-            explicit __AckToken(int n) : remaining(n) {}
-
-            void done() {
-                if (remaining.fetch_sub(1, std::memory_order_acq_rel) == 1) {
-                    std::lock_guard<std::mutex> lk(m);
-                    cv.notify_all();
-                }
-            }
-
-            void wait() {
-                std::unique_lock<std::mutex> lk(m);
-                cv.wait(lk, [&] { return remaining.load(std::memory_order_acquire) == 0; });
-            }
-
-        private:
-            std::atomic<int> remaining;
-            std::mutex m;
-            std::condition_variable cv;
-        };
-
-        struct __EventMsg {
-            std::any payload;
-            std::shared_ptr<__AckToken> ack;
-        };
-
-        struct __EventChannel {
+        struct com_EventChannel {
             int listenerCount;
             std::string payloadKind;
-            std::vector<LockingQueue<__EventMsg>> inboxes;
-            std::atomic<size_t> nextListenerIndex{0};
-            std::mutex listenersMutex;
-            std::unordered_map<std::thread::id, size_t> listenerByThread;
+            LockingQueue<std::pair<std::any, int>> queue;
+            int nextToken;
+            std::unordered_map<int, int> pendingAcks;
         };
 
-        std::unordered_map<std::string, std::shared_ptr<__EventChannel>> eventChannels;
-        std::mutex eventRegistryMutex;
-        thread_local std::shared_ptr<__AckToken> __lastEventToken = nullptr;
+        std::unordered_map<std::string, std::shared_ptr<com_EventChannel>> eventChannels;
+        std::unordered_map<int, std::string> eventTokenToChannel;
+        std::mutex eventMutex;
+        int com_last_event_token = -1;
 
-        std::shared_ptr<__EventChannel> __getEventChannel(const std::string& name){
-            const std::lock_guard<std::mutex> lock(eventRegistryMutex);
+        std::shared_ptr<com_EventChannel> com_get_event_channel(const std::string& name){
+            const std::lock_guard<std::mutex> lock(eventMutex);
             auto it = eventChannels.find(name);
             if (it == eventChannels.end()) {
                 throw std::runtime_error("Unknown event channel: " + name);
@@ -84,53 +59,87 @@ export class CppGenerator {
             return it->second;
         }
 
-        void __createEventChannel(const std::string& name, int listenerCount, const std::string& payloadKind){
-            auto channel = std::make_shared<__EventChannel>();
-            channel->listenerCount = listenerCount > 0 ? listenerCount : 1;
+        void com_create_event_channel(const std::string& name, int listenerCount, const std::string& payloadKind){
+            const std::lock_guard<std::mutex> lock(eventMutex);
+            if (eventChannels.find(name) != eventChannels.end()) {
+                return;
+            }
+            auto channel = std::make_shared<com_EventChannel>();
+            channel->listenerCount = listenerCount;
             channel->payloadKind = payloadKind;
-            channel->inboxes.resize(static_cast<size_t>(channel->listenerCount));
-            const std::lock_guard<std::mutex> lock(eventRegistryMutex);
+            channel->nextToken = 1;
             eventChannels[name] = channel;
         }
 
-        size_t __resolveListenerIndex(const std::shared_ptr<__EventChannel>& channel){
-            const std::lock_guard<std::mutex> lock(channel->listenersMutex);
-            auto tid = std::this_thread::get_id();
-            auto it = channel->listenerByThread.find(tid);
-            if (it != channel->listenerByThread.end()) {
-                return it->second;
-            }
-            size_t index = channel->nextListenerIndex.fetch_add(1) % channel->inboxes.size();
-            channel->listenerByThread[tid] = index;
-            return index;
-        }
+        void com_emit_event(const std::string& name, const std::any& payload, bool awaitAcks){
+            auto channel = com_get_event_channel(name);
 
-        void __emitEvent(const std::string& name, const std::any& payload, bool awaitAcks){
-            auto channel = __getEventChannel(name);
-            auto ack = std::make_shared<__AckToken>(channel->listenerCount);
-            __EventMsg msg{payload, ack};
-            for (auto& inbox : channel->inboxes) {
-                inbox.push(msg);
+            int token;
+            {
+                const std::lock_guard<std::mutex> lock(eventMutex);
+                token = channel->nextToken;
+                channel->nextToken += 1;
+                int expectedAcks = awaitAcks ? channel->listenerCount : 0;
+                if (expectedAcks > 0) {
+                    channel->pendingAcks[token] = expectedAcks;
+                    eventTokenToChannel[token] = name;
+                }
             }
+
+            channel->queue.push({payload, token});
 
             if (awaitAcks){
-                ack->wait();
+                int remaining = 0;
+                do {
+                    {
+                        const std::lock_guard<std::mutex> lock(eventMutex);
+                        auto it = channel->pendingAcks.find(token);
+                        remaining = (it == channel->pendingAcks.end()) ? 0 : it->second;
+                    }
+                    if (remaining > 0) {
+                        std::this_thread::sleep_for(10ms);
+                    }
+                } while (remaining > 0);
+
+                const std::lock_guard<std::mutex> lock(eventMutex);
+                channel->pendingAcks.erase(token);
+                eventTokenToChannel.erase(token);
             }
         }
 
-        __EventMsg __waitEvent(const std::string& name){
-            auto channel = __getEventChannel(name);
-            size_t listenerIndex = __resolveListenerIndex(channel);
-            __EventMsg event;
-            channel->inboxes[listenerIndex].waitAndPop(event);
+        std::pair<std::any, int> com_wait_event(const std::string& name){
+            auto channel = com_get_event_channel(name);
+            std::pair<std::any, int> event;
+            channel->queue.waitAndPop(event);
             return event;
         }
 
-        void __ackEvent(const std::shared_ptr<__AckToken>& token){
-            if (!token){
+        void com_ack_event(int token){
+            const std::lock_guard<std::mutex> lock(eventMutex);
+            auto tokenIt = eventTokenToChannel.find(token);
+            if (tokenIt == eventTokenToChannel.end()) {
                 return;
             }
-            token->done();
+
+            auto channelIt = eventChannels.find(tokenIt->second);
+            if (channelIt == eventChannels.end()) {
+                return;
+            }
+
+            auto channel = channelIt->second;
+            int remaining = 0;
+            auto pendingIt = channel->pendingAcks.find(token);
+            if (pendingIt != channel->pendingAcks.end()) {
+                remaining = pendingIt->second;
+            }
+            remaining -= 1;
+
+            if (remaining <= 0) {
+                channel->pendingAcks.erase(token);
+                eventTokenToChannel.erase(token);
+            } else {
+                channel->pendingAcks[token] = remaining;
+            }
         }
         
         `); // global variables
@@ -251,21 +260,26 @@ export class CppGenerator {
         return [`std::this_thread::sleep_for(${duration}ms);\n`];
     }
     createEventChannel(channelName, listenerCount, payloadKind) {
-        return [`__createEventChannel(${JSON.stringify(channelName)}, ${listenerCount}, ${JSON.stringify(payloadKind)});\n`];
+        this.channelPayloadKinds.set(channelName, payloadKind);
+        return [`com_create_event_channel(${JSON.stringify(channelName)}, ${listenerCount}, ${JSON.stringify(payloadKind)});\n`];
     }
     emitEvent(channelName, payload, awaitAcks) {
-        return [`__emitEvent(${JSON.stringify(channelName)}, ${payload}, ${awaitAcks ? "true" : "false"});\n`];
+        return [`com_emit_event(${JSON.stringify(channelName)}, ${payload}, ${awaitAcks ? "true" : "false"});\n`];
     }
     waitEvent(channelName, outPayload) {
+        const payloadKind = this.channelPayloadKinds.get(channelName);
         return [
-            `{\n`,
-            `\tauto event = __waitEvent(${JSON.stringify(channelName)});\n`,
-            `\t${outPayload} = std::any_cast<std::remove_reference_t<decltype(${outPayload})>>(event.payload);\n`,
-            `\t__lastEventToken = event.ack;\n`,
-            `}\n`
+            `\n`,
+            `\tauto event = com_wait_event(${JSON.stringify(channelName)});\n`,
+            ...(payloadKind != undefined && payloadKind != "void"
+                ? [`\tauto ${outPayload} = std::any_cast<${payloadKind}>(event.first);\n`]
+                : [`\tauto ${outPayload} = std::any{};\n`]),
+            `\tauto ${channelName}Token = event.second;\n`,
+            `\tcom_last_event_token = event.second;\n`,
+            `\n`
         ];
     }
     ackEvent(token) {
-        return [`__ackEvent(__lastEventToken);\n`];
+        return [`com_ack_event(${token});\n`];
     }
 }

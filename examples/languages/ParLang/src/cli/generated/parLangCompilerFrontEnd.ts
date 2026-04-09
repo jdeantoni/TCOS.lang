@@ -2,7 +2,7 @@
 import fs from 'fs';
 import { AstNode, Reference, isReference, AstUtils } from "langium";
 import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole, AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction, BroadcastEventEmission, BroadcastEventReception, CreateEventChannelInstruction, EmitEventInstruction, WaitEventInstruction, AckEventInstruction} from "ccfg";
-import { Program,Seq,Par,Perio,Stmt1,Stmt2 } from "../../language/generated/ast.js";
+import { Program,Seq,Par,Perio,Stmt1,Stmt2,Notify,Wait,ComID } from "../../language/generated/ast.js";
 
 var debug = false
 
@@ -16,6 +16,9 @@ export interface CompilerFrontEnd {
      createPerioLocalCCFG(node: Perio): CCFG;
      createStmt1LocalCCFG(node: Stmt1): CCFG;
      createStmt2LocalCCFG(node: Stmt2): CCFG;
+     createNotifyLocalCCFG(node: Notify): CCFG;
+     createWaitLocalCCFG(node: Wait): CCFG;
+     createComIDLocalCCFG(node: ComID): CCFG;
 
     generateCCFG(node: AstNode): CCFG;
     
@@ -56,6 +59,15 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
         }
         if(node.$type == "Stmt2"){
             return this.createStmt2LocalCCFG(node as Stmt2);
+        }
+        if(node.$type == "Notify"){
+            return this.createNotifyLocalCCFG(node as Notify);
+        }
+        if(node.$type == "Wait"){
+            return this.createWaitLocalCCFG(node as Wait);
+        }
+        if(node.$type == "ComID"){
+            return this.createComIDLocalCCFG(node as ComID);
         }  
         throw new Error("Not implemented: " + node.$type);
     }
@@ -421,6 +433,153 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
 
         return localCCFG;
     }
+// rule startsNotifyAssynchronous
+   //premise expr type: ExplicitEventRef
+   //premise participants count: 1
+   //premise: starts:event
+   //conclusion: notifyID:[ComID:ID]
+	//terminates:event
+
+    /**
+     * returns the local CCFG of the Notify node
+     * @param a Notify node 
+     * @returns the local CCFG (with holes)
+     */
+    createNotifyLocalCCFG(node: Notify): CCFG {
+        let localCCFG = new CCFG()
+    
+        let startsNotifyNode: Node = new Step(node,NodeType.starts,[])
+        if(startsNotifyNode.functionsDefs.length>0){
+            startsNotifyNode.returnType = "void"
+        }
+        startsNotifyNode.functionsNames = [`init${startsNotifyNode.uid}Notify`]
+        localCCFG.addNode(startsNotifyNode)
+        localCCFG.initialState = startsNotifyNode
+        let terminatesNotifyNode: Node = new Step(node,NodeType.terminates)
+        localCCFG.addNode(terminatesNotifyNode)
+        
+        startsNotifyNode.params = [...startsNotifyNode.params, ...[]]
+        startsNotifyNode.returnType = "void"
+        startsNotifyNode.functionsNames = [`${startsNotifyNode.uid}startsNotifyAssynchronous`] // overwrite existing name
+        startsNotifyNode.functionsDefs =[...startsNotifyNode.functionsDefs, ...[]] // GG
+    
+        let notifyIDEmissionNode0 : BroadcastEventEmission = new BroadcastEventEmission(node.notifyID?.ref??node, "notifyID")
+        localCCFG.addNode(notifyIDEmissionNode0)
+        notifyIDEmissionNode0.functionsNames = [`${notifyIDEmissionNode0.uid}emitnotifyID`]
+        notifyIDEmissionNode0.functionsDefs = [new CreateVarInstruction(`${this.getASTNodeUID(node.notifyID?.ref??node)}notifyIDPayload`,`std::any`), new AssignVarInstruction(`${this.getASTNodeUID(node.notifyID?.ref??node)}notifyIDPayload`,`0`,`std::any`), new EmitEventInstruction(`${this.getASTNodeUID(node.notifyID?.ref??node)}`,`${this.getASTNodeUID(node.notifyID?.ref??node)}notifyIDPayload`,true)]
+        notifyIDEmissionNode0.returnType = "void"
+        {let e = localCCFG.addEdge(startsNotifyNode,notifyIDEmissionNode0)
+        e.guards = [...e.guards, ...[]]}
+        
+
+        {let e = localCCFG.addEdge(notifyIDEmissionNode0,terminatesNotifyNode)
+        e.guards = [...e.guards, ...[]]}
+    
+
+        return localCCFG;
+    }
+// rule startsWait
+   //premise expr type: ExplicitEventRef
+   //premise participants count: 1
+   //premise: starts:event
+   //conclusion: waitCom:event
+// rule finishWait
+   //premise expr type: EventConjunction
+   //premise participants count: 2
+   //premise: waitID:[ComID:ID],starts:event
+	//waitCom:event
+   //conclusion: terminates:event
+
+    /**
+     * returns the local CCFG of the Wait node
+     * @param a Wait node 
+     * @returns the local CCFG (with holes)
+     */
+    createWaitLocalCCFG(node: Wait): CCFG {
+        let localCCFG = new CCFG()
+    
+                let waitComWaitNode: Node = new Step(node,NodeType.starts,[])
+
+                localCCFG.addNode(waitComWaitNode)
+                // let terminateswaitComWaitNode: Node = new Step(node,NodeType.terminates,[])
+
+                // localCCFG.addNode(terminateswaitComWaitNode)
+                // localCCFG.addEdge(startswaitComWaitNode,terminateswaitComWaitNode)
+                
+        let startsWaitNode: Node = new Step(node,NodeType.starts,[])
+        if(startsWaitNode.functionsDefs.length>0){
+            startsWaitNode.returnType = "void"
+        }
+        startsWaitNode.functionsNames = [`init${startsWaitNode.uid}Wait`]
+        localCCFG.addNode(startsWaitNode)
+        localCCFG.initialState = startsWaitNode
+        let terminatesWaitNode: Node = new Step(node,NodeType.terminates)
+        localCCFG.addNode(terminatesWaitNode)
+        
+        startsWaitNode.params = [...startsWaitNode.params, ...[]]
+        startsWaitNode.returnType = "void"
+        startsWaitNode.functionsNames = [`${startsWaitNode.uid}startsWait`] // overwrite existing name
+        startsWaitNode.functionsDefs =[...startsWaitNode.functionsDefs, ...[]] // GG
+    
+        {let e = localCCFG.addEdge(startsWaitNode,waitComWaitNode)
+        e.guards = [...e.guards, ...[]]}
+    
+        // premise handling for rule finishWait: 2 participant groups
+        // Causal lowering for conjunction: trigger event then broadcast reception
+
+        let waitIDReceptionNode : BroadcastEventReception = new BroadcastEventReception(node.waitID?.ref??node, "waitID")
+        localCCFG.addNode(waitIDReceptionNode)
+        waitIDReceptionNode.functionsNames = [`${waitIDReceptionNode.uid}receivewaitID`]
+        waitIDReceptionNode.functionsDefs = [new WaitEventInstruction(`${this.getASTNodeUID(node.waitID?.ref??node)}`,`${this.getASTNodeUID(node.waitID?.ref??node)}waitIDPayload`), new AckEventInstruction(`${this.getASTNodeUID(node.waitID?.ref??node)}Token`)]
+        waitIDReceptionNode.returnType = "void"
+        localCCFG.addEdge(waitComWaitNode,waitIDReceptionNode)
+        
+        waitIDReceptionNode.params = [...waitIDReceptionNode.params, ...[]]
+        waitIDReceptionNode.returnType = "void"
+        waitIDReceptionNode.functionsNames = [`${waitIDReceptionNode.uid}finishWait`] // overwrite existing name
+        waitIDReceptionNode.functionsDefs =[...waitIDReceptionNode.functionsDefs, ...[]] // GG
+    
+        {let e = localCCFG.addEdge(waitIDReceptionNode,terminatesWaitNode)
+        e.guards = [...e.guards, ...[]]}
+    
+
+        return localCCFG;
+    }
+// rule fugaceCom
+   //premise expr type: ExplicitEventRef
+   //premise participants count: 1
+   //premise: starts:event
+   //conclusion: terminates:event
+
+    /**
+     * returns the local CCFG of the ComID node
+     * @param a ComID node 
+     * @returns the local CCFG (with holes)
+     */
+    createComIDLocalCCFG(node: ComID): CCFG {
+        let localCCFG = new CCFG()
+    
+        let startsComIDNode: Node = new Step(node,NodeType.starts,[])
+        if(startsComIDNode.functionsDefs.length>0){
+            startsComIDNode.returnType = "void"
+        }
+        startsComIDNode.functionsNames = [`init${startsComIDNode.uid}ComID`]
+        localCCFG.addNode(startsComIDNode)
+        localCCFG.initialState = startsComIDNode
+        let terminatesComIDNode: Node = new Step(node,NodeType.terminates)
+        localCCFG.addNode(terminatesComIDNode)
+        
+        startsComIDNode.params = [...startsComIDNode.params, ...[]]
+        startsComIDNode.returnType = "void"
+        startsComIDNode.functionsNames = [`${startsComIDNode.uid}fugaceCom`] // overwrite existing name
+        startsComIDNode.functionsDefs =[...startsComIDNode.functionsDefs, ...[]] // GG
+    
+        {let e = localCCFG.addEdge(startsComIDNode,terminatesComIDNode)
+        e.guards = [...e.guards, ...[]]}
+    
+
+        return localCCFG;
+    }
 
     generateCCFG(root: Program, debug: boolean = false): CCFG {
 
@@ -472,7 +631,11 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
                 }
             }
             holeNodes = this.retrieveHoles(globalCCFG)
+
         }
+
+        // Post-process once after all holes are filled.
+        this.postProcessCCFGForChannelInitialization(globalCCFG);
 
         return globalCCFG
     }
@@ -592,5 +755,44 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
         var r = node.$cstNode?.range
         return node.$type+r?.start.line+"_"+r?.start.character+"_"+r?.end.line+"_"+r?.end.character;
     }
+
+    postProcessCCFGForChannelInitialization(ccfg: CCFG): void {
+            if (ccfg.initialState == undefined) {
+                return;
+            }
+
+            const channels = new Map<string, { listenerCount: number; payloadKind: string }>();
+
+            // Collect all event channels from all nodes
+            for (const node of ccfg.nodes) {
+                for (const fdef of node.functionsDefs) {
+                    if (fdef instanceof CreateEventChannelInstruction) {
+                        const previous = channels.get(fdef.channelName);
+                        if (previous == undefined) {
+                            channels.set(fdef.channelName, { listenerCount: fdef.listenerCount, payloadKind: fdef.payloadKind });
+                        } else {
+                            channels.set(fdef.channelName, {
+                                listenerCount: Math.max(previous.listenerCount, fdef.listenerCount),
+                                payloadKind: previous.payloadKind != "void" ? previous.payloadKind : fdef.payloadKind
+                            });
+                        }
+                    } else if (fdef instanceof EmitEventInstruction || fdef instanceof WaitEventInstruction) {
+                        const channelName = fdef.channelName;
+                        if (!channels.has(channelName)) {
+                            channels.set(channelName, { listenerCount: 1, payloadKind: "void" });
+                        }
+                    }
+                }
+            }
+
+            // Prepend channel initialization instructions to the start node
+            const channelInstructions = [];
+            for (const [channelName, cfg] of channels) {
+                channelInstructions.push(new CreateEventChannelInstruction(channelName, cfg.listenerCount, cfg.payloadKind));
+            }
+
+            // Prepend to existing instructions at the start node
+            ccfg.initialState.functionsDefs = [...channelInstructions, ...ccfg.initialState.functionsDefs];
+        }
     
 }

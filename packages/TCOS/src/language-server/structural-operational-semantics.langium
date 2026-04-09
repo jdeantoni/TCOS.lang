@@ -80,7 +80,10 @@ SequentialEventEmission:
 
 
 EventRef:
-	ExplicitEventRef | SingleRuleSync;
+	ExplicitEventRef | BroadcastedEventRef | SingleRuleSync;
+
+BroadcastedEventRef:
+	'broadcasted' eventRef=ExplicitEventRef;
 
 
 ExplicitEventRef:

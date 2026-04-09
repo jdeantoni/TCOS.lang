@@ -16,7 +16,9 @@ function doGenerateCode(codeFile, ccfg, debug, generator) {
     let allCode = generator.createBase();
     allCode = [...allCode, ...compileFunctionDefs(ccfg, generator)];
     let currentNode = initNode;
-    let insideMain = visitAllNodes(ccfg, currentNode, /*-1,*/ generator, true);
+    let insideMain = [
+        ...visitAllNodes(ccfg, currentNode, /*-1,*/ generator, true)
+    ];
     allCode = [...allCode, ...generator.createMainFunction(insideMain)];
     allCode = [...allCode, ...generator.endFile()];
     codeFile.append(allCode.join(""));
@@ -148,6 +150,8 @@ function visitAllNodes(ccfg, currentNode, generator, visitIsStarting = false) {
     // }
     switch (currentNode.getType()) {
         case "Step":
+        case "BroadcastEventEmission":
+        case "BroadcastEventReception":
             {
                 thisNodeCode = [...thisNodeCode, ...addCorrespondingCode(currentNode, ccfg, generator)];
                 if (currentNode.outputEdges.length > 1) {
