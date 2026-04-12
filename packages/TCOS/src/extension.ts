@@ -3,10 +3,6 @@ import * as path from 'path';
 import {
     LanguageClient, LanguageClientOptions, ServerOptions, TransportKind
 } from 'vscode-languageclient/node.js';
-import { generateAction } from './cli/index.js';
-import { SoSScopeProvider } from './language-server/sos-scope.js';
-import { LangiumServices } from 'langium/lsp';
-import { ReferenceInfo } from 'langium';
 
 // require('./language-server/sos-scope.ts');
 
@@ -65,10 +61,5 @@ function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
     // Start the client. This will also launch the server
     client.start();
    
-    // //the 2 following lines force loading and then allow brealkpoints
-    generateAction("../sos_examples/fake.sos", {destination:"generated"})
-    new SoSScopeProvider(null as unknown as LangiumServices).getScope(null as unknown as ReferenceInfo);
-
-    
     return client;
 }

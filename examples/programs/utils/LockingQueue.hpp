@@ -8,6 +8,14 @@ template<typename T>
 class LockingQueue
 {
 public:
+    LockingQueue() = default;
+
+    LockingQueue(LockingQueue&& other)
+    {
+        std::lock_guard<std::mutex> lock(other.guard);
+        queue = std::move(other.queue);
+    }
+
     void push(T const& _data)
     {
         {

@@ -1,5 +1,5 @@
 import { ValidationAcceptor, ValidationChecks } from 'langium';
-import { SoSSpec, StructuralOperationalSemanticsAstType } from './generated/ast.js';
+import { RWRule, SoSSpec, StructuralOperationalSemanticsAstType } from './generated/ast.js';
 import type { StructuralOperationalSemanticsServices } from './structural-operational-semantics-module.js';
 
 /**
@@ -9,7 +9,7 @@ export function registerSoSValidationChecks(services: StructuralOperationalSeman
     const registry = services.validation.ValidationRegistry;
     const validator = services.validation.StructuralOperationalSemanticsValidator;
     const checks: ValidationChecks<StructuralOperationalSemanticsAstType> = {
-        //Person: validator.checkPersonStartsWithCapital
+        RWRule: validator.checkConclusionAssignmentSyntax
     };
     registry.register(checks, validator);
 }
@@ -21,6 +21,21 @@ export class StructuralOperationalSemanticsValidator {
 
     checkOK(spec:SoSSpec, accept:ValidationAcceptor): void {
         accept('info', 'OK', {node: spec, property: 'name'});
+    }
+
+    checkConclusionAssignmentSyntax(rule: RWRule, accept: ValidationAcceptor): void {
+        const conclusionText = rule.conclusion.$cstNode?.text;
+        if (!conclusionText) {
+            return;
+        }
+
+        // Likely typo: using '=' inside a conclusion where state modifications require ':='.
+        const suspiciousAssignment = /\b[a-zA-Z_][\w.]*(?:\s*=\s*)(?:true|false|"[^"]*"|\d+)\s*;/.exec(conclusionText);
+        if (suspiciousAssignment) {
+            accept('warning', 'Use := for state modifications inside conclusions. `=` is parsed differently here.', {
+                node: rule.conclusion
+            });
+        }
     }
 
     // checkPersonStartsWithCapital(person: Person, accept: ValidationAcceptor): void {

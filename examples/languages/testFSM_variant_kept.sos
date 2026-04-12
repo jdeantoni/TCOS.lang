@@ -1,0 +1,71 @@
+testFSM
+import "FiniteStateMachine/src/language/finite-state-machine.langium"
+
+open FSMModel{
+                         when starts
+    ------------------------------------------------------ FSMstart
+       <this,σ> ~> fsms->concurrent.foreach(fsm => <fsm,σ>)
+
+        when lastOf(fsms.terminates)
+    -------------------------------------                  FSMend
+         <this,σ> ~> terminates
+}
+
+open FSM {
+
+                    when starts
+    --------------------------------- init
+     <this,σ> ~>  initialState.isInitial := true;
+                  <initialState,σ>
+              
+}
+
+open Event {
+
+  var waitFeedBack : event;
+
+            when starts
+    --------------------------   RTCEvent
+      <this,σ> ~> waitFeedBack    
+
+
+            when waitFeedBack //^ lastOf(starts.listeners).terminates
+    --------------------------------------- feedbackReceived
+          <this,σ> ~> terminates
+}
+
+
+open State {
+    var isInitial : boolean = false;
+
+            when starts [isInitial == true]
+    --------------------------------------- firstStartOfInitialState
+    <this,σ> ~> isInitial := false;
+                outTransitions->concurrent.foreach(transition => <transition,σ>)
+
+            when (starts ^ firstOf(inTransitions.terminates)) [isInitial == false]
+    --------------------------------------------------------------------------------- furtherStartOrNotInitialState
+    <this,σ> ~> outTransitions->concurrent.foreach(transition => <transition,σ>)
+
+
+          when firstOf(outTransitions.terminates)    // quid d'un "only" firstOf qui ferait aussi le abort ?
+    ----------------------------------------------                  end
+          <this,σ> ~> //outTransitions.others.abort;
+                      terminates
+}
+
+open Transition{
+
+    var waitEvent : event;
+
+            when starts
+    --------------------------------------- init
+        <this,σ> ~> waitEvent
+
+             
+      when (broadcasted guardEvent.starts ^ waitEvent )
+    ------------------------------------------------------ fire
+         <this,σ> ~> broadcasts sentEvent;
+                     (emits terminates || <target,σ>)
+        
+}

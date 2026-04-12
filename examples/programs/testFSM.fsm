@@ -5,12 +5,13 @@ event ea
 event eb
 fsm fsm1 [S1]
     state S1{
-        out : t1 //t3
+        out : t1 
+        in: t2
     }
     state S2{
         out:  t2
+        in: t1
     }
     
     t1: S1 ---when e1/ea--> S2
-   // t3: S1 ---when e2/eb--> S1
     t2: S2 ---when e2/eb--> S1

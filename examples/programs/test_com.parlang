@@ -1,0 +1,5 @@
+communication IDs : com1
+
+every 1000ms {
+    ((wait com1; (stmt1; stmt1)) || ((stmt2 ; stmt2) ; notify com1))
+}

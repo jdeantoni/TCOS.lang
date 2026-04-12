@@ -11,7 +11,7 @@ import {
 } from 'langium';
 
 
-import { AbstractRule, Assignment, CollectionRuleSync, CrossReference, isAbstractRule, isAlternatives, isAssignment, isCollectionRuleSync, isMemberCall, isRuleOpening, isRuleSync, isRWRule, 
+import { AbstractRule, Assignment, CollectionRuleSync, CompositeEventEmission, CrossReference, EventEmission, isAbstractRule, isAlternatives, isAssignment, isCollectionRuleSync, isMemberCall, isParallelEventEmission, isRuleOpening, isRuleSync, isRWRule, isSequentialEventEmission, 
          isSoSSpec, isTemporaryVariable, MemberCall, Parameter,isCrossReference, isGrammar,
          ParserRule, RuleOpening, RWRule, SoSSpec, TypeReference, VariableDeclaration,
          Alternatives, MethodMember, FieldMember, 
@@ -433,20 +433,28 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         return finish;
     }
 
+    private flattenAllEmissions(ce: CompositeEventEmission): EventEmission[] {
+        if (isParallelEventEmission(ce) || isSequentialEventEmission(ce)) {
+            return [ce.lefteventemission, ...this.flattenAllEmissions(ce.righteventemission)];
+        }
+        return [ce as EventEmission];
+    }
+
     private getAllTemporaryVariable(ruleOpeningItem: RuleOpening): AstNode[] {
         var alltempVars: AstNode[] = [];
         ruleOpeningItem.rules.forEach(rule => {
             if (isRWRule(rule) && (rule as RWRule)?.conclusion !== undefined){
-
-                for(let emission of (rule as RWRule)?.conclusion?.eventemissions){
-                    if (isRuleSync(emission)){
-                        if (isCollectionRuleSync(emission)) {
-                            if (isTemporaryVariable((emission as CollectionRuleSync).varDecl)) {
-                                alltempVars.push((emission as CollectionRuleSync).varDecl);
+                const composite = (rule as RWRule)?.conclusion?.eventemissions;
+                if (composite) {
+                    for (const emission of this.flattenAllEmissions(composite)) {
+                        if (isRuleSync(emission)) {
+                            if (isCollectionRuleSync(emission)) {
+                                if (isTemporaryVariable((emission as CollectionRuleSync).varDecl)) {
+                                    alltempVars.push((emission as CollectionRuleSync).varDecl);
+                                }
                             }
+                        }
                     }
-                    }
-                    
                 }
             }
         });

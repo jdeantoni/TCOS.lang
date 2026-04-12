@@ -22,6 +22,31 @@ export declare class CreateGlobalVarInstruction extends Instruction {
     constructor(name: string, type: string);
     toString(): string;
 }
+export declare class CreateEventChannelInstruction extends Instruction {
+    channelName: string;
+    listenerCount: integer;
+    payloadKind: string;
+    constructor(name: string, listenerCount: integer, payloadKind: string);
+    toString(): string;
+}
+export declare class EmitEventInstruction extends Instruction {
+    channelName: string;
+    payload: string;
+    awaitAcks: boolean;
+    constructor(name: string, payload: string, awaitAcks?: boolean);
+    toString(): string;
+}
+export declare class WaitEventInstruction extends Instruction {
+    channelName: string;
+    outPayload: string;
+    constructor(name: string, outPayload: string);
+    toString(): string;
+}
+export declare class AckEventInstruction extends Instruction {
+    token: string;
+    constructor(token: string);
+    toString(): string;
+}
 export declare class AssignVarInstruction extends Instruction {
     value: string;
     varName: string;

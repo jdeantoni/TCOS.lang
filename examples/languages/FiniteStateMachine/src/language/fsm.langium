@@ -14,6 +14,7 @@ Event:
 State:
     'state' name=ID'{'
         'out'':' (outTransitions+=[Transition:ID])*
+        'in'':' (inTransitions+=[Transition:ID])*
     '}';
 
 Transition:

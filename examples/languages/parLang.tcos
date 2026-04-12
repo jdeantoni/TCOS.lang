@@ -29,7 +29,7 @@ open Seq{
 open Par{
               when starts
     --------------------------------- startsPar
-      <this,σ> ~> <lhs,σ> || <rhs,σ>
+      <this,σ> ~> (<lhs,σ> || <rhs,σ>)
 
       when (<lhs,σ> ^ <rhs,σ>)
     ---------------------------       finishPar
@@ -45,10 +45,9 @@ open Perio{
   
               when <blocTrigger,σ>
       -------------------------------------------   perioExpires
-        <this,σ> ~> <stmt,σ> || <blocTrigger,σ>
+        <this,σ> ~> (<stmt,σ> || <blocTrigger,σ>)
                   
 }
-
 
 open Stmt1  {
 
@@ -60,7 +59,37 @@ open Stmt1  {
 }
 
 open Stmt2  {
+  var fakeState:integer = 0
         when starts
     ------------------------ fugaceStmt2
-    <this,σ> ~> terminates
+    <this,σ> ~> fakeState := fakeState - 1;
+                terminates
+}
+
+open Notify {
+        when starts
+    --------------------------------- startsNotifyAssynchronous
+      <this,σ> ~> broadcasts notifyID;
+                  terminates
+}
+
+open Wait {
+    
+    var waitCom: event;
+
+
+        when starts
+    --------------------------------- startsWait
+      <this,σ> ~> emits waitCom
+
+        when (broadcasted waitID.starts ^ waitCom)
+    --------------------------------- finishWait
+      <this,σ> ~> terminates
+}
+
+open ComID {
+
+      when starts
+    --------------------------------- fugaceCom
+      <this,σ> ~> terminates
 }

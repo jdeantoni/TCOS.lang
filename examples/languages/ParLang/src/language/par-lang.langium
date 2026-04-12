@@ -1,10 +1,11 @@
 grammar ParLang
 
 entry Program: 
+    ("communication" "IDs" ":" comIDs+=ComID* )?
     stmt=Statement;
 
 Statement: 
-    Seq | Par | Perio |Stmt1 | Stmt2 ;
+    Seq | Par | Perio |Stmt1 | Stmt2 | Notify | Wait;
 
 Seq:
     '('lhs=Statement ';' rhs=Statement')';
@@ -21,7 +22,14 @@ Stmt1:
 Stmt2: 
     {infer Stmt2} 'stmt2';
 
+Notify:
+    {infer Notify} 'notify' notifyID=[ComID:ID];
 
+Wait:
+    {infer Wait} 'wait' waitID=[ComID:ID];
+
+ComID:
+    {infer ComID} name=ID;
 
 hidden terminal WS: /\s+/;
 terminal ID: /[_a-zA-Z][\w_]*/;
