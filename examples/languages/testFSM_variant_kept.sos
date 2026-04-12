@@ -15,7 +15,8 @@ open FSM {
 
                     when starts
     --------------------------------- init
-     <this,σ> ~> <initialState,σ>
+     <this,σ> ~>  initialState.isInitial := true;
+                  <initialState,σ>
               
 }
 
@@ -35,16 +36,22 @@ open Event {
 
 
 open State {
+    var isInitial : boolean = false;
 
-                              when starts 
-    -------------------------------------------------------------------------------- firstStartOfInitialState
+            when starts [isInitial == true]
+    --------------------------------------- firstStartOfInitialState
+    <this,σ> ~> isInitial := false;
+                outTransitions->concurrent.foreach(transition => <transition,σ>)
+
+            when (starts ^ firstOf(inTransitions.terminates)) [isInitial == false]
+    --------------------------------------------------------------------------------- furtherStartOrNotInitialState
     <this,σ> ~> outTransitions->concurrent.foreach(transition => <transition,σ>)
 
 
-          when firstOf(outTransitions.terminates) as firstTerminated    // quid d'un "only" firstOf qui ferait aussi le abort ?
-    --------------------------------------------------                  end
+          when firstOf(outTransitions.terminates)    // quid d'un "only" firstOf qui ferait aussi le abort ?
+    ----------------------------------------------                  end
           <this,σ> ~> //outTransitions.others.abort;
-                      terminates; <firstTerminated.target, σ>
+                      terminates
 }
 
 open Transition{
@@ -59,6 +66,6 @@ open Transition{
       when (broadcasted guardEvent.starts ^ waitEvent )
     ------------------------------------------------------ fire
          <this,σ> ~> broadcasts sentEvent;
-                     emits terminates
+                     (emits terminates || <target,σ>)
         
 }

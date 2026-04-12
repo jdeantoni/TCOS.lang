@@ -251,6 +251,13 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
     for (let ruleCF of rulesCF) {
         if (ruleCF != startRule) {
             let premiseNodeName : string= getPreviousNodeNameFromPremiseParticipants(ruleCF, conceptName, holes)
+            let allEventValuedComparisons = getValuedEventRefConstantComparison(ruleCF.rule.premise.eventExpression)
+            const routeBooleanPremiseGuardToEntryEdge =
+                ruleCF.premiseParticipants.length > 1 &&
+                ruleCF.rule.premise.booleanExpression.length > 0 &&
+                allEventValuedComparisons.length == 0;
+            const premiseGuardString = buildPremiseGuardString(ruleCF)
+            let premiseGuardAppliedOnEntryEdge = false
             //manage premise (most of the time the premise's node is already existing since a hole. (but sometimes from event in varDeclaration))
             if(DEBUG) file.append(`        // premise handling for rule ${ruleCF.rule.name}: ${ruleCF.premiseParticipants.length} participant groups`, NL)
 
@@ -292,8 +299,19 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
         `);
                             }else{ // this is an event from a variable Declaration
                                 const participantNodeName = getSingleParticipantNodeName(participants);
+                                const edgeGuardString = (routeBooleanPremiseGuardToEntryEdge && !premiseGuardAppliedOnEntryEdge) ? premiseGuardString : "";
+                                if (edgeGuardString.length > 0) {
+                                    premiseGuardAppliedOnEntryEdge = true;
+                                }
                                 file.append(`
-        ${participantNodeName ? `localCCFG.addEdge(${participantNodeName},${premiseNodeName})` : `// no participant node identified`}
+        ${participantNodeName ? `{
+        let premiseParticipantSource = ${participantNodeName}
+        if(${participantNodeName}.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
+            premiseParticipantSource = ${participantNodeName}.outputEdges.filter(e => e.to.getType() == "Choice")[0].to
+        }
+        {let e = localCCFG.addEdge(premiseParticipantSource,${premiseNodeName})
+        e.guards = [...e.guards, ...[${edgeGuardString}]]}
+        }` : `// no participant node identified`}
         `);
                             }
                         }
@@ -302,10 +320,13 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
             }
 
 
-            let allEventValuedComparisons = getValuedEventRefConstantComparison(ruleCF.rule.premise.eventExpression)
+            let hasPremiseGuards =
+                allEventValuedComparisons.length > 0 ||
+                (ruleCF.rule.premise.booleanExpression.length > 0 && !routeBooleanPremiseGuardToEntryEdge)
             
-            if (allEventValuedComparisons.length > 0) {
-                    let refNode = `node.${ruleCF.premiseParticipants[0].filter(p => p.type != "event").map(p => p.name).join('.')}`
+            if (hasPremiseGuards) {
+                    let refPath = ruleCF.premiseParticipants[0].filter(p => p.type != "event").map(p => p.name).join('.')
+                    let refNode = refPath.length > 0 ? `node.${refPath}` : `node`
                     file.append(`
         let ${ruleCF.rule.name}ChoiceNode = undefined
         if(${premiseNodeName}.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
@@ -319,7 +340,7 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
                     premiseNodeName = `${ruleCF.rule.name}ChoiceNode`
                 }
 
-            handleRuleConclusion(ruleCF, holes, file, premiseNodeName);
+            handleRuleConclusion(ruleCF, holes, file, premiseNodeName, routeBooleanPremiseGuardToEntryEdge);
 
         }
     }
@@ -496,10 +517,11 @@ function buildPremiseGuardString(ruleCF: RuleControlFlow): string {
     return guards.join(",");
 }
 
-function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], file: CompositeGeneratorNode, previousNodeName: string) {
+function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], file: CompositeGeneratorNode, previousNodeName: string, suppressPremiseGuard: boolean = false) {
     let actionsstring = ""
     actionsstring = visitStateModifications(ruleCF, actionsstring);
-    let guardString = buildPremiseGuardString(ruleCF)
+    let guardString = suppressPremiseGuard ? "" : buildPremiseGuardString(ruleCF)
+    let downstreamGuardString = guardString
     
     if(actionsstring.length>0){
         file.append(`
@@ -511,6 +533,8 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
         ${previousNodeName} = ${ruleCF.rule.name}StateModificationNode
         }
     `)
+        // Guard already applied on the edge to the state-modification node.
+        downstreamGuardString = ""
     }
 
     let params : TypedElement[] = []
@@ -574,19 +598,19 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
         }
 
         if (stageBranches.length === 1) {
-            localPrev = appendConclusionBranch(file, ruleCF, holes, localPrev, stageBranches[0].participants, stageBranches[0].emission, guardString, emissionCounter++);
+            localPrev = appendConclusionBranch(file, ruleCF, holes, localPrev, stageBranches[0].participants, stageBranches[0].emission, downstreamGuardString, emissionCounter++);
         } else {
             const forkNodeName = `fork${ruleCF.rule.name}Stage${stageCounter}`;
             file.append(`
         let ${forkNodeName}: Node = new Fork(node)
         localCCFG.addNode(${forkNodeName})
         {let e = localCCFG.addEdge(${localPrev},${forkNodeName})
-        e.guards = [...e.guards, ...[${guardString}]]}
+        e.guards = [...e.guards, ...[${downstreamGuardString}]]}
             `, NL);
 
             const branchEnds: string[] = [];
             for (const branch of stageBranches) {
-                const endNode = appendConclusionBranch(file, ruleCF, holes, forkNodeName, branch.participants, branch.emission, guardString, emissionCounter++);
+                const endNode = appendConclusionBranch(file, ruleCF, holes, forkNodeName, branch.participants, branch.emission, downstreamGuardString, emissionCounter++);
                 branchEnds.push(endNode);
             }
 

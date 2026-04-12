@@ -77,7 +77,6 @@ def com_ack_event(token: int) -> None:
 def function0startsProgram(): 
 	print("	function0startsProgram started") 
 	com_create_event_channel("ComID0_20_0_24", 1, "void") 
-	com_create_event_channel("ComID0_20_0_24", 1, "void") 
 def function6perioStart(): 
 	print("	function6perioStart started") 
 	sigma_mutex.acquire()

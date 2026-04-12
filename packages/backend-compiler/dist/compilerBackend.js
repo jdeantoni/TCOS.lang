@@ -177,21 +177,20 @@ function visitAllNodes(ccfg, currentNode, generator, visitIsStarting = false) {
                 let edgeToVisit = currentNode.outputEdges;
                 for (let syncUID of currentNode.syncNodeIds) {
                     let n = ccfg.getNodeByUID(syncUID);
-                    if (n != undefined) {
+                    if (n != undefined && n.inputEdges.length > 0) {
                         let ptns = getPreviousTypedNodes(n.inputEdges[0]);
                         if (ptns.length > 1) {
                             throw new Error("multiple previous typed nodes not handled here");
                         }
                         let ptn = ptns[0];
-                        if (ptn.returnType != undefined) {
-                            if (!createdQueueIds.includes(syncUID)) {
-                                createdQueueIds.push(syncUID);
-                                if (ptn.returnType != "void" && ptn.returnType != undefined) {
-                                    thisNodeCode = [...thisNodeCode, ...generator.createLockingQueue(ptn.returnType, syncUID)];
-                                }
-                                else {
-                                    thisNodeCode = [...thisNodeCode, ...generator.createSynchronizer(syncUID)];
-                                }
+                        if (!createdQueueIds.includes(syncUID)) {
+                            createdQueueIds.push(syncUID);
+                            if (ptn != undefined && ptn.returnType != "void" && ptn.returnType != undefined) {
+                                thisNodeCode = [...thisNodeCode, ...generator.createLockingQueue(ptn.returnType, syncUID)];
+                            }
+                            else {
+                                // When no typed predecessor is found, fall back to pure synchronization.
+                                thisNodeCode = [...thisNodeCode, ...generator.createSynchronizer(syncUID)];
                             }
                         }
                     }
@@ -225,7 +224,7 @@ function visitAllNodes(ccfg, currentNode, generator, visitIsStarting = false) {
                         throw new Error("multiple previous typed nodes not handled here");
                     }
                     let ptn = ptns[0];
-                    let paramType = ptn.returnType;
+                    let paramType = ptn?.returnType;
                     let paramName = "AndJoinPopped_" + currentNode.uid + "_" + i;
                     if (currentNode.params.length > i && (currentNode.params[i].type != undefined)) {
                         paramType = currentNode.params[i].type;
@@ -234,7 +233,7 @@ function visitAllNodes(ccfg, currentNode, generator, visitIsStarting = false) {
                         currentNode.params.push({ name: paramName, type: paramType });
                         currentNode.returnType = paramType;
                     }
-                    if (paramType == "void") {
+                    if (paramType == "void" || paramType == undefined) {
                         thisNodeCode = [...thisNodeCode, ...generator.waitForSynchronizer(currentNode.uid)];
                     }
                     else {
@@ -258,7 +257,7 @@ function visitAllNodes(ccfg, currentNode, generator, visitIsStarting = false) {
                         throw new Error("multiple previous typed nodes not handled here");
                     }
                     let ptn = ptns[0];
-                    paramType = ptn.returnType;
+                    paramType = ptn?.returnType;
                     if (paramType != undefined) {
                         break;
                     }
