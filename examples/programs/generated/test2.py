@@ -21,12 +21,12 @@ def function19fugaceStmt1():
 	sigma_mutex.acquire()
 	sigma["Stmt11_6_1_11fakeState"] = 0
 	sigma_mutex.release()
-def function29fugaceStmt1(): 
+def function21fugaceStmt1(): 
 	sigma_mutex.acquire()
-	sigma["Stmt11_33_1_38fakeState"] = int()
+	sigma["Stmt11_14_1_19fakeState"] = int()
 	sigma_mutex.release()
 	sigma_mutex.acquire()
-	sigma["Stmt11_33_1_38fakeState"] = 0
+	sigma["Stmt11_14_1_19fakeState"] = 0
 	sigma_mutex.release()
 def main(): 
 	function3perioStart(); 
@@ -41,13 +41,12 @@ def main():
 		def codeThread9():
 			def codeThread15():
 				function19fugaceStmt1(); 
+				function21fugaceStmt1(); 
 				sync14.put(42) 
 			thread15 = threading.Thread(target=codeThread15) 
 			thread15.start() 
 			thread15.join() 
 			def codeThread23():
-				function29fugaceStmt1(); 
-				sync14.put(42) 
 			thread23 = threading.Thread(target=codeThread23) 
 			thread23.start() 
 			thread23.join() 

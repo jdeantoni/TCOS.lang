@@ -1,7 +1,7 @@
 
 import fs from 'fs';
 import { AstNode, Reference, isReference, AstUtils } from "langium";
-import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole} from "ccfg";
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole, AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction} from "ccfg";
 import { Program,Seq,Par,Perio,Stmt1,Stmt2 } from "../../language/generated/ast.js";
 
 var debug = false
@@ -24,6 +24,9 @@ export interface CompilerFrontEnd {
 export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
     constructor(debugMode: boolean = false){ 
         debug = debugMode
+        if (debug){
+            console.log("CompilerFrontEnd created")
+        }
     }
 
     globalCCFG: CCFG = new CCFG();
@@ -239,7 +242,7 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
      */
     createPerioLocalCCFG(node: Perio): CCFG {
         let localCCFG = new CCFG()
-        let startsPerioNode: Node = new Step(node,NodeType.starts,[`createGlobalVar,int,${this.getASTNodeUID(node)}blocTrigger`,`setGlobalVar,int,${this.getASTNodeUID(node)}blocTrigger,${node.p}`])
+        let startsPerioNode: Node = new Step(node,NodeType.starts,[new CreateGlobalVarInstruction(`${this.getASTNodeUID(node)}blocTrigger`,`int`),new SetGlobalVarInstruction(`${this.getASTNodeUID(node)}blocTrigger`,`${node.p}`,`int`)])
         if(startsPerioNode.functionsDefs.length>0){
             startsPerioNode.returnType = "void"
         }
@@ -290,7 +293,7 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
      */
     createStmt1LocalCCFG(node: Stmt1): CCFG {
         let localCCFG = new CCFG()
-        let startsStmt1Node: Node = new Step(node,NodeType.starts,[`createGlobalVar,int,${this.getASTNodeUID(node)}fakeState`,`setGlobalVar,int,${this.getASTNodeUID(node)}fakeState,0`])
+        let startsStmt1Node: Node = new Step(node,NodeType.starts,[new CreateGlobalVarInstruction(`${this.getASTNodeUID(node)}fakeState`,`int`), new SetGlobalVarInstruction(`${this.getASTNodeUID(node)}fakeState`,`0`,`int`)])
         if(startsStmt1Node.functionsDefs.length>0){
             startsStmt1Node.returnType = "void"
         }
@@ -431,7 +434,7 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
     fillTimerHole(hole: TimerHole, ccfg: CCFG) {
         let node = hole.astNode as AstNode
         let timerHoleLocalCCFG = new CCFG()
-        let startsTimerHoleNode: Node = new Step(node,NodeType.starts,[`addSleep,${hole.duration}`])
+        let startsTimerHoleNode: Node = new Step(node,NodeType.starts,[new AddSleepInstruction(hole.duration.toString())])
         startsTimerHoleNode.returnType = "void"
         startsTimerHoleNode.functionsNames = [`init${startsTimerHoleNode.uid}Timer`]
         timerHoleLocalCCFG.addNode(startsTimerHoleNode)

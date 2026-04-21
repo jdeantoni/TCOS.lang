@@ -1,0 +1,13 @@
+{
+  "name": "tcos-scripts",
+  "version": "1.0.0",
+  "description": "Scripts d'automatisation pour TCOS.lang",
+  "scripts": {
+    "dev": "npx ts-node src/index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.39",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.0.0"
+  }
+}
