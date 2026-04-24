@@ -5,46 +5,42 @@
 import * as path from 'path';
 import * as readline from 'readline';
 import { executeCommand } from './commands';
+import { appendFileSync } from 'fs';
+import { RED, CYAN, YELLOW, GREEN, RESET, ROOT } from './config';
 
-const ROOT = path.resolve(__dirname, '../..')
-
-const RESET = '\x1b[0m';
-const RED = '\x1b[31m';
-const GREEN = '\x1b[32m';
-const YELLOW = '\x1b[33m'
-const CYAN = '\x1b[36m';
-
-
-export function info(message: string): void{
-    console.log(CYAN + "[INFO] " + message + RESET);
-}
-
-export function success(message: string): void{
-    console.log(GREEN + "[SUCCES] " + message + RESET);
-}
-
-export function error(message: string): void{
-    console.log(RED + "[ERROR] " + message + RESET);
-}
-
-export function warning(message: string): void{
-    console.log(YELLOW + "[WARNING] "+ message + RESET);
-}
-
-/**
- * This function ask 
- * @param question 
- * @returns 
- */
-export function askYesNo(question: string): Promise<boolean>{
-    const rl = readline.createInterface({
+const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout
     });
 
+export function info(message: string): void{
+    console.log(`${CYAN}[INFO] ${message}${RESET}`);
+}
+
+export function success(message: string): void{
+    console.log(`${GREEN}[SUCCESS] ${message}${RESET}`);
+}
+
+export function error(message: string): void{
+    console.log(`${RED}[ERROR] ${message}${RESET}`);
+}
+
+export function warning(message: string): void{
+    console.log(`${YELLOW}[WARNING] ${message}${RESET}`);
+}
+
+export function appendToLog(logPath: string, line: string): void {
+    appendFileSync(logPath, `${line}\n`);
+}
+
+/**
+ * This function asks if the user wants to accept the request.
+ * @param question 
+ * @returns 
+ */
+export function askYesNo(question: string): Promise<boolean>{
     return new Promise((resolve) => {
-        rl.question(question + " (y/n): ", (answer: string) => {
-            rl.close();
+        rl.question(`${question} (y/n): `, (answer: string) => {
             const ans = answer.toLowerCase();
             resolve(ans === 'y' || ans === 'yes');
         });
@@ -57,14 +53,8 @@ export function askYesNo(question: string): Promise<boolean>{
  * @returns 
  */
 export function askText(question: string): Promise<string> {
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
-
     return new Promise((resolve) => {
         rl.question(question, (answer: string) => {
-            rl.close();
             resolve(answer);
         });
     });
@@ -76,34 +66,37 @@ export function askText(question: string): Promise<string> {
  * @returns 
  */
 export function breakScript(message: string): Promise<void>{
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
-
     return new Promise((resolve) => {
         rl.question(message, () => {
-            rl.close();
             resolve();
         });
     });
 }
 
 /**
- * 
- * 
- * @param name 
- * @param basePath 
+ * Interactively ask the user whether to open VS Code on a given
+ * project, and optionally let them make modifications before
+ * resuming the script.
+ *
+ * If the user accepts, VS Code is launched in
+ * `<ROOT>/<basePath>/<name>`. A second prompt asks whether the user
+ * wants to edit files; if so, the script pauses until Enter is
+ * pressed. For the "TCOS" project, extra hints about the Extension
+ * Development Host (F5) are displayed.
+ *
+ * @param name     Name of the project/subfolder to open.
+ * @param basePath Path, relative to the repository root, that
+ *                 contains the project folder.
  */
 export async function askForVSCode(name: string, basePath: string): Promise<void>{
-    const openVSCode = await askYesNo("Do you want to open VS Code on " + name + "?");
+    const openVSCode = await askYesNo(`Do you want to open VS Code on ${name}?`);
     
     if (openVSCode) {
         const folder = path.join(ROOT, basePath, name);
         await executeCommand("code .", folder);
-        success("VS Code opened on " + name + "!");
+        success(`VS Code opened on ${name}!`);
         
-        const wantModify = await askYesNo("Do you want to make modifications on " + name + "?");
+        const wantModify = await askYesNo(`Do you want to make modifications on ${name}?`);
         
         if (wantModify) {
             info("You can now:");
@@ -116,7 +109,7 @@ export async function askForVSCode(name: string, basePath: string): Promise<void
             
             await breakScript("Press Enter when you are done...");
             
-            success("Modifications on " + name + " done!");
+            success(`Modifications on ${name} done!`);
         }
     }
 }
@@ -128,19 +121,13 @@ export async function askForVSCode(name: string, basePath: string): Promise<void
  * @returns 
  */
 export function askChoice(question: string, options: string[]): Promise<string> {
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
-
     return new Promise((resolve) => {
         console.log(question);
         options.forEach((option, index) => {
-            console.log("  " + (index + 1) + ". " + option);
+            console.log(`  ${(index + 1)}. ${option}`);
         });
         
-        rl.question("Your choice (1-" + options.length + "): ", (answer: string) => {
-            rl.close();
+        rl.question(`Your choice (1-${options.length}): `, (answer: string) => {
             const index = parseInt(answer) - 1;
             if (index >= 0 && index < options.length) {
                 resolve(options[index]);
@@ -149,4 +136,8 @@ export function askChoice(question: string, options: string[]): Promise<string> 
             }
         });
     });
+}
+
+export function closeInput(): void{
+    rl.close();
 }

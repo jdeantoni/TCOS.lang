@@ -1,103 +1,138 @@
+/**
+ * This file is use to installed all packages and languages for our software.
+ */
+
 import * as path from 'path';
 import { info, success, error, askForVSCode } from './display';
 import { executeCommand } from './commands';
+import { LanguageConfig, installationOptionsInterface, ROOT, LANGUAGES, PACKAGES } from './config';
 
-const ROOT = path.resolve(__dirname, '../..')
+/**
+ * Run the standard npm pipeline in the given folder.
+ *
+ * Always runs `npm install` followed by `npm audit fix` (errors
+ * ignored). Then, depending on `options`:
+ *   - links the given local packages with `npm link <deps>`,
+ *   - executes any custom steps in order,
+ *   - runs `npm run build` (unless explicitly disabled),
+ *   - exposes the current package globally with `npm link`.
+ *
+ * @param folder  Working directory in which the commands are run.
+ * @param options Pipeline configuration:
+ *                      - `link`: names of local packages to link as dependencies of this folder.
+ *                      - `customSteps`: extra async steps to run after linking and before the build.
+ *                      - `build`: set to `false` to skip `npm run build` (default: `true`).
+ *                      - `linkSelf`: if `true`, run `npm link` at the end to expose this package globally.
+ */
+async function runNpmPipeline(folder: string, options: installationOptionsInterface = {}): Promise<void>{
+    await executeCommand("npm i", folder);
+    await executeCommand("npm audit fix" , folder, true);
+
+    if (options.link && options.link.length > 0){
+        await executeCommand(`npm link ${options.link.join(" ")}`, folder);
+    }
+
+    if (options.customSteps){
+        for (const step of options.customSteps){
+            await step();
+        }
+    }
+
+    if (options.build !== false){
+        await executeCommand("npm run build", folder);
+    }
+
+    if (options.linkSelf) {
+        await executeCommand("npm link", folder);
+    }
+}
 
 export async function installAllPackages(): Promise<void>{
-    const packages: { [key: string]: string[] } = {
-        "CCFG": [],
-        "backend-compiler": ["ccfg"],
-        "TCOS": ["ccfg", "backend-compiler"],
-    };
 
-    for (const name of Object.keys(packages)) {
-        const dependances = packages[name];
-        await installPackage(name, dependances);
-
+    for (const name of Object.keys(PACKAGES)) {
+        await installPackage(name, PACKAGES[name]);
         await askForVSCode(name, "packages");
     }
     success("All packages installed!");
 }
 
-/**
- * 
- * @param name 
- * @param dependances 
- * @returns 
- */
-async function installPackage(name: string, dependances: string[]): Promise<void> {
-    
-    info(name + " installation...");
-    const folder = path.join(ROOT, "packages", name);
-
-    try {
-        await executeCommand("npm i", folder);
-        await executeCommand("npm audit fix" , folder, true);
-
-        if (dependances.length > 0) {
-            const deps = dependances.join(" ");
-            await executeCommand("npm link " + deps, folder);
-        }
-        await executeCommand("npm run build", folder);
-
-        if (name !== "TCOS") {
-            await executeCommand("npm link", folder);
-        }
-
-        success(name + " installed!");
-    } catch (err) {
-        error(name + " installation failed!");
-        throw err;
-    }
-}
-
 export async function installAllLanguages(): Promise<void>{
-    const languages: { [key: string]: { dependances: string[], tcosFile: string } } = {
-        "ParLang": { 
-            dependances: ["ccfg", "backend-compiler"],
-            tcosFile: "parLang.tcos"
-        },
-        "simpleL": {
-            dependances: ["ccfg", "backend-compiler"],
-            tcosFile: "simpleL.tcos"
-        }
-    };
 
-    for (const name of Object.keys(languages)) {
-        const config = languages[name];
-        await installLanguage(name, config.dependances, config.tcosFile);
+    for (const name of Object.keys(LANGUAGES)) {
+        await installLanguage(name, LANGUAGES[name]);
         await askForVSCode(name, "examples/languages");
     }
     success("All languages installed!");
 }
 
-async function installLanguage(name: string, dependances: string[], tcosFile: string): Promise<void>{
-    info(name + " installation...");
+/**
+ * Install a single package located in `<ROOT>/packages/<name>`.
+ *
+ * Delegates to {@link runNpmPipeline} with the appropriate options:
+ * the given local dependencies are linked, and every package except
+ * "TCOS" is exposed globally with `npm link` so the others can
+ * depend on it.
+ *
+ * @param name        Folder name of the package to install.
+ * @param dependances Names of already-linked local packages this one
+ *                    depends on.
+ * @throws Rethrows any error from the pipeline after logging an
+ *         installation-failed message.
+ */
+async function installPackage(name: string, dependances: string[]): Promise<void> {
+    info(`${name} installation...`);
 
-    const folder = path.join(ROOT, "examples", "languages", name);
-    const languagesFolder = path.join(ROOT, "examples", "languages");
+    const folder = path.join(ROOT, "packages", name);
 
     try {
-        await executeCommand("npm i", folder);
-        await executeCommand("npm audit fix", folder, true);
-        await executeCommand("npm run langium:generate", folder);
-        if (dependances.length > 0) {
-            const deps = dependances.join(" ");
-            await executeCommand("npm link " + deps, folder);
-        }
+        await runNpmPipeline(folder, {
+            link: dependances,
+            linkSelf: name !== "TCOS"
+        });
 
-        // Générer le front-end compiler
-        await executeCommand(
-            "node ../../packages/TCOS/bin/cli.js generate " + tcosFile + " -d " + name + "/",
-            languagesFolder
-        );
-
-        await executeCommand("npm run build", folder);
-
-        success(name + " installed!");
+        success(`${name} installed!`);
     } catch (err) {
-        error(name + " installation failed!");
+        error(`${name} installation failed!`);
+        throw err;
+    }
+}
+
+/**
+ * Install a single language located in `<ROOT>/examples/languages/<name>`.
+ *
+ * Delegates to {@link runNpmPipeline} with the language-specific
+ * options: the given local dependencies are linked, then two custom
+ * steps run before the build — `npm run langium:generate` to
+ * regenerate the Langium artifacts, and the TCOS CLI to generate
+ * the front-end compiler from the language's `.tcos` file.
+ *
+ * @param name Folder name of the language to install.
+ * @param config Language configuration:
+ *               - `dependances`: names of already-linked local packages this language depends on.
+ *               - `tcosFile`: `.tcos` file passed to the TCOS CLI to generate the front-end compiler.
+ * @throws Rethrows any error from the pipeline after logging an installation-failed message.
+ */
+async function installLanguage(name: string, config: LanguageConfig): Promise<void>{
+    info(`${name} installation...`);
+
+    const languagesFolder = path.join(ROOT, "examples", "languages");
+    const folder = path.join(languagesFolder, name);
+
+    try {
+        await runNpmPipeline(folder, {
+            link: config.dependances,
+            customSteps: [
+                () => executeCommand("npm run langium:generate", folder),
+                () => executeCommand(
+                    `node ../../packages/TCOS/bin/cli.js generate ${config.tcosFile} -d ${name}/`,
+                    languagesFolder
+                )
+            ]
+        });
+
+        success(`${name} installed!`);
+    } catch (err) {
+        error(`${name} installation failed!`);
         throw err;
     }
 }

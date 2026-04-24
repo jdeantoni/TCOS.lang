@@ -9,5 +9,9 @@
     "@types/node": "^20.19.39",
     "ts-node": "^10.9.2",
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@graphty/algorithms": "^1.7.1",
+    "dotparser": "^1.1.1"
   }
 }
