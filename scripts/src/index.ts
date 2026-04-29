@@ -2,10 +2,11 @@
  * This file is the entry point of our script
  */
 
+//import { Watcher } from './watch';
+import { generatePrograms, generateBatch } from './generation';
+import { BatchResult, setInteractive, setVerbose } from './config';
 import { error, success, closeInput, printFullSummary } from './display';
 import { installAllPackages, installAllLanguages } from './installation';
-import { generatePrograms, generateBatch} from './generation';
-import { BatchResult, setInteractive, setVerbose } from './config';
 
 // TODO(isomorphism): Reintegrate verifyCCFG when the comparison strategy is finalized with the leader. See notes/isomorphism.md
 // import { verifyCCFG } from './verification';
@@ -24,7 +25,7 @@ async function main(): Promise<void>{
     
     let results: BatchResult[] = [];
    
-    if (isBatch) setInteractive(false);
+    if (isBatch || isWatch) setInteractive(false);
     if (writeAll) setVerbose(true);
 
     try {
@@ -34,6 +35,8 @@ async function main(): Promise<void>{
 
         if (isBatch) {
             results = await generateBatch();
+        } else if (isWatch) {
+            // results = await Watcher();
         } else {
             results = await generatePrograms();
         }

@@ -12,17 +12,17 @@ import { LanguageConfig, installationOptionsInterface, ROOT, LANGUAGES, PACKAGES
  *
  * Always runs `npm install` followed by `npm audit fix` (errors
  * ignored). Then, depending on `options`:
- *   - links the given local packages with `npm link <deps>`,
- *   - executes any custom steps in order,
- *   - runs `npm run build` (unless explicitly disabled),
- *   - exposes the current package globally with `npm link`.
+ *  - links the given local packages with `npm link <deps>`,
+ *  - executes any custom steps in order,
+ *  - runs `npm run build` (unless explicitly disabled),
+ *  - exposes the current package globally with `npm link`.
  *
  * @param folder  Working directory in which the commands are run.
  * @param options Pipeline configuration:
- *                      - `link`: names of local packages to link as dependencies of this folder.
- *                      - `customSteps`: extra async steps to run after linking and before the build.
- *                      - `build`: set to `false` to skip `npm run build` (default: `true`).
- *                      - `linkSelf`: if `true`, run `npm link` at the end to expose this package globally.
+ *  - `link`: names of local packages to link as dependencies of this folder.
+ *  - `customSteps`: extra async steps to run after linking and before the build.
+ *  - `build`: set to `false` to skip `npm run build` (default: `true`).
+ *  - `linkSelf`: if `true`, run `npm link` at the end to expose this package globally.
  */
 async function runNpmPipeline(folder: string, options: installationOptionsInterface = {}): Promise<void>{
     await executeCommand("npm i", folder);
@@ -125,7 +125,7 @@ async function installLanguage(name: string, config: LanguageConfig): Promise<In
 
     try {
         await runNpmPipeline(folder, {
-            link: config.dependances,
+            link: config.npmLinks,
             customSteps: [
                 () => executeCommand("npm run langium:generate", folder),
                 () => executeCommand(
