@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "description": "Scripts d'automatisation pour TCOS.lang",
   "scripts": {
-    "dev": "npx ts-node src/index.ts"
+    "dev": "npx ts-node src/index.ts",
+    "dev:all": "npx ts-node src/index.ts --all",
+    "batch": "npx ts-node src/index.ts --batch",
+    "batch:all" : "npx ts-node src/index.ts --batch --all",
+    "watch": "npx ts-node src/index.ts --watch",
+    "watch:all": "npx ts-node src/index.ts --watch --all"
   },
   "devDependencies": {
     "@types/node": "^20.19.39",

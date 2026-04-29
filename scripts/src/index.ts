@@ -2,9 +2,10 @@
  * This file is the entry point of our script
  */
 
-import { error, success, closeInput } from './display';
+import { error, success, closeInput, printFullSummary } from './display';
 import { installAllPackages, installAllLanguages } from './installation';
-import { generatePrograms } from './generation';
+import { generatePrograms, generateBatch} from './generation';
+import { BatchResult, setInteractive, setVerbose } from './config';
 
 // TODO(isomorphism): Reintegrate verifyCCFG when the comparison strategy is finalized with the leader. See notes/isomorphism.md
 // import { verifyCCFG } from './verification';
@@ -17,14 +18,28 @@ import { generatePrograms } from './generation';
  * On any failure the error is logged and the process exits with code 1. The readline input is always closed at the end.
  */
 async function main(): Promise<void>{
+    const isBatch = process.argv.includes("--batch");
+    const writeAll = process.argv.includes("--all");
+    const isWatch = process.argv.includes("--watch");
+    
+    let results: BatchResult[] = [];
    
+    if (isBatch) setInteractive(false);
+    if (writeAll) setVerbose(true);
+
     try {
-        await installAllPackages();
-        await installAllLanguages();
+        const packagesResults = await installAllPackages();
+        const languagesResults = await installAllLanguages();
+        const installResults = [...packagesResults, ...languagesResults];
 
+        if (isBatch) {
+            results = await generateBatch();
+        } else {
+            results = await generatePrograms();
+        }
+        
         success("Installation complete!");
-
-        await generatePrograms();
+        printFullSummary(installResults, results);
 
         // We can use this function because it can't test our CCFG with a isomorphic test regression.
         // await verifyCCFG(CCFGGenerated);

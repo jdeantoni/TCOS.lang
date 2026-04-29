@@ -6,7 +6,7 @@ import * as path from 'path';
 import * as readline from 'readline';
 import { executeCommand } from './commands';
 import { appendFileSync } from 'fs';
-import { RED, CYAN, YELLOW, GREEN, RESET, ROOT } from './config';
+import { RED, CYAN, YELLOW, GREEN, RESET, ROOT, INTERACTIVE, BatchResult, InstallResult } from './config';
 
 const rl = readline.createInterface({
         input: process.stdin,
@@ -89,6 +89,7 @@ export function breakScript(message: string): Promise<void>{
  *                 contains the project folder.
  */
 export async function askForVSCode(name: string, basePath: string): Promise<void>{
+    if (!INTERACTIVE) return;
     const openVSCode = await askYesNo(`Do you want to open VS Code on ${name}?`);
     
     if (openVSCode) {
@@ -136,6 +137,73 @@ export function askChoice(question: string, options: string[]): Promise<string> 
             }
         });
     });
+}
+
+/**
+ * Print a summary of batch results: per-program status and totals.
+ * Never calls process.exit, purely informative.
+ */
+export async function printFullSummary(installResults: InstallResult[], batchResults: BatchResult[]): Promise<boolean> {
+    info("=".repeat(60));
+    info("SUMMARY");
+    info("=".repeat(60));
+
+    // Section installation
+    const packagesResults = installResults.filter(r => r.type === "package");
+    const languagesResults = installResults.filter(r => r.type === "language");
+
+    info("");
+    info(">> Packages installation");
+    for (const r of packagesResults) {
+        if (r.status === "success") success(`   ${r.name}`);
+        else error(`   ${r.name}`);
+    }
+
+    info("");
+    info(">> Languages installation");
+    for (const r of languagesResults) {
+        if (r.status === "success") success(`   ${r.name}`);
+        else error(`   ${r.name}`);
+    }
+
+    // Section génération
+    console.log("");
+    info(">> Programs generation");
+    for (const r of batchResults) {
+        const line = `${r.language}/${r.fileName} (${r.format})`;
+        if (r.status === "success") {
+            success(`   ${line}`);
+        } else {
+            error(`  ${line}`);
+        }
+    }
+
+    // Section commandes à reproduire (si échecs)
+    const failed = batchResults.filter(r => r.status === "error" && r.failedCommand);
+    if (failed.length > 0) {
+        info("");
+        info(">> Failed commands (run manually to investigate)");
+        for (const r of failed) {
+            error(`  ${r.language}/${r.fileName} (${r.format}):`);
+            error(`    ${r.failedCommand}`);
+        }
+    }
+
+    // Totaux
+    const installOk = installResults.filter(r => r.status === "success").length;
+    const installKo = installResults.length - installOk;
+    const batchOk = batchResults.filter(r => r.status === "success").length;
+    const batchKo = batchResults.length - batchOk;
+
+    console.log("");
+    info("=".repeat(60));
+    info(`Install: ${installOk}/${installResults.length} succeeded, ${installKo} error(s)`);
+    info(`Batch:   ${batchOk}/${batchResults.length} succeeded, ${batchKo} error(s)`);
+    info("=".repeat(60));
+
+    if (batchKo > 0 || installKo > 0) {
+        return false;
+    } else return true;
 }
 
 export function closeInput(): void{

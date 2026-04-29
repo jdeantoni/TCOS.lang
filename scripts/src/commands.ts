@@ -5,6 +5,7 @@
 
 import { spawn } from 'child_process';
 import { info, success, error, warning } from './display';
+import { isVerbose } from './config';
 
 /**
  * Run a shell command in the given folder as a child process.
@@ -28,7 +29,7 @@ export function executeCommand(command: string, folder: string, ignoreError: boo
 
         const processus = spawn(command, [], {
             cwd: folder,
-            stdio: 'inherit',   // connect to terminal to preserve colors from the child process
+            stdio: isVerbose() ? 'inherit' : 'ignore',   // connect to terminal to preserve colors from the child process
             shell: true
         });
 
@@ -40,7 +41,7 @@ export function executeCommand(command: string, folder: string, ignoreError: boo
             } else if (ignoreError){
                 warning(`Order completed with this code ${code} (ignored)`);
                 if (command === "npm audit fix"){
-                    info("If you want to fix this warning use: npm audit fix --force");
+                    warning("If you want to fix this warning use: npm audit fix --force");
                     warning("This command can including breaking changes");
                 }
                 resolve();

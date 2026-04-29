@@ -11,9 +11,9 @@
  * crashes. Node analysis is therefore performed without any prior
  * structural check.
  *
- * @todo Find a solution to validate graph isomorphism (faster
- *       algorithm, custom implementation, or approximate
- *       structural comparison) without crashing the script.
+ * @todo 
+ * Find a solution to validate graph isomorphism (faster algorithm, custom implementation,
+ * or approximate structural comparison) without crashing the script.
  */
 
 import * as path from 'path';

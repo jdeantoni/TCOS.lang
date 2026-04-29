@@ -5,7 +5,7 @@
 import * as path from 'path';
 import { info, success, error, askForVSCode } from './display';
 import { executeCommand } from './commands';
-import { LanguageConfig, installationOptionsInterface, ROOT, LANGUAGES, PACKAGES } from './config';
+import { LanguageConfig, installationOptionsInterface, ROOT, LANGUAGES, PACKAGES, InstallResult } from './config';
 
 /**
  * Run the standard npm pipeline in the given folder.
@@ -47,22 +47,26 @@ async function runNpmPipeline(folder: string, options: installationOptionsInterf
     }
 }
 
-export async function installAllPackages(): Promise<void>{
+export async function installAllPackages(): Promise<InstallResult[]>{
 
+    const results: InstallResult[] = [];
     for (const name of Object.keys(PACKAGES)) {
-        await installPackage(name, PACKAGES[name]);
+        const  result = await installPackage(name, PACKAGES[name]);
+        results.push(result);
         await askForVSCode(name, "packages");
     }
-    success("All packages installed!");
+    return results;
 }
 
-export async function installAllLanguages(): Promise<void>{
+export async function installAllLanguages(): Promise<InstallResult[]>{
 
+    const results: InstallResult[] = [];
     for (const name of Object.keys(LANGUAGES)) {
-        await installLanguage(name, LANGUAGES[name]);
+        const result = await installLanguage(name, LANGUAGES[name]);
+        results.push(result);
         await askForVSCode(name, "examples/languages");
     }
-    success("All languages installed!");
+    return results;
 }
 
 /**
@@ -79,7 +83,7 @@ export async function installAllLanguages(): Promise<void>{
  * @throws Rethrows any error from the pipeline after logging an
  *         installation-failed message.
  */
-async function installPackage(name: string, dependances: string[]): Promise<void> {
+async function installPackage(name: string, dependances: string[]): Promise<InstallResult> {
     info(`${name} installation...`);
 
     const folder = path.join(ROOT, "packages", name);
@@ -90,10 +94,11 @@ async function installPackage(name: string, dependances: string[]): Promise<void
             linkSelf: name !== "TCOS"
         });
 
-        success(`${name} installed!`);
+        success(`${name} dependances was installed!`);
+        return {name, type: "package", status: "success"};
     } catch (err) {
         error(`${name} installation failed!`);
-        throw err;
+        return {name, type: "package", status: "error"};
     }
 }
 
@@ -112,7 +117,7 @@ async function installPackage(name: string, dependances: string[]): Promise<void
  *               - `tcosFile`: `.tcos` file passed to the TCOS CLI to generate the front-end compiler.
  * @throws Rethrows any error from the pipeline after logging an installation-failed message.
  */
-async function installLanguage(name: string, config: LanguageConfig): Promise<void>{
+async function installLanguage(name: string, config: LanguageConfig): Promise<InstallResult>{
     info(`${name} installation...`);
 
     const languagesFolder = path.join(ROOT, "examples", "languages");
@@ -130,9 +135,10 @@ async function installLanguage(name: string, config: LanguageConfig): Promise<vo
             ]
         });
 
-        success(`${name} installed!`);
+        success(`${name} dependances was installed!`);
+        return {name, type: "language", status: "success"};
     } catch (err) {
         error(`${name} installation failed!`);
-        throw err;
+        return {name, type: "language", status: "error"};
     }
 }
