@@ -4,10 +4,10 @@
  */
 
 import * as path from 'path';
-import { info, success, error, askYesNo, askText, askChoice, warning } from './display';
-import { executeCommand } from './commands';
-import { BatchResult, LANGUAGES, PROGRAMING_LANGUAGES, ROOT } from './config';
 import { readdirSync } from 'fs';
+import { executeCommand } from './commands';
+import { info, success, error, askYesNo, askText, askChoice, warning } from './display';
+import { BatchResult, LANGUAGES, PROGRAMING_LANGUAGES, ROOT } from './config';
 
 /**
  * Run the program generation wizard in a loop.
@@ -69,7 +69,7 @@ export async function generatePrograms(): Promise<Array<BatchResult>> {
  * Build the CLI command to generate a program with a given format and debug flag.
  * Extracted for reuse between interactive and batch modes.
  */
-function buildGenerationCommand(language: string, sourceFile: string, format: string, debug: boolean): string {
+export function buildGenerationCommand(language: string, sourceFile: string, format: string, debug: boolean): string {
     const cliPath = path.join("..", "languages", language, "bin", "cli.js");
     let command = `node ${cliPath} generate ${sourceFile}`;
 

@@ -2,7 +2,7 @@
  * This file is the entry point of our script
  */
 
-//import { Watcher } from './watch';
+import { watcherCommand } from './watch';
 import { generatePrograms, generateBatch } from './generation';
 import { BatchResult, setInteractive, setVerbose } from './config';
 import { error, success, closeInput, printFullSummary } from './display';
@@ -36,18 +36,18 @@ async function main(): Promise<void>{
         if (isBatch) {
             results = await generateBatch();
         } else if (isWatch) {
-            // results = await Watcher();
+            await watcherCommand();
         } else {
             results = await generatePrograms();
         }
-        
-        success("Installation complete!");
-        printFullSummary(installResults, results);
+
+        if (!isWatch){
+            success("Installation complete!");
+            printFullSummary(installResults, results);
+        }
 
         // We can use this function because it can't test our CCFG with a isomorphic test regression.
         // await verifyCCFG(CCFGGenerated);
-
-        success("End");
     } catch (err) {
         error("Script failed!");
         console.error(err);
@@ -57,5 +57,4 @@ async function main(): Promise<void>{
     }
 }
 
-// Start the script to intall and link our packages and install our languages.
 main();

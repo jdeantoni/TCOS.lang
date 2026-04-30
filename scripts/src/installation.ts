@@ -85,13 +85,12 @@ export async function installAllLanguages(): Promise<InstallResult[]>{
  */
 async function installPackage(name: string, dependances: string[]): Promise<InstallResult> {
     info(`${name} installation...`);
-
     const folder = path.join(ROOT, "packages", name);
 
     try {
         await runNpmPipeline(folder, {
             link: dependances,
-            linkSelf: name !== "TCOS"
+            linkSelf: name !== "tcos"
         });
 
         success(`${name} dependances was installed!`);

@@ -3,9 +3,9 @@
  */
 
 import * as path from 'path';
+import { appendFileSync } from 'fs';
 import * as readline from 'readline';
 import { executeCommand } from './commands';
-import { appendFileSync } from 'fs';
 import { RED, CYAN, YELLOW, GREEN, RESET, ROOT, INTERACTIVE, BatchResult, InstallResult } from './config';
 
 const rl = readline.createInterface({
@@ -143,7 +143,8 @@ export function askChoice(question: string, options: string[]): Promise<string> 
  * Print a summary of batch results: per-program status and totals.
  * Never calls process.exit, purely informative.
  */
-export async function printFullSummary(installResults: InstallResult[], batchResults: BatchResult[]): Promise<boolean> {
+export function printFullSummary(installResults: InstallResult[], batchResults: BatchResult[]): boolean {
+    console.log("");
     info("=".repeat(60));
     info("SUMMARY");
     info("=".repeat(60));
@@ -152,14 +153,14 @@ export async function printFullSummary(installResults: InstallResult[], batchRes
     const packagesResults = installResults.filter(r => r.type === "package");
     const languagesResults = installResults.filter(r => r.type === "language");
 
-    info("");
+    console.log("");
     info(">> Packages installation");
     for (const r of packagesResults) {
         if (r.status === "success") success(`   ${r.name}`);
         else error(`   ${r.name}`);
     }
 
-    info("");
+    console.log("");
     info(">> Languages installation");
     for (const r of languagesResults) {
         if (r.status === "success") success(`   ${r.name}`);
@@ -208,4 +209,54 @@ export async function printFullSummary(installResults: InstallResult[], batchRes
 
 export function closeInput(): void{
     rl.close();
+}
+
+export function startWatcher():void {
+    console.log("");
+    info("=".repeat(60));
+    info("Watcher started. Edit any source file to trigger a rebuild cascade.");
+    info("Press Ctrl+C to stop.");
+    info("=".repeat(60));
+}
+
+export function printSummary(batchResults: BatchResult[]): boolean {
+    console.log("");
+    info("=".repeat(60));
+    info("SUMMARY");
+    info("=".repeat(60));
+
+    // Section génération
+    console.log("");
+    info(">> Programs generation");
+    for (const r of batchResults) {
+        const line = `${r.language}/${r.fileName} (${r.format})`;
+        if (r.status === "success") {
+            success(`   ${line}`);
+        } else {
+            error(`  ${line}`);
+        }
+    }
+
+    // Section commandes à reproduire (si échecs)
+    const failed = batchResults.filter(r => r.status === "error" && r.failedCommand);
+    if (failed.length > 0) {
+        info("");
+        info(">> Failed commands (run manually to investigate)");
+        for (const r of failed) {
+            error(`  ${r.language}/${r.fileName} (${r.format}):`);
+            error(`    ${r.failedCommand}`);
+        }
+    }
+
+    const batchOk = batchResults.filter(r => r.status === "success").length;
+    const batchKo = batchResults.length - batchOk;
+
+    console.log("");
+    info("=".repeat(60));
+    info(`Batch:   ${batchOk}/${batchResults.length} succeeded, ${batchKo} error(s)`);
+    info("=".repeat(60));
+
+    if (batchKo > 0) {
+        return false;
+    } else return true;
 }

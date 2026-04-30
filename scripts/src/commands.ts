@@ -3,9 +3,9 @@
  * their result through the display module.
  */
 
+import { isVerbose } from './config';
 import { spawn } from 'child_process';
 import { info, success, error, warning } from './display';
-import { isVerbose } from './config';
 
 /**
  * Run a shell command in the given folder as a child process.

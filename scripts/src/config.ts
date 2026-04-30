@@ -37,6 +37,11 @@ export interface InstallResult {
     status: "success" | "error";
 }
 
+interface NodeInfo {
+    folder: string;
+    dependsOn: string[];
+}
+
 // ============================================================
 // Project structure (DAG)
 // ============================================================
@@ -59,11 +64,38 @@ export const LANGUAGES: Record<string, LanguageConfig> = {
     }
 };
 
-export const PACKAGES: { [key: string]: string[] } = {
+export const PACKAGES: Record<string, string[]> = {
     "ccfg": [],
     "backend-compiler": ["ccfg"],
     "interpreter": ["ccfg", "backend-compiler"],
     "tcos": []
+};
+
+export const DAG: Record<string, NodeInfo> = {
+    "ccfg": {
+        folder: "packages",
+        dependsOn: []
+    },
+    "backend-compiler": {
+        folder: "packages",
+        dependsOn: ["ccfg"]
+    },
+    "interpreter": {
+        folder: "packages",
+        dependsOn: ["ccfg", "backend-compiler"]
+    },
+    "tcos": {
+        folder: "packages",
+        dependsOn: []
+    },
+    "ParLang": {
+        folder: "examples/languages",
+        dependsOn: ["ccfg", "backend-compiler", "tcos"]
+    },
+    "simpleL": {
+        folder: "examples/languages",
+        dependsOn: ["ccfg", "backend-compiler", "tcos"]
+    },
 };
 
 export const PROGRAMING_LANGUAGES = ["C++", "Python", "JavaScript"];
