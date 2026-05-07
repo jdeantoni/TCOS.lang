@@ -1,24 +1,22 @@
 /**
  * Verification of generated CCFGs against their expected references.
  *
- * For each `.dot` file, the expected graph (under `examples/programs/expected/`) and the generated graph 
- * (under `examples/programs/generated/`) are loaded and compared node by node. 
+ * For each `.dot` file, the expected graph (under `examples/programs/expected/`)
+ * and the generated graph (under `examples/programs/generated/`) are loaded and
+ * compared via isomorphism check followed by node-by-node attribute comparison.
  * Results are written to per-file log files under `LOGS_DIR`.
  *
  * @remarks
- * The isomorphism check via {@link isGraphIsomorphic} is currently
- * **not used**: the algorithm is too slow on our graphs and
- * crashes. Node analysis is therefore performed without any prior
- * structural check.
- *
- * @todo 
- * Find a solution to validate graph isomorphism (faster algorithm, custom implementation,
- * or approximate structural comparison) without crashing the script.
+ * This module is currently NOT called from `index.ts` (see the
+ * `TODO(isomorphism)` marker there). The isomorphism check via
+ * {@link isGraphIsomorphic} times out on most of our CCFGs because of
+ * structural symmetry. A different comparison strategy is pending discussion
+ * with the project lead.
  */
 
 import * as path from 'path';
 import dotparser from 'dotparser'; 
-import { LOGS_DIR } from './config';
+import { LOGS_DIR } from './project';
 import { success, info, error, warning, appendToLog} from './display';
 import { Graph, isGraphIsomorphic, NodeId } from '@graphty/algorithms';
 import { readFileSync, appendFileSync, mkdirSync, existsSync } from 'fs';

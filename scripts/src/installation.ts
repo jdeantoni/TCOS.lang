@@ -3,9 +3,10 @@
  */
 
 import * as path from 'path';
-import { info, success, error, askForVSCode } from './display';
 import { executeCommand } from './commands';
-import { LanguageConfig, installationOptionsInterface, ROOT, LANGUAGES, PACKAGES, InstallResult } from './config';
+import { LANGUAGES, PACKAGES, ROOT } from './project';
+import { info, success, error, askForVSCode } from './display';
+import { installationOptions, InstallResult, LanguageConfig } from './types';
 
 /**
  * Run the standard npm pipeline in the given folder.
@@ -24,7 +25,7 @@ import { LanguageConfig, installationOptionsInterface, ROOT, LANGUAGES, PACKAGES
  *  - `build`: set to `false` to skip `npm run build` (default: `true`).
  *  - `linkSelf`: if `true`, run `npm link` at the end to expose this package globally.
  */
-async function runNpmPipeline(folder: string, options: installationOptionsInterface = {}): Promise<void>{
+async function runNpmPipeline(folder: string, options: installationOptions = {}): Promise<void>{
     await executeCommand("npm i", folder);
     await executeCommand("npm audit fix" , folder, true);
 

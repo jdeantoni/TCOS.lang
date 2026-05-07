@@ -2,11 +2,12 @@
  * This file is the entry point of our script
  */
 
-import { watcherCommand } from './watch';
+import { BatchResult } from './types';
+import { watcherCommand } from './watcher';
+import { setInteractive, setVerbose } from './state';
 import { generatePrograms, generateBatch } from './generation';
-import { BatchResult, setInteractive, setVerbose } from './config';
-import { error, success, closeInput, printFullSummary } from './display';
 import { installAllPackages, installAllLanguages } from './installation';
+import { error, success, closeInput, printFullSummary, changeMod } from './display';
 
 // TODO(isomorphism): Reintegrate verifyCCFG when the comparison strategy is finalized with the leader. See notes/isomorphism.md
 // import { verifyCCFG } from './verification';
@@ -15,7 +16,7 @@ import { installAllPackages, installAllLanguages } from './installation';
  * Entry point of the script.
  *
  * Runs the full workflow in order: install all packages, install all
- * languages, then start the interactive program generation loop and after verify the CCFG with a test regression.
+ * languages, then start the interactive program generation loop and after verify the CCFG with a regression test.
  * On any failure the error is logged and the process exits with code 1. The readline input is always closed at the end.
  */
 async function main(): Promise<void>{
@@ -24,11 +25,17 @@ async function main(): Promise<void>{
     const isWatch = process.argv.includes("--watch");
     
     let results: BatchResult[] = [];
+    let mod = "interactive";
    
-    if (isBatch || isWatch) setInteractive(false);
+    if (isBatch || isWatch) {
+        setInteractive(false);
+        if (isBatch) mod = "batch";
+        else mod = "watcher"
+    }
     if (writeAll) setVerbose(true);
 
     try {
+        changeMod(mod);
         const packagesResults = await installAllPackages();
         const languagesResults = await installAllLanguages();
         const installResults = [...packagesResults, ...languagesResults];
@@ -36,11 +43,13 @@ async function main(): Promise<void>{
         if (isBatch) {
             results = await generateBatch();
         } else if (isWatch) {
-            await watcherCommand();
+            results = await generateBatch();
+            await watcherCommand(installResults, results);
         } else {
             results = await generatePrograms();
         }
 
+        // Watch mode prints its own summary inside watcherCommand
         if (!isWatch){
             success("Installation complete!");
             printFullSummary(installResults, results);

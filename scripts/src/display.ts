@@ -1,17 +1,29 @@
 /**
- * This file contains functions to describe a messages in the terminal
+ * Terminal output: colored log helpers, readline-based prompts,
+ * end-of-run summaries, and the ASCII-art banners used to mark
+ * which mode (interactive, batch, watcher) is active.
  */
 
 import * as path from 'path';
+import { ROOT } from './project';
 import { appendFileSync } from 'fs';
 import * as readline from 'readline';
+import { isInteractive } from './state';
 import { executeCommand } from './commands';
-import { RED, CYAN, YELLOW, GREEN, RESET, ROOT, INTERACTIVE, BatchResult, InstallResult } from './config';
+import { BatchResult, InstallResult } from './types';
 
-const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
+// ============================================================
+// Colors
+// ============================================================
+const RESET = '\x1b[0m';
+const RED = '\x1b[31m';
+const GREEN = '\x1b[32m';
+const YELLOW = '\x1b[33m'
+const CYAN = '\x1b[36m';
+
+// ============================================================
+// Logging
+// ============================================================
 
 export function info(message: string): void{
     console.log(`${CYAN}[INFO] ${message}${RESET}`);
@@ -33,11 +45,16 @@ export function appendToLog(logPath: string, line: string): void {
     appendFileSync(logPath, `${line}\n`);
 }
 
-/**
- * This function asks if the user wants to accept the request.
- * @param question 
- * @returns 
- */
+// ============================================================
+// User input (readline)
+// ============================================================
+
+const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+
+
 export function askYesNo(question: string): Promise<boolean>{
     return new Promise((resolve) => {
         rl.question(`${question} (y/n): `, (answer: string) => {
@@ -47,80 +64,6 @@ export function askYesNo(question: string): Promise<boolean>{
     });
 }
 
-/**
- * Ask for a text input
- * @param question 
- * @returns 
- */
-export function askText(question: string): Promise<string> {
-    return new Promise((resolve) => {
-        rl.question(question, (answer: string) => {
-            resolve(answer);
-        });
-    });
-}
-
-/**
- * Function to make a break 
- * @param message 
- * @returns 
- */
-export function breakScript(message: string): Promise<void>{
-    return new Promise((resolve) => {
-        rl.question(message, () => {
-            resolve();
-        });
-    });
-}
-
-/**
- * Interactively ask the user whether to open VS Code on a given
- * project, and optionally let them make modifications before
- * resuming the script.
- *
- * If the user accepts, VS Code is launched in
- * `<ROOT>/<basePath>/<name>`. A second prompt asks whether the user
- * wants to edit files; if so, the script pauses until Enter is
- * pressed. For the "TCOS" project, extra hints about the Extension
- * Development Host (F5) are displayed.
- *
- * @param name     Name of the project/subfolder to open.
- * @param basePath Path, relative to the repository root, that
- *                 contains the project folder.
- */
-export async function askForVSCode(name: string, basePath: string): Promise<void>{
-    if (!INTERACTIVE) return;
-    const openVSCode = await askYesNo(`Do you want to open VS Code on ${name}?`);
-    
-    if (openVSCode) {
-        const folder = path.join(ROOT, basePath, name);
-        await executeCommand("code .", folder);
-        success(`VS Code opened on ${name}!`);
-        
-        const wantModify = await askYesNo(`Do you want to make modifications on ${name}?`);
-        
-        if (wantModify) {
-            info("You can now:");
-            info("  1. Modify files in VS Code");
-            
-            if (name === "TCOS") {
-                info("  2. Press F5 to open Extension Development Host");
-                info("  3. Test and debug your changes");
-            }
-            
-            await breakScript("Press Enter when you are done...");
-            
-            success(`Modifications on ${name} done!`);
-        }
-    }
-}
-
-/**
- * Ask user to choose from a list of options
- * @param question 
- * @param options 
- * @returns 
- */
 export function askChoice(question: string, options: string[]): Promise<string> {
     return new Promise((resolve) => {
         console.log(question);
@@ -139,48 +82,57 @@ export function askChoice(question: string, options: string[]): Promise<string> 
     });
 }
 
+export function askText(question: string): Promise<string> {
+    return new Promise((resolve) => {
+        rl.question(question, (answer: string) => {
+            resolve(answer);
+        });
+    });
+}
+
+export function closeInput(): void{
+    rl.close();
+}
+
 /**
- * Print a summary of batch results: per-program status and totals.
- * Never calls process.exit, purely informative.
+ * Interactively ask the user whether to open VS Code on a given project before 
+ * resuming the script.
+ * 
+ * @param name Name of the project/subfolder to open.
+ * @param basePath Path, relative to the repository root, that contains the project folder.
  */
-export function printFullSummary(installResults: InstallResult[], batchResults: BatchResult[]): boolean {
-    console.log("");
-    info("=".repeat(60));
-    info("SUMMARY");
-    info("=".repeat(60));
+export async function askForVSCode(name: string, basePath: string): Promise<void>{
+    if (!isInteractive()) return;
+    const openVSCode = await askYesNo(`Do you want to open VS Code on ${name}?`);
+    
+    if (openVSCode) {
+        const folder = path.join(ROOT, basePath, name);
+        await executeCommand("code .", folder);
 
-    // Section installation
-    const packagesResults = installResults.filter(r => r.type === "package");
-    const languagesResults = installResults.filter(r => r.type === "language");
-
-    console.log("");
-    info(">> Packages installation");
-    for (const r of packagesResults) {
-        if (r.status === "success") success(`   ${r.name}`);
-        else error(`   ${r.name}`);
+        success(`VS Code opened on ${name}!`);
+        info(`To pick up modifications, restart the script or use 'npm run watch'`);
     }
+}
 
-    console.log("");
-    info(">> Languages installation");
-    for (const r of languagesResults) {
-        if (r.status === "success") success(`   ${r.name}`);
-        else error(`   ${r.name}`);
-    }
+// ============================================================
+// Summaries
+// ============================================================
 
-    // Section génération
+/**
+ * Print a generation-results section followed by the of failled commands.
+ * Shared between {@link printSummary} and {@link printFullSummary}.
+ * 
+ * @param results Per-`(file, format)` generation results.
+ */
+function printBatchSection(results: BatchResult[]): void {
     console.log("");
     info(">> Programs generation");
-    for (const r of batchResults) {
+    for (const r of results) {
         const line = `${r.language}/${r.fileName} (${r.format})`;
-        if (r.status === "success") {
-            success(`   ${line}`);
-        } else {
-            error(`  ${line}`);
-        }
+        (r.status === "success") ? success(`   ${line}`) : error(`   ${line}`);
     }
 
-    // Section commandes à reproduire (si échecs)
-    const failed = batchResults.filter(r => r.status === "error" && r.failedCommand);
+    const failed = results.filter(r => r.status === "error" && r.failedCommand);
     if (failed.length > 0) {
         info("");
         info(">> Failed commands (run manually to investigate)");
@@ -189,8 +141,64 @@ export function printFullSummary(installResults: InstallResult[], batchResults: 
             error(`    ${r.failedCommand}`);
         }
     }
+}
 
-    // Totaux
+/**
+ * Print a summary covering generation only (no install section). 
+ * Used by the watcher after a single-program rebuild.
+ * 
+ * @param batchResults Generation results to summarize.
+ * @returns `true` if every result is a success.
+ */
+export function printSummary(batchResults: BatchResult[]): boolean {
+    console.log("");
+    info("=".repeat(60));
+    info("SUMMARY");
+    info("=".repeat(60));
+
+    printBatchSection(batchResults);
+
+    const ok = batchResults.filter(r => r.status === "success").length;
+    const ko = batchResults.length - ok;
+
+    console.log("");
+    info("=".repeat(60));
+    info(`Batch:   ${ok}/${batchResults.length} succeeded, ${ko} error(s)`);
+    info("=".repeat(60));
+
+    return ko === 0;
+}
+
+/**
+ * Print full end-of-run summary: package installs, langauge installs, then the generation section.
+ * 
+ * @param installResults Per node install resluts.
+ * @param batchResults Per-`(file, format)` generation results.
+ * @returns `true` if every install and every generation succeded.
+ */
+export function printFullSummary(installResults: InstallResult[], batchResults: BatchResult[]): boolean {
+    console.log("");
+    info("=".repeat(60));
+    info("SUMMARY");
+    info("=".repeat(60));
+
+    const packagesResults = installResults.filter(r => r.type === "package");
+    const languagesResults = installResults.filter(r => r.type === "language");
+
+    console.log("");
+    info(">> Packages installation");
+    for (const r of packagesResults) {
+        (r.status === "success") ? success(`   ${r.name}`) : error(`   ${r.name}`);
+    }
+
+    console.log("");
+    info(">> Languages installation");
+    for (const r of languagesResults) {
+        (r.status === "success") ? success(`   ${r.name}`) : error(`   ${r.name}`);
+    }
+
+    printBatchSection(batchResults);
+
     const installOk = installResults.filter(r => r.status === "success").length;
     const installKo = installResults.length - installOk;
     const batchOk = batchResults.filter(r => r.status === "success").length;
@@ -202,61 +210,69 @@ export function printFullSummary(installResults: InstallResult[], batchResults: 
     info(`Batch:   ${batchOk}/${batchResults.length} succeeded, ${batchKo} error(s)`);
     info("=".repeat(60));
 
-    if (batchKo > 0 || installKo > 0) {
-        return false;
-    } else return true;
+    return (batchKo + installKo) === 0;
 }
 
-export function closeInput(): void{
-    rl.close();
-}
-
-export function startWatcher():void {
+export function startWatcher(): void {
     console.log("");
     info("=".repeat(60));
     info("Watcher started. Edit any source file to trigger a rebuild cascade.");
     info("Press Ctrl+C to stop.");
     info("=".repeat(60));
+    console.log("\n");
 }
 
-export function printSummary(batchResults: BatchResult[]): boolean {
-    console.log("");
-    info("=".repeat(60));
-    info("SUMMARY");
-    info("=".repeat(60));
+// ============================================================
+// Mods
+// ============================================================
 
-    // Section génération
-    console.log("");
-    info(">> Programs generation");
-    for (const r of batchResults) {
-        const line = `${r.language}/${r.fileName} (${r.format})`;
-        if (r.status === "success") {
-            success(`   ${line}`);
-        } else {
-            error(`  ${line}`);
-        }
+function watcherMod():void {
+    console.log(String.raw` __     __     ______     ______   ______     __  __     ______     ______    `);
+    console.log(String.raw`/\ \  _ \ \   /\  __ \   /\__  _\ /\  ___\   /\ \_\ \   /\  ___\   /\  == \   `);
+    console.log(String.raw`\ \ \/ ".\ \  \ \  __ \  \/_/\ \/ \ \ \____  \ \  __ \  \ \  __\   \ \  __<   `);
+    console.log(String.raw` \ \__/".~\_\  \ \_\ \_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_____\  \ \_\ \_\ `);
+    console.log(String.raw`  \/_/   \/_/   \/_/\/_/     \/_/   \/_____/   \/_/\/_/   \/_____/   \/_/ /_/ `);
+    console.log(`\n`);
+}
+
+function batchMod():void {
+    console.log(String.raw` ______     ______     ______   ______     __  __    `);
+    console.log(String.raw`/\  == \   /\  __ \   /\__  _\ /\  ___\   /\ \_\ \   `);
+    console.log(String.raw`\ \  __<   \ \  __ \  \/_/\ \/ \ \ \____  \ \  __ \  `);
+    console.log(String.raw` \ \_____\  \ \_\ \_\    \ \_\  \ \_____\  \ \_\ \_\ `);
+    console.log(String.raw`  \/_____/   \/_/\/_/     \/_/   \/_____/   \/_/\/_/ `);
+    console.log(`\n`);
+}
+
+function interactiveMod():void {
+    console.log(String.raw` __     __   __     ______   ______     ______     ______     ______     ______   __     __   __   ______    `);
+    console.log(String.raw`/\ \   /\ "-.\ \   /\__  _\ /\  ___\   /\  == \   /\  __ \   /\  ___\   /\__  _\ /\ \   /\ \ / /  /\  ___\   `);
+    console.log(String.raw`\ \ \  \ \ \-.  \  \/_/\ \/ \ \  __\   \ \  __<   \ \  __ \  \ \ \____  \/_/\ \/ \ \ \  \ \ \'/   \ \  __\   `);
+    console.log(String.raw` \ \_\  \ \_\\"\_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_\ \_\  \ \_____\    \ \_\  \ \_\  \ \__|    \ \_____\ `);
+    console.log(String.raw`  \/_/   \/_/ \/_/     \/_/   \/_____/   \/_/ /_/   \/_/\/_/   \/_____/     \/_/   \/_/   \/_/      \/_____/ `);
+    console.log(`\n`);
+}
+
+/**
+ * Display the ASCII-art banner matching the current mode.
+ * 
+ * Unknown values are silently ignored, so script can call from any code path 
+ * without first validating the mode.
+ * 
+ * @param mod One of `"interactive"`, `"batch"` and `"watcher"`.
+ */
+export function changeMod(mod: string):void {
+    switch (mod) {
+        case "interactive":
+            interactiveMod();
+            break;
+        case "batch":
+            batchMod();
+            break;
+        case "watcher":
+            watcherMod();
+            break;
+        default:
+            break;
     }
-
-    // Section commandes à reproduire (si échecs)
-    const failed = batchResults.filter(r => r.status === "error" && r.failedCommand);
-    if (failed.length > 0) {
-        info("");
-        info(">> Failed commands (run manually to investigate)");
-        for (const r of failed) {
-            error(`  ${r.language}/${r.fileName} (${r.format}):`);
-            error(`    ${r.failedCommand}`);
-        }
-    }
-
-    const batchOk = batchResults.filter(r => r.status === "success").length;
-    const batchKo = batchResults.length - batchOk;
-
-    console.log("");
-    info("=".repeat(60));
-    info(`Batch:   ${batchOk}/${batchResults.length} succeeded, ${batchKo} error(s)`);
-    info("=".repeat(60));
-
-    if (batchKo > 0) {
-        return false;
-    } else return true;
 }
