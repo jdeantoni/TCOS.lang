@@ -5,6 +5,7 @@
 
 import * as path from 'path';
 import { DAG, LANGUAGES, ROOT } from './project';
+import { FoundNode, LanguageConfig } from './types';
 
 const dependents: Record<string, string[]> = {};
 
@@ -26,26 +27,44 @@ export function buildDependants(): void{
 }
 
 /**
- * Identify what a changed file path corresponds to.
- * 
- * A path inside a DAG node's source folder maps to that node 
- * @param filePath 
- * @returns 
+ * Identify what a changed file path corresponds to, so the watcher
+ * knows what to rebuild.
+ *
+ * Two cases are recognized:
+ * - `"node"`: change affecting a DAG node. Either a file inside
+ *      a node's source folder, or a TCOS spec file at the root of
+ *      `examples/languages/` declared by some entry of
+ *      {@link LANGUAGES}.
+ * - `"program"`: program source file under `examples/programs/`
+ *      matching a known language extension.
+ *
+ * @param filePath Absolute path of the changed file.
+ * @returns A discriminated record describing the change, or
+ *          `null` if the path isn't tracked.
  */
-export function findNode(filePath: string): {type: "dag-node", name:string} | {type: "program", file: string, language: string} | null {
-    for (const nodeName of Object.keys(DAG)){
-        const srcPath = getNodePath(nodeName);
-        if (filePath.startsWith(srcPath)){
-            return {type: "dag-node", name: nodeName};
+export function findNode(filePath: string): FoundNode | null {
+    for (const nodeName of Object.keys(DAG)) {
+        if (filePath.startsWith(getNodePath(nodeName))) {
+            return { type: "node", name: nodeName };
         }
     }
 
-    const programFolder = path.join(ROOT, "examples", "programs");
-    if (filePath.startsWith(programFolder)){
-        const fileName = path.basename(filePath);
-        for (const [langName, config] of Object.entries(LANGUAGES)){
-            if (fileName.endsWith(config.extension)){
-                return {type: "program", file: fileName, language:langName};
+    const fileName = path.basename(filePath);
+
+    const languagesFolder = path.join(ROOT, "examples", "languages") + path.sep;
+    if (filePath.startsWith(languagesFolder)) {
+        for (const [langName, config] of Object.entries(LANGUAGES)) {
+            if (fileName === config.tcosFile) {
+                return { type: "node", name: langName };
+            }
+        }
+    }
+
+    const programsFolder = path.join(ROOT, "examples", "programs") + path.sep;
+    if (filePath.startsWith(programsFolder)) {
+        for (const [langName, config] of Object.entries(LANGUAGES)) {
+            if (fileName.endsWith(config.extension)) {
+                return { type: "program", file: fileName, language: langName };
             }
         }
     }

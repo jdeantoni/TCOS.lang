@@ -1,39 +1,80 @@
 # TCOS.lang (Timed and Concurrent Operational Semantics)
 
- * [Overview](##overview)
-    * [Conceptual Overview](###conceptualoverview)
-    * [Technical Overview](###technicaloverview)
- * Usage
-    * [As a Language Engineer](###asalanguageengineer)
-    * [As a (Meta) Developper](###asa(meta)developper)
+ * [Quickstart](#quickstart)
+ * [Facts](#facts)
+ * [Overview](#overview)
+    * [Architecture Overview](#architecture-overview)
+    * [Conceptual Overview](#conceptual-overview)
+    * [Technical Overview](#technical-overview)
+ * [Usage](#usage)
+    * [As a Language Engineer](#as-a-language-engineer)
+    * [Manual install (without the scripts)](#manual-install-without-the-scripts)
+ * [Related documentation](#related-documentation)
+    * [Languages](#languages)
+    * [Packages](#packages)
+    * [Scripts](#scripts)
+ * [License](#license)
+
+## Quickstart
+
+```bash
+cd scripts
+npm install
+npm run batch
+```
+
+This installs all packages and languages, then generates every test program in all three formats. For active development, use `npm run watch` instead. See the [script usage guide](./scripts/script-usage-guide.md) for more details.
 
 ## Facts
 
-TCOS is an open source language engineering tool. It provides a domain specific (meta) language for the definition of programmning language's behavioural semantics.
+TCOS is an open source language engineering tool. It provides a domain specific (meta) language for the definition of programming language's behavioural semantics.
 
-TCOS is particularly appropriate to programming languages embeeding concurrency and timing aspects. 
+TCOS is particularly appropriate to programming languages embedding concurrency and timing aspects. 
 
-A TCOS specification is linked to a [(Langium) BNF](https://langium.org/) and specifies how to execute programs conforming the imported BNF.
+A TCOS specification is linked to a [(Langium) BNF](https://langium.org/) and specifies how to execute programs conforming to the imported BNF.
 
-A TCOS specification is amenable to the automatic generation of a compiler (tranpiler) for the imported language. Resulting code is free of any TCOS related library and can easily be embedded.
+A TCOS specification is amenable to the automatic generation of a compiler (transpiler) for the imported language. Resulting code is free of any TCOS related library and can easily be embedded.
 
 A main difference between TCOS and other language for behavioral semantics specification, is that it reifies the notion of *events* and *clocks* to ease the specification of timed and concurrent semantics. These notions are used to make explicit the control flow in a program instead of using pattern matching.
 
-The project is still in infancy phase and is continously evolving.
+The project is still in infancy phase and is continuously evolving.
 
 If you're interested by any aspect of this language, please contact me, create issues or fork as wished.
 
-If you're curious to see what a very simple TCOS specification looks like, see [./examples/languages/parLang.sos](./examples/languages/parLang.sos)
+If you're curious to see what a very simple TCOS specification looks like, see [./examples/languages/parLang.tcos](./examples/languages/parLang.tcos)
 
-A more advanced example can be found [here]([./examples/languages/testFSE.sos]). Some others are in the pipes.
+A more advanced example can be found [here](./examples/languages/simpleL.tcos). Some others are in the works.
 
 ## Overview
+
+### Architecture Overview
+
+```tree
+📁 TCOS.lang
+├── 📁 packages/              # Core TCOS infrastructure
+│   ├── 📁 CCFG/              # Concurrent Control Flow Graph: intermediate representation
+│   ├── 📁 backend-compiler/  # CCFG → C++ / Python / JavaScript code generation
+│   ├── 📁 interpreter/       # CCFG interpreter, used for debugging
+│   └── 📁 TCOS/              # Meta-compiler: turns .tcos / .sos specs into front-end compilers
+│
+├── 📁 examples/
+│   ├── 📁 languages/         # Example languages (.langium grammars + .tcos / .sos semantics)
+│   └── 📁 programs/          # Test programs written in those languages
+│
+├── 📁 scripts/               # Install + batch/watch generation automation
+│   └── 📁 src/               # TypeScript sources — see scripts/script-maintenance.md
+│
+├── 📁 docs/                  # Figures and screenshots referenced by the README
+│
+├── 📄 README.md
+└── 📄 LICENSE
+```
 
 ### Conceptual Overview
 
 TCOS is a meta-language used to specify the timed and concurrent operational semantics of a syntax given in an eBNF format. For a specific program $p$ in a language $L$, the TCOS semantics of $L$ specify the partial ordering among actions that alter the state of the program $p$.
 
-To allow various implementations that satisfy the partial ordering corresponding to $p$, it is necessary to define a specific artifact that makes the partial order explicit and tractable (CCFG in Figure 1). This intermediate representation can then be compiled into various concrete parallelism mechanisms by different _back-ends. In TCOS, the intermediate representation is strongly influenced by existing works on Concurrent Control Flow Graphs (CCFG).
+To allow various implementations that satisfy the partial ordering corresponding to $p$, it is necessary to define a specific artifact that makes the partial order explicit and tractable (CCFG in Figure 1). This intermediate representation can then be compiled into various concrete parallelism mechanisms by different _back-ends_. In TCOS, the intermediate representation is strongly influenced by existing works on Concurrent Control Flow Graphs (CCFG).
 
 To automatically generate a compiler that converts a program into its corresponding CCFG (using only the behavioral semantics specification), we cannot rely on any pattern matching mechanism since it would require a symbolic execution of the program. Instead, we specify ordering conditions over the _start_ or _termination_ of actions that alter the program's state. Consequently, we reify concurrency concerns so that a semantic rule in TCOS has the form $P_{event} \rightarrow actions$, where $P_{event}$ is a --possibly conditional-- predicate over the start or termination of actions. When $P_{event}$ is satisfied, it implies $actions$, which is a partially ordered set of atomic or non-atomic actions.
 
@@ -61,11 +102,11 @@ The semantics specification and the generated compiler front-end are inherently 
 
 ### As a Language Engineer
 
-TCOS is implemented in TypeScript and distributed as a VS-Code extension. checkout the code and starta vscode in the ```sos``` folder. ```npm i```, ```npm run build``` and ```F5``` will start a VS-Code with the TCOS extension deployed. If you want to use the example, open the [./examples/languages/](./examples/languages/) folder in the started VS-Code. It contains subfolders that contain *LSP ready Langium based grammar definition* (```npm i; npm run langium:generate; npm run build``` in subfolders to install the grammar, parser and editors). The folders have been initially generated by using the ```yo langium``` wizard.
+TCOS is implemented in TypeScript and distributed as a VS-Code extension. checkout the code and start a VS-Code in the `packages/TCOS` folder. `npm i`, `npm run build` and `F5` will start a VS-Code with the TCOS extension deployed. If you want to use the example, open the [./examples/languages/](./examples/languages/) folder in the started VS-Code. It contains subfolders that contain *LSP ready Langium based grammar definition* (`npm i; npm run langium:generate; npm run build` in subfolders to install the grammar, parser and editors). The folders have been initially generated by using the `yo langium` wizard.
 
-The semantics definitions are for now at the root of the [./examples/languages/](./examples/languages/) folder. Their extension is *.sos*.
+The semantics definitions are for now at the root of the [./examples/languages/](./examples/languages/) folder. Their extension is `.tcos` and `.sos`.
 
-Figure 2 is a example of a langium grammar file and a corresponding TCOS semantics file. On the left side, the grammar, given in the Langium BNF format is provided. On the right side, the TCOS file is provided. A TCOS semantics has a name. Then it imports a langium grammar, which it decorates with rules defining the semantics. For instance line 5 to 13, the ```Program``` concept from the grammar is reopened and two rules are woven in it. Rule can navigate to attributes defined in the grammar (like the ```stmt``` attribute, defined in the grammar line 4 and used lines 8 and 10 in the TCOs file).
+Figure 2 is an example of a langium grammar file and a corresponding TCOS semantics file. On the left side, the grammar, given in the Langium BNF format is provided. On the right side, the TCOS file is provided. A TCOS semantics has a name. Then it imports a langium grammar, which it decorates with rules defining the semantics. For instance lines 5 to 13, the `Program` concept from the grammar is reopened and two rules are woven in it. Rule can navigate to attributes defined in the grammar (like the `stmt` attribute, defined in the grammar line 4 and used lines 8 and 10 in the TCOs file).
 
 This README does not explain all the TCOS syntax but to give the flavor, the two first rules (defined lines 6 to 8 and 10 to 12) should be understood as 
 > rule 1: when the semantics evaluation of a *Program* AST node *starts*, then the node *stmt* should be started in the same context σ.
@@ -77,33 +118,57 @@ This README does not explain all the TCOS syntax but to give the flavor, the two
         Figure 2. Annotated screenshot of parlang syntax and semantics in their respective editors
 </p>
 
-Once the semantics is defined, the compiler front end can be generated by running: `node ../../sos/bin/cli.js generate parLang.sos -d ParLang/`. This generates the following file: `ParLang/src/cli/generated/parLang.ts`
+Once the semantics is defined, the compiler front end can be generated by running: `node ../../packages/TCOS/bin/cli.js generate parLang.sos -d ParLang/`. This generates the following file: `ParLang/src/cli/generated/parLang.ts`
 
 This file contains the code to generate a Concurrent Control Flow Graph (CCFG) from any ParLang program. In order to test it, compile it (`npm run build` in the ParLang folder) and launch a new VS-Code extension that contains the extension for the Parlang editor and compiler. In the new VS-Code instance, open the [./examples/programs/](./examples/programs/) folder.
 
-Below is an example of a ParLang program with the corresponding CCFG. The CCFG (and the C++ code) have been obtained by running: `node ../languages/ParLang/bin/cli.js generate test1.parlang`. Explanantions are not provided in this README by one can see that: 1) the program never terminates (its terminates node, on the right in the picture is not reachable from the start node); and 2) there is a cycle (initiated in the blue node).
+Below is an example of a ParLang program with the corresponding CCFG. The CCFG (and the C++ code) have been obtained by running: `node ../languages/ParLang/bin/cli.js generate test1.parlang`. Explanations are not provided in this README but one can see that: 1) the program never terminates (its terminates node, on the right in the picture is not reachable from the start node); and 2) there is a cycle (initiated in the blue node).
 
 <p align="center" width="100%">
     <a href="./docs/screenshots/parLangScreenShotProgramAndCCFG.png" target=_blank><img width="70%" src="./docs/screenshots/parLangScreenShotProgramAndCCFG.png"> <br/></a>
         Figure 3. A ParLang program and its corresponding CCFG
 </p>
-![A ParLang program and its CCFG]()
 
-The dot file and the generated C++ code are provided in the `generated` folder. the generated code compile the easiest way: `g++ test1.cpp -o test1.exe`. These generated artefacts can be found in the [./examples/programs/generated](./examples/programs/generated) folder. 
+- [The ParLang program](./examples/programs/test1.parlang)
+- [The Parlang CCFG](./examples/programs/generated/test1.dot)
 
-other options:
+The dot file and the generated C++ code are provided in the `generated` folder. the generated code compiles the easiest way: `g++ test1.cpp -o test1.exe`. These generated artefacts can be found in the [./examples/programs/generated](./examples/programs/generated) folder. 
+
+Other options:
  * `node ../languages/ParLang/bin/cli.js generate test1.parlang --debug` to add console prints to the generated code
  * `node ../languages/ParLang/bin/cli.js generate test1.parlang --python` to compile in python instead of C++
  * `node ../languages/ParLang/bin/cli.js generate test1.parlang --js` to compile in js instead of C++
 
-note: the `--debug` function can be used with any compiler backend (c++, python or js). However, the `--python` and `--js` options are exclusives. 
+Note: the `--debug` function can be used with any compiler backend (c++, python or js). However, the `--python` and `--js` options are exclusive. 
 
 
-### As a (Meta) Developper
+### Manual install (without the scripts)
 
-in the packages folder:
+>The recommended path is the Quickstart above. This section documents the underlying steps for reference.
+
+In the packages folder:
 
  * in the CCFG folder: `npm install` `npm run build` `npm link`
  * in the backend-compiler folder: `npm install` `npm link ccfg` `npm run build` `npm link`
  * in the TCOS folder: `npm install` `npm link ccfg backend-compiler` `npm run build`
-    
+
+## Related documentation
+
+### Languages
+
+- [fsm quickstart](./examples/languages/fsm/langium-quickstart.md)
+- [ParLang quickstart](./examples/languages/ParLang/langium-quickstart.md)
+- [simpleL quickstart](./examples/languages/simpleL/langium-quickstart.md)
+
+### Packages
+
+- [TCOS langium quickstart](./packages/TCOS/langium-quickstart.md)
+
+### Scripts
+
+- [Usage guide](./scripts/script-usage-guide.md)
+- [Maintenance](./scripts/script-maintenance.md)
+
+## License
+
+This project is licensed under [LICENSE](./LICENSE).

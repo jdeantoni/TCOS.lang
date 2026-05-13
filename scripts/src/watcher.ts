@@ -7,14 +7,13 @@
  */
 
 import * as path from 'path';
-import { readdirSync } from 'fs';
 import * as chokidar from 'chokidar';
 import { executeCommand } from './commands';
+import { DAG, LANGUAGES, ROOT } from './project';
 import { BatchResult, InstallResult } from './types';
-import { generateFileForAllFormats } from './generation';
-import { DAG, LANGUAGES, PROGRAMS_FOLDER, ROOT } from './project';
-import { buildDependants, checkAbort, computeCascade, findNode, getNodePath } from './utils';
+import { regenerateOneProgram, regeneratePrograms } from './generation';
 import { success, warning, error, info, printFullSummary, startWatcher, printSummary } from './display';
+import { buildDependants, checkAbort, computeCascade, findNode, getNodePath } from './utils';
 
 let currentBuildController: AbortController | null = null;
 
@@ -36,7 +35,7 @@ export function watcherCommand(installResults: InstallResult[], batchResults: Ba
     printFullSummary(installResults, batchResults);
     startWatcher();
 
-    const watcherPaths = [...Object.keys(DAG).map(getNodePath), path.join(ROOT, "examples", "programs")];
+    const watcherPaths = [...Object.keys(DAG).map(getNodePath), path.join(ROOT, "examples", "programs"), path.join(ROOT, "examples", "languages")];
     const watcher = chokidar.watch(watcherPaths, {
         ignoreInitial: true,
         ignored: (filePath, stats) => {
@@ -44,8 +43,15 @@ export function watcherCommand(installResults: InstallResult[], batchResults: Ba
             for (const name of banFolder){
                 if (filePath.includes(name)) return true;
             }
-            if (stats?.isFile() && !(filePath.endsWith(".ts") 
-                || Object.values(LANGUAGES).some(config => filePath.endsWith(config.extension)) || filePath.endsWith(".langium"))) return true;
+            if (stats?.isFile() && 
+                !(
+                    filePath.endsWith(".ts") 
+                    || Object.values(LANGUAGES).some(config => filePath.endsWith(config.extension)) 
+                    || filePath.endsWith(".langium")
+                    || filePath.endsWith(".tcos")
+                    || filePath.endsWith(".sos")
+                )
+            ) return true;
 
             return false;
         },
@@ -74,11 +80,11 @@ export function watcherCommand(installResults: InstallResult[], batchResults: Ba
         }
         
         try {
-            if (detected.type === "dag-node") {
-                const relativePath = path.relative(ROOT, filePath);
+            const relativePath = path.relative(ROOT, filePath);
+            if (detected.type === "node") {
+                console.log(`detective.name: ${detected.name}`);
                 await rebuildAll(detected.name, relativePath, controller.signal);
-            } else {
-                // type === "program"
+            } else if (detected.type === "program") {
                 await regenerateOneProgram(detected.file, detected.language, controller.signal);
             }
         } catch (error) {
@@ -132,8 +138,6 @@ async function rebuildAll(nodeName: string, relativePath: string, signal: AbortS
                 status: "error"
             });
             error(`Interrupted cascade at ${node}`);
-            printFullSummary(rebuildResults, programResults);
-            return;
         }
     }
 
@@ -188,55 +192,4 @@ async function rebuildNode(node: string, signal: AbortSignal): Promise<InstallRe
 
     success(`[${node}] Rebuild completed!`);
     return { name: node, type, status: "success" };
-}
-
-/**
- * Regenerate every program file matching a given language's extension under `PROGRAMS_FOLDER`, in all target formats.
- * 
- * Used after a language is rebuild so the generated outputs stay in sync with the new compiler. Abort cleanly if `signal`
- * is cancelled between two files.
- * 
- * @param language Name of the language whose programs should be regenerated.
- * @param signal Abort signal to interrupt regeneration.
- * @returns One {@link BatchResult} per `(file, format)` pair.
- */
-async function regeneratePrograms(language: string, signal: AbortSignal): Promise<BatchResult[]> {
-    const results: BatchResult[] = [];
-    const langConfig = LANGUAGES[language];
-    if (!langConfig) return [];
-    
-    
-    const files = readdirSync(PROGRAMS_FOLDER).filter(f => f.endsWith(langConfig.extension));
-    info(`[${language}] Regenerating ${files.length} programs...`);
-    
-    for (const file of files) {
-        checkAbort(signal);
-        const fileName = file.slice(0, -langConfig.extension.length);
-        const fileResults = await generateFileForAllFormats(language, fileName, file);
-        results.push(...fileResults);
-    }
-    
-    return results;
-}
-
-/**
- * Regenerate a single program file in all target formats and print its summary.
- * 
- * Called when the watcher detects a change in `examples/programs/<file>` rather than in a source
- * folder, so only that file is regenerated.
- *  
- * @param fullFileName File name including the language extension (e.g. `"test1.parlang"`). 
- * @param language Name of the language whose CLI invoked.
- * @param signal Abort signal to interrupt regeneration. 
- */
-async function regenerateOneProgram(fullFileName: string, language: string, signal: AbortSignal): Promise<void>{
-    const langConfig = LANGUAGES[language];
-    if (!langConfig) return;
-
-    checkAbort(signal);
-    const fileName = fullFileName.slice(0, -langConfig.extension.length);
-    info(`[${language}] Regenerating ${fileName}...`);
-
-    const results = await generateFileForAllFormats(language, fileName, fullFileName);
-    printSummary(results);
 }

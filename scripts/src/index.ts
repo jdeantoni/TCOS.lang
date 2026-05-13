@@ -2,22 +2,19 @@
  * This file is the entry point of our script
  */
 
+import { setVerbose } from './state';
 import { BatchResult } from './types';
 import { watcherCommand } from './watcher';
-import { setInteractive, setVerbose } from './state';
-import { generatePrograms, generateBatch } from './generation';
+import { generateBatch } from './generation';
+import { error, success, printFullSummary, changeMod } from './display';
 import { installAllPackages, installAllLanguages } from './installation';
-import { error, success, closeInput, printFullSummary, changeMod } from './display';
-
-// TODO(isomorphism): Reintegrate verifyCCFG when the comparison strategy is finalized with the leader. See notes/isomorphism.md
-// import { verifyCCFG } from './verification';
 
 /**
  * Entry point of the script.
  *
  * Runs the full workflow in order: install all packages, install all
- * languages, then start the interactive program generation loop and after verify the CCFG with a regression test.
- * On any failure the error is logged and the process exits with code 1. The readline input is always closed at the end.
+ * languages, then start the mod program generation loop and after verify the CCFG with a regression test.
+ * On any failure the error is logged and the process exits with code 1.
  */
 async function main(): Promise<void>{
     const isBatch = process.argv.includes("--batch");
@@ -25,13 +22,9 @@ async function main(): Promise<void>{
     const isWatch = process.argv.includes("--watch");
     
     let results: BatchResult[] = [];
-    let mod = "interactive";
+    let mod = "batch";
    
-    if (isBatch || isWatch) {
-        setInteractive(false);
-        if (isBatch) mod = "batch";
-        else mod = "watcher"
-    }
+    if (isWatch) mod = "watcher";
     if (writeAll) setVerbose(true);
 
     try {
@@ -45,8 +38,6 @@ async function main(): Promise<void>{
         } else if (isWatch) {
             results = await generateBatch();
             await watcherCommand(installResults, results);
-        } else {
-            results = await generatePrograms();
         }
 
         // Watch mode prints its own summary inside watcherCommand
@@ -61,8 +52,6 @@ async function main(): Promise<void>{
         error("Script failed!");
         console.error(err);
         process.exit(1);
-    } finally {
-        closeInput();
     }
 }
 

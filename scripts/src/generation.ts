@@ -1,6 +1,5 @@
 /**
- * Program generation, in three modes:
- *   - interactive ({@link generatePrograms}): wizard loop driven by user prompts
+ * Program generation, in two modes:
  *   - batch ({@link generateBatch}): regenerate every discovered program in every format with debug enabled
  *   - per-file ({@link generateFileForAllFormats}): used by the watcher to refresh a single program after a change
  *
@@ -10,64 +9,11 @@
 
 import * as path from 'path';
 import { readdirSync } from 'fs';
+import { checkAbort } from './utils';
 import { BatchResult } from './types';
 import { executeCommand } from './commands';
+import { info, printSummary, warning } from './display';
 import { LANGUAGES, TARGET_FORMATS, PROGRAMS_FOLDER } from './project';
-import { info, success, error, askYesNo, askText, askChoice, warning } from './display';
-
-/**
- * Run the program generation wizard in a loop.
- *
- * Each iteration prompts the user for:
- *   - the language folder to use (e.g. "Parlang", "SimpleL")
- *   - the source file name
- *   - the target output format (C++, Python or JavaScript)
- *   - whether to enable debug mode
- *
- * The matching language CLI is then invoked from `examples/programs/`.
- * The loop keeps going until the user declines to generate another program.
- */
-export async function generatePrograms(): Promise<Array<BatchResult>> {
-    const results: Array<BatchResult> = [];
-    
-    let shouldContinue = true;
-    
-    while (shouldContinue) {
-        info("Program Generation :");
-        
-        const folder = await askChoice("Which language?", Object.keys(LANGUAGES));
-        const fileName = await askText("File name (ex: test1): ");
-        const sourceFile = fileName + LANGUAGES[folder].extension;
-        const format = await askChoice("Output format:", TARGET_FORMATS);
-        const debug = await askYesNo("Enable debug mode?");
-        
-        const command = buildGenerationCommand(folder, sourceFile, format, debug);
-
-        try {
-            await executeCommand(command, PROGRAMS_FOLDER);
-            success(`Successfully generated ${sourceFile} in examples/programs/generated/`);
-            results.push({
-                language: folder,
-                fileName,
-                format,
-                status: "success",
-                dotName: `${fileName}.dot`
-            });
-        } catch (err) {
-            error("Generation failed!");
-            results.push({
-                language: folder,
-                fileName,
-                format,
-                status: "error",
-                failedCommand: command
-            });
-        }
-        
-        shouldContinue = await askYesNo("Do you want to generate another program?");
-    }
-    return results;
-}
 
 /**
  * Build the CLI command to generate a program with a given format and debug flag.
@@ -176,4 +122,59 @@ export async function generateFileForAllFormats(language: string, fileName: stri
         }
     }
     return results;
+}
+
+// ============================================================
+// Watch regeneration
+// ============================================================
+
+/**
+ * Regenerate every program file matching a given language's extension under `PROGRAMS_FOLDER`, in all target formats.
+ * 
+ * Used after a language is rebuild so the generated outputs stay in sync with the new compiler. Abort cleanly if `signal`
+ * is cancelled between two files.
+ * 
+ * @param language Name of the language whose programs should be regenerated.
+ * @param signal Abort signal to interrupt regeneration.
+ * @returns One {@link BatchResult} per `(file, format)` pair.
+ */
+export async function regeneratePrograms(language: string, signal: AbortSignal): Promise<BatchResult[]> {
+    const results: BatchResult[] = [];
+    const langConfig = LANGUAGES[language];
+    if (!langConfig) return [];
+    
+    
+    const files = readdirSync(PROGRAMS_FOLDER).filter(f => f.endsWith(langConfig.extension));
+    info(`[${language}] Regenerating ${files.length} programs...`);
+    
+    for (const file of files) {
+        checkAbort(signal);
+        const fileName = file.slice(0, -langConfig.extension.length);
+        const fileResults = await generateFileForAllFormats(language, fileName, file);
+        results.push(...fileResults);
+    }
+    
+    return results;
+}
+
+/**
+ * Regenerate a single program file in all target formats and print its summary.
+ * 
+ * Called when the watcher detects a change in `examples/programs/<file>` rather than in a source
+ * folder, so only that file is regenerated.
+ *  
+ * @param fullFileName File name including the language extension (e.g. `"test1.parlang"`). 
+ * @param language Name of the language whose CLI invoked.
+ * @param signal Abort signal to interrupt regeneration. 
+ */
+export async function regenerateOneProgram(fullFileName: string, language: string, signal: AbortSignal): Promise<void>{
+    const langConfig = LANGUAGES[language];
+    if (!langConfig) return;
+
+    checkAbort(signal);
+    const fileName = fullFileName.slice(0, -langConfig.extension.length);
+    info(`[${language}] Regenerating ${fileName}...`);
+
+    const results = await generateFileForAllFormats(language, fileName, fullFileName);
+    printSummary(results);
 }

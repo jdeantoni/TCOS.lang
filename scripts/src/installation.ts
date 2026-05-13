@@ -4,8 +4,8 @@
 
 import * as path from 'path';
 import { executeCommand } from './commands';
-import { LANGUAGES, PACKAGES, ROOT } from './project';
-import { info, success, error, askForVSCode } from './display';
+import { DAG, LANGUAGES, ROOT } from './project';
+import { info, success, error, popIndent, pushIndent } from './display';
 import { installationOptions, InstallResult, LanguageConfig } from './types';
 
 /**
@@ -51,10 +51,11 @@ async function runNpmPipeline(folder: string, options: installationOptions = {})
 export async function installAllPackages(): Promise<InstallResult[]>{
 
     const results: InstallResult[] = [];
-    for (const name of Object.keys(PACKAGES)) {
-        const  result = await installPackage(name, PACKAGES[name]);
-        results.push(result);
-        await askForVSCode(name, "packages");
+    for (const [name, info] of Object.entries(DAG)) {
+        if (info.folder === "packages" && name !== "interpreter"){
+            const  result = await installPackage(name, info.dependsOn);
+            results.push(result);
+        }
     }
     return results;
 }
@@ -65,7 +66,6 @@ export async function installAllLanguages(): Promise<InstallResult[]>{
     for (const name of Object.keys(LANGUAGES)) {
         const result = await installLanguage(name, LANGUAGES[name]);
         results.push(result);
-        await askForVSCode(name, "examples/languages");
     }
     return results;
 }
@@ -86,6 +86,7 @@ export async function installAllLanguages(): Promise<InstallResult[]>{
  */
 async function installPackage(name: string, dependances: string[]): Promise<InstallResult> {
     info(`${name} installation...`);
+    pushIndent();
     const folder = path.join(ROOT, "packages", name);
 
     try {
@@ -93,12 +94,16 @@ async function installPackage(name: string, dependances: string[]): Promise<Inst
             link: dependances,
             linkSelf: name !== "tcos"
         });
-
+        popIndent();
         success(`${name} dependances was installed!`);
         return {name, type: "package", status: "success"};
     } catch (err) {
+        popIndent();
         error(`${name} installation failed!`);
         return {name, type: "package", status: "error"};
+    }
+    finally{
+        console.log("");
     }
 }
 
@@ -119,7 +124,7 @@ async function installPackage(name: string, dependances: string[]): Promise<Inst
  */
 async function installLanguage(name: string, config: LanguageConfig): Promise<InstallResult>{
     info(`${name} installation...`);
-
+    pushIndent();
     const languagesFolder = path.join(ROOT, "examples", "languages");
     const folder = path.join(languagesFolder, name);
 
@@ -134,11 +139,15 @@ async function installLanguage(name: string, config: LanguageConfig): Promise<In
                 )
             ]
         });
-
+        popIndent();
         success(`${name} dependances was installed!`);
         return {name, type: "language", status: "success"};
     } catch (err) {
+        popIndent();
         error(`${name} installation failed!`);
         return {name, type: "language", status: "error"};
+    }
+    finally{
+        console.log("");
     }
 }

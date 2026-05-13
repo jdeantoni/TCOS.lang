@@ -34,3 +34,7 @@ export interface NodeInfo {
     folder: string;
     dependsOn: string[];
 }
+
+export type FoundNode = 
+    | {type: "node", name:string}
+    | {type: "program", file: string, language: string};

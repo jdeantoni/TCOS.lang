@@ -11,11 +11,11 @@ import { LanguageConfig, NodeInfo } from "./types";
 // ============================================================
 
 export const ROOT = path.resolve(__dirname, '../..')
-export const LOGS_DIR = path.join(ROOT, "examples", "programs", "logs");
 export const PROGRAMS_FOLDER = path.join(ROOT, "examples", "programs");
+export const LOGS_DIR = path.join(ROOT, "examples", "programs", "logs");
 
 // ============================================================
-// Languages & packages
+// Languages & formats
 // ============================================================
 
 /**
@@ -30,7 +30,7 @@ export const LANGUAGES: Record<string, LanguageConfig> = {
     "ParLang": {
         extension: ".parlang",
         npmLinks: ["ccfg", "backend-compiler"],
-        tcosFile: "parlang.tcos"
+        tcosFile: "parLang.tcos"
     },
     "simpleL": {
         extension: ".simple",
@@ -42,19 +42,6 @@ export const LANGUAGES: Record<string, LanguageConfig> = {
         npmLinks: ["ccfg", "backend-compiler"],
         tcosFile: "testFSM.sos"
     }
-};
-
-/**
- * Local npm packages and the local packages they depend on.
- *
- * Used by the installer to drive `npm link <deps>` in the right
- * order. Keep in sync with {@link DAG} when adding a package.
- */
-export const PACKAGES: Record<string, string[]> = {
-    "ccfg": [],
-    "backend-compiler": ["ccfg"],
-    "interpreter": ["ccfg", "backend-compiler"],
-    "tcos": []
 };
 
 /**
