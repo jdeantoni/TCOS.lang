@@ -11,9 +11,9 @@ def functioninit3Variable():
 	sigma_mutex.release()
 def function5initializeVar(): 
 	
-	Variable0_0_0_101387 = 1 
+	Variable0_0_0_101432 = 1 
 	sigma_mutex.acquire()
-	sigma["Variable0_0_0_10currentValue"] = Variable0_0_0_101387
+	sigma["Variable0_0_0_10currentValue"] = Variable0_0_0_101432
 	sigma_mutex.release()
 def functioninit6Variable(): 
 	sigma_mutex.acquire()
@@ -21,9 +21,9 @@ def functioninit6Variable():
 	sigma_mutex.release()
 def function8initializeVar(): 
 	
-	Variable1_0_1_101387 = 0 
+	Variable1_0_1_101432 = 0 
 	sigma_mutex.acquire()
-	sigma["Variable1_0_1_10currentValue"] = Variable1_0_1_101387
+	sigma["Variable1_0_1_10currentValue"] = Variable1_0_1_101432
 	sigma_mutex.release()
 def function9periodicStart(): 
 	sigma_mutex.acquire()
@@ -34,51 +34,51 @@ def function9periodicStart():
 	sigma_mutex.release()
 def function35executeAssignment2(resRight): 
 	
-	Assignment7_0_7_72534 = resRight 
+	Assignment7_0_7_72622 = resRight 
 	sigma_mutex.acquire()
-	sigma["Variable1_0_1_10currentValue"] = Assignment7_0_7_72534
+	sigma["Variable1_0_1_10currentValue"] = Assignment7_0_7_72622
 	sigma_mutex.release()
 def functioninit44Timer(): 
 	time.sleep(1000//1000) 
 def function36accessVarRef(): 
 	
 	sigma_mutex.acquire()
-	VarRef7_5_7_71593 = sigma["Variable0_0_0_10currentValue"]
+	VarRef7_5_7_71647 = sigma["Variable0_0_0_10currentValue"]
 	sigma_mutex.release()
 	
-	VarRef7_5_7_7terminates = VarRef7_5_7_71593 
+	VarRef7_5_7_7terminates = VarRef7_5_7_71647 
 	return VarRef7_5_7_7terminates 
 def function21executeAssignment2(resRight): 
 	
-	Assignment4_4_4_162534 = resRight 
+	Assignment4_4_4_162622 = resRight 
 	sigma_mutex.acquire()
-	sigma["Variable0_0_0_10currentValue"] = Assignment4_4_4_162534
+	sigma["Variable0_0_0_10currentValue"] = Assignment4_4_4_162622
 	sigma_mutex.release()
 def function27finishPlus(n2, n1): 
 	
-	Plus4_9_4_164397 = n1 
+	Plus4_9_4_164539 = n1 
 	
-	Plus4_9_4_164402 = n2 
+	Plus4_9_4_164544 = n2 
 	
-	Plus4_9_4_164396 = Plus4_9_4_164397 + Plus4_9_4_164402 
+	Plus4_9_4_164538 = Plus4_9_4_164539 + Plus4_9_4_164544 
 	
-	Plus4_9_4_16terminates = Plus4_9_4_164396 
+	Plus4_9_4_16terminates = Plus4_9_4_164538 
 	return Plus4_9_4_16terminates 
 def function30accessVarRef(): 
 	
 	sigma_mutex.acquire()
-	VarRef4_13_4_151593 = sigma["Variable0_0_0_10currentValue"]
+	VarRef4_13_4_151647 = sigma["Variable0_0_0_10currentValue"]
 	sigma_mutex.release()
 	
-	VarRef4_13_4_15terminates = VarRef4_13_4_151593 
+	VarRef4_13_4_15terminates = VarRef4_13_4_151647 
 	return VarRef4_13_4_15terminates 
 def function28accessVarRef(): 
 	
 	sigma_mutex.acquire()
-	VarRef4_10_4_121593 = sigma["Variable0_0_0_10currentValue"]
+	VarRef4_10_4_121647 = sigma["Variable0_0_0_10currentValue"]
 	sigma_mutex.release()
 	
-	VarRef4_10_4_12terminates = VarRef4_10_4_121593 
+	VarRef4_10_4_12terminates = VarRef4_10_4_121647 
 	return VarRef4_10_4_12terminates 
 def main(): 
 	functioninit3Variable(); 
@@ -112,9 +112,7 @@ def main():
 			
 			AndJoinPopped_27_1 = queue27.get() 
 			result27finishPlus = function27finishPlus(AndJoinPopped_27_0, AndJoinPopped_27_1); 
-			function21executeAssignment2(result27finishPlus);
-			for v in sigma: 
-				print(v, sigma[v])
+			function21executeAssignment2(result27finishPlus); 
 		thread15 = threading.Thread(target=codeThread15) 
 		thread15.start() 
 		thread15.join() 

@@ -6,7 +6,6 @@ returnQueue = LifoQueue()
 sigma: dict = {}
 sigma_mutex = threading.Lock()
 def function3perioStart(): 
-	print("	function3perioStart started") 
 	sigma_mutex.acquire()
 	sigma["Perio0_0_2_1blocTrigger"] = int()
 	sigma_mutex.release()
@@ -14,10 +13,8 @@ def function3perioStart():
 	sigma["Perio0_0_2_1blocTrigger"] = 1000
 	sigma_mutex.release()
 def functioninit31Timer(): 
-	print("	functioninit31Timer started") 
 	time.sleep(1000//1000) 
 def function19fugaceStmt1(): 
-	print("	function19fugaceStmt1 started") 
 	sigma_mutex.acquire()
 	sigma["Stmt11_6_1_11fakeState"] = int()
 	sigma_mutex.release()
@@ -25,7 +22,6 @@ def function19fugaceStmt1():
 	sigma["Stmt11_6_1_11fakeState"] = 0
 	sigma_mutex.release()
 def function29fugaceStmt1(): 
-	print("	function29fugaceStmt1 started") 
 	sigma_mutex.acquire()
 	sigma["Stmt11_33_1_38fakeState"] = int()
 	sigma_mutex.release()
@@ -43,16 +39,13 @@ def main():
 		functioninit31Timer(); 
 		sync14 = Queue() 
 		def codeThread9():
-			print("thread9 started") 
 			def codeThread15():
-				print("thread15 started") 
 				function19fugaceStmt1(); 
 				sync14.put(42) 
 			thread15 = threading.Thread(target=codeThread15) 
 			thread15.start() 
 			thread15.join() 
 			def codeThread23():
-				print("thread23 started") 
 				function29fugaceStmt1(); 
 				sync14.put(42) 
 			thread23 = threading.Thread(target=codeThread23) 
@@ -65,7 +58,5 @@ def main():
 		flag8 = True
 		sync14.get() 
 		sync14.get() 
-	for v in sigma:
-		print(str(v)+" = " + str(sigma[v])) 
 if __name__ == "__main__": 
 	main() 

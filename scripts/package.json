@@ -1,0 +1,20 @@
+{
+  "name": "tcos-scripts",
+  "version": "1.0.0",
+  "description": "Scripts d'automatisation pour TCOS.lang",
+  "scripts": {
+    "batch": "npx ts-node src/index.ts --batch",
+    "watch": "npx ts-node src/index.ts --watch --all",
+    "batch:all": "npx ts-node src/index.ts --batch --all"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.39",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@graphty/algorithms": "^1.7.1",
+    "chokidar": "^5.0.0",
+    "dotparser": "^1.1.1"
+  }
+}

@@ -16,21 +16,17 @@
         std::mutex sigma_mutex;  // protects sigma
         
         void function3perioStart(){
-std::cout << "	function3perioStart started" << std::endl;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["Perio0_0_2_1blocTrigger"] = new int();}
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Perio0_0_2_1blocTrigger"]) = 1000;}
 }
 void functioninit31Timer(){
-std::cout << "	functioninit31Timer started" << std::endl;
 	std::this_thread::sleep_for(1000ms);
 }
 void function19fugaceStmt1(){
-std::cout << "	function19fugaceStmt1 started" << std::endl;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["Stmt11_6_1_11fakeState"] = new int();}
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Stmt11_6_1_11fakeState"]) = 0;}
 }
 void function29fugaceStmt1(){
-std::cout << "	function29fugaceStmt1 started" << std::endl;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["Stmt11_33_1_38fakeState"] = new int();}
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Stmt11_33_1_38fakeState"]) = 0;}
 }
@@ -50,16 +46,13 @@ while (flag8 == true){
 		bool flag14 = true;
 		LockingQueue<Void> synch14;
 		std::thread thread9([&](){
-		std::cout << "thread9 started" << std::endl;
 			std::thread thread15([&](){
-			std::cout << "thread15 started" << std::endl;
 				function19fugaceStmt1();
 				{Void fakeParam14;
  				synch14.push(fakeParam14);}
 			});
 			thread15.detach();
 			std::thread thread23([&](){
-			std::cout << "thread23 started" << std::endl;
 				function29fugaceStmt1();
 				{Void fakeParam14;
  				synch14.push(fakeParam14);}
