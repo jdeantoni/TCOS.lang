@@ -1,26 +1,26 @@
-import { AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, TypedElement } from 'ccfg';
-import { Stack } from './TempList.js';
+import { AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, TypedElement } from "ccfg";
+import { Stack } from "./TempList.js";
 // import { MockDebugSession } from './degugger/mockDebug.js';
 // const verifyEqual = "verifyEqual" //verifyEqual,varName1,varName2
-export var debug = false;
+export const debug = false;
 let allFunctions = new Map();
 export async function interpretfromCCFG(ccfg, generator, isDebug) {
     const sigma = new Map();
-    var ThreadList = new Stack();
+    const ThreadList = new Stack();
     // var debugsession: MockDebugSession | undefined =undefined;
     if (isDebug) {
         //debugsession = new MockDebugSession(fileAccessor);
     }
     allFunctions = compileFunctionDefs(ccfg, generator, sigma, undefined);
     if (ccfg.initialState) {
-        let threadInit = new Thread(ccfg.initialState);
+        const threadInit = new Thread(ccfg.initialState);
         ThreadList.push(threadInit);
         await visitAllNodesInterpret(ccfg.initialState, sigma, ThreadList /*, debugsession*/); //breakpointAdresse should be a debug seesion
     }
 }
-function compileFunctionDefs(ccfg, generator, sigma, codeFile) {
-    let functionsDefs = new Map();
-    for (let node of ccfg.nodes) {
+function compileFunctionDefs(ccfg, generator, sigma, _codeFile) {
+    const functionsDefs = new Map();
+    for (const node of ccfg.nodes) {
         // if(node.getType() == "ContainerNode"){
         //     functionsDefs += compileFunctionDefs((node as ContainerNode).internalccfg);
         // }else{
@@ -28,40 +28,40 @@ function compileFunctionDefs(ccfg, generator, sigma, codeFile) {
             continue;
         }
         if (node.returnType != undefined) {
-            for (let fname of node.functionsNames) {
+            for (const fname of node.functionsNames) {
                 // console.log("function name: "+fname);
                 let allFDefs = [];
-                for (let fdef of node.functionsDefs) {
+                for (const fdef of node.functionsDefs) {
                     if (fdef instanceof ReturnInstruction) {
-                        let b = fdef;
+                        const b = fdef;
                         allFDefs = [...allFDefs, ...generator.returnVar(b.varName)];
                     }
                     else if (fdef instanceof CreateVarInstruction) {
-                        let b = fdef;
+                        const b = fdef;
                         allFDefs = [...allFDefs, ...generator.createVar(b.type, b.varName)];
                     }
                     else if (fdef instanceof AssignVarInstruction) {
-                        let b = fdef;
+                        const b = fdef;
                         allFDefs = [...allFDefs, ...generator.assignVar(b.varName, b.value)];
                     }
                     else if (fdef instanceof SetVarFromGlobalInstruction) {
-                        let b = fdef;
+                        const b = fdef;
                         allFDefs = [...allFDefs, ...generator.setVarFromGlobal(b.type, b.varName, b.globalVarName)];
                     }
                     else if (fdef instanceof CreateGlobalVarInstruction) {
-                        let b = fdef;
+                        const b = fdef;
                         allFDefs = [...allFDefs, ...generator.createGlobalVar(b.type, b.varName)];
                     }
                     else if (fdef instanceof SetGlobalVarInstruction) {
-                        let b = fdef;
+                        const b = fdef;
                         allFDefs = [...allFDefs, ...generator.setGlobalVar(b.type, b.globalVarName, b.value)];
                     }
                     else if (fdef instanceof OperationInstruction) {
-                        let b = fdef;
+                        const b = fdef;
                         allFDefs = [...allFDefs, ...generator.operation(b.varName, b.n1, b.op, b.n2)];
                     }
                     else if (fdef instanceof AddSleepInstruction) {
-                        let b = fdef;
+                        const b = fdef;
                         allFDefs = [...allFDefs, ...generator.createSleep(b.duration)];
                     }
                     else {
@@ -71,7 +71,7 @@ function compileFunctionDefs(ccfg, generator, sigma, codeFile) {
                 }
                 //console.log("function name: "+fname+ " allFDefs = "+allFDefs);
                 //generator.createFunction(codeFile,fname, node.params, node.returnType,allFDefs);
-                let fnamestring = "function" + fname;
+                const fnamestring = "function" + fname;
                 functionsDefs.set(fnamestring, defineFunction(fnamestring, node.params, allFDefs, sigma));
             }
         }
@@ -99,8 +99,8 @@ export class Thread {
  * @returns stop the visit
  */
 export async function visitAllNodesInterpret(startNode, sigma, ThreadList /*,  debugsession: MockDebugSession|undefined*/) {
-    var currentNode = startNode;
-    var edgeSelected;
+    let currentNode = startNode;
+    let edgeSelected;
     while (currentNode.outputEdges && ((currentNode.outputEdges[0] && currentNode.outputEdges[0].to) || (currentNode.outputEdges[1] && currentNode.outputEdges[1].to))) {
         /***** Check breakpoint ******/
         // if(debugsession){
@@ -128,7 +128,7 @@ export async function visitAllNodesInterpret(startNode, sigma, ThreadList /*,  d
             }
             case "Fork": {
                 console.log(currentNode.uid + ": (" + currentNode.getType() + ")->");
-                let threadcurrent = ThreadList.peek();
+                const threadcurrent = ThreadList.peek();
                 /***************************** Next step *******************************/
                 //not debug mode
                 edgeSelected = threadcurrent.currentInstruction[0];
@@ -141,14 +141,14 @@ export async function visitAllNodesInterpret(startNode, sigma, ThreadList /*,  d
                 if (Array.isArray(edgeSelected)) { //all of the children execute at the same time
                     threadcurrent.currentInstruction = []; //set to empty list
                     edgeSelected.forEach(edge => {
-                        let threadCurrent = new Thread(edge.to);
+                        const threadCurrent = new Thread(edge.to);
                         ThreadList.push(threadCurrent);
                         visitAllNodesInterpret(edge.to, sigma, ThreadList /*, debugsession*/); //visit the sub-tree
                         return;
                     });
                 }
                 else { // user select only one edge
-                    let threadCurrent = new Thread(edgeSelected.to);
+                    const threadCurrent = new Thread(edgeSelected.to);
                     ThreadList.push(threadCurrent);
                     visitAllNodesInterpret(edgeSelected.to, sigma, ThreadList /*, debugsession*/); //visit the sub-tree
                     return;
@@ -158,8 +158,8 @@ export async function visitAllNodesInterpret(startNode, sigma, ThreadList /*,  d
             }
             case "AndJoin": { //verify if thread.currentInstruction ? = []
                 console.log(currentNode.uid + ": (" + currentNode.getType() + ")->");
-                let threadChild = ThreadList.pop(); //pop the children thread from the list
-                let threadCurrent = ThreadList.peek(); //parent's thread
+                const threadChild = ThreadList.pop(); //pop the children thread from the list
+                const threadCurrent = ThreadList.peek(); //parent's thread
                 //delete the child from list
                 threadCurrent.currentInstruction = threadCurrent.currentInstruction.filter(edge => edge.to.uid !== threadChild.owner.uid);
                 //pick up sub-tree value
@@ -186,12 +186,12 @@ export async function visitAllNodesInterpret(startNode, sigma, ThreadList /*,  d
                 let nodeTrue;
                 let nodeFalse;
                 //get resRight
-                let param = [ThreadList.peek().tempValue.peek()];
+                const param = [ThreadList.peek().tempValue.peek()];
                 ThreadList.peek().tempValue.pop();
                 //evaluation of each edge of choice
                 currentNode.outputEdges.forEach(edge => {
-                    let f = creatFunctionForEdge(edge, sigma);
-                    let bool = f(param);
+                    const f = creatFunctionForEdge(edge, sigma);
+                    const bool = f(param);
                     if (bool) {
                         nodeTrue = edge.to;
                     }
@@ -241,9 +241,9 @@ export async function visitAllNodesInterpret(startNode, sigma, ThreadList /*,  d
  * @returns un Function object
  */
 function defineFunction(functionName, functionParamList, functionBody, sigma) {
-    return new Function('sigma', 'list', `return function ${functionName}(list) {
-        ${functionParamList.reverse().map((param, index) => `let ${param.name} = list[${index}];\n`).join('')}
-        ${functionBody.join('\n')}
+    return new Function("sigma", "list", `return function ${functionName}(list) {
+        ${functionParamList.reverse().map((param, index) => `let ${param.name} = list[${index}];\n`).join("")}
+        ${functionBody.join("\n")}
         \n}`)(sigma);
 }
 /**
@@ -252,9 +252,11 @@ function defineFunction(functionName, functionParamList, functionBody, sigma) {
  * @param ThreadList
  */
 function nodeCode(node, ThreadList) {
-    let functionName = "function" + node.functionsNames[0];
-    let f = allFunctions.get(functionName);
-    let thread = ThreadList.peek();
+    const functionName = "function" + node.functionsNames[0];
+    const f = allFunctions.get(functionName);
+    if (!f)
+        return;
+    const thread = ThreadList.peek();
     if (node.params.length < 1) { //call function without params
         if (node.returnType == "void") {
             console.log(f());
@@ -264,8 +266,8 @@ function nodeCode(node, ThreadList) {
         }
     }
     else { //call function with params                    // TODO:parametres list
-        let param = [];
-        let n = node.inputEdges.length;
+        const param = [];
+        const n = node.inputEdges.length;
         for (let i = 0; i < n; i++) { //get parametres list
             if (thread.tempValue.size() > 0) {
                 param.push(thread.tempValue.pop());
@@ -286,13 +288,13 @@ function nodeCode(node, ThreadList) {
  * @returns Function object
  */
 function creatFunctionForEdge(edge, sigma) {
-    let guard = edge.guards[0].toString().split(","); //["verifyEqual","VarRef2_4_2_6terminate","true"]
-    let paramElement = new TypedElement();
+    const guard = edge.guards[0].toString().split(","); //["verifyEqual","VarRef2_4_2_6terminate","true"]
+    const paramElement = new TypedElement();
     paramElement.name = "resRight";
     paramElement.type = "Number";
-    let params = [paramElement];
-    let functionBody = [];
-    var code = "return resRight ";
+    const params = [paramElement];
+    const functionBody = [];
+    let code = "return resRight ";
     if (guard[0] == "verifyEqual") {
         code += "== ";
     }

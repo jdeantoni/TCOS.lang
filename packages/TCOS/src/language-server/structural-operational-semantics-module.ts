@@ -1,19 +1,19 @@
-import {inject, Module } from 'langium';
+import {inject, Module } from "langium";
 
-import {createLangiumGrammarServices} from 'langium/grammar';
+import {createLangiumGrammarServices} from "langium/grammar";
 
 import {
     createDefaultModule, createDefaultSharedModule, DefaultSharedModuleContext,
     LangiumServices, LangiumSharedServices, PartialLangiumServices
-} from 'langium/lsp';
-import { registerValidationChecks } from '../../node_modules/langium/lib/grammar/validation/validator.js';
+} from "langium/lsp";
+import { registerValidationChecks } from "../../node_modules/langium/lib/grammar/validation/validator.js";
 
-import { StructuralOperationalSemanticsGeneratedModule, StructuralOperationalSemanticsGeneratedSharedModule } from './generated/module.js';
-import { StructuralOperationalSemanticsValidator, registerSoSValidationChecks } from './structural-operational-semantics-validator.js';
-import { SoSScopeProvider } from './sos-scope.js';
+import { StructuralOperationalSemanticsGeneratedModule, StructuralOperationalSemanticsGeneratedSharedModule } from "./generated/module.js";
+import { StructuralOperationalSemanticsValidator, registerSoSValidationChecks } from "./structural-operational-semantics-validator.js";
+import { SoSScopeProvider } from "./sos-scope.js";
 // import { LangiumGrammarDocument } from 'langium/lib/grammar/workspace/documents';
-import { registerTypeValidationChecks } from '../../node_modules/langium/lib/grammar/validation/types-validator.js';
-import { SoSSemanticTokenProvider } from './structural-operational-semantics-semantic-token.js';
+import { registerTypeValidationChecks } from "../../node_modules/langium/lib/grammar/validation/types-validator.js";
+import { SoSSemanticTokenProvider } from "./structural-operational-semantics-semantic-token.js";
 
 
 //import {LangiumGrammarGeneratedModule /*, LangiumGrammarGeneratedSharedModule*/ } from 'langium/src/grammar/generated/module';
@@ -94,7 +94,7 @@ export function createStructuralOperationalSemanticsServices(context: DefaultSha
         LangiumGrammarGeneratedModule,
         LangiumGrammarModule
     );*/
-    createLangiumGrammarServices(context).grammar
+    createLangiumGrammarServices(context).grammar;
 
 
     // addTypeCollectionPhase(shared, langiumServices);

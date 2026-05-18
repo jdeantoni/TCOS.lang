@@ -1,11 +1,11 @@
-import chalk from 'chalk';
-import path from 'path';
-import fs from 'fs';
-import { Grammar,  LangiumDocument} from 'langium';
-import { LangiumServices } from 'langium/lsp';
-import { URI } from 'vscode-uri';
-import { SoSSpec, isGrammar } from '../language-server/generated/ast.js';
-import { WorkspaceFolder } from 'vscode-languageserver';
+import chalk from "chalk";
+import path from "path";
+import fs from "fs";
+import { Grammar,  LangiumDocument} from "langium";
+import { LangiumServices } from "langium/lsp";
+import { URI } from "vscode-uri";
+import { SoSSpec, isGrammar } from "../language-server/generated/ast.js";
+import { WorkspaceFolder } from "vscode-languageserver";
 
 
 export async function extractDocuments(fileName: string, services: LangiumServices): Promise<[LangiumDocument, LangiumDocument[]]> {
@@ -22,7 +22,7 @@ export async function extractDocuments(fileName: string, services: LangiumServic
     
     const folders: WorkspaceFolder[] = [{
         uri: URI.file(path.resolve(path.dirname(fileName))).toString(),
-        name: 'main'
+        name: "main"
     }];
 
     await services.shared.workspace.WorkspaceManager.initializeWorkspace(folders);
@@ -97,7 +97,7 @@ export interface FilePathData {
 }
 
 export function extractDestinationAndName(filePath: string, destination: string | undefined): FilePathData {
-    filePath = path.basename(filePath, path.extname(filePath)).replace(/[.-]/g, '');
+    filePath = path.basename(filePath, path.extname(filePath)).replace(/[.-]/g, "");
     return {
         destination: path.join(path.dirname(filePath), `./${destination}/src/cli/generated`),
         name: path.basename(filePath)

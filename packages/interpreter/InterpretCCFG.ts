@@ -7,22 +7,24 @@
     We have a global variable sigma to store the value of variables defined in the program. And the calss Thread allow us to simulate
     the execution of a thread.
 */
-import { CompositeGeneratorNode } from 'langium/generate';
-import { AddSleepInstruction, AssignVarInstruction, CCFG, CreateGlobalVarInstruction, CreateVarInstruction, Edge, Node,OperationInstruction,ReturnInstruction,SetGlobalVarInstruction,SetVarFromGlobalInstruction,TypedElement } from 'ccfg';
-import { IGenerator } from 'backend-compiler/GeneratorInterface';
-import { Stack } from './TempList.js';
+import { CompositeGeneratorNode } from "langium/generate";
+import { AddSleepInstruction, AssignVarInstruction, CCFG, CreateGlobalVarInstruction, CreateVarInstruction, Edge, Node,OperationInstruction,ReturnInstruction,SetGlobalVarInstruction,SetVarFromGlobalInstruction,TypedElement } from "ccfg";
+import { IGenerator } from "backend-compiler/GeneratorInterface";
+import { Stack } from "./TempList.js";
 // import { MockDebugSession } from './degugger/mockDebug.js';
 
 // const verifyEqual = "verifyEqual" //verifyEqual,varName1,varName2
-export var debug = false; 
+export const debug = false; 
 
 
+type NodeFunction = (list?: number[]) => number | void;
+type GuardFunction = (list: number[]) => boolean;
 
-let allFunctions : Map<string,Function> = new Map();
+let allFunctions : Map<string, NodeFunction> = new Map();
 
 export async function interpretfromCCFG(ccfg:CCFG, generator:IGenerator, isDebug:boolean):Promise<void>{
-    const sigma: Map<string, any> = new Map<string, any>();
-    var ThreadList : Stack<Thread> = new Stack();
+    const sigma: Map<string, unknown> = new Map<string, unknown>();
+    const ThreadList : Stack<Thread> = new Stack();
     // var debugsession: MockDebugSession | undefined =undefined;
     if(isDebug){
         //debugsession = new MockDebugSession(fileAccessor);
@@ -30,7 +32,7 @@ export async function interpretfromCCFG(ccfg:CCFG, generator:IGenerator, isDebug
     allFunctions  = compileFunctionDefs(ccfg,generator,sigma,undefined);
 
     if(ccfg.initialState){
-        let threadInit = new Thread(ccfg.initialState);
+        const threadInit = new Thread(ccfg.initialState);
         ThreadList.push(threadInit);
         await visitAllNodesInterpret(ccfg.initialState, sigma, ThreadList/*, debugsession*/);//breakpointAdresse should be a debug seesion
     }  
@@ -39,44 +41,43 @@ export async function interpretfromCCFG(ccfg:CCFG, generator:IGenerator, isDebug
 
 
 
-
-function compileFunctionDefs(ccfg: CCFG,generator:IGenerator,sigma:Map<string,any>,codeFile?:CompositeGeneratorNode): Map<string,Function> {
-    let functionsDefs: Map<string,Function> = new Map()
-    for (let node of ccfg.nodes) {
+function compileFunctionDefs(ccfg: CCFG,generator:IGenerator,sigma:Map<string,unknown>,_codeFile?:CompositeGeneratorNode): Map<string,NodeFunction> {
+    const functionsDefs: Map<string,NodeFunction> = new Map();
+    for (const node of ccfg.nodes) {
         // if(node.getType() == "ContainerNode"){
         //     functionsDefs += compileFunctionDefs((node as ContainerNode).internalccfg);
         // }else{
             if(!debug && node.functionsDefs.length == 0){
-                continue
+                continue;
             }
             if(node.returnType != undefined){
-                    for (let fname of node.functionsNames) {
+                    for (const fname of node.functionsNames) {
                     // console.log("function name: "+fname);
                         let allFDefs:string[] = [];
-                        for (let fdef of node.functionsDefs) {
+                        for (const fdef of node.functionsDefs) {
                             if  (fdef instanceof ReturnInstruction) {
-                                let b = fdef as ReturnInstruction;
+                                const b = fdef as ReturnInstruction;
                                 allFDefs= [...allFDefs, ...generator.returnVar(b.varName)];
                             }else if (fdef instanceof CreateVarInstruction){
-                                let b = fdef as CreateVarInstruction;
+                                const b = fdef as CreateVarInstruction;
                                 allFDefs = [...allFDefs, ...generator.createVar(b.type, b.varName)];
                             }else if (fdef instanceof AssignVarInstruction){
-                                let b = fdef as AssignVarInstruction;
+                                const b = fdef as AssignVarInstruction;
                                 allFDefs=[...allFDefs, ...generator.assignVar(b.varName, b.value)];
                             } else if (fdef instanceof SetVarFromGlobalInstruction){
-                                let b = fdef as SetVarFromGlobalInstruction;
+                                const b = fdef as SetVarFromGlobalInstruction;
                                 allFDefs =[...allFDefs, ...generator.setVarFromGlobal(b.type, b.varName, b.globalVarName)];
                             } else if (fdef instanceof CreateGlobalVarInstruction){
-                                let b = fdef as CreateGlobalVarInstruction;
+                                const b = fdef as CreateGlobalVarInstruction;
                                 allFDefs=[...allFDefs, ...generator.createGlobalVar(b.type, b.varName)];
                             } else if (fdef instanceof SetGlobalVarInstruction){
-                                let b = fdef as SetGlobalVarInstruction;
+                                const b = fdef as SetGlobalVarInstruction;
                                 allFDefs=[...allFDefs, ...generator.setGlobalVar(b.type, b.globalVarName, b.value)];
                             } else if (fdef instanceof OperationInstruction){
-                                let b = fdef as OperationInstruction;
+                                const b = fdef as OperationInstruction;
                                 allFDefs=[...allFDefs, ...generator.operation( b.varName, b.n1, b.op, b.n2)];
                             } else if (fdef instanceof AddSleepInstruction){
-                                let b = fdef as AddSleepInstruction;
+                                const b = fdef as AddSleepInstruction;
                                 allFDefs=[...allFDefs, ...generator.createSleep(b.duration)];
                             } 
                             else{
@@ -87,8 +88,8 @@ function compileFunctionDefs(ccfg: CCFG,generator:IGenerator,sigma:Map<string,an
                         }
                         //console.log("function name: "+fname+ " allFDefs = "+allFDefs);
                         //generator.createFunction(codeFile,fname, node.params, node.returnType,allFDefs);
-                        let fnamestring:string = "function" + fname;
-                        functionsDefs.set(fnamestring,defineFunction(fnamestring, node.params, allFDefs, sigma))
+                        const fnamestring:string = "function" + fname;
+                        functionsDefs.set(fnamestring,defineFunction(fnamestring, node.params, allFDefs, sigma));
                 }
             }
         // }
@@ -139,10 +140,10 @@ export class Thread {
  * @param debugsession 
  * @returns stop the visit
  */
-export async function visitAllNodesInterpret(startNode : Node, sigma: Map<string, any>, ThreadList : Stack<Thread>/*,  debugsession: MockDebugSession|undefined*/){ 
+export async function visitAllNodesInterpret(startNode : Node, sigma: Map<string, unknown>, ThreadList : Stack<Thread>/*,  debugsession: MockDebugSession|undefined*/){ 
 
-    var currentNode : Node = startNode;
-    var edgeSelected : Edge|Edge[]|undefined;
+    let currentNode : Node = startNode;
+    let edgeSelected : Edge|Edge[]|undefined;
     while(currentNode.outputEdges && ((currentNode.outputEdges[0] && currentNode.outputEdges[0].to) || (currentNode.outputEdges[1] && currentNode.outputEdges[1].to))){
         /***** Check breakpoint ******/
         // if(debugsession){
@@ -171,7 +172,7 @@ export async function visitAllNodesInterpret(startNode : Node, sigma: Map<string
             }
             case "Fork":{
                 console.log(currentNode.uid + ": (" + currentNode.getType() + ")->");
-                let threadcurrent :Thread = ThreadList.peek();
+                const threadcurrent :Thread = ThreadList.peek();
 
                 /***************************** Next step *******************************/
                 //not debug mode
@@ -186,13 +187,13 @@ export async function visitAllNodesInterpret(startNode : Node, sigma: Map<string
                 if(Array.isArray(edgeSelected)){//all of the children execute at the same time
                     threadcurrent.currentInstruction = [];//set to empty list
                     edgeSelected.forEach(edge => {
-                            let threadCurrent = new Thread(edge.to);
+                            const threadCurrent = new Thread(edge.to);
                             ThreadList.push(threadCurrent);
                             visitAllNodesInterpret(edge.to, sigma, ThreadList/*, debugsession*/);//visit the sub-tree
                             return;
                     });   
                 }else{// user select only one edge
-                    let threadCurrent = new Thread(edgeSelected.to);
+                    const threadCurrent = new Thread(edgeSelected.to);
                     ThreadList.push(threadCurrent);
                     visitAllNodesInterpret(edgeSelected.to, sigma, ThreadList/*, debugsession*/);//visit the sub-tree
                     return;
@@ -202,8 +203,8 @@ export async function visitAllNodesInterpret(startNode : Node, sigma: Map<string
             }
             case "AndJoin":{//verify if thread.currentInstruction ? = []
                 console.log(currentNode.uid + ": (" + currentNode.getType() + ")->");
-                let threadChild : Thread  = ThreadList.pop();//pop the children thread from the list
-                let threadCurrent : Thread = ThreadList.peek();//parent's thread
+                const threadChild : Thread  = ThreadList.pop();//pop the children thread from the list
+                const threadCurrent : Thread = ThreadList.peek();//parent's thread
                 //delete the child from list
                 threadCurrent.currentInstruction = threadCurrent.currentInstruction.filter(edge => edge.to.uid !== threadChild.owner.uid);
 
@@ -232,12 +233,12 @@ export async function visitAllNodesInterpret(startNode : Node, sigma: Map<string
                 let nodeTrue : Node | undefined;
                 let nodeFalse : Node | undefined;
                 //get resRight
-                let param: number[] = [ThreadList.peek().tempValue.peek()];
+                const param: number[] = [ThreadList.peek().tempValue.peek()];
                 ThreadList.peek().tempValue.pop();
                 //evaluation of each edge of choice
                 currentNode.outputEdges.forEach(edge => {
-                    let f: Function = creatFunctionForEdge(edge,sigma);
-                    let bool: boolean = f(param);
+                    const f: GuardFunction = creatFunctionForEdge(edge,sigma);
+                    const bool: boolean = f(param);
                     if (bool) {
                         nodeTrue = edge.to;
                     } 
@@ -290,11 +291,11 @@ export async function visitAllNodesInterpret(startNode : Node, sigma: Map<string
  * @param sigma 
  * @returns un Function object
  */
-function defineFunction(functionName: string, functionParamList: TypedElement[], functionBody: string[], sigma: Map<any, any>): Function {
-    return new Function('sigma', 'list', `return function ${functionName}(list) {
-        ${functionParamList.reverse().map((param, index) => `let ${param.name} = list[${index}];\n`).join('')}
-        ${functionBody.join('\n')}
-        \n}`)(sigma);
+function defineFunction(functionName: string, functionParamList: TypedElement[], functionBody: string[], sigma: Map<string, unknown>): NodeFunction {
+    return new Function("sigma", "list", `return function ${functionName}(list) {
+        ${functionParamList.reverse().map((param, index) => `let ${param.name} = list[${index}];\n`).join("")}
+        ${functionBody.join("\n")}
+        \n}`)(sigma) as NodeFunction;
 }
 
 /**
@@ -303,20 +304,21 @@ function defineFunction(functionName: string, functionParamList: TypedElement[],
  * @param ThreadList 
  */
 function nodeCode(node:Node,ThreadList:Stack<Thread>):void{
-    let functionName="function" + node.functionsNames[0];
-    let f = allFunctions.get(functionName)  as Function;
-    let thread: Thread = ThreadList.peek();
+    const functionName="function" + node.functionsNames[0];
+    const f = allFunctions.get(functionName);
+    if (!f) return;
+    const thread: Thread = ThreadList.peek();
 
         if(node.params.length < 1){         //call function without params
             if(node.returnType == "void" ){
                 console.log(f());
             }else{//store value in stack
-                thread.tempValue.push(f());
+                thread.tempValue.push(f() as number);
             }
         }
         else{                               //call function with params                    // TODO:parametres list
-            let param :number[] = [];
-            let n : number = node.inputEdges.length;
+            const param :number[] = [];
+            const n : number = node.inputEdges.length;
             for(let i = 0 ; i < n ; i++){//get parametres list
                 if(thread.tempValue.size()>0){
                     param.push(thread.tempValue.pop());
@@ -326,7 +328,7 @@ function nodeCode(node:Node,ThreadList:Stack<Thread>):void{
                 console.log(f(param));
             }
             else{//store returned value
-                thread.tempValue.push(f(param));
+                thread.tempValue.push(f(param) as number);
             }
         }
 }
@@ -337,21 +339,21 @@ function nodeCode(node:Node,ThreadList:Stack<Thread>):void{
  * @param sigma 
  * @returns Function object
  */
-function creatFunctionForEdge(edge:Edge, sigma:Map<any,any>) : Function{
-    let guard : string[] = edge.guards[0].toString().split(",");//["verifyEqual","VarRef2_4_2_6terminate","true"]
-    let paramElement = new TypedElement();
+function creatFunctionForEdge(edge:Edge, sigma:Map<string, unknown>) : GuardFunction{
+    const guard : string[] = edge.guards[0].toString().split(",");//["verifyEqual","VarRef2_4_2_6terminate","true"]
+    const paramElement = new TypedElement();
     paramElement.name = "resRight";
     paramElement.type = "Number" ;
-    let params : TypedElement[] = [paramElement];
-    let functionBody : string[] =[];
-    var code : string ="return resRight " ;
+    const params : TypedElement[] = [paramElement];
+    const functionBody : string[] =[];
+    let code : string ="return resRight " ;
     if(guard[0]=="verifyEqual"){
-        code += "== "
+        code += "== ";
     }
     code += guard[2];
-    code += ";"
+    code += ";";
     functionBody.push(code);    
-    return defineFunction("verifyEdges0",params,functionBody,sigma);
+    return defineFunction("verifyEdges0",params,functionBody,sigma) as unknown as GuardFunction;
 }
 
 /*************************** choose next step node ********************************/

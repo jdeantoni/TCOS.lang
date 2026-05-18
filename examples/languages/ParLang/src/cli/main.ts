@@ -1,22 +1,22 @@
-import type { Program } from '../language/generated/ast.js';
-import chalk from 'chalk';
-import { Command } from 'commander';
-import { ParLangLanguageMetaData } from '../language/generated/module.js';
-import { createParLangServices } from '../language/par-lang-module.js';
-import { extractAstNode, extractDestinationAndName } from './cli-util.js';
-import { NodeFileSystem } from 'langium/node';
-import * as url from 'node:url';
-import * as fs from 'fs';
-import * as path from 'node:path';
-import { generatefromCCFG } from 'backend-compiler/compilerBackend';
-import { IGenerator } from 'backend-compiler/GeneratorInterface';
-import { PythonGenerator } from 'backend-compiler/pythonGenerator';
-import { CppGenerator } from 'backend-compiler/cppGenerator';
-import { JsGenerator } from 'backend-compiler/jsGenerator';
-import { CompositeGeneratorNode, toString } from 'langium/generate';
-import { ParLangCompilerFrontEnd } from './generated/parLangCompilerFrontEnd.js';
-import { CCFG } from 'ccfg';
-const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
+import type { Program } from "../language/generated/ast.js";
+import chalk from "chalk";
+import { Command } from "commander";
+import { ParLangLanguageMetaData } from "../language/generated/module.js";
+import { createParLangServices } from "../language/par-lang-module.js";
+import { extractAstNode, extractDestinationAndName } from "./cli-util.js";
+import { NodeFileSystem } from "langium/node";
+import * as url from "node:url";
+import * as fs from "fs";
+import * as path from "node:path";
+import { generatefromCCFG } from "backend-compiler/compilerBackend";
+import { IGenerator } from "backend-compiler/GeneratorInterface";
+import { PythonGenerator } from "backend-compiler/pythonGenerator";
+import { CppGenerator } from "backend-compiler/cppGenerator";
+import { JsGenerator } from "backend-compiler/jsGenerator";
+import { CompositeGeneratorNode, toString } from "langium/generate";
+import { ParLangCompilerFrontEnd } from "./generated/parLangCompilerFrontEnd.js";
+import { CCFG } from "ccfg";
+const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 
 
 export const generateAction = async (fileName: string, opts: GenerateOptions): Promise<void> => {
@@ -31,8 +31,8 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
 
 
     
-    let debug: boolean = false;
-    let ccfg = doGenerateCCFG(dotFile, model,debug);
+    const debug: boolean = false;
+    const ccfg = doGenerateCCFG(dotFile, model,debug);
     const codeFile = new CompositeGeneratorNode();
     
     if (!fs.existsSync(data.destination)) {
@@ -52,9 +52,9 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
      }
      
 
-    let filePath = path.join(data.destination, data.name);
-    let generatedCodeFilePath = generator.nameFile(filePath);
-    generatefromCCFG(ccfg, codeFile, generator, filePath,debug)
+    const filePath = path.join(data.destination, data.name);
+    const generatedCodeFilePath = generator.nameFile(filePath);
+    generatefromCCFG(ccfg, codeFile, generator, filePath,debug);
     if (!fs.existsSync(data.destination)) {
         fs.mkdirSync(data.destination, { recursive: true });
     }
@@ -72,28 +72,28 @@ export type GenerateOptions = {
 export default function(): void {
     const program = new Command();
 
-    const fileExtensions = ParLangLanguageMetaData.fileExtensions.join(', ');
+    const fileExtensions = ParLangLanguageMetaData.fileExtensions.join(", ");
     program
-    .command('generate')
-    .argument('<file>', `source file (possible file extensions: ${fileExtensions})`)
-    .option('-t, --targetDirectory <dir>', 'destination directory of generating', 'generated')
-    .option('-d, --debug ', 'ask for debugging message during execution of the generated code', false)
-    .option('--python', 'compile into python', false)
-    .option('--js', 'compile into js', false)
-    .description('generates the concurrent control flow graph representation of the given source file')
+    .command("generate")
+    .argument("<file>", `source file (possible file extensions: ${fileExtensions})`)
+    .option("-t, --targetDirectory <dir>", "destination directory of generating", "generated")
+    .option("-d, --debug ", "ask for debugging message during execution of the generated code", false)
+    .option("--python", "compile into python", false)
+    .option("--js", "compile into js", false)
+    .description("generates the concurrent control flow graph representation of the given source file")
     .action(generateAction);
 
     program.parse(process.argv);
 }
 
 function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Program,debug:boolean): CCFG {
-    var compilerFrontEnd = new ParLangCompilerFrontEnd(debug);
-    var ccfg = compilerFrontEnd.generateCCFG(model);
+    const compilerFrontEnd = new ParLangCompilerFrontEnd(debug);
+    const ccfg = compilerFrontEnd.generateCCFG(model);
    
-    ccfg.addSyncEdge()
+    ccfg.addSyncEdge();
 
     ccfg.detectCycles();
-    ccfg.collectCycles()
+    ccfg.collectCycles();
 
     codeFile.append(ccfg.toDot());
     return ccfg;

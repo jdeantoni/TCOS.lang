@@ -1,8 +1,8 @@
-import type { AstNode, LangiumCoreServices, LangiumDocument } from 'langium';
-import chalk from 'chalk';
-import * as path from 'node:path';
-import * as fs from 'node:fs';
-import { URI } from 'langium';
+import type { AstNode, LangiumCoreServices, LangiumDocument } from "langium";
+import chalk from "chalk";
+import * as path from "node:path";
+import * as fs from "node:fs";
+import { URI } from "langium";
 
 export async function extractDocument(fileName: string, services: LangiumCoreServices): Promise<LangiumDocument> {
     const extensions = services.LanguageMetaData.fileExtensions;
@@ -21,7 +21,7 @@ export async function extractDocument(fileName: string, services: LangiumCoreSer
 
     const validationErrors = (document.diagnostics ?? []).filter(e => e.severity === 1);
     if (validationErrors.length > 0) {
-        console.error(chalk.red('There are validation errors:'));
+        console.error(chalk.red("There are validation errors:"));
         for (const validationError of validationErrors) {
             console.error(chalk.red(
                 `line ${validationError.range.start.line + 1}: ${validationError.message} [${document.textDocument.getText(validationError.range)}]`
@@ -43,9 +43,9 @@ interface FilePathData {
 }
 
 export function extractDestinationAndName(filePath: string, destination: string | undefined): FilePathData {
-    filePath = path.basename(filePath, path.extname(filePath)).replace(/[.-]/g, '');
+    filePath = path.basename(filePath, path.extname(filePath)).replace(/[.-]/g, "");
     return {
-        destination: destination ?? path.join(path.dirname(filePath), 'generated'),
+        destination: destination ?? path.join(path.dirname(filePath), "generated"),
         name: path.basename(filePath)
     };
 }

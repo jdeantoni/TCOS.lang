@@ -14,12 +14,12 @@
  * with the project lead.
  */
 
-import * as path from 'path';
-import dotparser from 'dotparser'; 
-import { LOGS_DIR } from './project';
-import { success, info, error, warning, appendToLog} from './display';
-import { Graph, isGraphIsomorphic, NodeId } from '@graphty/algorithms';
-import { readFileSync, appendFileSync, mkdirSync, existsSync } from 'fs';
+import * as path from "path";
+import dotparser from "dotparser"; 
+import { LOGS_DIR } from "./project";
+import { success, info, error, warning, appendToLog} from "./display";
+import { Graph, isGraphIsomorphic, NodeId } from "@graphty/algorithms";
+import { readFileSync, appendFileSync, mkdirSync, existsSync } from "fs";
 
 
 /**
@@ -114,10 +114,10 @@ function analysisCCFG(graphReferenced: Graph, graphGenerated: Graph, mapping: Ma
         }
     }
 
-    appendToLog(logPath, `Nodes analysis:`);
+    appendToLog(logPath, "Nodes analysis:");
     appendToLog(logPath, `  - ${nodesAnalyzed} node(s) analyzed`);
     appendToLog(logPath, `  - ${differencesFound === 0 ? "No difference" : `${differencesFound} difference(s)`}`);
-    appendToLog(logPath, `  Details:`);
+    appendToLog(logPath, "  Details:");
     for (const line of details) {
         appendToLog(logPath, line);
     }
@@ -141,12 +141,12 @@ function analysisCCFG(graphReferenced: Graph, graphGenerated: Graph, mapping: Ma
  * @returns A directed populated from the DOT file.
  */
 function loadAsGraph(dotPath: string): Graph {
-    const content = sanitizeDot(readFileSync(dotPath, 'utf-8'));
+    const content = sanitizeDot(readFileSync(dotPath, "utf-8"));
     const ast = dotparser(content);
     const graph = new Graph({ directed: true });
 
     for (const stmt of ast[0].children) {
-        if (stmt.type === 'node_stmt') {
+        if (stmt.type === "node_stmt") {
             const id = stmt.node_id.id;
             const attrs: Record<string, string> = {};
             for (const attr of stmt.attr_list) {
@@ -154,7 +154,7 @@ function loadAsGraph(dotPath: string): Graph {
                 attrs[attr.id] = attr.id === "label" ? normalizeLabel(value) : value;
             }
             graph.addNode(id, attrs);
-        } else if (stmt.type === 'edge_stmt') {
+        } else if (stmt.type === "edge_stmt") {
             for (let i = 0; i < stmt.edge_list.length - 1; i++) {
                 const source = stmt.edge_list[i].id;
                 const target = stmt.edge_list[i + 1].id;
@@ -175,7 +175,7 @@ function getLogPath(generated: string): string{
 }
 
 function sanitizeDot(content: string): string {
-    let result = '';
+    let result = "";
     let inQuotes = false;
     let escaped = false;
     for (const c of content) {
@@ -184,22 +184,22 @@ function sanitizeDot(content: string): string {
             escaped = false;
             continue;
         }
-        if (c === '\\') {
+        if (c === "\\") {
             result += c;
             escaped = true;
             continue;
         }
-        if (c === '"') {
+        if (c === "\"") {
             inQuotes = !inQuotes;
             result += c;
             continue;
         }
-        if (inQuotes && c === '\n') {
-            result += '\\n';
+        if (inQuotes && c === "\n") {
+            result += "\\n";
             continue;
         }
-        if (inQuotes && c === '\r') {
-            result += '\\r';
+        if (inQuotes && c === "\r") {
+            result += "\\r";
             continue;
         }
         result += c;

@@ -1,20 +1,20 @@
-import fs from 'fs';
-import { AstNode, Grammar} from 'langium';
-import { CompositeGeneratorNode ,NL,toString} from 'langium/generate';
-import { Assignment, BinaryExpression, CollectionRuleSync, EventCombination, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, NaryEventExpression, RWRule, RuleOpening, SingleRuleSync, SoSSpec, TypeReference, ValuedEventEmission, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration } from '../language-server/generated/ast.js'; //VariableDeclaration
-import { extractDestinationAndName, FilePathData } from './cli-util.js';
-import path from 'path';
-import { inferType } from '../language-server/type-system/infer.js';
-import chalk from 'chalk';
+import fs from "fs";
+import { AstNode, Grammar} from "langium";
+import { CompositeGeneratorNode ,NL,toString} from "langium/generate";
+import { Assignment, BinaryExpression, CollectionRuleSync, EventCombination, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, NaryEventExpression, RWRule, RuleOpening, SingleRuleSync, SoSSpec, TypeReference, ValuedEventEmission, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration } from "../language-server/generated/ast.js"; //VariableDeclaration
+import { extractDestinationAndName, FilePathData } from "./cli-util.js";
+import path from "path";
+import { inferType } from "../language-server/type-system/infer.js";
+import chalk from "chalk";
 
 
 
 
 
-const DEBUG = true
+const DEBUG = true;
 
-var conceptNameToHoles: Map<string, HoleSpecifier[]> = new Map()
-var conceptNameToRulesCF: Map<string, RuleControlFlow[]> = new Map()
+const conceptNameToHoles: Map<string, HoleSpecifier[]> = new Map();
+const conceptNameToRulesCF: Map<string, RuleControlFlow[]> = new Map();
 
 // this function is used to generate the code for the visitor pattern of the specified compiler
 
@@ -25,20 +25,20 @@ export function generateCompilerFrontEndFromSoS(model: SoSSpec, grammar: Grammar
 
     writePreambule(file, data);
 
-    let conceptNames: string[] = []
+    const conceptNames: string[] = [];
 
-    for (var openedRule of model.rtdAndRules) {
+    for (const openedRule of model.rtdAndRules) {
         if (openedRule.onRule?.ref != undefined) {
-            conceptNames.push(openedRule.onRule.ref.name)
+            conceptNames.push(openedRule.onRule.ref.name);
         }
     }
     if (fs.existsSync(data.destination+"/../../language-server/")) {
-        file.append(`import { ${conceptNames.join(',')} } from "../../language-server/generated/ast.js";`, NL)
+        file.append(`import { ${conceptNames.join(",")} } from "../../language-server/generated/ast.js";`, NL);
     }else{
         if (fs.existsSync(data.destination+"/../../language/")) {
-            file.append(`import { ${conceptNames.join(',')} } from "../../language/generated/ast.js";`, NL)
+            file.append(`import { ${conceptNames.join(",")} } from "../../language/generated/ast.js";`, NL);
         }else{
-            console.log(chalk.red("seems that data destination does not target a valid language server or language folder. I'm looking for either this "+data.destination+"/../../language-server/ or this "+data.destination+"/../../language/ folders "))
+            console.log(chalk.red("seems that data destination does not target a valid language server or language folder. I'm looking for either this "+data.destination+"/../../language-server/ or this "+data.destination+"/../../language/ folders "));
         }
     }
     
@@ -48,19 +48,19 @@ var debug = false
 export interface CompilerFrontEnd {
 
     createLocalCCFG(node: AstNode| Reference<AstNode>): CCFG;
-    `, NL)
-    for (let name of conceptNames) {
-        file.append(`     create${name}LocalCCFG(node: ${name}): CCFG;`, NL)
+    `, NL);
+    for (const name of conceptNames) {
+        file.append(`     create${name}LocalCCFG(node: ${name}): CCFG;`, NL);
     }
 
     file.append(`
     generateCCFG(node: AstNode): CCFG;
-    `,NL)
+    `,NL);
 
-    file.append(`}`, NL)
+    file.append("}", NL);
 
-    let langName = model.name
-    langName = langName.charAt(0).toUpperCase() + langName.slice(1)
+    let langName = model.name;
+    langName = langName.charAt(0).toUpperCase() + langName.slice(1);
     file.append(`
 export class ${langName}CompilerFrontEnd implements CompilerFrontEnd {
     constructor(debugMode: boolean = false){ 
@@ -81,11 +81,11 @@ export class ${langName}CompilerFrontEnd implements CompilerFrontEnd {
             node = node.ref
         }`);
 
-    for (let name of conceptNames) {
+    for (const name of conceptNames) {
         file.append(`
         if(node.$type == "${name}"){
             return this.create${name}LocalCCFG(node as ${name});
-        }`)
+        }`);
     }
     
     file.append(`  
@@ -93,16 +93,16 @@ export class ${langName}CompilerFrontEnd implements CompilerFrontEnd {
     }
     `,NL);
 
-    for (var openedRule of model.rtdAndRules) {
-        let name: string = ""
+    for (const openedRule of model.rtdAndRules) {
+        let name: string = "";
         if (openedRule.onRule?.ref != undefined) {
-            name = openedRule.onRule.ref.name
+            name = openedRule.onRule.ref.name;
         }
 
         const rulesCF: RuleControlFlow[] = extractRuleControlFlowsFromRules(file, openedRule);
-        conceptNameToRulesCF.set(name, rulesCF)
+        conceptNameToRulesCF.set(name, rulesCF);
         const holes: HoleSpecifier[] = identifiesHolesAndSemiHoles(rulesCF);
-        conceptNameToHoles.set(name, holes)
+        conceptNameToHoles.set(name, holes);
 
         generateCreateLocalCCFGFunctions(file, name, openedRule);
     }
@@ -111,7 +111,7 @@ export class ${langName}CompilerFrontEnd implements CompilerFrontEnd {
     addUtilFunctions(file,model.rtdAndRules[0].onRule?.ref?.$container.rules[0]?.name as string);
 
     file.append(`
-}`, NL)
+}`, NL);
 
 
     if (!fs.existsSync(data.destination)) {
@@ -144,46 +144,46 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
         localCCFG.addNode(terminates${conceptName}Node)
         `);
 
-    let tempHole = conceptNameToHoles.get(conceptName)
+    const tempHole = conceptNameToHoles.get(conceptName);
     if (tempHole == undefined) {
-        throw new Error("holes not found: "+conceptName)
+        throw new Error("holes not found: "+conceptName);
     }
     const holes : HoleSpecifier[] = tempHole;
-    let tempRulesCF = conceptNameToRulesCF.get(conceptName)
+    const tempRulesCF = conceptNameToRulesCF.get(conceptName);
     if (tempRulesCF == undefined) {
-        throw new Error("rulesCF not found: "+conceptName)
+        throw new Error("rulesCF not found: "+conceptName);
     }
-    const rulesCF: RuleControlFlow[] = tempRulesCF
+    const rulesCF: RuleControlFlow[] = tempRulesCF;
 
     //creates hole nodes
-    for (let h of holes) {
+    for (const h of holes) {
         
         if (isATimerHole(h.startingParticipants)){
-            let refNode = `node`
-            let duration = ((openedRule.runtimeState as VariableDeclaration[]).filter(rs => rs.name == h.startingParticipants[h.startingParticipants.length-2 >= 0 ? h.startingParticipants.length-2:0].name)[0] as VariableDeclaration).value?.$cstNode?.text;
+            const refNode = "node";
+            const duration = ((openedRule.runtimeState as VariableDeclaration[]).filter(rs => rs.name == h.startingParticipants[h.startingParticipants.length-2 >= 0 ? h.startingParticipants.length-2:0].name)[0] as VariableDeclaration).value?.$cstNode?.text;
             file.append(`
-        let ${h.startingParticipants.filter(p => p.type != "event").map(p => p.name).join('_')}Hole: Hole = new TimerHole(${refNode},node.${duration}) //timer hole to ease specific filling
-        localCCFG.addNode(${h.startingParticipants.filter(p => p.type != "event").map(p => p.name).join('_')}Hole)
-        `)
+        let ${h.startingParticipants.filter(p => p.type != "event").map(p => p.name).join("_")}Hole: Hole = new TimerHole(${refNode},node.${duration}) //timer hole to ease specific filling
+        localCCFG.addNode(${h.startingParticipants.filter(p => p.type != "event").map(p => p.name).join("_")}Hole)
+        `);
         }else
         if (isACollectionHole(h)){
-            let refNode : string = `node.${h.startingParticipants.slice(0,h.startingParticipants.length-2).filter(p => p.type != "event").map(p => p.name).join('.')}`
+            const refNode : string = `node.${h.startingParticipants.slice(0,h.startingParticipants.length-2).filter(p => p.type != "event").map(p => p.name).join(".")}`;
             file.append(`
-        let ${h.startingParticipants.slice(0,h.startingParticipants.length-2).filter(p => p.type != "event").map(p => p.name).join('_')}Hole: CollectionHole = new CollectionHole(${refNode})
-        ${h.startingParticipants.slice(0,h.startingParticipants.length-2).filter(p => p.type != "event").map(p => p.name).join('_')}Hole.isSequential = ${(h as CollectionHoleSpecifier).isSequential}
-        ${h.startingParticipants.slice(0,h.startingParticipants.length-2).filter(p => p.type != "event").map(p => p.name).join('_')}Hole.parallelSyncPolicy = "${(h as CollectionHoleSpecifier).parallelSyncPolicy}"
-        localCCFG.addNode(${h.startingParticipants.slice(0,h.startingParticipants.length-2).filter(p => p.type != "event").map(p => p.name).join('_')}Hole)
-        `)
+        let ${h.startingParticipants.slice(0,h.startingParticipants.length-2).filter(p => p.type != "event").map(p => p.name).join("_")}Hole: CollectionHole = new CollectionHole(${refNode})
+        ${h.startingParticipants.slice(0,h.startingParticipants.length-2).filter(p => p.type != "event").map(p => p.name).join("_")}Hole.isSequential = ${(h as CollectionHoleSpecifier).isSequential}
+        ${h.startingParticipants.slice(0,h.startingParticipants.length-2).filter(p => p.type != "event").map(p => p.name).join("_")}Hole.parallelSyncPolicy = "${(h as CollectionHoleSpecifier).parallelSyncPolicy}"
+        localCCFG.addNode(${h.startingParticipants.slice(0,h.startingParticipants.length-2).filter(p => p.type != "event").map(p => p.name).join("_")}Hole)
+        `);
 
         }else{
-            let refNode : string = `node.${h.startingParticipants.filter(p => p.type != "event").map(p => p.name).join('.')}`
+            let refNode : string = `node.${h.startingParticipants.filter(p => p.type != "event").map(p => p.name).join(".")}`;
             if (isReferenceBased(h.startingParticipants)){
-                refNode = refNode + ".ref"
+                refNode = refNode + ".ref";
             }
             file.append(`
-        let ${h.startingParticipants.filter(p => p.type != "event").map(p => p.name).join('_')}Hole: Hole = new Hole(${refNode})
-        localCCFG.addNode(${h.startingParticipants.filter(p => p.type != "event").map(p => p.name).join('_')}Hole)
-        `)
+        let ${h.startingParticipants.filter(p => p.type != "event").map(p => p.name).join("_")}Hole: Hole = new Hole(${refNode})
+        localCCFG.addNode(${h.startingParticipants.filter(p => p.type != "event").map(p => p.name).join("_")}Hole)
+        `);
 
         }
     }
@@ -193,13 +193,13 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
         throw new Error("multiple starting rules are not supported");
     }
 
-    let startRule: RuleControlFlow = startingRules[0];
+    const startRule: RuleControlFlow = startingRules[0];
     handleRuleConclusion(startRule, holes, file, `starts${conceptName}Node`);
 
 
-    for (let ruleCF of rulesCF) {
+    for (const ruleCF of rulesCF) {
         if (ruleCF != startingRules[0]) {
-            let premiseNodeName : string= getPreviousNodeNameFromPremiseParticipants(ruleCF, conceptName)
+            let premiseNodeName : string= getPreviousNodeNameFromPremiseParticipants(ruleCF, conceptName);
             //manage premise (most of the time the premise's node is already existing since a hole.)
             
             if (ruleCF.premiseParticipants.length > 1) {
@@ -207,11 +207,11 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
         let ${premiseNodeName}: Node = new ${premiseNodeName.endsWith("OrJoinNode")?"OrJoin":"AndJoin"}(node)
         localCCFG.addNode(${premiseNodeName})
                 `);
-                for (let participants of ruleCF.premiseParticipants) {
+                for (const participants of ruleCF.premiseParticipants) {
                     if (holes.map(h => h.startingParticipants).some(p => areParticipantsEqualsOrCoupled(p, participants))) {
-                        if (DEBUG) file.append(`             //mark a`);
+                        if (DEBUG) file.append("             //mark a");
                         file.append(`
-        localCCFG.addEdge(${participants.filter(p => p.type != "event").map(p => p.name).join('_')}Hole,${premiseNodeName})
+        localCCFG.addEdge(${participants.filter(p => p.type != "event").map(p => p.name).join("_")}Hole,${premiseNodeName})
                             `);
                     } else {
                         file.append(`
@@ -222,10 +222,10 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
             }
 
 
-            let allEventValuedComparisons = getValuedEventRefConstantComparison(ruleCF.rule.premise.eventExpression)
+            const allEventValuedComparisons = getValuedEventRefConstantComparison(ruleCF.rule.premise.eventExpression);
             
             if (allEventValuedComparisons.length > 0) {
-                    let refNode = `node.${ruleCF.premiseParticipants[0].filter(p => p.type != "event").map(p => p.name).join('.')}`
+                    const refNode = `node.${ruleCF.premiseParticipants[0].filter(p => p.type != "event").map(p => p.name).join(".")}`;
                     file.append(`
         let ${ruleCF.rule.name}ChoiceNode = undefined
         if(${premiseNodeName}.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
@@ -236,7 +236,7 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
         }
         localCCFG.addEdge(${premiseNodeName},${ruleCF.rule.name}ChoiceNode)
                 `);
-                    premiseNodeName = `${ruleCF.rule.name}ChoiceNode`
+                    premiseNodeName = `${ruleCF.rule.name}ChoiceNode`;
                 }
 
             handleRuleConclusion(ruleCF, holes, file, premiseNodeName);
@@ -252,74 +252,74 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
 
 
 function getValuedEventRefConstantComparison(eventExpression : EventExpression): ValuedEventRefConstantComparison[] {
-    let res: ValuedEventRefConstantComparison[] = []
+    let res: ValuedEventRefConstantComparison[] = [];
     if (eventExpression.$type == "ExplicitValuedEventRefConstantComparison" || eventExpression.$type == "ImplicitValuedEventRefConstantComparison") {
-        res.push(eventExpression as ValuedEventRefConstantComparison)
+        res.push(eventExpression as ValuedEventRefConstantComparison);
     } else if (eventExpression.$type == "EventConjunction" || eventExpression.$type == "EventDisjunction") {
-        let lhsRes = getValuedEventRefConstantComparison((eventExpression as EventCombination).lhs)
-        let rhsRes = getValuedEventRefConstantComparison((eventExpression as EventCombination).rhs)
-        res = res.concat(lhsRes).concat(rhsRes)
+        const lhsRes = getValuedEventRefConstantComparison((eventExpression as EventCombination).lhs);
+        const rhsRes = getValuedEventRefConstantComparison((eventExpression as EventCombination).rhs);
+        res = res.concat(lhsRes).concat(rhsRes);
     }
-    return res
+    return res;
 }
 
 function getValuedEventRef(eventExpression : EventExpression): ValuedEventRef[] {
-    let res: ValuedEventRef[] = []
+    let res: ValuedEventRef[] = [];
     if (eventExpression.$type == "ExplicitValuedEventRef" || eventExpression.$type == "ImplicitValuedEventRef") {
-        res.push(eventExpression as ValuedEventRef)
+        res.push(eventExpression as ValuedEventRef);
     } else if (eventExpression.$type == "EventConjunction" || eventExpression.$type == "EventDisjunction") {
-        let lhsRes = getValuedEventRef((eventExpression as EventCombination).lhs)
-        let rhsRes = getValuedEventRef((eventExpression as EventCombination).rhs)
-        res = res.concat(lhsRes).concat(rhsRes)
+        const lhsRes = getValuedEventRef((eventExpression as EventCombination).lhs);
+        const rhsRes = getValuedEventRef((eventExpression as EventCombination).rhs);
+        res = res.concat(lhsRes).concat(rhsRes);
     }
-    return res
+    return res;
 }
 
 function isReferenceBased(participants: TypedElement[]): boolean {
-    return participants.some(p => p.type != undefined && p.type[0] == "[")
+    return participants.some(p => p.type != undefined && p.type[0] == "[");
 }
 
 function getPreviousNodeNameFromPremiseParticipants(ruleCF: RuleControlFlow, conceptName: string) : string{
     if (ruleCF.premiseParticipants.length == 1) {
-        let participants = ruleCF.premiseParticipants[0];
+        const participants = ruleCF.premiseParticipants[0];
         if (participants.length == 1) { //simple event
-            return participants[0].name+conceptName+"Hole"
+            return participants[0].name+conceptName+"Hole";
         }
         if (isParticipantCollectionBased(participants)) {
             if (ruleCF.rule.premise.eventExpression.$type == "NaryEventExpression") { //parallel sync premise on collection
-                return participants.filter(p => p.type != "event").map(p => p.name).join('_') + "Hole"
+                return participants.filter(p => p.type != "event").map(p => p.name).join("_") + "Hole";
             }
 
             //sequential collection based premise
-            let participantsNoEvent = participants.filter(p => p.type != "event")
-            return participantsNoEvent.slice(0,participants.length-2).map(p => p.name).join('_') + "Hole"
+            const participantsNoEvent = participants.filter(p => p.type != "event");
+            return participantsNoEvent.slice(0,participants.length-2).map(p => p.name).join("_") + "Hole";
         }
 
-        return participants.filter(p => p.type != "event").map(p => p.name).join('_') + "Hole"
+        return participants.filter(p => p.type != "event").map(p => p.name).join("_") + "Hole";
     }
     if (ruleCF.premiseParticipants.length > 1) {
         if (ruleCF.rule.premise.eventExpression.$type == "EventConjunction"){
-            return ruleCF.rule.name + "AndJoinNode"
+            return ruleCF.rule.name + "AndJoinNode";
         } 
         if(ruleCF.rule.premise.eventExpression.$type == "EventDisjunction"){
-            return ruleCF.rule.name + "OrJoinNode"
+            return ruleCF.rule.name + "OrJoinNode";
         }
     }
 
-    console.log(chalk.red("missing case #2 in getPreviousNodeNameFromPremiseParticipants. Use default"))
-    return ruleCF.premiseParticipants[0].filter(p => p.type != "event").map(p => p.name).join('_') + "Hole"
+    console.log(chalk.red("missing case #2 in getPreviousNodeNameFromPremiseParticipants. Use default"));
+    return ruleCF.premiseParticipants[0].filter(p => p.type != "event").map(p => p.name).join("_") + "Hole";
     
 }
 
 function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], file: CompositeGeneratorNode, previousNodeName: string) {
-    let actionsstring = ""
+    let actionsstring = "";
     actionsstring = visitStateModifications(ruleCF, actionsstring);
-    let guardString = ""
-    let allEventValuedComparisons = getValuedEventRefConstantComparison(ruleCF.rule.premise.eventExpression)
-    let sep = ""
-    for(let comparison of allEventValuedComparisons){
-        guardString = guardString + sep + visitValuedEventRefComparison(comparison)
-        sep =","
+    let guardString = "";
+    const allEventValuedComparisons = getValuedEventRefConstantComparison(ruleCF.rule.premise.eventExpression);
+    let sep = "";
+    for(const comparison of allEventValuedComparisons){
+        guardString = guardString + sep + visitValuedEventRefComparison(comparison);
+        sep =",";
     }
     
     if(actionsstring.length>0){
@@ -331,33 +331,33 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
         e.guards = [...e.guards, ...[${guardString}]]}
         ${previousNodeName} = ${ruleCF.rule.name}StateModificationNode
         }
-    `)
+    `);
     }
 
-    let params : TypedElement[] = []
-    let allValuedEventRef = getValuedEventRef(ruleCF.rule.premise.eventExpression)
-    sep = ""
-    for(let valuedEventRef of allValuedEventRef){
-        let [actions, param] = visitValuedEventRef(valuedEventRef)
-        actionsstring = actionsstring + sep + actions   
-        params.push(param)
-        sep = ","
+    const params : TypedElement[] = [];
+    const allValuedEventRef = getValuedEventRef(ruleCF.rule.premise.eventExpression);
+    sep = "";
+    for(const valuedEventRef of allValuedEventRef){
+        const [actions, param] = visitValuedEventRef(valuedEventRef);
+        actionsstring = actionsstring + sep + actions;   
+        params.push(param);
+        sep = ",";
     }
 
-    let eventEmissionActions = ""
-    let functionType = "void"
-    for(let emission of ruleCF.rule.conclusion.eventemissions){
+    let eventEmissionActions = "";
+    let functionType = "void";
+    for(const emission of ruleCF.rule.conclusion.eventemissions){
         if(emission.$type == "ValuedEventEmission"){
-            let [visitedEmission, returnType] =  visitValuedEventEmission(emission as ValuedEventEmission,file)
-            functionType = returnType
-            eventEmissionActions = eventEmissionActions + visitedEmission
+            const [visitedEmission, returnType] =  visitValuedEventEmission(emission as ValuedEventEmission,file);
+            functionType = returnType;
+            eventEmissionActions = eventEmissionActions + visitedEmission;
         }
     }
-    let formattedParams = ""
-    sep = ""
-    for(let p of params){
-        formattedParams = formattedParams+ sep + `Object.assign( new TypedElement(), JSON.parse(\`${p.toJSON()}\`))`
-        sep = ","
+    let formattedParams = "";
+    sep = "";
+    for(const p of params){
+        formattedParams = formattedParams+ sep + `Object.assign( new TypedElement(), JSON.parse(\`${p.toJSON()}\`))`;
+        sep = ",";
     }
 
     file.append(`
@@ -369,20 +369,20 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
 
 
     if (ruleCF.conclusionParticipants.length == 1 && isRuleConclusionCollectionBased(ruleCF) == false) {
-        let participants = ruleCF.conclusionParticipants[0];
+        const participants = ruleCF.conclusionParticipants[0];
         if (holes.map(h => h.startingParticipants).some(p => areParticipantsEqualsOrCoupled(p,participants))) {
-            if(DEBUG) file.append(`            //mark 0`);
+            if(DEBUG) file.append("            //mark 0");
             file.append(`
-        {let e = localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type != "event").map(p => p.name?.replace(/\(\)/,"")).join('_')}Hole)
+        {let e = localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type != "event").map(p => p.name?.replace(/\(\)/,"")).join("_")}Hole)
         e.guards = [...e.guards, ...[${guardString}]]}
             `);
         } else {
             if(DEBUG) file.append(`            //mark 1 ${participants.map(p=>p.toJSON())}`);
             file.append(`
-        {let e = localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type == "event").map(p => p.name).join('_')}${(ruleCF.rule.$container as RuleOpening)?.onRule?.ref?.name}Node)
+        {let e = localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type == "event").map(p => p.name).join("_")}${(ruleCF.rule.$container as RuleOpening)?.onRule?.ref?.name}Node)
         e.guards = [...e.guards, ...[${guardString}]]}
         `);
-        console.log(`${participants.filter(p=>p.type == "event").map(p => p.name).join('_')}${(ruleCF.rule.$container as RuleOpening)?.onRule?.ref?.name}Node`)
+        console.log(`${participants.filter(p=>p.type == "event").map(p => p.name).join("_")}${(ruleCF.rule.$container as RuleOpening)?.onRule?.ref?.name}Node`);
     
         }
     }
@@ -390,27 +390,27 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
     
         //collection based conclusion are handles as special holes
     if (isRuleConclusionCollectionBased(ruleCF)) {
-        let nodeName : string = ""
+        let nodeName : string = "";
         if (ruleCF.rule.premise.eventExpression.$type == "NaryEventExpression") { //parallel sync premise on collection
-            nodeName = ruleCF.conclusionParticipants[0].filter(p => p.type != "event").map(p => p.name).join('_') + "Hole"
+            nodeName = ruleCF.conclusionParticipants[0].filter(p => p.type != "event").map(p => p.name).join("_") + "Hole";
         }
 
         //sequential collection based premise
-        let participantsNoEvent = ruleCF.conclusionParticipants[0].filter(p => p.type != "event")
-        nodeName =  participantsNoEvent.slice(0,ruleCF.conclusionParticipants[0].length-2).map(p => p.name).join('_') + "Hole"
-        if(DEBUG) file.append(`            //mark 1.5`);
+        const participantsNoEvent = ruleCF.conclusionParticipants[0].filter(p => p.type != "event");
+        nodeName =  participantsNoEvent.slice(0,ruleCF.conclusionParticipants[0].length-2).map(p => p.name).join("_") + "Hole";
+        if(DEBUG) file.append("            //mark 1.5");
         file.append(`
         localCCFG.addEdge(${previousNodeName},${nodeName})
-        `)
+        `);
     }
 
     if (ruleCF.rule.conclusion.eventEmissionOperator == ";") {
-        for (let participants of ruleCF.conclusionParticipants) {
+        for (const participants of ruleCF.conclusionParticipants) {
             if (holes.map(h => h.startingParticipants).some(p => areParticipantsEquals(p,participants))) {
-                if(DEBUG) file.append(`                    //mark 2`);
+                if(DEBUG) file.append("                    //mark 2");
                 file.append(`
-        localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type != "event").map(p => p.name).join('_')}Hole)
-                    ${previousNodeName} = ${participants.filter(p=>p.type != "event").map(p => p.name).join('_')}Hole
+        localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type != "event").map(p => p.name).join("_")}Hole)
+                    ${previousNodeName} = ${participants.filter(p=>p.type != "event").map(p => p.name).join("_")}Hole
                     `);
             } else {
                 if(DEBUG) file.append(`
@@ -425,11 +425,11 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
         localCCFG.addNode(fork${ruleCF.rule.name}Node)
         localCCFG.addEdge(${previousNodeName},fork${ruleCF.rule.name}Node)
             `, NL);
-        for (let participants of ruleCF.conclusionParticipants) {
+        for (const participants of ruleCF.conclusionParticipants) {
             if (holes.map(h => h.startingParticipants).some(p => areParticipantsEqualsOrCoupled(p,participants))) {
-                if(DEBUG) file.append(`                    //mark 3`);
+                if(DEBUG) file.append("                    //mark 3");
                 file.append(`
-        localCCFG.addEdge(fork${ruleCF.rule.name}Node,${participants.filter(p=>p.type != "event").map(p => p.name).join('_')}Hole)
+        localCCFG.addEdge(fork${ruleCF.rule.name}Node,${participants.filter(p=>p.type != "event").map(p => p.name).join("_")}Hole)
                     `);
             } else {
                 if(DEBUG) file.append(`
@@ -448,7 +448,7 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
  * @returns the list of holes, given as a list of TypedElements (the participants of a memberCall) (the ending event is not relevant) 
  */
 function identifiesHoles(rulesCF: RuleControlFlow[]): HoleSpecifier[] {
-    let res: HoleSpecifier[] = []
+    const res: HoleSpecifier[] = [];
     for (let i = 0; i < rulesCF.length; i++) {
         const currentRule = rulesCF[i];
         const currentConclusionParticipants = currentRule.conclusionParticipants;
@@ -456,21 +456,21 @@ function identifiesHoles(rulesCF: RuleControlFlow[]): HoleSpecifier[] {
             const anotherRule = rulesCF[j];
             const anotherRulePremiseParticipants = anotherRule.premiseParticipants;
 
-            for(let conclusionP of currentConclusionParticipants){
-                for(let premiseP of anotherRulePremiseParticipants){
+            for(const conclusionP of currentConclusionParticipants){
+                for(const premiseP of anotherRulePremiseParticipants){
                     if(areParticipantsCoupled(conclusionP, premiseP)){
                         if(conclusionP.some(te => te.isCollection)){
-                            let holeSpecifier = new CollectionHoleSpecifier(conclusionP, premiseP)
-                            holeSpecifier.isSequential = currentRule.rule.conclusion.eventemissions[0].$type == "CollectionRuleSync" && (currentRule.rule.conclusion.eventemissions[0] as CollectionRuleSync).order == "sequential"
-                            holeSpecifier.parallelSyncPolicy = (anotherRule.rule.premise.eventExpression.$type == "NaryEventExpression") ?(anotherRule.rule.premise.eventExpression as NaryEventExpression).policy.operator+"" : "undefined"
+                            const holeSpecifier = new CollectionHoleSpecifier(conclusionP, premiseP);
+                            holeSpecifier.isSequential = currentRule.rule.conclusion.eventemissions[0].$type == "CollectionRuleSync" && (currentRule.rule.conclusion.eventemissions[0] as CollectionRuleSync).order == "sequential";
+                            holeSpecifier.parallelSyncPolicy = (anotherRule.rule.premise.eventExpression.$type == "NaryEventExpression") ?(anotherRule.rule.premise.eventExpression as NaryEventExpression).policy.operator+"" : "undefined";
                             if(res.map(h => h.startingParticipants).some(p => areParticipantsEquals(p, holeSpecifier.startingParticipants)) == false){
-                                res.push(holeSpecifier)
+                                res.push(holeSpecifier);
                             }
                         }
                         else{
-                            let holeSpecifier = new HoleSpecifier(conclusionP, premiseP)
+                            const holeSpecifier = new HoleSpecifier(conclusionP, premiseP);
                             if(res.map(h => h.startingParticipants).some(p => areParticipantsEquals(p, holeSpecifier.startingParticipants)) == false){
-                                res.push(holeSpecifier)
+                                res.push(holeSpecifier);
                             }
                         }                        
                     }
@@ -478,7 +478,7 @@ function identifiesHoles(rulesCF: RuleControlFlow[]): HoleSpecifier[] {
             } 
         }
     }
-    return res
+    return res;
 }
 
 
@@ -490,67 +490,67 @@ function identifiesHoles(rulesCF: RuleControlFlow[]): HoleSpecifier[] {
  * @returns the list of holes and semi holes, given as a list of TypedElements (the participants of a memberCall) (the ending event is not relevant)
  */
 function identifiesHolesAndSemiHoles(rulesCF: RuleControlFlow[]): HoleSpecifier[] {
-    let res: HoleSpecifier[] = identifiesHoles(rulesCF)
+    const res: HoleSpecifier[] = identifiesHoles(rulesCF);
     for (let i = 0; i < rulesCF.length; i++) {
         const currentRule = rulesCF[i];
         const currentConclusionParticipants = currentRule.conclusionParticipants;
-        for (let p of currentConclusionParticipants) {
+        for (const p of currentConclusionParticipants) {
             if (p[p.length - 1].name == "starts") {
                 if (!res.some(h => areParticipantsEquals(h.startingParticipants, p))) {
-                    res.push(new HoleSpecifier(p, undefined))
+                    res.push(new HoleSpecifier(p, undefined));
                 }
             }
         }
     }
-    return res
+    return res;
 }
 
 
 function areParticipantsEquals(p1: TypedElement[], p2: TypedElement[]): boolean {
     if(p1.length != p2.length){
-        return false
+        return false;
     }
     for(let i = 0; i < p1.length; i++){
         if(p1[i].name != p2[i].name || p1[i].type != p2[i].type){
-            return false
+            return false;
         }
     }
-    return true
+    return true;
 }
 
 function areParticipantsCoupled(p1: TypedElement[], p2: TypedElement[]): boolean {
     
     if(isParticipantCollectionBased(p1) && isParticipantCollectionBased(p2)){
         //sanitize collection based participants
-        let p1Copy = []
-        for(let p of p1){
+        const p1Copy = [];
+        for(const p of p1){
             if(p.isCollection){
-                p1Copy.push(p)
-                break
+                p1Copy.push(p);
+                break;
             }
-            p1Copy.push(p)
+            p1Copy.push(p);
         }
-        p1Copy.push(p1[p1.length-1])
-        p1= p1Copy
-        let p2Copy = []
-        for(let p of p2){
+        p1Copy.push(p1[p1.length-1]);
+        p1= p1Copy;
+        const p2Copy = [];
+        for(const p of p2){
             if(p.isCollection){
-                p2Copy.push(p)
-                break
+                p2Copy.push(p);
+                break;
             }
-            p2Copy.push(p)
+            p2Copy.push(p);
         }
-        p2Copy.push(p2[p2.length-1])
-        p2 = p2Copy
+        p2Copy.push(p2[p2.length-1]);
+        p2 = p2Copy;
     }
 
 
     if(p1.length != p2.length){
-        return false
+        return false;
     }
     for(let i = 0; i < p1.length-1; i++){
         if(p1[i].name != p2[i].name || p1[i].type != p2[i].type){
-            return false
+            return false;
         }
     }
     if( p1.length > 1 &&
@@ -558,27 +558,27 @@ function areParticipantsCoupled(p1: TypedElement[], p2: TypedElement[]): boolean
         ||
         (p1[p1.length-1].name == "terminates" &&  p2[p2.length-1].name == "starts"))
     ){
-        return true
+        return true;
     }else{
-        return false
+        return false;
     }
 }
 
 function areParticipantsEqualsOrCoupled(p1: TypedElement[], p2: TypedElement[]): boolean {
     if(p1.length != p2.length){
-        return false
+        return false;
     }
     for(let i = 0; i < p1.length-1; i++){
         if(p1[i].name != p2[i].name || p1[i].type != p2[i].type){
-            return false
+            return false;
         }
     }
     
     if(p1[p1.length-1].type == "event" &&  p2[p2.length-1].type == "event"){
-        return true
+        return true;
     }
 
-    return false
+    return false;
  
 }
 
@@ -587,10 +587,10 @@ function areParticipantsEqualsOrCoupled(p1: TypedElement[], p2: TypedElement[]):
  * @param rulesCF: the rule to be analyzed
  * */
 function retrieveStartingRules(rulesCF: RuleControlFlow[]) {
-    let startingRule = [];
-    for (let r of rulesCF) {
-        for (let participants of r.premiseParticipants) {
-            for (let p of participants) {
+    const startingRule = [];
+    for (const r of rulesCF) {
+        for (const participants of r.premiseParticipants) {
+            for (const p of participants) {
                 if (p.name != undefined && p.name == "starts") {
                     startingRule.push(r);
                 }
@@ -609,7 +609,7 @@ function retrieveStartingRules(rulesCF: RuleControlFlow[]) {
  */
 function isRuleConclusionCollectionBased(ruleCF: RuleControlFlow) {
     let isEventEmissionACollection: boolean = false;
-    for (let participant of ruleCF.conclusionParticipants) {
+    for (const participant of ruleCF.conclusionParticipants) {
         isEventEmissionACollection = isParticipantCollectionBased(participant);
         if (isEventEmissionACollection) {
             return true;
@@ -626,23 +626,23 @@ function isRuleConclusionCollectionBased(ruleCF: RuleControlFlow) {
  * @returns a list of rule control flows
  */
 function extractRuleControlFlowsFromRules(fileNode: CompositeGeneratorNode, openedRule: RuleOpening): RuleControlFlow[] {
-    let res: RuleControlFlow[] = []
-    for (var rwr of openedRule.rules) {
+    const res: RuleControlFlow[] = [];
+    for (const rwr of openedRule.rules) {
         if (rwr.$type == "RWRule") {
 
-            if(DEBUG) fileNode.append(`// rule ${rwr.name}`, NL)
-            let premiseEventParticipants: TypedElement[][] = getEventSynchronisationParticipants(rwr.premise.eventExpression);
-            if(DEBUG) fileNode.append(`   //premise: ${premiseEventParticipants.map(pa => pa.map(p => p.name + ":" + p.type + (p.isCollection ? "[]" : ""))).join("\n\t//")}`, NL)
-            let conclusionEventParticipants: TypedElement[][] = []
-            for (let emission of rwr.conclusion.eventemissions) {
-                conclusionEventParticipants = [...conclusionEventParticipants, ...getEventEmissionParticipants(emission)]
+            if(DEBUG) fileNode.append(`// rule ${rwr.name}`, NL);
+            const premiseEventParticipants: TypedElement[][] = getEventSynchronisationParticipants(rwr.premise.eventExpression);
+            if(DEBUG) fileNode.append(`   //premise: ${premiseEventParticipants.map(pa => pa.map(p => p.name + ":" + p.type + (p.isCollection ? "[]" : ""))).join("\n\t//")}`, NL);
+            let conclusionEventParticipants: TypedElement[][] = [];
+            for (const emission of rwr.conclusion.eventemissions) {
+                conclusionEventParticipants = [...conclusionEventParticipants, ...getEventEmissionParticipants(emission)];
             }
-            if(DEBUG) fileNode.append(`   //conclusion: ${conclusionEventParticipants.map(pa => pa.map(p => p.name + ":" + p.type + (p.isCollection ? "[]" : ""))).join("\n\t//")}`, NL)
-            let ruleControlFlow = new RuleControlFlow(rwr, premiseEventParticipants, conclusionEventParticipants)
-            res.push(ruleControlFlow)
+            if(DEBUG) fileNode.append(`   //conclusion: ${conclusionEventParticipants.map(pa => pa.map(p => p.name + ":" + p.type + (p.isCollection ? "[]" : ""))).join("\n\t//")}`, NL);
+            const ruleControlFlow = new RuleControlFlow(rwr, premiseEventParticipants, conclusionEventParticipants);
+            res.push(ruleControlFlow);
         }
     }
-    return res
+    return res;
 }
 
 /**
@@ -652,13 +652,13 @@ function extractRuleControlFlowsFromRules(fileNode: CompositeGeneratorNode, open
  * @param conclusionParticipants the potentially multiple conclusions of the rule
  */
 class RuleControlFlow {
-    rule: RWRule
-    premiseParticipants: TypedElement[][] 
-    conclusionParticipants: TypedElement[][]
+    rule: RWRule;
+    premiseParticipants: TypedElement[][]; 
+    conclusionParticipants: TypedElement[][];
     constructor(rule: RWRule, premiseParticipants: TypedElement[][], conclusionParticipants: TypedElement[][]) {
-        this.rule = rule
-        this.premiseParticipants = premiseParticipants
-        this.conclusionParticipants = conclusionParticipants
+        this.rule = rule;
+        this.premiseParticipants = premiseParticipants;
+        this.conclusionParticipants = conclusionParticipants;
     }
 
 }
@@ -674,35 +674,35 @@ class RuleControlFlow {
  */
 
 class TypedElement {
-    astNode: AstNode | undefined
-    name: (string | undefined)
-    type: (string | undefined)
-    isCollection: boolean
+    astNode: AstNode | undefined;
+    name: (string | undefined);
+    type: (string | undefined);
+    isCollection: boolean;
 
     constructor(astNode: AstNode | undefined, name: string | undefined, type: string | undefined, isCollection: boolean = false) {
-        this.astNode = astNode
-        this.name = name
-        this.type = type
-        this.isCollection = isCollection
+        this.astNode = astNode;
+        this.name = name;
+        this.type = type;
+        this.isCollection = isCollection;
     }
 
     equals(other: TypedElement): boolean {
-        return this.name == other.name && this.type == other.type
+        return this.name == other.name && this.type == other.type;
     }
 
     toJSON() {
-        return `{ "name": "${this.name}", "type": "${this.type}"}`
+        return `{ "name": "${this.name}", "type": "${this.type}"}`;
     }
 }
 
 class HoleSpecifier{
 
-    startingParticipants: TypedElement[] = []
-    terminatingParticipants: TypedElement[] | undefined = [] //if undefined -> semi hole
+    startingParticipants: TypedElement[] = [];
+    terminatingParticipants: TypedElement[] | undefined = []; //if undefined -> semi hole
 
     constructor(startingParticipants: TypedElement[], terminatingParticipants: TypedElement[] | undefined) {
-        this.startingParticipants = startingParticipants
-        this.terminatingParticipants = terminatingParticipants
+        this.startingParticipants = startingParticipants;
+        this.terminatingParticipants = terminatingParticipants;
     }
    
 }
@@ -710,11 +710,11 @@ class HoleSpecifier{
 class CollectionHoleSpecifier extends HoleSpecifier{
 
     constructor(startingParticipants: TypedElement[], terminatingParticipants: TypedElement[] | undefined) {
-        super(startingParticipants, terminatingParticipants)
+        super(startingParticipants, terminatingParticipants);
     }
 
-    isSequential: boolean = true
-    parallelSyncPolicy: string = "lastOF"
+    isSequential: boolean = true;
+    parallelSyncPolicy: string = "lastOF";
     
 }
 
@@ -725,24 +725,24 @@ class CollectionHoleSpecifier extends HoleSpecifier{
  * @returns a typed element list of the event emission participants
  */
 function getEventEmissionParticipants(eventEmission: EventEmission): TypedElement[][] {
-    let res: TypedElement[][] = []
+    let res: TypedElement[][] = [];
     if (eventEmission.$type == "SimpleEventEmission") {
-        res.push(getExplicitEventExpressionParticipants(eventEmission.event as MemberCall))
+        res.push(getExplicitEventExpressionParticipants(eventEmission.event as MemberCall));
     }
     if (eventEmission.$type == "ValuedEventEmission") {
-        res.push(getExplicitEventExpressionParticipants(eventEmission.event as MemberCall))
+        res.push(getExplicitEventExpressionParticipants(eventEmission.event as MemberCall));
     }
     //SingleRuleSync | CollectionRuleSync
     if (eventEmission.$type == "SingleRuleSync") {
-        let tmp = getSingleRuleSyncEventExpressionParticipants(eventEmission as SingleRuleSync)
-        tmp.push(new TypedElement(undefined,"starts", "event")) //implicit in conclusion
-        res.push(tmp)
+        const tmp = getSingleRuleSyncEventExpressionParticipants(eventEmission as SingleRuleSync);
+        tmp.push(new TypedElement(undefined,"starts", "event")); //implicit in conclusion
+        res.push(tmp);
     }
     if (eventEmission.$type == "CollectionRuleSync") {
-        res = getCollectionRuleSyncEventExpressionParticipants(eventEmission as CollectionRuleSync)
+        res = getCollectionRuleSyncEventExpressionParticipants(eventEmission as CollectionRuleSync);
     }
 
-    return res
+    return res;
 }
 
 /**
@@ -752,63 +752,63 @@ function getEventEmissionParticipants(eventEmission: EventEmission): TypedElemen
  */
 
 function getEventSynchronisationParticipants(eventExpression: EventExpression): TypedElement[][] {
-    let res: TypedElement[][] = []
+    let res: TypedElement[][] = [];
     // console.log(chalk.red("-------------------"))
     //explicit event ref
     if (eventExpression.$type == "ExplicitEventRef") {
         if ((eventExpression.membercall as MemberCall)?.element?.ref != undefined) {
             // console.log(chalk.bgGreenBright("explicit event ref"))
-            res.push(getExplicitEventExpressionParticipants(eventExpression.membercall as MemberCall))
+            res.push(getExplicitEventExpressionParticipants(eventExpression.membercall as MemberCall));
         }
-        return res
+        return res;
     }
     if (eventExpression.$type == "SingleRuleSync") {
-        let tmp = getSingleRuleSyncEventExpressionParticipants(eventExpression)
-        tmp.push(new TypedElement(undefined,"terminates", "event")) //implicit in premise
+        const tmp = getSingleRuleSyncEventExpressionParticipants(eventExpression);
+        tmp.push(new TypedElement(undefined,"terminates", "event")); //implicit in premise
         // console.log(chalk.bgGreenBright("single rule sync"))
-        res.push(tmp)
-        return res
+        res.push(tmp);
+        return res;
     }
 
     if (eventExpression.$type == "ExplicitValuedEventRef" || eventExpression.$type == "ImplicitValuedEventRef") {
         if ((eventExpression.membercall as MemberCall)?.element?.ref != undefined) {
-            let tmp = getValuedEventRefParticipants(eventExpression as ValuedEventRef)
+            const tmp = getValuedEventRefParticipants(eventExpression as ValuedEventRef);
             if (eventExpression.$type == "ImplicitValuedEventRef") {
-                tmp.push(new TypedElement(undefined,"terminates", "event")) //implicit in premise
+                tmp.push(new TypedElement(undefined,"terminates", "event")); //implicit in premise
             }
             // console.log(chalk.bgGreenBright("explicit valued event ref"))
-            res.push(tmp)
-            return res
+            res.push(tmp);
+            return res;
         }
     }
     if (eventExpression.$type == "ExplicitValuedEventRefConstantComparison" || eventExpression.$type == "ImplicitValuedEventRefConstantComparison") {
         if ((eventExpression.membercall as MemberCall)?.element?.ref != undefined) {
-            let tmp = getValuedEventRefConstantComparisonParticipants(eventExpression as ValuedEventRefConstantComparison)
+            const tmp = getValuedEventRefConstantComparisonParticipants(eventExpression as ValuedEventRefConstantComparison);
             if (eventExpression.$type == "ImplicitValuedEventRefConstantComparison") {
-                tmp.push(new TypedElement(undefined,"terminates", "event")) //implicit in premise
+                tmp.push(new TypedElement(undefined,"terminates", "event")); //implicit in premise
             }
             // console.log(chalk.bgGreenBright("explicit valued event ref constant comparison"))
-            res.push(tmp)
-            return res
+            res.push(tmp);
+            return res;
         }
     }
 
     if (eventExpression.$type == "EventConjunction" || eventExpression.$type == "EventDisjunction") {
-        let left = getEventSynchronisationParticipants(eventExpression.lhs)
-        let right = getEventSynchronisationParticipants(eventExpression.rhs)
+        const left = getEventSynchronisationParticipants(eventExpression.lhs);
+        const right = getEventSynchronisationParticipants(eventExpression.rhs);
         // console.log(chalk.bgGreenBright("event conjunction or disjunction"))
-        res = [...left, ...right]
-        return res
+        res = [...left, ...right];
+        return res;
     }
 
     if (eventExpression.$type == "NaryEventExpression") {
         // console.log(chalk.bgGreenBright("nary event expression"))
-        res.push(getExplicitEventExpressionParticipants(eventExpression.collection as MemberCall))
-        return res
+        res.push(getExplicitEventExpressionParticipants(eventExpression.collection as MemberCall));
+        return res;
     }
 
-    console.log(chalk.bgRed("no event expression found: "+eventExpression.$type))
-    return res
+    console.log(chalk.bgRed("no event expression found: "+eventExpression.$type));
+    return res;
 
 }
 
@@ -818,9 +818,9 @@ function getEventSynchronisationParticipants(eventExpression: EventExpression): 
  * @returns a typed element list of the valued event ref participants
  */
 function getValuedEventRefParticipants(eventExpression: ValuedEventRef): TypedElement[] {
-    let res: TypedElement[] = []
-    res = getExplicitEventExpressionParticipants(eventExpression.membercall as MemberCall)
-    return res
+    let res: TypedElement[] = [];
+    res = getExplicitEventExpressionParticipants(eventExpression.membercall as MemberCall);
+    return res;
 }
 
 /**
@@ -829,9 +829,9 @@ function getValuedEventRefParticipants(eventExpression: ValuedEventRef): TypedEl
  * @returns a typed element list of the event expression participants
  */
 function getValuedEventRefConstantComparisonParticipants(eventExpression: ValuedEventRefConstantComparison): TypedElement[] {
-    let res: TypedElement[] = []
-    res = getExplicitEventExpressionParticipants(eventExpression.membercall as MemberCall)
-    return res
+    let res: TypedElement[] = [];
+    res = getExplicitEventExpressionParticipants(eventExpression.membercall as MemberCall);
+    return res;
 }
 
 
@@ -842,12 +842,12 @@ function getValuedEventRefConstantComparisonParticipants(eventExpression: Valued
  */
 
 function getSingleRuleSyncEventExpressionParticipants(rule: SingleRuleSync): TypedElement[] {
-    let res: TypedElement[] = []
+    let res: TypedElement[] = [];
     if ((rule.member as MemberCall)?.element?.ref != undefined) {
-        res = getExplicitEventExpressionParticipants(rule.member as MemberCall)
+        res = getExplicitEventExpressionParticipants(rule.member as MemberCall);
     }
 
-    return res
+    return res;
 }
 
 /**
@@ -856,13 +856,13 @@ function getSingleRuleSyncEventExpressionParticipants(rule: SingleRuleSync): Typ
  * @returns a typed element list of the participants to the event expression
  */
 function getCollectionRuleSyncEventExpressionParticipants(rule: CollectionRuleSync): TypedElement[][] {
-    let res: TypedElement[][] = []
+    const res: TypedElement[][] = [];
     if ((rule.collection as MemberCall)?.element?.ref != undefined) {
-        res.push(getExplicitEventExpressionParticipants(rule.collection as MemberCall))
-        res[0].forEach((p) => p.isCollection = true)
-        res[0] = [...res[0], ...getEventEmissionParticipants(rule.singleRule)[0]]
+        res.push(getExplicitEventExpressionParticipants(rule.collection as MemberCall));
+        res[0].forEach((p) => p.isCollection = true);
+        res[0] = [...res[0], ...getEventEmissionParticipants(rule.singleRule)[0]];
     }
-    return res
+    return res;
 }
 
 /**
@@ -871,39 +871,39 @@ function getCollectionRuleSyncEventExpressionParticipants(rule: CollectionRuleSy
  * @returns a typed element list of the event expression participants
  */
 function getExplicitEventExpressionParticipants(membercall: MemberCall): TypedElement[] {
-    let res: TypedElement[] = []
+    let res: TypedElement[] = [];
 
     if (membercall?.element?.ref != undefined) {
         if (membercall.element.ref.$type.toString() == "Assignment") {
-            let ass = ((membercall.element.ref as unknown) as Assignment)
-            let type = ass.terminal.$cstNode?.text
+            const ass = ((membercall.element.ref as unknown) as Assignment);
+            let type = ass.terminal.$cstNode?.text;
             if (ass.terminal.$cstNode != undefined && type?.startsWith("(")) {
-                type = type.substring(1, ass.terminal.$cstNode.text.length - 1)
+                type = type.substring(1, ass.terminal.$cstNode.text.length - 1);
             }
-            let typedElement: TypedElement = new TypedElement(
+            const typedElement: TypedElement = new TypedElement(
                 membercall,
                 ass.feature,
                 type,
                 ass.operator == "+="
-            )
-            res.push(typedElement)
+            );
+            res.push(typedElement);
         } else {
-            let namedElem = ((membercall.element.ref as unknown) as NamedElement)
+            const namedElem = ((membercall.element.ref as unknown) as NamedElement);
 
-            let [name, type] = getNameAndTypeOfElement(namedElem);
+            const [name, type] = getNameAndTypeOfElement(namedElem);
 
-            let typedElement: TypedElement = new TypedElement(
+            const typedElement: TypedElement = new TypedElement(
                 namedElem,
                 name,
                 type
-            )
-            res.push(typedElement)
+            );
+            res.push(typedElement);
         }
     }
     if (membercall.previous != undefined) {
-        return res = [...getExplicitEventExpressionParticipants(membercall.previous as MemberCall), ...res]
+        return res = [...getExplicitEventExpressionParticipants(membercall.previous as MemberCall), ...res];
     }
-    return res
+    return res;
 }
 /**
  * extracts the variable type of a name element and returns its name and its type 
@@ -911,8 +911,8 @@ function getExplicitEventExpressionParticipants(membercall: MemberCall): TypedEl
  * @returns [name, type]
  */
 function getNameAndTypeOfElement(namedElem: NamedElement): [(string | undefined), (string | undefined)] {
-    let type: (string | undefined) = "unknown"
-    let name: (string | undefined) = namedElem.name
+    let type: (string | undefined) = "unknown";
+    let name: (string | undefined) = namedElem.name;
     if (namedElem.$type == "VariableDeclaration") {
         if ((namedElem as VariableDeclaration).type?.primitive) {
             type = (namedElem as VariableDeclaration).type?.primitive?.name;
@@ -920,14 +920,14 @@ function getNameAndTypeOfElement(namedElem: NamedElement): [(string | undefined)
             type = (namedElem as VariableDeclaration).type?.reference?.ref?.name;
         }
     } else if (namedElem.$type == "MethodMember") {
-        name = name + "()"
+        name = name + "()";
         if ((namedElem as MethodMember).returnType?.primitive) {
             type = namedElem.returnType.primitive?.name;
         } else {
             type = namedElem.returnType.reference?.ref?.name;
         }
     }
-    return [name, type]
+    return [name, type];
 }
 
 
@@ -939,22 +939,22 @@ function getNameAndTypeOfElement(namedElem: NamedElement): [(string | undefined)
  * @returns
  */
 function visitValuedEventRefComparison(valuedEventRefComparison: ValuedEventRefConstantComparison | undefined): string {
-    var res : string = ""
+    let res : string = "";
     
     if (valuedEventRefComparison != undefined) {
-        let v = valuedEventRefComparison.literal
+        const v = valuedEventRefComparison.literal;
 
         //guardactions
         if(valuedEventRefComparison.$type == "ImplicitValuedEventRefConstantComparison"){
-            res = res + `new VerifyEqualInstruction(\`\${this.getASTNodeUID(node.${(valuedEventRefComparison.membercall as MemberCall).element?.$refText})}${"terminate"}\`,\`${(typeof(v) == "string")?v:v.$cstNode?.text}\`)`
+            res = res + `new VerifyEqualInstruction(\`\${this.getASTNodeUID(node.${(valuedEventRefComparison.membercall as MemberCall).element?.$refText})}${"terminate"}\`,\`${(typeof(v) == "string")?v:v.$cstNode?.text}\`)`;
         }
         if(valuedEventRefComparison.$type == "ExplicitValuedEventRefConstantComparison"){
-            let prev = (valuedEventRefComparison.membercall as MemberCall)?.previous
-            res = res + `new VerifyEqualInstruction(\`\${this.getASTNodeUID(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRefComparison.membercall as MemberCall).element?.$refText}\`,\`${(typeof(v) == "string")?v:v.$cstNode?.text}\`)`
+            const prev = (valuedEventRefComparison.membercall as MemberCall)?.previous;
+            res = res + `new VerifyEqualInstruction(\`\${this.getASTNodeUID(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRefComparison.membercall as MemberCall).element?.$refText}\`,\`${(typeof(v) == "string")?v:v.$cstNode?.text}\`)`;
         }
         
     }
-    return res
+    return res;
 }
 
 
@@ -965,27 +965,27 @@ function visitValuedEventRefComparison(valuedEventRefComparison: ValuedEventRefC
  * @returns
  */
 function visitValuedEventRef(valuedEventRef: ValuedEventRef | undefined): [string, TypedElement] {
-    var res : string = ""
+    let res : string = "";
     if (valuedEventRef != undefined) {
-        let v = valuedEventRef.tempVar
-        let varType = inferType(v, new Map())
-        let typeName = getCPPVariableTypeName(varType.$type)
+        const v = valuedEventRef.tempVar;
+        const varType = inferType(v, new Map());
+        const typeName = getCPPVariableTypeName(varType.$type);
         if(v != undefined && valuedEventRef.$type == "ImplicitValuedEventRef"){
-            res = res + `new CreateVarInstruction(\`\${this.getASTNodeUID(node)}${v.$cstNode?.offset}\`,\`${typeName}\`)`
-            res = res + `new SetVarInstruction(\`\${this.getASTNodeUID(node)}${v.$cstNode?.offset}\`,\`${v.name}\`,\`${typeName}\`)`
-            let param:TypedElement = new TypedElement(v,v.name, typeName)
-            return [res, param]
+            res = res + `new CreateVarInstruction(\`\${this.getASTNodeUID(node)}${v.$cstNode?.offset}\`,\`${typeName}\`)`;
+            res = res + `new SetVarInstruction(\`\${this.getASTNodeUID(node)}${v.$cstNode?.offset}\`,\`${v.name}\`,\`${typeName}\`)`;
+            const param:TypedElement = new TypedElement(v,v.name, typeName);
+            return [res, param];
         }
         if(v != undefined && valuedEventRef.$type == "ExplicitValuedEventRef"){
             // let prev = (valuedEventRef.membercall as MemberCall)?.previous
-            res = res + `new CreateVarInstruction(\`\${this.getASTNodeUID(node)}${v.$cstNode?.offset}\`,\`${typeName}\`)`
-            res = res + `new SetVarInstruction(\`\${this.getASTNodeUID(node)}${v.$cstNode?.offset}\`,\`${v.name}\`,\`${typeName}\`)`
-            let param:TypedElement = new TypedElement(v,v.name, typeName)
-            return [res, param]
+            res = res + `new CreateVarInstruction(\`\${this.getASTNodeUID(node)}${v.$cstNode?.offset}\`,\`${typeName}\`)`;
+            res = res + `new SetVarInstruction(\`\${this.getASTNodeUID(node)}${v.$cstNode?.offset}\`,\`${v.name}\`,\`${typeName}\`)`;
+            const param:TypedElement = new TypedElement(v,v.name, typeName);
+            return [res, param];
         }
     
     }
-    return ["", new TypedElement(undefined,"NULL", undefined)]
+    return ["", new TypedElement(undefined,"NULL", undefined)];
 }
 
 
@@ -997,7 +997,7 @@ function visitValuedEventRef(valuedEventRef: ValuedEventRef | undefined): [strin
  */
 function visitVariableDeclaration(runtimeState: VariableDeclaration[] | undefined, file : CompositeGeneratorNode): void {
     if (runtimeState != undefined) {
-        for(let vardDecl of runtimeState){
+        for(const vardDecl of runtimeState){
             if(vardDecl.type != undefined && vardDecl.type.$cstNode?.text == "Event"){
                 file.append(`
                 let starts${vardDecl.name}Node: Node = new Step("starts${vardDecl.name}"+getASTNodeUID(node))\n
@@ -1005,11 +1005,11 @@ function visitVariableDeclaration(runtimeState: VariableDeclaration[] | undefine
                 let terminates${vardDecl.name}Node: Node = new Step("terminates${vardDecl.name}"+getASTNodeUID(node))\n
                 localCCFG.addNode(terminates${vardDecl.name}Node)
                 localCCFG.addEdge(starts${vardDecl.name}Node,terminates${vardDecl.name}Node)
-                `)
+                `);
             }
         }
     }
-    return
+    return;
 }
 
 
@@ -1019,34 +1019,34 @@ function visitVariableDeclaration(runtimeState: VariableDeclaration[] | undefine
  * @returns 
  */
 function getVariableDeclarationCode(runtimeState: VariableDeclaration[] | undefined): string {
-    var res : string = ""
+    let res : string = "";
     if (runtimeState != undefined) {
        // res = res + `\`const std::lock_guard<std::mutex> lock(sigma_mutex);\`,`
-        let sep = ""
-        for(let vardDecl of runtimeState){
+        let sep = "";
+        for(const vardDecl of runtimeState){
             if(vardDecl.type != undefined && vardDecl.type.$cstNode?.text == "Event"){
-                continue
+                continue;
             }else{
                  if(vardDecl.value != undefined && vardDecl.value.$type == "MemberCall"){
                    //res = res + sep + `\`sigma["\${getASTNodeUID(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?`\${node.${(vardDecl.value as MemberCall).element?.$refText}}`:""});\``
-                   res = res + sep + `new CreateGlobalVarInstruction(\`\${this.getASTNodeUID(node)}${vardDecl.name}\`,\`${getVariableType(vardDecl.type)}\`)`
-                   sep = ","
-                   res = res + sep + `new SetGlobalVarInstruction(\`\${this.getASTNodeUID(node)}${vardDecl.name}\`,\`${(vardDecl.value != undefined)?`\${node.${(vardDecl.value as MemberCall).element?.$refText}}`:""}\`,\`${getVariableType(vardDecl.type)}\`)` 
+                   res = res + sep + `new CreateGlobalVarInstruction(\`\${this.getASTNodeUID(node)}${vardDecl.name}\`,\`${getVariableType(vardDecl.type)}\`)`;
+                   sep = ",";
+                   res = res + sep + `new SetGlobalVarInstruction(\`\${this.getASTNodeUID(node)}${vardDecl.name}\`,\`${(vardDecl.value != undefined)?`\${node.${(vardDecl.value as MemberCall).element?.$refText}}`:""}\`,\`${getVariableType(vardDecl.type)}\`)`; 
                    
                 //    `\`${assignVar},\${getASTNodeUID(node)}${vardDecl.name},${(vardDecl.value != undefined)?(vardDecl.value as MemberCall).element?.$refText:""}\``
                 }else{
                     //res = res + sep + `\`sigma["\${getASTNodeUID(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?vardDecl.value.$cstNode?.text:""});\``
-                    res = res + sep + `new CreateGlobalVarInstruction(\`\${this.getASTNodeUID(node)}${vardDecl.name}\`,\`${getVariableType(vardDecl.type)}\`)`
-                    sep = ","
+                    res = res + sep + `new CreateGlobalVarInstruction(\`\${this.getASTNodeUID(node)}${vardDecl.name}\`,\`${getVariableType(vardDecl.type)}\`)`;
+                    sep = ",";
                     if (vardDecl.value != undefined){
-                        res = res + sep + ` new SetGlobalVarInstruction(\`\${this.getASTNodeUID(node)}${vardDecl.name}\`,\`${(vardDecl.value != undefined)?vardDecl.value.$cstNode?.text:""}\`,\`${getVariableType(vardDecl.type)}\`)` 
+                        res = res + sep + ` new SetGlobalVarInstruction(\`\${this.getASTNodeUID(node)}${vardDecl.name}\`,\`${(vardDecl.value != undefined)?vardDecl.value.$cstNode?.text:""}\`,\`${getVariableType(vardDecl.type)}\`)`; 
                     }
                 }
-                sep= ","
+                sep= ",";
             }
         }
     }
-    return res
+    return res;
 }
 
 /**
@@ -1054,76 +1054,76 @@ function getVariableDeclarationCode(runtimeState: VariableDeclaration[] | undefi
  * @param runtimeState 
  * @returns 
  */
-function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefined,file:CompositeGeneratorNode): [string, string] {
-    var res : string = ""
+function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefined, _file:CompositeGeneratorNode): [string, string] {
+    let res : string = "";
     if (valuedEmission != undefined) {
-        let varType = inferType(valuedEmission.data, new Map())
-        let typeName = getCPPVariableTypeName(varType.$type)
+        const varType = inferType(valuedEmission.data, new Map());
+        const typeName = getCPPVariableTypeName(varType.$type);
 
         if(valuedEmission.data != undefined && valuedEmission.data.$type == "MemberCall"){
             
             //todo write a node that saves the variable
-            res = createVariableFromMemberCall(valuedEmission.data as MemberCall, typeName)
+            res = createVariableFromMemberCall(valuedEmission.data as MemberCall, typeName);
         }
         if(valuedEmission.data != undefined && valuedEmission.data.$type == "BinaryExpression"){
             //todo write a node that joins the two variable nodes and saves the result
-            let lhs = (valuedEmission.data as BinaryExpression).left
-            let lhsType = inferType(lhs, new Map())
-            let lhsTypeName = getCPPVariableTypeName(lhsType.$type)
+            const lhs = (valuedEmission.data as BinaryExpression).left;
+            const lhsType = inferType(lhs, new Map());
+            const lhsTypeName = getCPPVariableTypeName(lhsType.$type);
             let leftRes: string = ""; // Declare the variable rightRes
             leftRes = createVariableFromMemberCall(lhs as MemberCall, lhsTypeName);
-            res = res + leftRes+","
-            let rhs = (valuedEmission.data as BinaryExpression).right
-            let rhsType = inferType(rhs, new Map())
-            let rhsTypeName = getCPPVariableTypeName(rhsType.$type)
+            res = res + leftRes+",";
+            const rhs = (valuedEmission.data as BinaryExpression).right;
+            const rhsType = inferType(rhs, new Map());
+            const rhsTypeName = getCPPVariableTypeName(rhsType.$type);
             let rightRes: string = ""; // Declare the variable rightRes
             rightRes  = createVariableFromMemberCall(rhs as MemberCall, rhsTypeName);
-            res = res + rightRes+","
-            let applyOp = (valuedEmission.data as BinaryExpression).operator
-            res = res + `new CreateVarInstruction(\`\${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,\`${typeName}\`),`
-            res = res + `new OperationInstruction(\`\${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,\`\${this.getASTNodeUID(node)}${lhs.$cstNode?.offset}\`,\`${applyOp}\`,\`\${this.getASTNodeUID(node)}${rhs.$cstNode?.offset}\`,\`${typeName}\`)`
+            res = res + rightRes+",";
+            const applyOp = (valuedEmission.data as BinaryExpression).operator;
+            res = res + `new CreateVarInstruction(\`\${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,\`${typeName}\`),`;
+            res = res + `new OperationInstruction(\`\${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,\`\${this.getASTNodeUID(node)}${lhs.$cstNode?.offset}\`,\`${applyOp}\`,\`\${this.getASTNodeUID(node)}${rhs.$cstNode?.offset}\`,\`${typeName}\`)`;
         }
         if(valuedEmission.data != undefined && valuedEmission.data.$type == "BooleanExpression" || valuedEmission.data.$type == "NumberExpression" || valuedEmission.data.$type == "StringExpression"){
             // write a node that sends the value specified 
-            res = res  +`new CreateVarInstruction(\`\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\`,\`${typeName}\`)`+ ","
-            res = res  +`new AssignVarInstruction(\`\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\`,\`${valuedEmission.data.$cstNode?.text}\`,\`${typeName}\`)`+ ","
-            res = res  +`new ReturnInstruction(\`\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\`)`+ ","
-            return [res, typeName]
+            res = res  +`new CreateVarInstruction(\`\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\`,\`${typeName}\`)`+ ",";
+            res = res  +`new AssignVarInstruction(\`\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\`,\`${valuedEmission.data.$cstNode?.text}\`,\`${typeName}\`)`+ ",";
+            res = res  +`new ReturnInstruction(\`\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\`)`+ ",";
+            return [res, typeName];
         }
         if(res.length > 0){
-            res = res + ","
+            res = res + ",";
         }
-        res = res  +`new CreateVarInstruction(\`\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\`,\`${typeName}\`)`+ ","
-        res = res+ `new AssignVarInstruction(\`\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\`,\`\${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,\`${typeName}\`),`
-        res = res  +`new ReturnInstruction(\`\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\`)`+ ","
+        res = res  +`new CreateVarInstruction(\`\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\`,\`${typeName}\`)`+ ",";
+        res = res+ `new AssignVarInstruction(\`\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\`,\`\${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,\`${typeName}\`),`;
+        res = res  +`new ReturnInstruction(\`\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}\`)`+ ",";
 
-        return [res, typeName]
+        return [res, typeName];
     }
-    return [res , "void"]
+    return [res , "void"];
 }
 
 function createVariableFromMemberCall(data: MemberCall, typeName: string): string {
-    let res: string = ""
-    let prev = (data.previous as MemberCall)?.element
-    let elem = data.element?.ref
+    let res: string = "";
+    const prev = (data.previous as MemberCall)?.element;
+    const elem = data.element?.ref;
     
     if (elem == undefined) {
-        return res
+        return res;
     }
 
     if (elem?.$type == "VariableDeclaration") {
-        res = res+ `new CreateVarInstruction(\`\${this.getASTNodeUID(node)}${data.$cstNode?.offset}\`,\`${typeName}\`),`
-        res = res+ `new SetVarFromGlobalInstruction(\`\${this.getASTNodeUID(node)}${data.$cstNode?.offset}\`,\`\${this.getASTNodeUID(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name}\`,\`${typeName}\`)`
+        res = res+ `new CreateVarInstruction(\`\${this.getASTNodeUID(node)}${data.$cstNode?.offset}\`,\`${typeName}\`),`;
+        res = res+ `new SetVarFromGlobalInstruction(\`\${this.getASTNodeUID(node)}${data.$cstNode?.offset}\`,\`\${this.getASTNodeUID(node${prev != undefined ? "."+prev.$refText : ""})}${elem.name}\`,\`${typeName}\`)`;
     } 
     else if (elem?.$type == "TemporaryVariable") {
-        res = res+ `new CreateVarInstruction(this.getASTNodeUID(node)+\`${data.$cstNode?.offset}\`,\`${typeName}\`),`
-        res = res+ `new AssignVarInstruction(this.getASTNodeUID(node)+\`${data.$cstNode?.offset}\`,\`${elem.name}\`,\`${typeName}\`)` 
+        res = res+ `new CreateVarInstruction(this.getASTNodeUID(node)+\`${data.$cstNode?.offset}\`,\`${typeName}\`),`;
+        res = res+ `new AssignVarInstruction(this.getASTNodeUID(node)+\`${data.$cstNode?.offset}\`,\`${elem.name}\`,\`${typeName}\`)`; 
     }
     else /*if (elem?.$type == "Assignment")*/ {
-                res = res+ `new CreateVarInstruction(\`\${this.getASTNodeUID(node)}${data.$cstNode?.offset}\`,\`${typeName}\`),`
-        res = res+ `new AssignVarInstruction(\`\${this.getASTNodeUID(node)}${data.$cstNode?.offset}\`,\`\${node.${data.$cstNode?.text}}\`,\`${typeName}\`)`
+                res = res+ `new CreateVarInstruction(\`\${this.getASTNodeUID(node)}${data.$cstNode?.offset}\`,\`${typeName}\`),`;
+        res = res+ `new AssignVarInstruction(\`\${this.getASTNodeUID(node)}${data.$cstNode?.offset}\`,\`\${node.${data.$cstNode?.text}}\`,\`${typeName}\`)`;
     }
-    return res
+    return res;
 }
 
 // function visitValuedEventEmission(valuedEvent: ValuedEventRef | undefined): string {
@@ -1142,35 +1142,35 @@ function createVariableFromMemberCall(data: MemberCall, typeName: string): strin
  * @returns 
  */
 function visitStateModifications(ruleCF: RuleControlFlow, actionsstring: string) {
-    let sep = ""
+    let sep = "";
     if(actionsstring.length > 0){
-        sep = ","
+        sep = ",";
     }
-    for (let action of ruleCF.rule.conclusion.statemodifications) {
+    for (const action of ruleCF.rule.conclusion.statemodifications) {
         let typeName = ""; 
-        let rhsType = inferType(action.rhs, new Map());
+        const rhsType = inferType(action.rhs, new Map());
         typeName = getCPPVariableTypeName(rhsType.$type);
         if (typeName == "unknown") {
-            let lhsType = inferType(action.lhs, new Map())
+            const lhsType = inferType(action.lhs, new Map());
             typeName = getCPPVariableTypeName(lhsType.$type);
         }
-        let rhsElem = (action.rhs as MemberCall).element?.ref
+        const rhsElem = (action.rhs as MemberCall).element?.ref;
         if (rhsElem == undefined) {
-            return actionsstring
+            return actionsstring;
         }
-        let lhsPrev = ((action.lhs as MemberCall).previous as MemberCall)?.element
-        let lhsElem = (action.lhs as MemberCall).element?.ref
+        const lhsPrev = ((action.lhs as MemberCall).previous as MemberCall)?.element;
+        const lhsElem = (action.lhs as MemberCall).element?.ref;
         if (lhsElem == undefined) {
-            return actionsstring
+            return actionsstring;
         }
 
-        actionsstring = actionsstring + sep + createVariableFromMemberCall(action.rhs as MemberCall, typeName)
-        sep = ","
+        actionsstring = actionsstring + sep + createVariableFromMemberCall(action.rhs as MemberCall, typeName);
+        sep = ",";
         
         if(rhsElem.$type == "TemporaryVariable"){
-            actionsstring = actionsstring + sep + `new SetGlobalVarInstruction(\`\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}\`,\`\${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset}\`,\`${typeName}\`)`
+            actionsstring = actionsstring + sep + `new SetGlobalVarInstruction(\`\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}\`,\`\${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset}\`,\`${typeName}\`)`;
         }else{
-            actionsstring = actionsstring + sep + `new SetGlobalVarInstruction(\`\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}\`,\`\${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset}\`,\`${typeName}\`)`
+            actionsstring = actionsstring + sep + `new SetGlobalVarInstruction(\`\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}\`,\`\${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset}\`,\`${typeName}\`)`;
         }
     }
     return actionsstring;
@@ -1191,7 +1191,7 @@ function getCPPVariableTypeName(typeName: string): string {
         default:
             return "unknown";
     }
-    return "void"
+    return "void";
 }
 
 
@@ -1201,7 +1201,7 @@ function getVariableType(type: TypeReference | undefined) {
     } else if (type?.reference && type.reference.ref?.name != undefined) {
         return getCPPVariableTypeName(type.reference.ref?.name);
     }
-    return "unknown"
+    return "unknown";
 }
 
 
@@ -1231,7 +1231,7 @@ function isACollectionHole(h: HoleSpecifier): boolean {
 
 
 function isParticipantCollectionBased(participant: TypedElement[]): boolean {
-    for (let p of participant) {
+    for (const p of participant) {
         if (p.isCollection) {
             return true;
         }
@@ -1245,11 +1245,11 @@ function isParticipantCollectionBased(participant: TypedElement[]): boolean {
  * @param fileNode the file 
  * @param data the file path data
  */
-function writePreambule(fileNode: CompositeGeneratorNode, data: FilePathData) {
+function writePreambule(fileNode: CompositeGeneratorNode, _data: FilePathData) {
     fileNode.append(`
 import fs from 'fs';
 import { AstNode, Reference, isReference, AstUtils } from "langium";
-import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole, AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction} from "ccfg";`, NL)
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole, AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction} from "ccfg";`, NL);
 }
 
 
@@ -1397,7 +1397,7 @@ function addUtilFunctions(fileNode: CompositeGeneratorNode,rootTypeName: string)
         var r = node.$cstNode?.range
         return node.$type+r?.start.line+"_"+r?.start.character+"_"+r?.end.line+"_"+r?.end.character;
     }
-    `)
+    `);
 }
 
 

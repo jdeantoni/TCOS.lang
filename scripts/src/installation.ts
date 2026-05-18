@@ -2,11 +2,11 @@
  * This file is use to installed all packages and languages for our software.
  */
 
-import * as path from 'path';
-import { executeCommand } from './commands';
-import { DAG, LANGUAGES, ROOT } from './project';
-import { info, success, error, popIndent, pushIndent } from './display';
-import { installationOptions, InstallResult, LanguageConfig } from './types';
+import * as path from "path";
+import { executeCommand } from "./commands";
+import { DAG, LANGUAGES, ROOT } from "./project";
+import { info, success, error, popIndent, pushIndent } from "./display";
+import { installationOptions, InstallResult, LanguageConfig } from "./types";
 
 /**
  * Run the standard npm pipeline in the given folder.
@@ -100,6 +100,7 @@ async function installPackage(name: string, dependances: string[]): Promise<Inst
     } catch (err) {
         popIndent();
         error(`${name} installation failed!`);
+        console.error(err);
         return {name, type: "package", status: "error"};
     }
     finally{
@@ -145,6 +146,7 @@ async function installLanguage(name: string, config: LanguageConfig): Promise<In
     } catch (err) {
         popIndent();
         error(`${name} installation failed!`);
+        console.error(err);
         return {name, type: "language", status: "error"};
     }
     finally{

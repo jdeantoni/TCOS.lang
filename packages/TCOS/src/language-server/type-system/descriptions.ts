@@ -6,7 +6,7 @@ import {
     NumberExpression,
     StringExpression,
     ParserRule
-} from "../generated/ast.js"
+} from "../generated/ast.js";
 
 export type TypeDescription =
     | NilTypeDescription
@@ -40,7 +40,7 @@ export interface VoidTypeDescription {
 export function createVoidType(): VoidTypeDescription {
     return {
         $type: "void"
-    }
+    };
 }
 
 export function isVoidType(item: TypeDescription): item is VoidTypeDescription {
@@ -179,7 +179,7 @@ export function typeToString(item: TypeDescription): string {
     if (isRuleOpeningType(item)) {
         return (item.literal.name === undefined)?"noName":item.literal.name;
     } else if (isFunctionType(item)) {
-        const params = item.parameters.map(e => `${e.name}: ${typeToString(e.type)}`).join(', ');
+        const params = item.parameters.map(e => `${e.name}: ${typeToString(e.type)}`).join(", ");
         return `(${params}) => ${typeToString(item.returnType)}`;
     } else {
         return item.$type;

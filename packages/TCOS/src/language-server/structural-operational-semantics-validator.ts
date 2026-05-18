@@ -1,6 +1,6 @@
-import { ValidationAcceptor, ValidationChecks } from 'langium';
-import { SoSSpec, StructuralOperationalSemanticsAstType } from './generated/ast.js';
-import type { StructuralOperationalSemanticsServices } from './structural-operational-semantics-module.js';
+import { ValidationAcceptor, ValidationChecks } from "langium";
+import { SoSSpec, StructuralOperationalSemanticsAstType } from "./generated/ast.js";
+import type { StructuralOperationalSemanticsServices } from "./structural-operational-semantics-module.js";
 
 /**
  * Register custom validation checks.
@@ -20,7 +20,7 @@ export function registerSoSValidationChecks(services: StructuralOperationalSeman
 export class StructuralOperationalSemanticsValidator {
 
     checkOK(spec:SoSSpec, accept:ValidationAcceptor): void {
-        accept('info', 'OK', {node: spec, property: 'name'});
+        accept("info", "OK", {node: spec, property: "name"});
     }
 
     // checkPersonStartsWithCapital(person: Person, accept: ValidationAcceptor): void {

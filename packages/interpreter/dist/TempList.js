@@ -19,21 +19,21 @@ export class Stack {
         this.storage.push(item);
     }
     pop() {
-        let element = this.storage.pop();
+        const element = this.storage.pop();
         if (element != undefined) {
             return element;
         }
         else {
-            throw Error('Error : number of value');
+            throw Error("Error : number of value");
         }
     }
     peek() {
-        let element = this.storage[this.size() - 1];
+        const element = this.storage[this.size() - 1];
         if (element != undefined) {
             return element;
         }
         else {
-            throw Error('Error : number of value');
+            throw Error("Error : number of value");
         }
     }
     size() {

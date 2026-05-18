@@ -10,7 +10,7 @@ export class CppGenerator {
         return `${filename}.cpp`;
     }
     createBase() {
-        let res = [];
+        const res = [];
         res.push(`
         #include <string>
         #include <unordered_map>
@@ -36,7 +36,7 @@ export class CppGenerator {
         return [];
     }
     createFunction(fname, params, returnType, insideFunction) {
-        let res = [];
+        const res = [];
         res.push(returnType + " function" + fname + `(${params.map(p => p.toString()).join(", ")}){\n`);
         if (this.debug) {
             res.push(`std::cout << "\tfunction${fname} started" << std::endl;\n`);
@@ -48,7 +48,7 @@ export class CppGenerator {
         return res;
     }
     createMainFunction(insideMain) {
-        let res = [];
+        const res = [];
         res.push("int main(){\n\t");
         for (let i = 0; i < insideMain.length; i++) {
             res.push("\t" + insideMain[i]);
@@ -64,7 +64,7 @@ export class CppGenerator {
         return [typeName + " result" + fname + " = function" + fname + `(${params.join(", ")});\n`];
     }
     createIf(guards, insideOfIf) {
-        let createIfString = [];
+        const createIfString = [];
         createIfString.push("if (" + guards.join(" && ") + "){\n");
         if (this.debug) {
             createIfString.push(`std::cout << "(${guards.join(" && ")}) is TRUE" << std::endl;\n`);
@@ -84,7 +84,7 @@ export class CppGenerator {
         for (let i = 0; i < insideThreadCode.length; i++) {
             threadCode = [...threadCode, "\t" + insideThreadCode[i]];
         }
-        threadCode = [...threadCode, `});\n`, `thread${uid}.detach();\n`];
+        threadCode = [...threadCode, "});\n", `thread${uid}.detach();\n`];
         return threadCode;
     }
     createQueue(queueUID) {
@@ -109,7 +109,7 @@ export class CppGenerator {
         return ["{Void joinPopped" + synchUID + ";\n ", "synch" + synchUID + ".waitAndPop(joinPopped" + synchUID + ");}\n"];
     }
     createLoop(uid, insideLoop) {
-        let res = ["flag" + uid + "= true;\nwhile (flag" + uid + " == true){\n\tflag" + uid + " = false;\n"];
+        const res = ["flag" + uid + "= true;\nwhile (flag" + uid + " == true){\n\tflag" + uid + " = false;\n"];
         for (let i = 0; i < insideLoop.length; i++) {
             res.push("\t" + insideLoop[i]);
         }
@@ -132,13 +132,13 @@ export class CppGenerator {
         return [type + " " + varName + ";\n"];
     }
     createGlobalVar(type, varName) {
-        return [`{const std::lock_guard<std::mutex> lock(sigma_mutex);`, "sigma[\"" + varName + "\"] = new " + type + "();}\n"];
+        return ["{const std::lock_guard<std::mutex> lock(sigma_mutex);", "sigma[\"" + varName + "\"] = new " + type + "();}\n"];
     }
     setVarFromGlobal(type, varName, value) {
-        return [`{const std::lock_guard<std::mutex> lock(sigma_mutex);`, varName + " = *(" + type + "*)sigma[\"" + value + "\"];}\n"];
+        return ["{const std::lock_guard<std::mutex> lock(sigma_mutex);", varName + " = *(" + type + "*)sigma[\"" + value + "\"];}\n"];
     }
     setGlobalVar(type, varName, value) {
-        return [`{const std::lock_guard<std::mutex> lock(sigma_mutex);`, "*((" + type + "*)sigma[\"" + varName + "\"]) = " + value + ";}\n"];
+        return ["{const std::lock_guard<std::mutex> lock(sigma_mutex);", "*((" + type + "*)sigma[\"" + varName + "\"]) = " + value + ";}\n"];
     }
     operation(varName, n1, op, n2) {
         return [varName + " = " + n1 + " " + op + " " + n2 + ";\n"];

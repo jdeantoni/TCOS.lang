@@ -174,14 +174,14 @@ export class Node {
             this.isVisited = false;
             return false;
         }
-        for (let e of this.outputEdges) {
+        for (const e of this.outputEdges) {
             if (e.to === n2) {
                 // console.log(chalk.gray("info: "+this.uid+" is before "+n2.uid));
                 this.isVisited = false;
                 return true;
             }
         }
-        for (let e of this.outputEdges) {
+        for (const e of this.outputEdges) {
             // console.log(chalk.gray("info: moving to node"+e.to.uid));
             return e.to.isBefore(n2);
         }
@@ -231,7 +231,7 @@ export class CCFG {
         this.edges = [];
     }
     cleanVisit() {
-        for (let n of this.nodes) {
+        for (const n of this.nodes) {
             n.isVisited = false;
         }
     }
@@ -245,7 +245,7 @@ export class CCFG {
         if (node.owningCCFG != undefined) {
             node.owningCCFG.nodes = node.owningCCFG.nodes.filter(n => n.uid !== node.uid);
         }
-        let res = this.nodes.find(n => n === node);
+        const res = this.nodes.find(n => n === node);
         if (res == undefined) {
             this.nodes.push(node);
         }
@@ -260,8 +260,8 @@ export class CCFG {
      * @param label
      * @returns
      */
-    addEdge(from, to, label = "") {
-        let res = this.edges.find(e => e.from === from && e.to === to);
+    addEdge(from, to, _label = "") {
+        const res = this.edges.find(e => e.from === from && e.to === to);
         if (res != undefined) {
             console.log(chalk.grey("warning, edge already exists from " + from.uid + ":" + from.type + " to " + to.uid + ":" + to.type));
             return res;
@@ -287,15 +287,15 @@ export class CCFG {
             }
             else {
                 // console.log(chalk.gray("creating a new or Join node: orJoinNode between "+from.uid+" and "+to.uid));
-                let orJoinNode = new OrJoin(to.astNode);
+                const orJoinNode = new OrJoin(to.astNode);
                 this.addNode(orJoinNode);
                 edge.to = orJoinNode;
-                for (let e of to.inputEdges) {
+                for (const e of to.inputEdges) {
                     e.to = orJoinNode;
                     orJoinNode.inputEdges.push(e);
                 }
                 to.inputEdges = [];
-                let secondEdge = new Edge(orJoinNode, to);
+                const secondEdge = new Edge(orJoinNode, to);
                 this.edges.push(secondEdge);
                 to.inputEdges.push(secondEdge);
                 orJoinNode.outputEdges.push(secondEdge);
@@ -309,7 +309,7 @@ export class CCFG {
      * @param newNode
      */
     replaceNode(oldNode, newNode) {
-        let index = this.nodes.findIndex(n => n.uid === oldNode.uid);
+        const index = this.nodes.findIndex(n => n.uid === oldNode.uid);
         if (index != -1) {
             this.nodes[index] = newNode;
             newNode.uid = oldNode.uid;
@@ -320,7 +320,7 @@ export class CCFG {
             newNode.functionsNames = oldNode.functionsNames;
             newNode.owningCCFG = oldNode.owningCCFG;
         }
-        for (let edge of this.edges) {
+        for (const edge of this.edges) {
             if (edge.from === oldNode) {
                 edge.from = newNode;
                 newNode.outputEdges.push(edge);
@@ -330,7 +330,7 @@ export class CCFG {
                 newNode.inputEdges.push(edge);
             }
         }
-        let owningCCFGOldNode = oldNode.owningCCFG;
+        const owningCCFGOldNode = oldNode.owningCCFG;
         if (owningCCFGOldNode != undefined) {
             owningCCFGOldNode.nodes = owningCCFGOldNode.nodes.filter(n => n.uid !== oldNode.uid);
             owningCCFGOldNode.nodes.push(newNode);
@@ -343,7 +343,7 @@ export class CCFG {
      * @returns the node with the given uid or undefined if not found
      */
     getNodeByUID(uid) {
-        for (let n of this.nodes) {
+        for (const n of this.nodes) {
             if (n.uid === uid) {
                 return n;
             }
@@ -357,7 +357,7 @@ export class CCFG {
      * @returns the node with the given astNode and type or undefined if not found
      */
     getNodeFromASTNode(astNode, t) {
-        for (let n of this.nodes) {
+        for (const n of this.nodes) {
             if (n.astNode != undefined && n.astNode == astNode && n.type == t) {
                 return n;
             }
@@ -379,7 +379,7 @@ export class CCFG {
         const visited = [];
         const queue = [];
         queue.push(node);
-        var splitCounter = -1;
+        let splitCounter = -1;
         while (queue.length > 0) {
             const current = queue.shift();
             if (current) {
@@ -414,10 +414,10 @@ export class CCFG {
      * this old version tried to be smart... it seems we can exploit thread uid like in the next version
      */
     addSyncEdge() {
-        for (let n of this.nodes) {
+        for (const n of this.nodes) {
             this.cleanVisit();
             if (n.getType() == "OrJoin" || n.getType() == "AndJoin") {
-                for (let n2 of this.nodes) {
+                for (const n2 of this.nodes) {
                     this.cleanVisit();
                     if ((n2.getType() == "Fork" || n2.getType() == "Choice")
                         &&
@@ -543,12 +543,12 @@ export class CCFG {
         return;
     }
     toDot() {
-        let wholeDot = 'digraph G {\n';
+        let wholeDot = "digraph G {\n";
         let [s, d] = this.dotGetCCFGNodes();
         d = d + this.dotGetCCFGEdges();
         wholeDot += s;
         wholeDot += d;
-        wholeDot += '}';
+        wholeDot += "}";
         return wholeDot;
     }
     /**
@@ -562,7 +562,7 @@ export class CCFG {
         //         edgeDot += (node as ContainerNode).internalccfg.dotGetCCFGEdges();
         //     }
         // }
-        for (let edge of this.edges) {
+        for (const edge of this.edges) {
             edgeDot += `  "${edge.from.uid}" -> "${edge.to.uid}" [label="${this.dotGetEdgeLabel(edge)}"];\n`;
         }
         // for (let edge of this.syncEdges) {
@@ -575,9 +575,9 @@ export class CCFG {
      * @returns a tuple with the first element being the subgraph and the second the nodes
      */
     dotGetCCFGNodes() {
-        let subG = "";
+        const subG = "";
         let nodeDot = "";
-        for (let node of this.nodes) {
+        for (const node of this.nodes) {
             // if (node.getType() == "ContainerNode") {
             //    subG += `subgraph cluster_${node.uid} {\n`;
             //    subG += `label = "${node.value}";\n`;
@@ -586,9 +586,9 @@ export class CCFG {
             //     subG += s;
             //     subG += `}\n`;
             // } else {
-            let shape = this.dotGetNodeShape(node);
-            let label = this.dotGetNodeLabel(node);
-            nodeDot += `  "${node.uid}" [label="${label}" shape="${shape}" ${node.isCycleInitiator ? `style="filled" fillcolor="lightblue"` : ``}];\n`;
+            const shape = this.dotGetNodeShape(node);
+            const label = this.dotGetNodeLabel(node);
+            nodeDot += `  "${node.uid}" [label="${label}" shape="${shape}" ${node.isCycleInitiator ? "style=\"filled\" fillcolor=\"lightblue\"" : ""}];\n`;
             // }
         }
         return [subG, nodeDot];
@@ -601,9 +601,9 @@ export class CCFG {
     }
     dotGetNodeLabel(node) {
         if (node.functionsDefs.length == 0) {
-            return node.uid.toString() + "[" + node.syncNodeIds.map(i => i).join(',') + "]" + ":" + node.getType() + ((node.type == undefined || node.type == NodeType.multipleSynchro) ? "" : "_" + node.type);
+            return node.uid.toString() + "[" + node.syncNodeIds.map(i => i).join(",") + "]" + ":" + node.getType() + ((node.type == undefined || node.type == NodeType.multipleSynchro) ? "" : "_" + node.type);
         }
-        return node.uid.toString() + "[" + node.syncNodeIds.map(i => i).join(',') + "]" + ":" + node.getType() + ((node.type == undefined || node.type == NodeType.multipleSynchro) ? "" : "_" + node.type) + ":\n" + node.returnType + " function" + node.functionsNames + "(" + node.params.map(p => p.toString()).join(", ") + "){\n" + node.functionsDefs.map(a => a.toString().replaceAll("\"", "\\\"")).join("\n") + "\n}";
+        return node.uid.toString() + "[" + node.syncNodeIds.map(i => i).join(",") + "]" + ":" + node.getType() + ((node.type == undefined || node.type == NodeType.multipleSynchro) ? "" : "_" + node.type) + ":\n" + node.returnType + " function" + node.functionsNames + "(" + node.params.map(p => p.toString()).join(", ") + "){\n" + node.functionsDefs.map(a => a.toString().replaceAll("\"", "\\\"")).join("\n") + "\n}";
     }
     dotGetNodeShape(node) {
         switch (node.getType()) {
@@ -632,15 +632,15 @@ export class CCFG {
             console.log(chalk.red("error: hole has no input and no output edge"));
             return;
         }
-        for (let inputEdge of h.inputEdges) {
+        for (const inputEdge of h.inputEdges) {
             inputEdge.to = ccfg.initialState;
             ccfg.initialState?.inputEdges.push(inputEdge);
         }
-        let terminalNode = ccfg.nodes.find(n => n.type == "terminates");
+        const terminalNode = ccfg.nodes.find(n => n.type == "terminates");
         if (terminalNode == undefined) {
             throw new Error("no terminal node found in the ccfg");
         }
-        for (let outputEdge of h.outputEdges) {
+        for (const outputEdge of h.outputEdges) {
             outputEdge.from = terminalNode;
             terminalNode.outputEdges.push(outputEdge);
         }

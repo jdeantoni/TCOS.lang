@@ -1,7 +1,7 @@
-import { Module, inject } from 'langium';
-import { createDefaultModule, createDefaultSharedModule,DefaultSharedModuleContext, LangiumServices, LangiumSharedServices, PartialLangiumServices } from 'langium/lsp';
-import { ParLangGeneratedModule, ParLangGeneratedSharedModule } from './generated/module.js';
-import { ParLangValidator, registerValidationChecks } from './par-lang-validator.js';
+import { Module, inject } from "langium";
+import { createDefaultModule, createDefaultSharedModule,DefaultSharedModuleContext, LangiumServices, LangiumSharedServices, PartialLangiumServices } from "langium/lsp";
+import { ParLangGeneratedModule, ParLangGeneratedSharedModule } from "./generated/module.js";
+import { ParLangValidator, registerValidationChecks } from "./par-lang-validator.js";
 
 /**
  * Declaration of custom services - add your own service classes here.

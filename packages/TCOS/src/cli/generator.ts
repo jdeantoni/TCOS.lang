@@ -1,12 +1,12 @@
-import fs from 'fs';
-import {AstUtils, Grammar } from 'langium';
-import {CompositeGeneratorNode, NL, toString} from 'langium/generate'
-import {  RWRule, RuleOpening, SoSSpec, TemporaryVariable, isRWRule, isRuleOpening, isTemporaryVariable, isValuedEventEmission, isVariableDeclaration } from '../language-server/generated/ast.js'; //VariableDeclaration
-import { extractDestinationAndName, FilePathData } from './cli-util.js';
+import fs from "fs";
+import {AstUtils, Grammar } from "langium";
+import {CompositeGeneratorNode, NL, toString} from "langium/generate";
+import {  RWRule, RuleOpening, SoSSpec, isRWRule, isRuleOpening, isValuedEventEmission, isVariableDeclaration } from "../language-server/generated/ast.js"; //VariableDeclaration, TemporaryVariable et isTemporaryVariable enlevés car pas utilisé
+import { extractDestinationAndName, FilePathData } from "./cli-util.js";
 // import { print } from '../utils/sos-utils';
-import { inferType } from '../language-server/type-system/infer.js';
-import path from 'path';
-import { EventEmission } from '../language-server/generated/ast.js';
+import { inferType } from "../language-server/type-system/infer.js";
+import path from "path";
+import { EventEmission } from "../language-server/generated/ast.js";
 
 
 
@@ -22,17 +22,17 @@ export function generateSigma(model: SoSSpec, grammar: Grammar[], filePath: stri
     writePreambule(fileNode,data);
 
 
-    for(var openedRule of model.rtdAndRules){
+    for(const openedRule of model.rtdAndRules){
         if(openedRule.rules.filter(r => isRWRule(r)).length > 0){
             fileNode.append(`
-                    if (is${openedRule.onRule?.ref?.name}(node)){`)
-            for(var rwr of openedRule.rules){
+                    if (is${openedRule.onRule?.ref?.name}(node)){`);
+            for(const rwr of openedRule.rules){
                 if (isRWRule(rwr)){
                     const rwrRuleType:string = getRwrRuleType(rwr);
                     fileNode.append(`
                         headerFile.append(\`${rwrRuleType} \${getName(node)}_${rwr.name}();\`,NL)
                         codeFile.append(\`
-                        inline ${rwrRuleType} \${getName(node)}_${rwr.name}(){`)
+                        inline ${rwrRuleType} \${getName(node)}_${rwr.name}(){`);
                         
                         
                     /**
@@ -46,10 +46,10 @@ export function generateSigma(model: SoSSpec, grammar: Grammar[], filePath: stri
                     //         }     
                     //     }
                     // }
-                    if(isTemporaryVariable(rwr.premise)){
-                        rwr.premise as TemporaryVariable
-                        // this code is here but should be removed
-                    }
+                    //if(isTemporaryVariable(rwr.premise)){
+                    //    rwr.premise as TemporaryVariable;
+                    //    // this code is here but should be removed
+                    //}
     
                     //should be linked by ccsl
                     // if(rwr.conclusion.ruleStart){
@@ -57,10 +57,10 @@ export function generateSigma(model: SoSSpec, grammar: Grammar[], filePath: stri
                     //         call ${rwr.conclusion.ruleStart}
                     //     `)
                     // }
-                    for(var os of rwr.conclusion.eventemissions){
+                    for(const os of rwr.conclusion.eventemissions){
                         if (isValuedEventEmission(os) && isVariableDeclaration(os.data)){
                             fileNode.append(`
-                            return varList[\${allRtdPositions.get(node)}];`)
+                            return varList[\${allRtdPositions.get(node)}];`);
                         }
                     }
 
@@ -145,10 +145,10 @@ export function generateSigma(model: SoSSpec, grammar: Grammar[], filePath: stri
         }else{
             return "noName"+globalUnNamedCounter++
         }
-    }`)
+    }`);
 
 
-    generateThegenerateCCSLFunction(fileNode,model)
+    generateThegenerateCCSLFunction(fileNode,model);
 
     if (!fs.existsSync(data.destination)) {
         fs.mkdirSync(data.destination, { recursive: true });
@@ -178,21 +178,21 @@ export function generateSigma(model: SoSSpec, grammar: Grammar[], filePath: stri
 
 function getRwrRuleType(rwr: RWRule) {
     if (rwr.conclusion.statemodifications.length > 0) {
-        var rawType:string = inferType(rwr.conclusion.statemodifications[rwr.conclusion.statemodifications.length - 1], new Map()).$type;
+        const rawType:string = inferType(rwr.conclusion.statemodifications[rwr.conclusion.statemodifications.length - 1], new Map()).$type;
         if(rawType ==="number"){
-            return "int"
+            return "int";
         }
         if(rawType ==="error"){
-            return "void"
+            return "void";
         }
         if(rawType ==="boolean"){
-            return "bool"
+            return "bool";
         }
     }
     if (rwr.conclusion.eventemissions.some((em : EventEmission) => isValuedEventEmission(em))) {
-        return "void"
+        return "void";
     }
-    return "error in type inference for rule "+rwr.name+" in rule opened on "+(rwr.$container as RuleOpening).onRule
+    return "error in type inference for rule "+rwr.name+" in rule opened on "+(rwr.$container as RuleOpening).onRule;
 }
 
 function writePreambule(fileNode: CompositeGeneratorNode, data: FilePathData) {
@@ -255,7 +255,7 @@ function generateCode(codeFile: CompositeGeneratorNode, headerFile: CompositeGen
     int varList[\${globalVariableCounter}] = {\${Array.from(allRtdValues.values()).join(",")}};
     \`,NL)
 
-    for (var node of streamAllContents(model)) {`,NL)
+    for (var node of streamAllContents(model)) {`,NL);
 }
 
 
@@ -267,29 +267,29 @@ function generateThegenerateCCSLFunction(fileNode: CompositeGeneratorNode, model
         var allClocks: String[] = [];
         for (var node of streamAst(model)) {
     `);
-    var nonAtomicRuleName: string[]=[]
+    const nonAtomicRuleName: string[]=[];
    // for(let ro of model.rtdAndRules){
         // if (ro.isNonAtomic && ro.onRule.ref !== undefined){
         //     nonAtomicRuleName.push(ro.onRule.ref.name)
         // }
    // }
-    var isTests:string[] = nonAtomicRuleName.map(rn => " is"+rn+"(node) ");
+    const isTests:string[] = nonAtomicRuleName.map(rn => " is"+rn+"(node) ");
     fileNode.append(`
             if(${isTests.join("||")}){ //for non atomic rules
                 allClocks.push(getName(node) + "_startEvaluation");
                 allClocks.push(getName(node) + "_finishEvaluation");
             }
     `);
-    for(var openedRule of model.rtdAndRules){
+    for(const openedRule of model.rtdAndRules){
         if(openedRule.rules.filter((r:RWRule) => isRWRule(r)).length > 1){
             fileNode.append(`
             if (is${openedRule.onRule?.ref?.name}(node)) {`);
-            for(let rwr of openedRule.rules.filter((r:RWRule) => isRWRule(r))){
+            for(const rwr of openedRule.rules.filter((r:RWRule) => isRWRule(r))){
                 fileNode.append(`
-                allClocks.push(getName(node) + "_${(rwr as RWRule).name}");`)
+                allClocks.push(getName(node) + "_${(rwr as RWRule).name}");`);
             }
             fileNode.append(`
-            }`)
+            }`);
 
         }
     }
@@ -304,11 +304,11 @@ function generateThegenerateCCSLFunction(fileNode: CompositeGeneratorNode, model
         for (var node of streamAllContents(model)) {
     `);
 
-    for(let node of AstUtils.streamAst(model)){
+    for(const node of AstUtils.streamAst(model)){
         if(isRuleOpening(node)){
             fileNode.append(`
             if(is${(node as RuleOpening).onRule?.$refText}(node)){
-            `)
+            `);
             
             // if(node.isNonAtomic){
             //     fileNode.append(`
@@ -385,7 +385,7 @@ function generateThegenerateCCSLFunction(fileNode: CompositeGeneratorNode, model
             // }
             fileNode.append(`
             }
-            `)
+            `);
         }
 
     }
@@ -402,7 +402,7 @@ function generateThegenerateCCSLFunction(fileNode: CompositeGeneratorNode, model
         }
         \`, NL);
     }
-    `)
+    `);
 }
 
 // function createCoincidence(fileNode:CompositeGeneratorNode, arg0: string, arg1: string) {

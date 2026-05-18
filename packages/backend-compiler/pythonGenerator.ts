@@ -22,9 +22,9 @@ export class PythonGenerator implements IGenerator {
 
 
     createLoop( uid: number, insideLoop: string[]): string[] {
-        let res = [`while flag${uid} == True: \n`,`\tflag${uid} = False \n`];
+        const res = [`while flag${uid} == True: \n`,`\tflag${uid} = False \n`];
         for (let i = 0; i < insideLoop.length; i++) {
-            res.push("\t"+insideLoop[i])
+            res.push("\t"+insideLoop[i]);
         }
         return res; 
     }
@@ -39,62 +39,62 @@ export class PythonGenerator implements IGenerator {
         return `${filename}.py`;
     }
     createBase(): string[] {
-        let res:string[] = []
+        const res:string[] = [];
         // imports ----------------------------------------------------------------------------------------------------
-        res.push(`import threading \n`) 
-        res.push(`import time \n`) 
-        res.push(`from queue import Queue, LifoQueue\n`)
+        res.push("import threading \n"); 
+        res.push("import time \n"); 
+        res.push("from queue import Queue, LifoQueue\n");
         
         // global variables ---------------------------------------------------------------------------------------
-        res.push(`##std::unordered_map<std::string, void*> sigma; ##std::mutex sigma_mutex;  // protects sigma \n`) 
-        res.push(`returnQueue = LifoQueue()\n`);
-        res.push(`sigma: dict = {}\nsigma_mutex = threading.Lock()\n`) 
-        return res
+        res.push("##std::unordered_map<std::string, void*> sigma; ##std::mutex sigma_mutex;  // protects sigma \n"); 
+        res.push("returnQueue = LifoQueue()\n");
+        res.push("sigma: dict = {}\nsigma_mutex = threading.Lock()\n"); 
+        return res;
     }
     endFile(): string[] {
-        let res:string[] = []
-        res.push(`if __name__ == "__main__": \n`)
-        res.push(`\tmain() \n`)
-        return res
+        const res:string[] = [];
+        res.push("if __name__ == \"__main__\": \n");
+        res.push("\tmain() \n");
+        return res;
     }
 
     createFunction( fname: string, params: TypedElement[], returnType: string,insideFunction:string[]): string[] {
-        let res:string[] = []
-        res.push(`def function${fname}(${params.map(p => (p as TypedElement).name).join(", ")}): \n`)
+        const res:string[] = [];
+        res.push(`def function${fname}(${params.map(p => (p as TypedElement).name).join(", ")}): \n`);
         if (this.debug){
-            res.push(`\tprint("\tfunction${fname} started") \n`)
+            res.push(`\tprint("\tfunction${fname} started") \n`);
         }
         for (let i = 0; i < insideFunction.length; i++) {
-            res.push("\t"+insideFunction[i])
+            res.push("\t"+insideFunction[i]);
         }
-        return res
+        return res;
     }
     createMainFunction(insideMain:string[]): string[] {
-        let res:string[] = []
-        res.push(`def main(): \n`)
+        const res:string[] = [];
+        res.push("def main(): \n");
         for (let i = 0; i < insideMain.length; i++) {
-            res.push("\t"+insideMain[i])
+            res.push("\t"+insideMain[i]);
         }
         if (this.debug){
-            res.push(`\tfor v in sigma:\n\t\tprint(str(v)+" = " + str(sigma[v])) \n`)
+            res.push("\tfor v in sigma:\n\t\tprint(str(v)+\" = \" + str(sigma[v])) \n");
         }
-        return res
+        return res;
     }
     createFuncCall( fname: string, params: string[], typeName: string): string[] {
         if (typeName == "void"){ 
-            return [`function${fname}(${params.join(", ")}); \n`]
+            return [`function${fname}(${params.join(", ")}); \n`];
         }else
-            return [`result${fname} = function${fname}(${params.join(", ")}); \n`]
+            return [`result${fname} = function${fname}(${params.join(", ")}); \n`];
         }
     createIf( guards: string[],insideOfIf:string[]): string[] {
-        let createIfString:string[] = []
+        const createIfString:string[] = [];
 
         createIfString.push(`if ${guards.join(" and ")}: \n`);
         if (this.debug){
-            createIfString.push(`\tprint("(${guards.join(" and ")}) is TRUE") \n`)
+            createIfString.push(`\tprint("(${guards.join(" and ")}) is TRUE") \n`);
         }
         insideOfIf.forEach(element => {
-            createIfString.push("\t"+element)
+            createIfString.push("\t"+element);
         });
         return createIfString;
     }
@@ -109,18 +109,18 @@ export class PythonGenerator implements IGenerator {
         return [`sync${synchUID}.put(42) \n`];
     }
     createAndOpenThread( uid: number,insideThreadCode:string[]): string[] {
-        let res = [`def codeThread${uid}():\n`]
+        let res = [`def codeThread${uid}():\n`];
         if (this.debug){
-            res.push(`\tprint("thread${uid} started") \n`)
+            res.push(`\tprint("thread${uid} started") \n`);
         }
         for (let i = 0; i < insideThreadCode.length; i++) {
-            res.push("\t"+insideThreadCode[i])
+            res.push("\t"+insideThreadCode[i]);
         }
-        res = [...res, ...[`thread${uid} = threading.Thread(target=codeThread${uid}) \n`,`thread${uid}.start() \n`,`thread${uid}.join() \n`]]
-        return res
+        res = [...res, ...[`thread${uid} = threading.Thread(target=codeThread${uid}) \n`,`thread${uid}.start() \n`,`thread${uid}.join() \n`]];
+        return res;
     }
-    endThread( uid: number): string[] {
-        return [`return \n`];
+    endThread( _uid: number): string[] {
+        return ["return \n"];
     }
     endSection(): void {
         this.nbTabs--;
@@ -147,20 +147,20 @@ export class PythonGenerator implements IGenerator {
     returnVar( varName: string): string[] {
         return [`return ${varName} \n`];
     }
-    createVar( type: string, varName: string): string[] {
-        return [`\n`];
+    createVar( _type: string, _varName: string): string[] {
+        return ["\n"];
     }
     createGlobalVar( type: string, varName: string): string[] {
-        return [`sigma_mutex.acquire()\n`,`sigma["${varName}"] = ${type}()\n`,`sigma_mutex.release()\n`];
+        return ["sigma_mutex.acquire()\n",`sigma["${varName}"] = ${type}()\n`,"sigma_mutex.release()\n"];
     }
     setVarFromGlobal( type: string, varName: string, value: string): string[] {
-        return [`sigma_mutex.acquire()\n`,`${varName} = sigma["${value}"]\n`,`sigma_mutex.release()\n`];
+        return ["sigma_mutex.acquire()\n",`${varName} = sigma["${value}"]\n`,"sigma_mutex.release()\n"];
     }
     setGlobalVar( type: string, varName: string, value: string): string[] {
         if(value == "true" || value == "false"){
             value = value.charAt(0).toUpperCase() + value.slice(1);
         }
-        return [`sigma_mutex.acquire()\n`,`sigma["${varName}"] = ${value}\n`,`sigma_mutex.release()\n`];
+        return ["sigma_mutex.acquire()\n",`sigma["${varName}"] = ${value}\n`,"sigma_mutex.release()\n"];
     }
     operation( varName: string, n1: string, op: string, n2: string): string[] {
         return [`${varName} = ${n1} ${op} ${n2} \n`];

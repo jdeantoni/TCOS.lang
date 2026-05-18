@@ -4,24 +4,24 @@
  * which mode (interactive, batch, watcher) is active.
  */
 
-import { appendFileSync } from 'fs';
-import { BatchResult, InstallResult } from './types';
+import { appendFileSync } from "fs";
+import { BatchResult, InstallResult } from "./types";
 
 // ============================================================
 // Colors
 // ============================================================
 
-const RESET = '\x1b[0m';
-const RED = '\x1b[31m';
-const GREEN = '\x1b[32m';
-const YELLOW = '\x1b[33m';
-const CYAN = '\x1b[36m';
+const RESET = "\x1b[0m";
+const RED = "\x1b[31m";
+const GREEN = "\x1b[32m";
+const YELLOW = "\x1b[33m";
+const CYAN = "\x1b[36m";
  
 // ============================================================
 // Indentation
 // ============================================================
 let indentLevel = 0;
-const INDENT_UNIT = '    ';
+const INDENT_UNIT = "    ";
  
 export function getIndent(): string {
     return INDENT_UNIT.repeat(indentLevel);
@@ -78,7 +78,11 @@ function printBatchSection(results: BatchResult[]): void {
     info(">> Programs generation");
     for (const r of results) {
         const line = `${r.language}/${r.fileName} (${r.format})`;
-        (r.status === "success") ? success(`   ${line}`) : error(`   ${line}`);
+        if (r.status === "success") {
+            success(`   ${line}`);
+        } else {
+            error(`   ${line}`);
+        }
     }
 
     const failed = results.filter(r => r.status === "error" && r.failedCommand);
@@ -137,13 +141,21 @@ export function printFullSummary(installResults: InstallResult[], batchResults: 
     console.log("");
     info(">> Packages installation");
     for (const r of packagesResults) {
-        (r.status === "success") ? success(`   ${r.name}`) : error(`   ${r.name}`);
+        if (r.status === "success"){
+            success(`   ${r.name}`);
+        } else {
+            error(`   ${r.name}`);
+        }
     }
 
     console.log("");
     info(">> Languages installation");
     for (const r of languagesResults) {
-        (r.status === "success") ? success(`   ${r.name}`) : error(`   ${r.name}`);
+        if (r.status === "success"){
+            success(`   ${r.name}`);
+        } else {
+            error(`   ${r.name}`);
+        }
     }
 
     printBatchSection(batchResults);
@@ -181,7 +193,7 @@ function watcherMod():void {
     console.log(String.raw`\ \ \/ ".\ \  \ \  __ \  \/_/\ \/ \ \ \____  \ \  __ \  \ \  __\   \ \  __<   `);
     console.log(String.raw` \ \__/".~\_\  \ \_\ \_\    \ \_\  \ \_____\  \ \_\ \_\  \ \_____\  \ \_\ \_\ `);
     console.log(String.raw`  \/_/   \/_/   \/_/\/_/     \/_/   \/_____/   \/_/\/_/   \/_____/   \/_/ /_/ `);
-    console.log(`\n`);
+    console.log("\n");
 }
 
 function batchMod():void {
@@ -190,7 +202,7 @@ function batchMod():void {
     console.log(String.raw`\ \  __<   \ \  __ \  \/_/\ \/ \ \ \____  \ \  __ \  `);
     console.log(String.raw` \ \_____\  \ \_\ \_\    \ \_\  \ \_____\  \ \_\ \_\ `);
     console.log(String.raw`  \/_____/   \/_/\/_/     \/_/   \/_____/   \/_/\/_/ `);
-    console.log(`\n`);
+    console.log("\n");
 }
 
 

@@ -3,9 +3,9 @@
  * file-to-node matching, abort-signal checking, and dispatch to the right mode banner.
  */
 
-import * as path from 'path';
-import { DAG, LANGUAGES, ROOT } from './project';
-import { FoundNode, LanguageConfig } from './types';
+import * as path from "path";
+import { DAG, LANGUAGES, ROOT } from "./project";
+import { FoundNode } from "./types";
 
 const dependents: Record<string, string[]> = {};
 

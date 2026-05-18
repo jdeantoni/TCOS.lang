@@ -1,18 +1,19 @@
 import {
     createDefaultModule, createDefaultSharedModule, DefaultSharedModuleContext, inject,
     LangiumServices, LangiumSharedServices, Module, PartialLangiumServices
-} from 'langium';
-import { FiniteStateMachineGeneratedModule, FiniteStateMachineGeneratedSharedModule } from './generated/module';
+} from "langium";
+import { FiniteStateMachineGeneratedModule, FiniteStateMachineGeneratedSharedModule } from "./generated/module";
 // import { FiniteStateMachineValidator, registerValidationChecks } from './finite-state-machine-validator';
 
 /**
  * Declaration of custom services - add your own service classes here.
  */
-export type FiniteStateMachineAddedServices = {
+export type FiniteStateMachineAddedServices = unknown;
     // validation: {
     //     FiniteStateMachineValidator: FiniteStateMachineValidator
     // }
-}
+    
+
 
 /**
  * Union of Langium default services and your custom services - use this as constructor parameter

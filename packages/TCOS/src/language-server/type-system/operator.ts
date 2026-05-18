@@ -1,21 +1,21 @@
 import { TypeDescription } from "./descriptions.js";
 
 export function isLegalOperation(operator: string, left: TypeDescription, right?: TypeDescription): boolean {
-    if (operator === '+') {
+    if (operator === "+") {
         if (!right) {
-            return left.$type === 'integer';
+            return left.$type === "integer";
         }
-        return (left.$type === 'integer' || left.$type === 'string')
-            && (right.$type === 'integer' || right.$type === 'string')
-    } else if (['-', '/', '*', '%', '<', '<=', '>', '>='].includes(operator)) {
+        return (left.$type === "integer" || left.$type === "string")
+            && (right.$type === "integer" || right.$type === "string");
+    } else if (["-", "/", "*", "%", "<", "<=", ">", ">="].includes(operator)) {
         if (!right) {
-            return left.$type === 'integer';
+            return left.$type === "integer";
         }
-        return left.$type === 'integer' && right.$type === 'integer';
-    } else if (['and', 'or'].includes(operator)) {
-        return left.$type === 'boolean' && right?.$type === 'boolean';
-    } else if (operator === '!') {
-        return left.$type === 'boolean';
+        return left.$type === "integer" && right.$type === "integer";
+    } else if (["and", "or"].includes(operator)) {
+        return left.$type === "boolean" && right?.$type === "boolean";
+    } else if (operator === "!") {
+        return left.$type === "boolean";
     }
     return true;
 }

@@ -2,12 +2,12 @@
  * This file is the entry point of our script
  */
 
-import { setVerbose } from './state';
-import { BatchResult } from './types';
-import { watcherCommand } from './watcher';
-import { generateBatch } from './generation';
-import { error, success, printFullSummary, changeMod } from './display';
-import { installAllPackages, installAllLanguages } from './installation';
+import { setVerbose } from "./state";
+import { BatchResult } from "./types";
+import { watcherCommand } from "./watcher";
+import { generateBatch } from "./generation";
+import { error, success, printFullSummary, changeMod } from "./display";
+import { installAllPackages, installAllLanguages } from "./installation";
 
 /**
  * Entry point of the script.

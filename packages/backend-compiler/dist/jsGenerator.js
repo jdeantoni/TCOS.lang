@@ -7,7 +7,7 @@ export class JsGenerator {
         return `${filename}.js`;
     }
     createBase() {
-        let res = [];
+        const res = [];
         res.push(`
 class Void{}
 let sigma = new Map();
@@ -16,10 +16,10 @@ let sigma = new Map();
         return res;
     }
     endFile() {
-        return [`main();\n`];
+        return ["main();\n"];
     }
     createFunction(fname, params, returnType, insideFunction) {
-        let res = [];
+        const res = [];
         res.push("async function function" + fname + `(${params.map(p => p.name).join(", ")}){\n`);
         if (this.debug) {
             res.push(`\tconsole.log("\tfunction${fname} started");\n`);
@@ -31,15 +31,15 @@ let sigma = new Map();
         return res;
     }
     createMainFunction(insideMain) {
-        let res = [];
+        const res = [];
         res.push("async function main(){\n\t");
         for (let i = 0; i < insideMain.length; i++) {
             res.push("\t" + insideMain[i]);
         }
         if (this.debug) {
-            res.push(`\tfor (let v of sigma){\n`);
-            res.push(`\t\tconsole.log(v[0]+" = " + v[1]);\n`);
-            res.push(`\t}\n`);
+            res.push("\tfor (let v of sigma){\n");
+            res.push("\t\tconsole.log(v[0]+\" = \" + v[1]);\n");
+            res.push("\t}\n");
         }
         res.push("}\n");
         return res;
@@ -51,7 +51,7 @@ let sigma = new Map();
         return ["let result" + fname + " = await function" + fname + `(${params.join(", ")});\n`];
     }
     createIf(guards, insideOfIf) {
-        let createIfString = [];
+        const createIfString = [];
         createIfString.push("if (" + guards.join(" && ") + "){\n");
         if (this.debug) {
             createIfString.push(`\tconsole.log("(${guards.join(" && ")}) is TRUE");\n`);
@@ -72,7 +72,7 @@ let sigma = new Map();
         for (let i = 0; i < insideThreadCode.length; i++) {
             threadCode = [...threadCode, "\t" + insideThreadCode[i]];
         }
-        threadCode = [...threadCode, `}\n`];
+        threadCode = [...threadCode, "}\n"];
         threadCode = [...threadCode, `thread${uid}();\n`];
         return threadCode;
     }
@@ -83,7 +83,7 @@ let sigma = new Map();
         return [`var queue${queueUID} = [];\n`];
     }
     receiveFromQueue(queueUID, typeName, varName) {
-        return [`{\n`, `${varName} = queue${queueUID}.pop();\n`, `\twhile (${varName} == undefined){\n`, `\t\tawait new Promise(resolve => setTimeout(resolve, 100));\n`, `\t\t${varName} = queue${queueUID}.pop();\n`, `\t}\n`, `}\n`];
+        return ["{\n", `${varName} = queue${queueUID}.pop();\n`, `\twhile (${varName} == undefined){\n`, "\t\tawait new Promise(resolve => setTimeout(resolve, 100));\n", `\t\t${varName} = queue${queueUID}.pop();\n`, "\t}\n", "}\n"];
     }
     sendToQueue(queueUID, typeName, varName) {
         return [`queue${queueUID}.push(${varName});\n`];
@@ -95,17 +95,17 @@ let sigma = new Map();
         return [`sync${synchUID}.push(42);\n`];
     }
     waitForSynchronizer(synchUID) {
-        return [`{\n`, `\tfakeVar${synchUID} = sync${synchUID}.pop();\n`, `\twhile (fakeVar${synchUID} == undefined){\n`, `\t\tawait new Promise(resolve => setTimeout(resolve, 100));\n`, `\t\tfakeVar${synchUID} = sync${synchUID}.pop();\n`, `\t}\n`, `}\n`];
+        return ["{\n", `\tfakeVar${synchUID} = sync${synchUID}.pop();\n`, `\twhile (fakeVar${synchUID} == undefined){\n`, "\t\tawait new Promise(resolve => setTimeout(resolve, 100));\n", `\t\tfakeVar${synchUID} = sync${synchUID}.pop();\n`, "\t}\n", "}\n"];
     }
     createLoop(uid, insideLoop) {
-        let res = [];
+        const res = [];
         res.push(`var flag${uid} = true;\n`);
         res.push(`while(flag${uid}){\n`);
         res.push(`\tflag${uid} = false;\n`);
         for (let i = 0; i < insideLoop.length; i++) {
             res.push("\t" + insideLoop[i]);
         }
-        res.push(`}\n`);
+        res.push("}\n");
         return res;
     }
     setLoopFlag(uid) {

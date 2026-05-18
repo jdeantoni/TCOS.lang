@@ -1,11 +1,11 @@
-import fs from 'fs';
-import { CompositeGeneratorNode, toString } from 'langium';
-import path from 'path';
-import { FSMModel } from '../language-server/generated/ast';
-import { FilePathData } from './cli-util';
-import { CCFGVisitor } from './generated/testFSM';
+import fs from "fs";
+import { CompositeGeneratorNode, toString } from "langium";
+import path from "path";
+import { FSMModel } from "../language-server/generated/ast";
+import { FilePathData } from "./cli-util";
+import { CCFGVisitor } from "./generated/testFSM";
 
-import { CCFG } from 'ccfg';
+import { CCFG } from "ccfg";
 
 export function generateDot(model: FSMModel, data:FilePathData ): CCFG {
     
@@ -25,15 +25,15 @@ export function generateDot(model: FSMModel, data:FilePathData ): CCFG {
 
 
 function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: FSMModel): CCFG {
-    var visitor = new CCFGVisitor();
+    const visitor = new CCFGVisitor();
     visitor.visit(model);
 
-    var ccfg = visitor.ccfg;
+    const ccfg = visitor.ccfg;
    
-    ccfg.addSyncEdge()
+    ccfg.addSyncEdge();
 
     ccfg.detectCycles();
-    ccfg.collectCycles()
+    ccfg.collectCycles();
 
     codeFile.append(ccfg.toDot());
     return ccfg;

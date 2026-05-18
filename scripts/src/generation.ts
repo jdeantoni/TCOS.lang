@@ -7,13 +7,13 @@
  * {@link BatchResult} entries so results can be aggregated and reported uniformly.
  */
 
-import * as path from 'path';
-import { readdirSync } from 'fs';
-import { checkAbort } from './utils';
-import { BatchResult } from './types';
-import { executeCommand } from './commands';
-import { info, printSummary, warning } from './display';
-import { LANGUAGES, TARGET_FORMATS, PROGRAMS_FOLDER } from './project';
+import * as path from "path";
+import { readdirSync } from "fs";
+import { checkAbort } from "./utils";
+import { BatchResult } from "./types";
+import { executeCommand } from "./commands";
+import { info, printSummary, warning } from "./display";
+import { LANGUAGES, TARGET_FORMATS, PROGRAMS_FOLDER } from "./project";
 
 /**
  * Build the CLI command to generate a program with a given format and debug flag.

@@ -1,17 +1,19 @@
 {
   "compilerOptions": {
     "target": "ES6",
-    "module": "commonjs",
+    "module": "node16",
     "lib": ["ESNext"],
     "sourceMap": true,
+    "rootDir": ".",
     "outDir": "out",
     "strict": true,
     "noUnusedLocals": true,
     "noImplicitReturns": true,
     "noImplicitOverride": true,
-    "moduleResolution": "node",
+    "moduleResolution": "node16",
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true
   },
   "include": [

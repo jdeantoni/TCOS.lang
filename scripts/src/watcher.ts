@@ -6,14 +6,14 @@
  * dependents (or to a single program file if the change is in `examples/programs/`).
  */
 
-import * as path from 'path';
-import * as chokidar from 'chokidar';
-import { executeCommand } from './commands';
-import { DAG, LANGUAGES, ROOT } from './project';
-import { BatchResult, InstallResult } from './types';
-import { regenerateOneProgram, regeneratePrograms } from './generation';
-import { success, warning, error, info, printFullSummary, startWatcher, printSummary } from './display';
-import { buildDependants, checkAbort, computeCascade, findNode, getNodePath } from './utils';
+import * as path from "path";
+import * as chokidar from "chokidar";
+import { executeCommand } from "./commands";
+import { DAG, LANGUAGES, ROOT } from "./project";
+import { BatchResult, InstallResult } from "./types";
+import { regenerateOneProgram, regeneratePrograms } from "./generation";
+import { success, warning, error, info, printFullSummary, startWatcher } from "./display";
+import { buildDependants, checkAbort, computeCascade, findNode, getNodePath } from "./utils";
 
 let currentBuildController: AbortController | null = null;
 
@@ -98,7 +98,7 @@ export function watcherCommand(installResults: InstallResult[], batchResults: Ba
                 currentBuildController = null;
             }
         }
-    })
+    });
 }
 
 /**

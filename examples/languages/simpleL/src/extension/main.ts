@@ -1,7 +1,7 @@
-import type { LanguageClientOptions, ServerOptions} from 'vscode-languageclient/node.js';
-import type * as vscode from 'vscode';
-import * as path from 'node:path';
-import { LanguageClient, TransportKind } from 'vscode-languageclient/node.js';
+import type { LanguageClientOptions, ServerOptions} from "vscode-languageclient/node.js";
+import type * as vscode from "vscode";
+import * as path from "node:path";
+import { LanguageClient, TransportKind } from "vscode-languageclient/node.js";
 
 let client: LanguageClient;
 
@@ -19,11 +19,11 @@ export function deactivate(): Thenable<void> | undefined {
 }
 
 function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
-    const serverModule = context.asAbsolutePath(path.join('out', 'language', 'main.cjs'));
+    const serverModule = context.asAbsolutePath(path.join("out", "language", "main.cjs"));
     // The debug options for the server
     // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging.
     // By setting `process.env.DEBUG_BREAK` to a truthy value, the language server will wait until a debugger is attached.
-    const debugOptions = { execArgv: ['--nolazy', `--inspect${process.env.DEBUG_BREAK ? '-brk' : ''}=${process.env.DEBUG_SOCKET || '6009'}`] };
+    const debugOptions = { execArgv: ["--nolazy", `--inspect${process.env.DEBUG_BREAK ? "-brk" : ""}=${process.env.DEBUG_SOCKET || "6009"}`] };
 
     // If the extension is launched in debug mode then the debug server options are used
     // Otherwise the run options are used
@@ -34,13 +34,13 @@ function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
 
     // Options to control the language client
     const clientOptions: LanguageClientOptions = {
-        documentSelector: [{ scheme: 'file', language: 'simple-l' }]
+        documentSelector: [{ scheme: "file", language: "simple-l" }]
     };
 
     // Create the language client and start the client.
     const client = new LanguageClient(
-        'simple-l',
-        'simpleL',
+        "simple-l",
+        "simpleL",
         serverOptions,
         clientOptions
     );

@@ -3,10 +3,10 @@
  * their result through the display module.
  */
 
-import { isVerbose } from './state';
-import * as readline from 'readline';
-import { spawn } from 'child_process';
-import { info, success, error, warning, pushIndent, popIndent, writeIndentedLine } from './display';
+import { isVerbose } from "./state";
+import * as readline from "readline";
+import { spawn } from "child_process";
+import { info, success, error, warning, pushIndent, popIndent, writeIndentedLine } from "./display";
 
 /**
  * Run a shell command in the given folder as a child process.
@@ -48,23 +48,23 @@ export function executeCommand(command: string, folder: string, ignoreError: boo
 
         const processus = spawn(command, [], {
             cwd: folder,
-            stdio: isVerbose() ? ['inherit', 'pipe', 'pipe'] : 'ignore',
+            stdio: isVerbose() ? ["inherit", "pipe", "pipe"] : "ignore",
             shell: true
         });
 
         const dispatch = (line: string) => writeIndentedLine(line);
         if (processus.stdout) {
-            readline.createInterface({ input: processus.stdout }).on('line', dispatch);
+            readline.createInterface({ input: processus.stdout }).on("line", dispatch);
         }
         if (processus.stderr) {
-            readline.createInterface({ input: processus.stderr }).on('line', dispatch);
+            readline.createInterface({ input: processus.stderr }).on("line", dispatch);
         }
 
-        const onAbort = () => processus.kill('SIGTERM');
-        signal?.addEventListener('abort', onAbort, {once: true});
+        const onAbort = () => processus.kill("SIGTERM");
+        signal?.addEventListener("abort", onAbort, {once: true});
 
-        processus.on('close', (code: number) => {
-            signal?.removeEventListener('abort', onAbort);
+        processus.on("close", (code: number) => {
+            signal?.removeEventListener("abort", onAbort);
 
             if (signal?.aborted){
                 cleanup();
@@ -78,7 +78,7 @@ export function executeCommand(command: string, folder: string, ignoreError: boo
 
             if (code === 0) {
                 success("Command completed!");
-                process.stdout.write('\n');
+                process.stdout.write("\n");
                 resolve();
             } else if (ignoreError){
                 warning(`Order completed with this code ${code} (ignored)`);
@@ -86,7 +86,7 @@ export function executeCommand(command: string, folder: string, ignoreError: boo
                     warning("If you want to fix this warning use: npm audit fix --force");
                     warning("This command can including breaking changes");
                 }
-                process.stdout.write('\n');
+                process.stdout.write("\n");
                 resolve();
             } else {
                 error("The command failed!");
@@ -98,15 +98,15 @@ export function executeCommand(command: string, folder: string, ignoreError: boo
         });
 
         // if the order can't start
-        processus.on('error', (err: NodeJS.ErrnoException) => {
-            signal?.removeEventListener('abort', onAbort);
+        processus.on("error", (err: NodeJS.ErrnoException) => {
+            signal?.removeEventListener("abort", onAbort);
             cleanup();
 
-            if (err.code === 'ENOENT') {
+            if (err.code === "ENOENT") {
                 error("Impossible to start this command!");
                 error(`Command: ${command}`);
                 error(`Folder: ${folder}`);
-                error(`Reason: The folder does not exist or is not accessible.`);
+                error("Reason: The folder does not exist or is not accessible.");
             } else {
                 error("Impossible to start this command!");
                 error(`Command: ${command}`);

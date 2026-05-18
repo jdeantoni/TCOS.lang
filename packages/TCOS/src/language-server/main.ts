@@ -1,7 +1,7 @@
-import { startLanguageServer } from 'langium/lsp';
-import { NodeFileSystem } from 'langium/node';
-import { createConnection, ProposedFeatures } from 'vscode-languageserver/node.js';
-import { createStructuralOperationalSemanticsServices } from './structural-operational-semantics-module.js';
+import { startLanguageServer } from "langium/lsp";
+import { NodeFileSystem } from "langium/node";
+import { createConnection, ProposedFeatures } from "vscode-languageserver/node.js";
+import { createStructuralOperationalSemanticsServices } from "./structural-operational-semantics-module.js";
 
 // Create a connection to the client
 const connection = createConnection(ProposedFeatures.all);

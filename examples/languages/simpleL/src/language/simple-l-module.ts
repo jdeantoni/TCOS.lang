@@ -1,7 +1,7 @@
-import { type Module, inject } from 'langium';
-import { createDefaultModule, createDefaultSharedModule, type DefaultSharedModuleContext, type LangiumServices, type LangiumSharedServices, type PartialLangiumServices } from 'langium/lsp';
-import { SimpleLGeneratedModule, SimpleLGeneratedSharedModule } from './generated/module.js';
-import { SimpleLValidator, registerValidationChecks } from './simple-l-validator.js';
+import { type Module, inject } from "langium";
+import { createDefaultModule, createDefaultSharedModule, type DefaultSharedModuleContext, type LangiumServices, type LangiumSharedServices, type PartialLangiumServices } from "langium/lsp";
+import { SimpleLGeneratedModule, SimpleLGeneratedSharedModule } from "./generated/module.js";
+import { SimpleLValidator, registerValidationChecks } from "./simple-l-validator.js";
 
 /**
  * Declaration of custom services - add your own service classes here.

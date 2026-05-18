@@ -10,7 +10,7 @@ import { LanguageConfig, NodeInfo } from "./types";
 // Paths
 // ============================================================
 
-export const ROOT = path.resolve(__dirname, '../..')
+export const ROOT = path.resolve(__dirname, "../..");
 export const PROGRAMS_FOLDER = path.join(ROOT, "examples", "programs");
 export const LOGS_DIR = path.join(ROOT, "examples", "programs", "logs");
 

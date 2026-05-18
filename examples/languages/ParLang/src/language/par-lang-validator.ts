@@ -1,7 +1,7 @@
-import { ValidationAcceptor, ValidationChecks } from 'langium';
-import type { ParLangAstType, Statement } from './generated/ast.js';
-import { isStatement } from './generated/ast.js';
-import type { ParLangServices } from './par-lang-module.js';
+import { ValidationAcceptor, ValidationChecks } from "langium";
+import type { ParLangAstType, Statement } from "./generated/ast.js";
+import { isStatement } from "./generated/ast.js";
+import type { ParLangServices } from "./par-lang-module.js";
 
 /**
  * Register custom validation checks.
@@ -20,7 +20,7 @@ export function registerValidationChecks(services: ParLangServices) {
  */
 export class ParLangValidator {
 
-    checkPersonStartsWithCapital(s: Statement, accept: ValidationAcceptor): void {
+    checkPersonStartsWithCapital(s: Statement, _accept: ValidationAcceptor): void {
         if (isStatement(s)) {
             //console.log('validate statement:', s);
         }

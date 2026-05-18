@@ -128,7 +128,7 @@ export declare class CCFG {
      * @param label
      * @returns
      */
-    addEdge(from: Node, to: Node, label?: string): Edge;
+    addEdge(from: Node, to: Node, _label?: string): Edge;
     /**
      * replace the oldNode by the newNode in the CCFG. reroute the edges accordingly
      * @param oldNode

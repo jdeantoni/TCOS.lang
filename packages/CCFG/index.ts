@@ -5,148 +5,148 @@ import { integer } from "vscode-languageclient";
 
 
 export class Instruction{
-    readonly $instructionType: string = ""
+    readonly $instructionType: string = "";
     constructor(type: string){
-        this.$instructionType = type
+        this.$instructionType = type;
     }
     toString(): string {
-        return "undefined instruction"
+        return "undefined instruction";
     }
 }
 
 export class ReturnInstruction extends Instruction{
-    varName: string = ""
+    varName: string = "";
     constructor(varName: string){
-        super("returnInstruction")
-        this.varName = varName
+        super("returnInstruction");
+        this.varName = varName;
 
     }
     toString(): string {
-        return "return,"+this.varName
+        return "return,"+this.varName;
     }
 }
 
 export class CreateVarInstruction extends Instruction{
-    varName: string = ""
-    type: string = ""
+    varName: string = "";
+    type: string = "";
     constructor(name: string, type: string){
-        super("createVarInstruction")
-        this.varName = name
-        this.type = type
+        super("createVarInstruction");
+        this.varName = name;
+        this.type = type;
     }
     toString(): string {
-        return "createVar,"+this.type+","+this.varName
+        return "createVar,"+this.type+","+this.varName;
     }
 }
 
 export class CreateGlobalVarInstruction extends Instruction{
-    varName: string = ""
-    type: string = ""
+    varName: string = "";
+    type: string = "";
     constructor(name: string, type: string){
-        super("createGlobalVarInstruction")
-        this.varName = name
-        this.type = type
+        super("createGlobalVarInstruction");
+        this.varName = name;
+        this.type = type;
     }
     toString(): string {
-        return "createGlobalVar,"+this.type+","+this.varName    
+        return "createGlobalVar,"+this.type+","+this.varName;    
     }
 }
 
 export class AssignVarInstruction extends Instruction{
-    value: string = ""
-    varName: string = ""
-    type: string = ""
+    value: string = "";
+    varName: string = "";
+    type: string = "";
     constructor( varName: string,value:string,type: string = ""){
-        super("assignVarInstruction")
-        this.value = value
-        this.varName = varName
-        this.type = type
+        super("assignVarInstruction");
+        this.value = value;
+        this.varName = varName;
+        this.type = type;
     }
     toString(): string {
-        return "assignVar,"+this.varName+","+this.value   
+        return "assignVar,"+this.varName+","+this.value;   
     }
     
 }
 
 export class SetVarFromGlobalInstruction extends Instruction{
-    varName: string = ""
-    globalVarName: string = ""
-    type: string = ""
+    varName: string = "";
+    globalVarName: string = "";
+    type: string = "";
     constructor(name: string, globalVarName: string,type: string = ""){
-        super("setVarFromGlobalInstruction")
-        this.varName = name
-        this.globalVarName = globalVarName
-        this.type = type
+        super("setVarFromGlobalInstruction");
+        this.varName = name;
+        this.globalVarName = globalVarName;
+        this.type = type;
     }
     toString(): string {
-        return "setVarFromGlobal,"+this.type+","+this.varName+","+this.globalVarName
+        return "setVarFromGlobal,"+this.type+","+this.varName+","+this.globalVarName;
     }
 }
 
 export class SetGlobalVarInstruction extends Instruction{
-    globalVarName: string = ""
-    value: string = ""
-    type: string = ""
+    globalVarName: string = "";
+    value: string = "";
+    type: string = "";
     constructor(globalVarName: string, value: string,type: string = ""){
-        super("setGlobalVarInstruction")
-        this.value = value
-        this.globalVarName = globalVarName
-        this.type = type
+        super("setGlobalVarInstruction");
+        this.value = value;
+        this.globalVarName = globalVarName;
+        this.type = type;
     }
     toString(): string {
-        return "setGlobalVar,"+this.type+","+this.globalVarName+","+this.value
+        return "setGlobalVar,"+this.type+","+this.globalVarName+","+this.value;
     }
 }
 
 export class OperationInstruction extends Instruction{
-    varName: string = ""
-    n1: string = ""
-    op: string = ""
-    n2: string = ""
-    type: string = ""
+    varName: string = "";
+    n1: string = "";
+    op: string = "";
+    n2: string = "";
+    type: string = "";
     constructor(varName: string, n1: string, op: string, n2: string,type: string = ""){
-        super("operationInstruction")
-        this.varName = varName
-        this.n1 = n1
-        this.op = op
-        this.n2 = n2
-        this.type = type
+        super("operationInstruction");
+        this.varName = varName;
+        this.n1 = n1;
+        this.op = op;
+        this.n2 = n2;
+        this.type = type;
     }
     toString(): string {
-        return "operation,"+this.varName+","+this.n1+","+this.op+","+this.n2
+        return "operation,"+this.varName+","+this.n1+","+this.op+","+this.n2;
     }
 }
 
 export class VerifyEqualInstruction extends Instruction{
-    n1: string = ""
-    n2: string = ""
+    n1: string = "";
+    n2: string = "";
     constructor(n1: string, n2: string){
-        super("verifyEqualInstruction")
-        this.n1 = n1
-        this.n2 = n2
+        super("verifyEqualInstruction");
+        this.n1 = n1;
+        this.n2 = n2;
     }
     toString(): string {
-        return "verifyEqual,"+this.n1+","+this.n2
+        return "verifyEqual,"+this.n1+","+this.n2;
     }
 }
 
 export class AddSleepInstruction extends Instruction{
-    duration: string = ""
+    duration: string = "";
     constructor(duration: string){
-        super("addSleepInstruction")
-        this.duration = duration
+        super("addSleepInstruction");
+        this.duration = duration;
     }
     toString(): string {
-        return "addSleep,"+this.duration
+        return "addSleep,"+this.duration;
     }
 }
 
 export class TypedElement {
-    name: string = ""
-    type: (string | undefined) = undefined
+    name: string = "";
+    type: (string | undefined) = undefined;
     
     toString(): string {
-        return (this.type == undefined ? "undefined" : this.type)+" "+ this.name
+        return (this.type == undefined ? "undefined" : this.type)+" "+ this.name;
     }
 }
 
@@ -171,14 +171,14 @@ export abstract class Node {
 
     syncNodeIds: integer[] = [];
     functionsNames: string[] = [];
-    params: TypedElement[] = []
+    params: TypedElement[] = [];
     functionsDefs: Instruction[];
     returnType: string|undefined = undefined;
 
 
-    numberOfVisits: integer = 0
+    numberOfVisits: integer = 0;
     isCycleInitiator: boolean = false;
-    cycles: Node[][] = []
+    cycles: Node[][] = [];
 
     isVisited: boolean = false;
 
@@ -205,20 +205,20 @@ export abstract class Node {
             this.isVisited = false;
             return false;
         }
-        for (let e of this.outputEdges) {
+        for (const e of this.outputEdges) {
             if (e.to === n2){
                 // console.log(chalk.gray("info: "+this.uid+" is before "+n2.uid));
                 this.isVisited = false;
                 return true;
             }
         }
-        for(let e of this.outputEdges){
+        for(const e of this.outputEdges){
             // console.log(chalk.gray("info: moving to node"+e.to.uid));
             return e.to.isBefore(n2);
         }
         // console.log(chalk.green("info: no path found from "+this.uid+" to "+n2.uid));
         this.isVisited = false;
-        return false
+        return false;
     }
 
     cyclePossessAnAndJoin(): boolean {
@@ -228,7 +228,7 @@ export abstract class Node {
                 return true;
             }
             return false;
-        })})
+        });});
     }
 
     
@@ -249,7 +249,7 @@ export class Edge {
         this.from = from;
         this.to = to;
         this.label = label;
-        this.guards = []
+        this.guards = [];
         this.uid = Edge.edgeUIDCounter++;
     }
 }
@@ -272,7 +272,7 @@ export class CCFG {
     }
 
     cleanVisit(): void {
-        for(let n of this.nodes){
+        for(const n of this.nodes){
             n.isVisited = false;
         }
     }
@@ -287,7 +287,7 @@ export class CCFG {
         if(node.owningCCFG != undefined){
             node.owningCCFG.nodes = node.owningCCFG.nodes.filter(n => n.uid !== node.uid);
         }
-        let res = this.nodes.find(n => n === node);
+        const res = this.nodes.find(n => n === node);
         if (res == undefined) {
             this.nodes.push(node);
         }
@@ -303,8 +303,8 @@ export class CCFG {
      * @param label 
      * @returns 
      */
-    addEdge(from: Node, to: Node, label:string=""): Edge {
-        let res : Edge | undefined = this.edges.find(e => e.from === from && e.to === to);
+    addEdge(from: Node, to: Node, _label:string=""): Edge {
+        const res : Edge | undefined = this.edges.find(e => e.from === from && e.to === to);
         if (res != undefined) {
             console.log(chalk.grey("warning, edge already exists from "+from.uid+":"+from.type+" to "+to.uid+":"+to.type));
             return res; 
@@ -318,31 +318,31 @@ export class CCFG {
             return edge;
         }else{ //already an input edge. check if an orJoin Node
             if (to.getType() == "OrJoin" || to.getType() == "AndJoin") {
-                edge.to = to
-                to.inputEdges.push(edge)
-                return edge
+                edge.to = to;
+                to.inputEdges.push(edge);
+                return edge;
             }
             if (to.inputEdges.length == 1 && (to.inputEdges[0].from.getType() == "OrJoin" || to.inputEdges[0].from.getType() == "AndJoin"))  {
                 // console.log(chalk.bgYellow("adding to an existing or join node: "+to.value+" -> "+to.inputEdges[0].from.value+" -> "+to.inputEdges[0].from.uid+" "+to.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges.length));
                 edge.to = to.inputEdges[0].from;
                 to.inputEdges[0].from.inputEdges.push(edge);                   
-                return edge
+                return edge;
             }else{
                 // console.log(chalk.gray("creating a new or Join node: orJoinNode between "+from.uid+" and "+to.uid));
-                let orJoinNode = new OrJoin(to.astNode);
-                this.addNode(orJoinNode)
+                const orJoinNode = new OrJoin(to.astNode);
+                this.addNode(orJoinNode);
                 
-                edge.to = orJoinNode
-                for(let e of to.inputEdges){
-                    e.to = orJoinNode
-                    orJoinNode.inputEdges.push(e)
+                edge.to = orJoinNode;
+                for(const e of to.inputEdges){
+                    e.to = orJoinNode;
+                    orJoinNode.inputEdges.push(e);
                 }
-                to.inputEdges = []
-                let secondEdge = new Edge(orJoinNode, to)
-                this.edges.push(secondEdge)
-                to.inputEdges.push(secondEdge)
-                orJoinNode.outputEdges.push(secondEdge)
-                return edge
+                to.inputEdges = [];
+                const secondEdge = new Edge(orJoinNode, to);
+                this.edges.push(secondEdge);
+                to.inputEdges.push(secondEdge);
+                orJoinNode.outputEdges.push(secondEdge);
+                return edge;
             }
         }
         
@@ -354,7 +354,7 @@ export class CCFG {
      * @param newNode 
      */
     replaceNode(oldNode: Node, newNode: Node): void {
-        let index = this.nodes.findIndex(n => n.uid === oldNode.uid);
+        const index = this.nodes.findIndex(n => n.uid === oldNode.uid);
         if (index != -1) {
             this.nodes[index] = newNode;
             newNode.uid = oldNode.uid;
@@ -365,7 +365,7 @@ export class CCFG {
             newNode.functionsNames = oldNode.functionsNames;
             newNode.owningCCFG = oldNode.owningCCFG;
         }
-        for (let edge of this.edges) {
+        for (const edge of this.edges) {
             if (edge.from === oldNode) {
                 edge.from = newNode;
                 newNode.outputEdges.push(edge);
@@ -375,7 +375,7 @@ export class CCFG {
                 newNode.inputEdges.push(edge);
             }
         }
-        let owningCCFGOldNode = oldNode.owningCCFG;
+        const owningCCFGOldNode = oldNode.owningCCFG;
         if (owningCCFGOldNode != undefined){
             owningCCFGOldNode.nodes = owningCCFGOldNode.nodes.filter(n => n.uid !== oldNode.uid);
             owningCCFGOldNode.nodes.push(newNode);
@@ -389,12 +389,12 @@ export class CCFG {
      * @returns the node with the given uid or undefined if not found
      */
     getNodeByUID(uid: integer): Node | undefined  {
-        for(let n of this.nodes){
+        for(const n of this.nodes){
             if(n.uid === uid){
                 return n;
             }
         }
-        return undefined
+        return undefined;
     }
 
     /**
@@ -404,12 +404,12 @@ export class CCFG {
      * @returns the node with the given astNode and type or undefined if not found
      */
     getNodeFromASTNode(astNode: AstNode, t?:NodeType): Node | undefined {
-        for(let n of this.nodes){
+        for(const n of this.nodes){
             if(n.astNode != undefined && n.astNode == astNode && n.type == t){
                 return n;
             }
         }
-        return undefined
+        return undefined;
     }
 
 
@@ -430,7 +430,7 @@ export class CCFG {
         const queue: Node[] = [];
         queue.push(node);
 
-        var splitCounter: integer = -1;
+        let splitCounter: integer = -1;
 
         while (queue.length > 0) {
             const current = queue.shift();
@@ -469,10 +469,10 @@ export class CCFG {
      * this old version tried to be smart... it seems we can exploit thread uid like in the next version
      */
     addSyncEdge(): void{
-        for(let n of this.nodes){
+        for(const n of this.nodes){
             this.cleanVisit();
             if(n.getType() == "OrJoin" || n.getType() == "AndJoin"){
-                for(let n2 of this.nodes){
+                for(const n2 of this.nodes){
                     this.cleanVisit();
                     if((n2.getType() == "Fork" || n2.getType() == "Choice")
                         &&
@@ -612,12 +612,12 @@ export class CCFG {
     
 
     toDot(): string {
-        let wholeDot = 'digraph G {\n';
-        let [s, d] = this.dotGetCCFGNodes()
+        let wholeDot = "digraph G {\n";
+        let [s, d] = this.dotGetCCFGNodes();
         d = d + this.dotGetCCFGEdges();
         wholeDot += s;
         wholeDot += d;
-        wholeDot += '}';
+        wholeDot += "}";
         return wholeDot;
     }
 
@@ -626,13 +626,13 @@ export class CCFG {
      * @returns the edges in dot format
      */
     private dotGetCCFGEdges() : string{
-        let edgeDot = ""
+        let edgeDot = "";
         // for (let node of this.nodes) {
         //     if (node.getType() == "ContainerNode") {
         //         edgeDot += (node as ContainerNode).internalccfg.dotGetCCFGEdges();
         //     }
         // }
-        for (let edge of this.edges) {
+        for (const edge of this.edges) {
             edgeDot += `  "${edge.from.uid}" -> "${edge.to.uid}" [label="${this.dotGetEdgeLabel(edge)}"];\n`;
         }
         // for (let edge of this.syncEdges) {
@@ -646,9 +646,9 @@ export class CCFG {
      * @returns a tuple with the first element being the subgraph and the second the nodes
      */
     private dotGetCCFGNodes() :[string, string]{
-        let subG = ""
-        let nodeDot = ""
-        for (let node of this.nodes) {
+        const subG = "";
+        let nodeDot = "";
+        for (const node of this.nodes) {
             // if (node.getType() == "ContainerNode") {
             //    subG += `subgraph cluster_${node.uid} {\n`;
             //    subG += `label = "${node.value}";\n`;
@@ -657,9 +657,9 @@ export class CCFG {
             //     subG += s;
             //     subG += `}\n`;
             // } else {
-                let shape: string = this.dotGetNodeShape(node);
-                let label: string = this.dotGetNodeLabel(node);
-                nodeDot += `  "${node.uid}" [label="${label}" shape="${shape}" ${node.isCycleInitiator?`style="filled" fillcolor="lightblue"`:``}];\n`;
+                const shape: string = this.dotGetNodeShape(node);
+                const label: string = this.dotGetNodeLabel(node);
+                nodeDot += `  "${node.uid}" [label="${label}" shape="${shape}" ${node.isCycleInitiator?"style=\"filled\" fillcolor=\"lightblue\"":""}];\n`;
             // }
 
         }
@@ -671,16 +671,16 @@ export class CCFG {
         return edge.guards.map(
             g => 
             /* a.replaceAll("\"","\\\"")).join("\n")+"\n~~~"+*/
-            g.toString().replaceAll("\"","\\\"")).join("\n")
+            g.toString().replaceAll("\"","\\\"")).join("\n");
             /*+"~~~\n";*/
     }
 
     dotGetNodeLabel(node: Node): string {
         if(node.functionsDefs.length == 0){
-            return node.uid.toString()+"["+node.syncNodeIds.map(i =>i).join(',')+"]"+":"+node.getType()+((node.type==undefined || node.type == NodeType.multipleSynchro)?"":"_"+node.type);
+            return node.uid.toString()+"["+node.syncNodeIds.map(i =>i).join(",")+"]"+":"+node.getType()+((node.type==undefined || node.type == NodeType.multipleSynchro)?"":"_"+node.type);
         }
         
-        return node.uid.toString()+"["+node.syncNodeIds.map(i =>i).join(',')+"]"+":"+node.getType()+((node.type==undefined || node.type == NodeType.multipleSynchro)?"":"_"+node.type)+":\n"+node.returnType+" function"+node.functionsNames+"("+node.params.map(p => (p as TypedElement).toString()).join(", ")+"){\n"+node.functionsDefs.map(
+        return node.uid.toString()+"["+node.syncNodeIds.map(i =>i).join(",")+"]"+":"+node.getType()+((node.type==undefined || node.type == NodeType.multipleSynchro)?"":"_"+node.type)+":\n"+node.returnType+" function"+node.functionsNames+"("+node.params.map(p => (p as TypedElement).toString()).join(", ")+"){\n"+node.functionsDefs.map(
             a => a.toString().replaceAll("\"","\\\"")).join("\n")+"\n}";
     }
 
@@ -713,15 +713,15 @@ export class CCFG {
             console.log(chalk.red("error: hole has no input and no output edge"));
             return;
         }
-        for (let inputEdge of h.inputEdges) {
+        for (const inputEdge of h.inputEdges) {
             inputEdge.to = ccfg.initialState as Node;
             ccfg.initialState?.inputEdges.push(inputEdge);
         }
-        let terminalNode = ccfg.nodes.find(n => n.type == "terminates");
+        const terminalNode = ccfg.nodes.find(n => n.type == "terminates");
         if (terminalNode == undefined) {
            throw new Error("no terminal node found in the ccfg");
         }
-        for (let outputEdge of h.outputEdges) {
+        for (const outputEdge of h.outputEdges) {
             outputEdge.from = terminalNode as Node;
             terminalNode.outputEdges.push(outputEdge);
         }
