@@ -1,56 +1,124 @@
 
 class Void{}
 let sigma = new Map();
+let eventChannels = new Map();
+let eventTokenToChannel = new Map();
 
-async function functioninit3Variable(){
+function com_create_event_channel(name, listenerCount, payloadKind){
+    if (eventChannels.has(name)){
+        return;
+    }
+    eventChannels.set(name, {
+        listenerCount: listenerCount,
+        payloadKind: payloadKind,
+        queue: [],
+        nextToken: 1,
+        pendingAcks: new Map()
+    });
+}
+
+function com_get_event_channel(name){
+    if (!eventChannels.has(name)){
+        throw new Error('Unknown event channel: ' + name);
+    }
+    return eventChannels.get(name);
+}
+
+async function com_emit_event(name, payload, awaitAcks){
+    let channel = com_get_event_channel(name);
+    let token = channel.nextToken++;
+    let expectedAcks = awaitAcks ? channel.listenerCount : 0;
+    if (expectedAcks > 0){
+        channel.pendingAcks.set(token, expectedAcks);
+        eventTokenToChannel.set(token, name);
+    }
+    channel.queue.push({payload: payload, token: token});
+
+    if (awaitAcks){
+        while ((channel.pendingAcks.get(token) || 0) > 0){
+            await new Promise(resolve => setTimeout(resolve, 10));
+        }
+        channel.pendingAcks.delete(token);
+        eventTokenToChannel.delete(token);
+    }
+}
+
+async function com_wait_event(name){
+    let channel = com_get_event_channel(name);
+    let message = channel.queue.shift();
+    while (message == undefined){
+        await new Promise(resolve => setTimeout(resolve, 10));
+        message = channel.queue.shift();
+    }
+    return message;
+}
+
+function com_ack_event(token){
+    let channelName = eventTokenToChannel.get(token);
+    if (channelName == undefined){
+        return;
+    }
+    let channel = com_get_event_channel(channelName);
+    let remaining = (channel.pendingAcks.get(token) || 0) - 1;
+    if (remaining <= 0){
+        channel.pendingAcks.delete(token);
+        eventTokenToChannel.delete(token);
+    } else {
+        channel.pendingAcks.set(token, remaining);
+    }
+}
+
+let com_last_event_token = undefined;
+
+async function functioninit4Variable(){
 	sigma.set("Variable0_0_0_10currentValue", undefined);
 }
-async function function5initializeVar(){
+async function function6initializeVar(){
 	let Variable0_0_0_101432;
 	Variable0_0_0_101432 = 1;
 	sigma.set("Variable0_0_0_10currentValue", Variable0_0_0_101432);
 }
-async function functioninit6Variable(){
+async function functioninit8Variable(){
 	sigma.set("Variable1_0_1_10currentValue", undefined);
 }
-async function function8initializeVar(){
+async function function10initializeVar(){
 	let Variable1_0_1_101432;
 	Variable1_0_1_101432 = 0;
 	sigma.set("Variable1_0_1_10currentValue", Variable1_0_1_101432);
 }
-async function functioninit9Variable(){
+async function functioninit12Variable(){
 	sigma.set("Variable2_0_2_11currentValue", undefined);
 }
-async function function11initializeVar(){
+async function function14initializeVar(){
 	let Variable2_0_2_111432;
 	Variable2_0_2_111432 = 42;
 	sigma.set("Variable2_0_2_11currentValue", Variable2_0_2_111432);
 }
-async function function18accessVarRef(){
+async function function21accessVarRef(){
 	let VarRef4_7_4_91647;
 	VarRef4_7_4_91647 = sigma.get("Variable0_0_0_10currentValue");
 	let VarRef4_7_4_9terminates;
 	VarRef4_7_4_9terminates = VarRef4_7_4_91647;
 	return VarRef4_7_4_9terminates;
 }
-async function function26executeAssignment2(resRight){
+async function function29executeAssignment2(resRight){
 	let Assignment6_4_6_112622;
 	Assignment6_4_6_112622 = resRight;
 	sigma.set("Variable0_0_0_10currentValue", Assignment6_4_6_112622);
 }
-async function function32executeAssignment2(resRight){
+async function function35executeAssignment2(resRight){
 	let Assignment7_4_7_112622;
 	Assignment7_4_7_112622 = resRight;
 	sigma.set("Variable1_0_1_10currentValue", Assignment7_4_7_112622);
 }
-async function function27accessVarRef(){
+async function function30accessVarRef(){
 	let VarRef6_9_6_111647;
 	VarRef6_9_6_111647 = sigma.get("Variable1_0_1_10currentValue");
 	let VarRef6_9_6_11terminates;
 	VarRef6_9_6_11terminates = VarRef6_9_6_111647;
 	return VarRef6_9_6_11terminates;
 }
-async function function33accessVarRef(){
+async function function36accessVarRef(){
 	let VarRef7_9_7_111647;
 	VarRef7_9_7_111647 = sigma.get("Variable2_0_2_11currentValue");
 	let VarRef7_9_7_11terminates;
@@ -58,35 +126,35 @@ async function function33accessVarRef(){
 	return VarRef7_9_7_11terminates;
 }
 async function main(){
-		await functioninit3Variable();
-	await function5initializeVar();
-	await functioninit6Variable();
-	await function8initializeVar();
-	await functioninit9Variable();
-	await function11initializeVar();
-	var sync17 = [];
-	sync17.push(42);
-	flag17 = true;
-	var flag17 = true;
-	while(flag17){
-		flag17 = false;
+		await functioninit4Variable();
+	await function6initializeVar();
+	await functioninit8Variable();
+	await function10initializeVar();
+	await functioninit12Variable();
+	await function14initializeVar();
+	var sync20 = [];
+	sync20.push(42);
+	flag20 = true;
+	var flag20 = true;
+	while(flag20){
+		flag20 = false;
 		{
-			fakeVar17 = sync17.pop();
-			while (fakeVar17 == undefined){
+			fakeVar20 = sync20.pop();
+			while (fakeVar20 == undefined){
 				await new Promise(resolve => setTimeout(resolve, 100));
-				fakeVar17 = sync17.pop();
+				fakeVar20 = sync20.pop();
 			}
 		}
-		let result18accessVarRef = await function18accessVarRef();
+		let result21accessVarRef = await function21accessVarRef();
 		let VarRef4_7_4_9terminate;
-		VarRef4_7_4_9terminate = result18accessVarRef;
+		VarRef4_7_4_9terminate = result21accessVarRef;
 		if (VarRef4_7_4_9terminate == true){
-			let result27accessVarRef = await function27accessVarRef();
-			await function26executeAssignment2(result27accessVarRef);
-			let result33accessVarRef = await function33accessVarRef();
-			await function32executeAssignment2(result33accessVarRef);
-			sync17.push(42);
-			flag17 = true;
+			let result30accessVarRef = await function30accessVarRef();
+			await function29executeAssignment2(result30accessVarRef);
+			let result36accessVarRef = await function36accessVarRef();
+			await function35executeAssignment2(result36accessVarRef);
+			sync20.push(42);
+			flag20 = true;
 		}
 		if (VarRef4_7_4_9terminate == false){
 		}

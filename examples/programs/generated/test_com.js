@@ -4,7 +4,7 @@ let sigma = new Map();
 let eventChannels = new Map();
 let eventTokenToChannel = new Map();
 
-function __createEventChannel(name, listenerCount, payloadKind){
+function com_create_event_channel(name, listenerCount, payloadKind){
     if (eventChannels.has(name)){
         return;
     }
@@ -17,15 +17,15 @@ function __createEventChannel(name, listenerCount, payloadKind){
     });
 }
 
-function __getEventChannel(name){
+function com_get_event_channel(name){
     if (!eventChannels.has(name)){
         throw new Error('Unknown event channel: ' + name);
     }
     return eventChannels.get(name);
 }
 
-async function __emitEvent(name, payload, awaitAcks){
-    let channel = __getEventChannel(name);
+async function com_emit_event(name, payload, awaitAcks){
+    let channel = com_get_event_channel(name);
     let token = channel.nextToken++;
     let expectedAcks = awaitAcks ? channel.listenerCount : 0;
     if (expectedAcks > 0){
@@ -43,8 +43,8 @@ async function __emitEvent(name, payload, awaitAcks){
     }
 }
 
-async function __waitEvent(name){
-    let channel = __getEventChannel(name);
+async function com_wait_event(name){
+    let channel = com_get_event_channel(name);
     let message = channel.queue.shift();
     while (message == undefined){
         await new Promise(resolve => setTimeout(resolve, 10));
@@ -53,12 +53,12 @@ async function __waitEvent(name){
     return message;
 }
 
-function __ackEvent(token){
+function com_ack_event(token){
     let channelName = eventTokenToChannel.get(token);
     if (channelName == undefined){
         return;
     }
-    let channel = __getEventChannel(channelName);
+    let channel = com_get_event_channel(channelName);
     let remaining = (channel.pendingAcks.get(token) || 0) - 1;
     if (remaining <= 0){
         channel.pendingAcks.delete(token);
@@ -68,12 +68,11 @@ function __ackEvent(token){
     }
 }
 
-let __lastEventToken = undefined;
+let com_last_event_token = undefined;
 
 async function function0startsProgram(){
 	console.log("	function0startsProgram started");
-	__createEventChannel("ComID0_20_0_24", 1, "void");
-	__createEventChannel("ComID0_20_0_24", 1, "void");
+	com_create_event_channel("ComID0_20_0_24", 1, "void");
 }
 async function function6perioStart(){
 	console.log("	function6perioStart started");
@@ -87,18 +86,18 @@ async function functioninit53Timer(){
 async function function25finishWait(){
 	console.log("	function25finishWait started");
 	{
-		const __event = await __waitEvent("ComID0_20_0_24");
-		ComID0_20_0_24waitIDPayload = __event.payload;
-		ComID0_20_0_24Token = __event.token;
-		__lastEventToken = __event.token;
+		const com_event = await com_wait_event("ComID0_20_0_24");
+		ComID0_20_0_24waitIDPayload = com_event.payload;
+		com_last_event_token = com_event.token;
+		ComID0_20_0_24Token = com_last_event_token;
 	}
-	__ackEvent(ComID0_20_0_24Token);
+	com_ack_event(ComID0_20_0_24Token);
 }
 async function function52emitnotifyID(){
 	console.log("	function52emitnotifyID started");
 	let ComID0_20_0_24notifyIDPayload;
 	ComID0_20_0_24notifyIDPayload = 0;
-	await __emitEvent("ComID0_20_0_24", ComID0_20_0_24notifyIDPayload, true);
+	await com_emit_event("ComID0_20_0_24", ComID0_20_0_24notifyIDPayload, true);
 }
 async function function31fugaceStmt1(){
 	console.log("	function31fugaceStmt1 started");

@@ -140,47 +140,102 @@ void functioninit8Variable(){
 }
 void function10initializeVar(){
 	int Variable1_0_1_101432;
-	Variable1_0_1_101432 = 0;
+	Variable1_0_1_101432 = 4;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable1_0_1_10currentValue"]) = Variable1_0_1_101432;}
 }
-void function12periodicStart(){
-	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["PeriodicBloc3_0_5_3blocTrigger"] = new int();}
-	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["PeriodicBloc3_0_5_3blocTrigger"]) = 1000;}
+void functioninit12Variable(){
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["Variable2_0_2_10currentValue"] = new int();}
 }
-void function33executeAssignment2(int resRight){
-	int Assignment7_0_7_72622;
-	Assignment7_0_7_72622 = resRight;
-	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable1_0_1_10currentValue"]) = Assignment7_0_7_72622;}
+void function14initializeVar(){
+	int Variable2_0_2_101432;
+	Variable2_0_2_101432 = 0;
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable2_0_2_10currentValue"]) = Variable2_0_2_101432;}
 }
-void functioninit42Timer(){
-	std::this_thread::sleep_for(1000ms);
+void function80executeAssignment2(int resRight){
+	int Assignment16_0_16_202622;
+	Assignment16_0_16_202622 = resRight;
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable2_0_2_10currentValue"]) = Assignment16_0_16_202622;}
 }
-int function34accessVarRef(){
-	int VarRef7_5_7_71647;
-	{const std::lock_guard<std::mutex> lock(sigma_mutex);	VarRef7_5_7_71647 = *(int*)sigma["Variable0_0_0_10currentValue"];}
-	int VarRef7_5_7_7terminates;
-	VarRef7_5_7_7terminates = VarRef7_5_7_71647;
-	return VarRef7_5_7_7terminates;
+int function47accessVarRef(){
+	int VarRef7_4_7_61647;
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	VarRef7_4_7_61647 = *(int*)sigma["Variable0_0_0_10currentValue"];}
+	int VarRef7_4_7_6terminates;
+	VarRef7_4_7_6terminates = VarRef7_4_7_61647;
+	return VarRef7_4_7_6terminates;
 }
-void function22executeAssignment2(int resRight){
-	int Assignment4_4_4_162622;
-	Assignment4_4_4_162622 = resRight;
-	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable0_0_0_10currentValue"]) = Assignment4_4_4_162622;}
+void function21executeAssignment2(int resRight){
+	int Assignment4_7_4_212622;
+	Assignment4_7_4_212622 = resRight;
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable1_0_1_10currentValue"]) = Assignment4_7_4_212622;}
 }
-int function28accessVarRef(){
-	int VarRef4_13_4_151647;
-	{const std::lock_guard<std::mutex> lock(sigma_mutex);	VarRef4_13_4_151647 = *(int*)sigma["Variable0_0_0_10currentValue"];}
-	int VarRef4_13_4_15terminates;
-	VarRef4_13_4_15terminates = VarRef4_13_4_151647;
-	return VarRef4_13_4_15terminates;
+void function32executeAssignment2(int resRight){
+	int Assignment5_7_5_212622;
+	Assignment5_7_5_212622 = resRight;
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable1_0_1_10currentValue"]) = Assignment5_7_5_212622;}
+}
+bool function85evalBooleanConst(){
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["BooleanConst16_6_16_10constantValue"] = new bool();}
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((bool*)sigma["BooleanConst16_6_16_10constantValue"]) = true;}
+	bool BooleanConst16_6_16_104767;
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	BooleanConst16_6_16_104767 = *(bool*)sigma["BooleanConst16_6_16_10constantValue"];}
+	bool BooleanConst16_6_16_10terminates;
+	BooleanConst16_6_16_10terminates = BooleanConst16_6_16_104767;
+	return BooleanConst16_6_16_10terminates;
+}
+void function55executeAssignment2(int resRight){
+	int Assignment9_4_9_182622;
+	Assignment9_4_9_182622 = resRight;
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable1_0_1_10currentValue"]) = Assignment9_4_9_182622;}
+}
+void function69executeAssignment2(int resRight){
+	int Assignment12_4_12_182622;
+	Assignment12_4_12_182622 = resRight;
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable0_0_0_10currentValue"]) = Assignment12_4_12_182622;}
+}
+int function27accessVarRef(){
+	int VarRef4_18_4_201647;
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	VarRef4_18_4_201647 = *(int*)sigma["Variable0_0_0_10currentValue"];}
+	int VarRef4_18_4_20terminates;
+	VarRef4_18_4_20terminates = VarRef4_18_4_201647;
+	return VarRef4_18_4_20terminates;
+}
+int function38accessVarRef(){
+	int VarRef5_18_5_201647;
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	VarRef5_18_5_201647 = *(int*)sigma["Variable1_0_1_10currentValue"];}
+	int VarRef5_18_5_20terminates;
+	VarRef5_18_5_20terminates = VarRef5_18_5_201647;
+	return VarRef5_18_5_20terminates;
+}
+int function61accessVarRef(){
+	int VarRef9_15_9_171647;
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	VarRef9_15_9_171647 = *(int*)sigma["Variable0_0_0_10currentValue"];}
+	int VarRef9_15_9_17terminates;
+	VarRef9_15_9_17terminates = VarRef9_15_9_171647;
+	return VarRef9_15_9_17terminates;
+}
+int function75accessVarRef(){
+	int VarRef12_15_12_171647;
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	VarRef12_15_12_171647 = *(int*)sigma["Variable0_0_0_10currentValue"];}
+	int VarRef12_15_12_17terminates;
+	VarRef12_15_12_17terminates = VarRef12_15_12_171647;
+	return VarRef12_15_12_17terminates;
 }
 int main(){
 		functioninit4Variable();
 	function6initializeVar();
 	functioninit8Variable();
 	function10initializeVar();
-	function12periodicStart();
-	functioninit42Timer();
-	int result28accessVarRef = function28accessVarRef();
+	functioninit12Variable();
+	function14initializeVar();
+	bool flag101 = true;
+	LockingQueue<Void> synch101;
+	std::thread thread18([&](){
+		int result27accessVarRef = function27accessVarRef();
+	});
+	thread18.detach();
+	std::thread thread29([&](){
+		int result38accessVarRef = function38accessVarRef();
+	});
+	thread29.detach();
 for(auto entry : sigma){ std::cout << entry.first << " : " << *((int*)entry.second) << std::endl;}
 }
