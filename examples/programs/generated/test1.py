@@ -12,18 +12,22 @@ def function4perioStart():
 	sigma_mutex.acquire()
 	sigma["Perio0_0_2_1blocTrigger"] = 1000
 	sigma_mutex.release()
+<<<<<<< HEAD
 def functioninit34Timer(): 
 	time.sleep(1000//1000) 
 def function21fugaceStmt1(): 
-	print("function21fugaceStmt1")
-	sigma_mutex.acquire()
-	sigma["Stmt11_6_1_11fakeState"] = int()
-	sigma_mutex.release()
-	sigma_mutex.acquire()
+=======
+def functioninit31Timer(): 
+	time.sleep(1000//1000) 
+def function19fugaceStmt1(): 
 	sigma["Stmt11_6_1_11fakeState"] = 0
 	sigma_mutex.release()
+<<<<<<< HEAD
 def function32fugaceStmt1():
 	print("function32fugaceStmt1") 
+=======
+def function29fugaceStmt1(): 
+>>>>>>> dev
 	sigma_mutex.acquire()
 	sigma["Stmt11_33_1_38fakeState"] = int()
 	sigma_mutex.release()
@@ -31,6 +35,7 @@ def function32fugaceStmt1():
 	sigma["Stmt11_33_1_38fakeState"] = 0
 	sigma_mutex.release()
 def main(): 
+<<<<<<< HEAD
 	function4perioStart(); 
 	sync9 = Queue() 
 	sync9.put(42) 
@@ -60,5 +65,36 @@ def main():
 		flag9 = True
 		sync15.get() 
 		sync15.get() 
+=======
+	function3perioStart(); 
+	sync8 = Queue() 
+	sync8.put(42) 
+	flag8 = True
+	while flag8 == True: 
+		flag8 = False 
+		sync8.get() 
+		functioninit31Timer(); 
+		sync14 = Queue() 
+		def codeThread9():
+			def codeThread15():
+				function19fugaceStmt1(); 
+				sync14.put(42) 
+			thread15 = threading.Thread(target=codeThread15) 
+			thread15.start() 
+			thread15.join() 
+			def codeThread23():
+				function29fugaceStmt1(); 
+				sync14.put(42) 
+			thread23 = threading.Thread(target=codeThread23) 
+			thread23.start() 
+			thread23.join() 
+		thread9 = threading.Thread(target=codeThread9) 
+		thread9.start() 
+		thread9.join() 
+		sync8.put(42) 
+		flag8 = True
+		sync14.get() 
+		sync14.get() 
+>>>>>>> dev
 if __name__ == "__main__": 
 	main() 
