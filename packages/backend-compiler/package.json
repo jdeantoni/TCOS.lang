@@ -6,13 +6,14 @@
   "engines": {
     "vscode": "^1.56.0"
   },
-  "main": "GeneratorInterface.ts",
+  "main": "src/GeneratorInterface.ts",
   "types": "dist/GeneratorInterface.d.ts",
   "categories": [
     "Programming Languages"
   ],
   "files": [
     ".",
+    "src",
     "dist"
   ],
   "exports": {
