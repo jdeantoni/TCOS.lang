@@ -7,66 +7,23 @@ import { addComparisonVariableDeclaration, addCorrespondingCode, addQueuePushCod
 export function visitAllNodes(ccfg: CCFG, currentNode: Node, generator: IGenerator, ctx: TraversalContext, visitIsStarting: boolean = false): string[] {
     ctx.recursLevel = ctx.recursLevel + 1;
     const currentUID:number = getCurrentUID(currentNode);
-
-    if (currentNode.outputEdges.length == 0) {
-        return [];
-    }
-
     let thisNodeCode:string[] = [];
+
+    if (currentNode.outputEdges.length == 0) return [];
+
     currentNode.numberOfVisits = currentNode.numberOfVisits + 1;
     
-    if(currentNode.inputEdges.length > 1){
-        
-        if (visitIsStarting == false && currentNode.numberOfVisits < currentNode.inputEdges.length) {
-            if(currentNode.isCycleInitiator){
-                if(! ctx.continuations.includes(currentNode)){
-                    ctx.continuationsRecursLevel.push(ctx.recursLevel-1);
-                    currentNode.numberOfVisits = currentNode.inputEdges.length;
-                    ctx.continuations.push(currentNode);
-                }
-                return [];
-            }
-            return [];
-        }
-        
-        if (currentNode.numberOfVisits == currentNode.inputEdges.length){        
-            if(! ctx.continuations.includes(currentNode)){
-                if(currentNode.isCycleInitiator){
-                    ctx.continuationsRecursLevel.push(ctx.recursLevel-1);
-                    currentNode.numberOfVisits = currentNode.inputEdges.length;
-                }
-                ctx.continuations.push(currentNode);
-            }
-            return [];
-        }
-    }  
+    if (tryDeferVisit(currentNode, visitIsStarting, ctx)) return [];
     
-    if (ctx.visitedUID.includes(currentUID)){
-        return [];
-    }
+    if (ctx.visitedUID.includes(currentUID)) return [];
     ctx.visitedUID.push(currentUID);
 
     switch(currentNode.getType()){
-        case "Step": {
-                thisNodeCode = StepNode(thisNodeCode, currentNode, ccfg, generator, ctx);
-                break;
-            }
-        case "Fork": {
-                thisNodeCode = ForkNode(thisNodeCode, currentNode, ccfg, generator, ctx);
-                break;
-            }
-        case "AndJoin": {
-                thisNodeCode = AndJoinNode(thisNodeCode, currentNode, ccfg, generator, ctx);
-                break;
-            }
-        case "OrJoin": {
-                thisNodeCode = OrJoinNode(thisNodeCode, currentNode, ccfg, generator, ctx);
-                break;
-            }
-        case "Choice": {
-                thisNodeCode = ChoiceNode(thisNodeCode, currentNode, ccfg, generator, ctx);
-                break;
-            }
+        case "Step": { thisNodeCode = StepNode(thisNodeCode, currentNode, ccfg, generator, ctx); break; }
+        case "Fork": { thisNodeCode = ForkNode(thisNodeCode, currentNode, ccfg, generator, ctx); break; }
+        case "AndJoin": { thisNodeCode = AndJoinNode(thisNodeCode, currentNode, ccfg, generator, ctx); break; }
+        case "OrJoin": { thisNodeCode = OrJoinNode(thisNodeCode, currentNode, ccfg, generator, ctx); break; }
+        case "Choice": { thisNodeCode = ChoiceNode(thisNodeCode, currentNode, ccfg, generator, ctx); break; }
     } 
     
     if(ctx.continuations.length > 0){
@@ -83,8 +40,37 @@ export function visitAllNodes(ccfg: CCFG, currentNode: Node, generator: IGenerat
     return thisNodeCode;
 }
 
+function tryDeferVisit(currentNode: Node, visitIsStarting: boolean, ctx: TraversalContext): boolean {
+    if (currentNode.inputEdges.length <= 1) return false;
+    
+    const node = currentNode.inputEdges.length;
+    
+    if (visitIsStarting == false && currentNode.numberOfVisits < node) {
+        if (currentNode.isCycleInitiator && !ctx.continuations.includes(currentNode)) {
+            ctx.continuationsRecursLevel.push(ctx.recursLevel - 1);
+            currentNode.numberOfVisits = node;
+            ctx.continuations.push(currentNode);
+        }
+        return true;
+    }
+
+    if (currentNode.numberOfVisits === node) {
+        if (!ctx.continuations.includes(currentNode)) {
+            if (currentNode.isCycleInitiator) {
+                ctx.continuationsRecursLevel.push(ctx.recursLevel - 1);
+                currentNode.numberOfVisits = node;
+            }
+            ctx.continuations.push(currentNode);
+        }
+        return true;
+    }
+    
+    return false;
+}
+
 function StepNode(thisNodeCode: string[], currentNode: Node, ccfg: CCFG, generator: IGenerator, ctx: TraversalContext): string[]{
     thisNodeCode = [...thisNodeCode, ...addCorrespondingCode(currentNode, ccfg, generator, ctx)];
+
     if(currentNode.outputEdges.length > 1){
         const edgeToVisit: Edge[] = currentNode.outputEdges;
 
@@ -105,7 +91,6 @@ function ForkNode(thisNodeCode: string[], currentNode: Node, ccfg: CCFG, generat
     const edgeToVisit: Edge[] = currentNode.outputEdges;
         
     for(const syncUID of currentNode.syncNodeIds){
-
         const node = ccfg.getNodeByUID(syncUID);
 
         if (node != undefined){
