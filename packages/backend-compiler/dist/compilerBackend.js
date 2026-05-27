@@ -1,7 +1,7 @@
-import { AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, Instruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction } from "ccfg";
 import chalk from "chalk";
 import { visitAllNodes } from "./visitors.js";
 import { TraversalContext } from "./TraversalContext.js";
+import { AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, Instruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction } from "ccfg";
 const debug = false;
 export function generatefromCCFG(ccfg, codeFile, generator, filePath, debug) {
     const ctx = new TraversalContext();
@@ -22,9 +22,7 @@ function doGenerateCode(codeFile, ccfg, debug, generator, ctx) {
     allCode = [...allCode, ...generator.createMainFunction(insideMain)];
     allCode = [...allCode, ...generator.endFile()];
     codeFile.append(allCode.join(""));
-    //console.log(codeFile);
 }
-// On pourrais refactoriser cette fonction car celle-ci est compliqué à comprendre
 function compileFunctionDefs(ccfg, generator) {
     let res = [];
     for (const node of ccfg.nodes) {
@@ -73,12 +71,10 @@ function compileFunctionDefs(ccfg, generator) {
                             allFDefs = [...allFDefs, fdef.toString()];
                         }
                     }
-                    //console.log("function name: "+fname+ " allFDefs = "+allFDefs);
                     res = [...res, ...generator.createFunction(fname, node.params, node.returnType, allFDefs)];
                 }
             }
         }
-        // }
     }
     return res;
 }
@@ -88,13 +84,6 @@ export function getCurrentUID(node) {
 export function addCorrespondingCode(currentNode, ccfg, generator, ctx) {
     if (!debug && currentNode.functionsDefs.length == 0) {
         return [];
-    }
-    if (debug) {
-        /*codeFile.append(`
-        #if DEBUG
-            std::cout<<"${currentNode.uid} : ${currentNode.getType()}" <<std::endl;
-        #endif
-        `);*/
     }
     if (currentNode.returnType == undefined) {
         return [];
@@ -138,11 +127,10 @@ export function addQueuePushCode(queueUID, currentNode, ccfg, f, generator, ctx)
         if (syncNode == undefined) {
             throw new Error("syncNode is undefined uid = " + queueUID);
         }
-        const ptns = getPreviousTypedNodes(syncNode.inputEdges[0]);
-        if (ptns.length > 1) {
+        const previousTypeNodes = getPreviousTypedNodes(syncNode.inputEdges[0]);
+        if (previousTypeNodes.length > 1) {
             throw new Error("multiple previous typed nodes not handled here");
         }
-        //        let ptn = ptns[0];
         if (!ctx.createdQueueIds.includes(queueUID)) {
             ctx.createdQueueIds.push(queueUID);
             if (syncNode.returnType != undefined && syncNode.returnType != "void") {
@@ -152,7 +140,6 @@ export function addQueuePushCode(queueUID, currentNode, ccfg, f, generator, ctx)
                 res = [...res, ...generator.createSynchronizer(queueUID)];
             }
         }
-        //codeFile.append(`{\n`)
         if (currentNode.returnType == undefined || currentNode.returnType == "void" || f == undefined) {
             res = [...res, ...generator.activateSynchronizer(queueUID)];
         }
@@ -162,7 +149,6 @@ export function addQueuePushCode(queueUID, currentNode, ccfg, f, generator, ctx)
         if (syncNode.isCycleInitiator) {
             res = [...res, ...generator.setLoopFlag(queueUID)];
         }
-        //codeFile.append(`}\n`)
         return res;
     }
     return [];
@@ -187,13 +173,13 @@ function getParameterNames(currentNode) {
             return res;
         }
         for (const ie of currentNode.inputEdges) {
-            const ptns = getPreviousTypedNodes(ie, true);
-            for (const ptn of ptns) {
-                if ((ptn.getType() == "AndJoin" || ptn.getType() == "OrJoin") && ptn.functionsDefs.length == 0) {
-                    res.push(`${ptn.getType()}Popped_${ptn.uid}`);
+            const previousTypeNodes = getPreviousTypedNodes(ie, true);
+            for (const previousTypeNode of previousTypeNodes) {
+                if ((previousTypeNode.getType() == "AndJoin" || previousTypeNode.getType() == "OrJoin") && previousTypeNode.functionsDefs.length == 0) {
+                    res.push(`${previousTypeNode.getType()}Popped_${previousTypeNode.uid}`);
                 }
                 else {
-                    res.push(`result${ptn.functionsNames[0]}`);
+                    res.push(`result${previousTypeNode.functionsNames[0]}`);
                 }
             }
         }
@@ -201,39 +187,39 @@ function getParameterNames(currentNode) {
     return res;
 }
 export function getPreviousTypedNodes(ie, stopAlsoOnNoCodeJoinNode = false) {
-    const ptn = ie.from;
+    const previousTypeNode = ie.from;
     let res = [];
-    if (ptn.returnType != undefined && stopAlsoOnNoCodeJoinNode) {
-        res.push(ptn);
+    if (previousTypeNode.returnType != undefined && stopAlsoOnNoCodeJoinNode) {
+        res.push(previousTypeNode);
         return res;
     }
-    if (ptn.returnType != undefined && !stopAlsoOnNoCodeJoinNode && ptn.functionsDefs.length > 0) {
-        res.push(ptn);
+    if (previousTypeNode.returnType != undefined && !stopAlsoOnNoCodeJoinNode && previousTypeNode.functionsDefs.length > 0) {
+        res.push(previousTypeNode);
         return res;
     }
-    for (const e of ptn.inputEdges) {
+    for (const e of previousTypeNode.inputEdges) {
         res = [...res, ...getPreviousTypedNodes(e, stopAlsoOnNoCodeJoinNode)];
     }
     return res;
 }
 export function addComparisonVariableDeclaration(currentNode, generator) {
     for (const ie of currentNode.inputEdges) {
-        const ptnsWithJoin = getPreviousTypedNodes(ie, true);
-        const realPtns = getPreviousTypedNodes(ie, false);
+        const previousTypeNodesWithJoin = getPreviousTypedNodes(ie, true);
+        const realPreviousTypeNodes = getPreviousTypedNodes(ie, false);
         let comparisonVariableCode = [];
-        for (let i = 0; i < realPtns.length; i++) {
-            const realPtn = realPtns[i];
-            if (realPtn.returnType != "void") {
-                const lastDefStatement = realPtn.functionsDefs[realPtn.functionsDefs.length - 1];
+        for (let i = 0; i < realPreviousTypeNodes.length; i++) {
+            const realPreviousTypeNode = realPreviousTypeNodes[i];
+            if (realPreviousTypeNode.returnType != "void") {
+                const lastDefStatement = realPreviousTypeNode.functionsDefs[realPreviousTypeNode.functionsDefs.length - 1];
                 const lastDefStatementSplit = lastDefStatement.toString().split(",");
                 let returnedVariableName = lastDefStatementSplit[lastDefStatementSplit.length - 1];
                 returnedVariableName = returnedVariableName.substring(0, returnedVariableName.length - 1); //remove semicolum
-                const ptn = ptnsWithJoin[0];
-                if (ptn.getType() == "AndJoin" || ptn.getType() == "OrJoin") {
-                    comparisonVariableCode = [...comparisonVariableCode, ...generator.createVar(ptn.returnType || "void", returnedVariableName), ...generator.assignVar(returnedVariableName, ptn.params[i].name)];
+                const previousTypeNode = previousTypeNodesWithJoin[0];
+                if (previousTypeNode.getType() == "AndJoin" || previousTypeNode.getType() == "OrJoin") {
+                    comparisonVariableCode = [...comparisonVariableCode, ...generator.createVar(previousTypeNode.returnType || "void", returnedVariableName), ...generator.assignVar(returnedVariableName, previousTypeNode.params[i].name)];
                 }
                 else {
-                    comparisonVariableCode = [...comparisonVariableCode, ...generator.createVar(ptn.returnType || "void", returnedVariableName), ...generator.assignVar(returnedVariableName, `result${ptn.functionsNames[0]}`)];
+                    comparisonVariableCode = [...comparisonVariableCode, ...generator.createVar(previousTypeNode.returnType || "void", returnedVariableName), ...generator.assignVar(returnedVariableName, `result${previousTypeNode.functionsNames[0]}`)];
                 }
             }
         }

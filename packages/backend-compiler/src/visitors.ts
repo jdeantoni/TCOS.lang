@@ -1,36 +1,31 @@
-import { CCFG, Edge, Node, VerifyEqualInstruction } from "ccfg";
-import { IGenerator } from "./generator/GeneratorInterface.js";
-import { addComparisonVariableDeclaration, addCorrespondingCode, addQueuePushCode, getCurrentUID, getPreviousTypedNodes } from "./compilerBackend.js";
 import chalk from "chalk";
 import { TraversalContext } from "./TraversalContext.js";
+import { IGenerator } from "./generator/GeneratorInterface.js";
+import { CCFG, Edge, Node, VerifyEqualInstruction } from "ccfg";
+import { addComparisonVariableDeclaration, addCorrespondingCode, addQueuePushCode, getCurrentUID, getPreviousTypedNodes } from "./compilerBackend.js";
 
-// Il faut refactoriser cette fonction
 export function visitAllNodes(ccfg: CCFG, currentNode: Node, generator: IGenerator, ctx: TraversalContext, visitIsStarting: boolean = false): string[] {
     ctx.recursLevel = ctx.recursLevel + 1;
     const currentUID:number = getCurrentUID(currentNode);
 
-    if (currentNode.outputEdges.length == 0 /*|| currentUID == untilUID*/) {
+    if (currentNode.outputEdges.length == 0) {
         return [];
     }
 
     let thisNodeCode:string[] = [];
     currentNode.numberOfVisits = currentNode.numberOfVisits + 1;
-
-    // console.log("try visit "+currentNode.uid  + " nbVisit = "+currentNode.numberOfVisits)
     
     if(currentNode.inputEdges.length > 1){
         
         if (visitIsStarting == false && currentNode.numberOfVisits < currentNode.inputEdges.length) {
             if(currentNode.isCycleInitiator){
                 if(! ctx.continuations.includes(currentNode)){
-                    // console.log("add continuation "+currentNode.uid  + " nbVisit = "+currentNode.numberOfVisits)
                     ctx.continuationsRecursLevel.push(ctx.recursLevel-1);
                     currentNode.numberOfVisits = currentNode.inputEdges.length;
                     ctx.continuations.push(currentNode);
                 }
                 return [];
             }
-            // console.log("do not visit "+currentNode.uid  + " nbVisit = "+currentNode.numberOfVisits + " inputEdges = "+currentNode.inputEdges.length)
             return [];
         }
         
@@ -50,12 +45,7 @@ export function visitAllNodes(ccfg: CCFG, currentNode: Node, generator: IGenerat
         return [];
     }
     ctx.visitedUID.push(currentUID);
-    // console.log("visit "+currentNode.uid  + " nbVisit = "+currentNode.numberOfVisits)
 
-
-    // if(currentNode.cycles.length > 0){
-    //     console.log("cycle detected in" + currentNode.uid+":"+currentNode.cycles.map(c => c.map(n => n.uid).join("->")).join(" | "))
-    // }
     switch(currentNode.getType()){
         case "Step": {
                 thisNodeCode = StepNode(thisNodeCode, currentNode, ccfg, generator, ctx);
@@ -80,13 +70,12 @@ export function visitAllNodes(ccfg: CCFG, currentNode: Node, generator: IGenerat
     } 
     
     if(ctx.continuations.length > 0){
-        // console.log("recursLevel = "+recursLevel+" continuationsRecursLevel = "+continuationsRecursLevel.at(-1))
         while (ctx.recursLevel == ctx.continuationsRecursLevel.at(-1)){
             const toVisit = ctx.continuations.pop();
+
             ctx.continuationsRecursLevel.pop();
             if(toVisit != undefined){
-                // console.log("continuation of "+toVisit.uid + " from "+currentNode.uid + " nbVisit = "+toVisit.numberOfVisits)
-                thisNodeCode = [...thisNodeCode, ...visitAllNodes(ccfg, toVisit, /*nextUntilUID,*/ generator, ctx)];
+                thisNodeCode = [...thisNodeCode, ...visitAllNodes(ccfg, toVisit, generator, ctx)];
             }
         }   
     }
@@ -98,18 +87,16 @@ function StepNode(thisNodeCode: string[], currentNode: Node, ccfg: CCFG, generat
     thisNodeCode = [...thisNodeCode, ...addCorrespondingCode(currentNode, ccfg, generator, ctx)];
     if(currentNode.outputEdges.length > 1){
         const edgeToVisit: Edge[] = currentNode.outputEdges;
+
         for(const edge of edgeToVisit){
             ctx.continuationsRecursLevel.push(ctx.recursLevel-1);
-            ///todo  à quoi ce truc sert ? ------------------------------------------------------------------------------------------------
-            //codeFile.append(`
-            //{`)
-            thisNodeCode = [...thisNodeCode, ...visitAllNodes(ccfg, edge.to, /*untilUID,*/ generator, ctx)];
-            //codeFile.append(`
-            //}`);
+            thisNodeCode = [...thisNodeCode, ...visitAllNodes(ccfg, edge.to, generator, ctx)];
         }
-    }else{
+
+    } else{
         const edge = currentNode.outputEdges[0];
-        thisNodeCode = [...thisNodeCode, ...visitAllNodes(ccfg,edge.to, /*untilUID,*/ generator, ctx)];
+
+        thisNodeCode = [...thisNodeCode, ...visitAllNodes(ccfg,edge.to, generator, ctx)];
     }
     return thisNodeCode;
 }
@@ -118,18 +105,23 @@ function ForkNode(thisNodeCode: string[], currentNode: Node, ccfg: CCFG, generat
     const edgeToVisit: Edge[] = currentNode.outputEdges;
         
     for(const syncUID of currentNode.syncNodeIds){
-        const n = ccfg.getNodeByUID(syncUID);
-        if (n != undefined){
-            const ptns: Node[] = getPreviousTypedNodes(n.inputEdges[0]);
-            if(ptns.length > 1){
+
+        const node = ccfg.getNodeByUID(syncUID);
+
+        if (node != undefined){
+            const previousTypeNodes: Node[] = getPreviousTypedNodes(node.inputEdges[0]);
+
+            if(previousTypeNodes.length > 1){
                 throw new Error("multiple previous typed nodes not handled here");
             }
-            const ptn = ptns[0];
-            if(ptn.returnType != undefined){
+
+            const previousTypeNode = previousTypeNodes[0];
+
+            if(previousTypeNode.returnType != undefined){
                 if(!ctx.createdQueueIds.includes(syncUID)){
                     ctx.createdQueueIds.push(syncUID);
-                    if(ptn.returnType != "void" && ptn.returnType != undefined){
-                        thisNodeCode = [...thisNodeCode, ...generator.createLockingQueue(ptn.returnType,syncUID)];
+                    if(previousTypeNode.returnType != "void" && previousTypeNode.returnType != undefined){
+                        thisNodeCode = [...thisNodeCode, ...generator.createLockingQueue(previousTypeNode.returnType,syncUID)];
                     }else{
                         thisNodeCode = [...thisNodeCode, ...generator.createSynchronizer(syncUID)];
                     }
@@ -141,17 +133,15 @@ function ForkNode(thisNodeCode: string[], currentNode: Node, ccfg: CCFG, generat
     ctx.continuationsRecursLevel.push(ctx.recursLevel);
 
     for(const edge of edgeToVisit){
-        //console.log("fork node cycles = "+currentNode.cycles.map(c => c.map(n => n.uid).join("->")).join(" | "))
         if (edge.to.cycles.length > 0 && ! edge.to.cyclePossessAnAndJoin()){
             //we have a cycle and no andJoin in the cycle
-            //console.log(edge.to.uid+": no andJoin in cycle ")
-            thisNodeCode = [...thisNodeCode, ...visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ generator, ctx)];
+            thisNodeCode = [...thisNodeCode, ...visitAllNodes(ccfg, edge.to, generator, ctx)];
             if(edge.to.isCycleInitiator){
                 thisNodeCode = [...thisNodeCode, ...addQueuePushCode(edge.to.uid,edge.to,ccfg,undefined,generator, ctx)];
             }
         }else{
             ctx.fifoThreadUid.add(currentNode.uid,edge.to.uid);
-            const insideThreadCode = visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ generator, ctx);
+            const insideThreadCode = visitAllNodes(ccfg, edge.to, generator, ctx);
             thisNodeCode = [...thisNodeCode, ...generator.createAndOpenThread(edge.to.uid,insideThreadCode)];
         }
     }
@@ -159,16 +149,16 @@ function ForkNode(thisNodeCode: string[], currentNode: Node, ccfg: CCFG, generat
 }
 
 function AndJoinNode(thisNodeCode: string[], currentNode: Node, ccfg: CCFG, generator: IGenerator, ctx: TraversalContext): string[]{
-     // let paramNames = getParameterNames(currentNode);
     for(const i of Array.from(Array(currentNode.inputEdges.length).keys())){            
-        const ptns :Node[] = getPreviousTypedNodes(currentNode.inputEdges[i]);
-        if(ptns.length > 1){
+        const previousTypeNodes :Node[] = getPreviousTypedNodes(currentNode.inputEdges[i]);
+        if(previousTypeNodes.length > 1){
             throw new Error("multiple previous typed nodes not handled here");
         }
-        const ptn = ptns[0];
-        let paramType: string| undefined = ptn.returnType;
 
+        const previousTypeNode = previousTypeNodes[0];
+        let paramType: string| undefined = previousTypeNode.returnType;
         const paramName = "AndJoinPopped_"+currentNode.uid+"_"+i;
+
         if(currentNode.params.length > i && (currentNode.params[i].type != undefined)){
             paramType = currentNode.params[i].type;
         }
@@ -187,22 +177,23 @@ function AndJoinNode(thisNodeCode: string[], currentNode: Node, ccfg: CCFG, gene
 
     thisNodeCode = [...thisNodeCode, ...addCorrespondingCode( currentNode, ccfg, generator, ctx)];
     const nextNode = currentNode.outputEdges[0].to;
-    thisNodeCode = [...thisNodeCode, ...visitAllNodes(ccfg,nextNode, /*untilUID,*/ generator, ctx)];
+    thisNodeCode = [...thisNodeCode, ...visitAllNodes(ccfg,nextNode, generator, ctx)];
 
     return thisNodeCode;
 }
 
 function OrJoinNode(thisNodeCode: string[], currentNode: Node, ccfg: CCFG, generator: IGenerator, ctx: TraversalContext): string[]{
-    // let paramNames = getParameterNames(currentNode);
     const paramName = "OrJoinPopped_"+currentNode.uid;
     let paramType: string| undefined = undefined;
-    for(const e of currentNode.inputEdges){
-        const ptns: Node[] = getPreviousTypedNodes(e);
-        if(ptns.length > 1){
+    for(const edge of currentNode.inputEdges){
+        const previousTypeNodes: Node[] = getPreviousTypedNodes(edge);
+
+        if(previousTypeNodes.length > 1){
             throw new Error("multiple previous typed nodes not handled here");
         }
-        const ptn = ptns[0];
-        paramType = ptn.returnType;
+        const previousTypeNode = previousTypeNodes[0];
+
+        paramType = previousTypeNode.returnType;
         if(paramType != undefined){
             break;
         }
@@ -220,7 +211,7 @@ function OrJoinNode(thisNodeCode: string[], currentNode: Node, ccfg: CCFG, gener
         insideLoopCode = [...insideLoopCode, ...generator.receiveFromQueue(currentNode.uid,paramType||"void", paramName)];
     }
     const nextNode = currentNode.outputEdges[0].to;
-    insideLoopCode = [...insideLoopCode, ...visitAllNodes(ccfg,nextNode, /*untilUID,*/ generator, ctx)];
+    insideLoopCode = [...insideLoopCode, ...visitAllNodes(ccfg,nextNode, generator, ctx)];
             
     if(currentNode.isCycleInitiator){
         thisNodeCode = [...thisNodeCode, ...generator.createLoop(currentNode.uid,insideLoopCode)]; //ends the while loop
@@ -233,16 +224,16 @@ function OrJoinNode(thisNodeCode: string[], currentNode: Node, ccfg: CCFG, gener
 
 function ChoiceNode(thisNodeCode: string[], currentNode: Node, ccfg: CCFG, generator: IGenerator, ctx: TraversalContext): string[]{
     for(const syncUID of currentNode.syncNodeIds){
-        const n = ccfg.getNodeByUID(syncUID);
-        if (n != undefined){
-            const ptns: Node[] = getPreviousTypedNodes(n.inputEdges[0]);
-            if(ptns.length > 1){
+        const node = ccfg.getNodeByUID(syncUID);
+        if (node != undefined){
+            const previousTypeNodes: Node[] = getPreviousTypedNodes(node.inputEdges[0]);
+
+            if(previousTypeNodes.length > 1){
                 throw new Error("multiple previous typed nodes not handled here");
             }
             if(!ctx.createdQueueIds.includes(syncUID)){
                 ctx.createdQueueIds.push(syncUID);
 
-    // from here --------------------------------
                 thisNodeCode = [...thisNodeCode, ...generator.createSynchronizer(syncUID)];
             }
         }
@@ -254,12 +245,12 @@ function ChoiceNode(thisNodeCode: string[], currentNode: Node, ccfg: CCFG, gener
     const edgeToVisit: Edge[] = currentNode.outputEdges;  
 
     for(const edge of edgeToVisit){
-            
         const guards: string[] = [];
+
         for(const guard of edge.guards){
-            //console.log(guardList)     
             if (guard.$instructionType=== "verifyEqualInstruction"){
                 const g = guard as VerifyEqualInstruction;
+
                 guards.push(generator.createEqualsVerif(g.n1,g.n2));
             } 
         }
@@ -267,17 +258,19 @@ function ChoiceNode(thisNodeCode: string[], currentNode: Node, ccfg: CCFG, gener
         let insideOfIf:string[];
 
         insideOfIf = addCorrespondingCode(currentNode, ccfg, generator, ctx);
-        insideOfIf = [...insideOfIf, ...visitAllNodes(ccfg, edge.to, /*nextUntilUID,*/ generator, ctx)];             
+        insideOfIf = [...insideOfIf, ...visitAllNodes(ccfg, edge.to, generator, ctx)];             
             
         //special case for choice node when directly linked to join node
         if((edge.to.getType() == "AndJoin" || edge.to.getType() == "OrJoin") && currentNode.functionsDefs.length == 0){
             if(currentNode.returnType == undefined){
-                const ptns: Node[] = getPreviousTypedNodes(currentNode.inputEdges[0]);
-                if(ptns.length > 1){
+                const previousTypeNodes: Node[] = getPreviousTypedNodes(currentNode.inputEdges[0]);
+
+                if(previousTypeNodes.length > 1){
                     console.log(chalk.red(currentNode.uid+" : multiple previous typed nodes not handled here"));
                 }
-                const ptn = ptns[0];     
-                insideOfIf = [...insideOfIf, ...addQueuePushCode(edge.to.uid, ptn, ccfg,  ptn.functionsNames[0],generator, ctx)];
+                const previousTypeNode = previousTypeNodes[0];
+
+                insideOfIf = [...insideOfIf, ...addQueuePushCode(edge.to.uid, previousTypeNode, ccfg,  previousTypeNode.functionsNames[0],generator, ctx)];
             }else{
                 insideOfIf = [...insideOfIf, ...addQueuePushCode(edge.to.uid, currentNode, ccfg,  currentNode.functionsNames[0],generator, ctx)];
             }
