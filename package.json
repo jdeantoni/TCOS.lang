@@ -4,6 +4,8 @@
     "@typescript-eslint/parser": "^8.59.3",
     "eslint": "^10.4.0",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.59.3"
-  }
+    "typescript-eslint": "^8.59.3",
+    "vitest": "^4.1.7"
+  },
+  "scripts": { "test": "vitest run"}
 }

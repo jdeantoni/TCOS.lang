@@ -30,34 +30,28 @@ export class Node {
     getType() { return this.constructor.name; }
     isBefore(n2) {
         if (this.isVisited) {
-            // console.log(chalk.red("error: already visited"+this.uid));
             return false;
         }
         this.isVisited = true;
         if (this.outputEdges.length == 0) {
-            // console.log(chalk.gray("ending node reached"));
             this.isVisited = false;
             return false;
         }
         for (const e of this.outputEdges) {
             if (e.to === n2) {
-                // console.log(chalk.gray("info: "+this.uid+" is before "+n2.uid));
                 this.isVisited = false;
                 return true;
             }
         }
         for (const e of this.outputEdges) {
-            // console.log(chalk.gray("info: moving to node"+e.to.uid));
             return e.to.isBefore(n2);
         }
-        // console.log(chalk.green("info: no path found from "+this.uid+" to "+n2.uid));
         this.isVisited = false;
         return false;
     }
     cyclePossessAnAndJoin() {
         return this.cycles.some(c => {
             return c.some(n => {
-                // console.log(n.uid+":"+n.getType())
                 if (n.getType() == "AndJoin") {
                     return true;
                 }

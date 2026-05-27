@@ -2,12 +2,12 @@ import chalk from "chalk";
 import { TraversalContext } from "./TraversalContext.js";
 import { IGenerator } from "./generator/GeneratorInterface.js";
 import { CCFG, Edge, Node, VerifyEqualInstruction } from "ccfg";
-import { addComparisonVariableDeclaration, addCorrespondingCode, addQueuePushCode, getCurrentUID, getPreviousTypedNodes } from "./compilerBackend.js";
+import { addComparisonVariableDeclaration, addCorrespondingCode, addQueuePushCode, getPreviousTypedNodes } from "./generatesCode.js";
 
 export function visitAllNodes(ccfg: CCFG, currentNode: Node, generator: IGenerator, ctx: TraversalContext, visitIsStarting: boolean = false): string[] {
     ctx.recursLevel = ctx.recursLevel + 1;
-    const currentUID:number = getCurrentUID(currentNode);
-    let thisNodeCode:string[] = [];
+    const currentUID: number = currentNode.uid;
+    let thisNodeCode: string[] = [];
 
     if (currentNode.outputEdges.length == 0) return [];
 

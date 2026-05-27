@@ -63,13 +63,11 @@ export class CCFG {
                 return edge;
             }
             if (to.inputEdges.length == 1 && (to.inputEdges[0].from.getType() == "OrJoin" || to.inputEdges[0].from.getType() == "AndJoin")) {
-                // console.log(chalk.bgYellow("adding to an existing or join node: "+to.value+" -> "+to.inputEdges[0].from.value+" -> "+to.inputEdges[0].from.uid+" "+to.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges.length+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.value+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.uid+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.getType()+" "+to.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges[0].from.inputEdges.length));
                 edge.to = to.inputEdges[0].from;
                 to.inputEdges[0].from.inputEdges.push(edge);
                 return edge;
             }
             else {
-                // console.log(chalk.gray("creating a new or Join node: orJoinNode between "+from.uid+" and "+to.uid));
                 const orJoinNode = new OrJoin(to.astNode);
                 this.addNode(orJoinNode);
                 edge.to = orJoinNode;
@@ -204,9 +202,7 @@ export class CCFG {
                     if ((n2.getType() == "Fork" || n2.getType() == "Choice")
                         &&
                             n2.outputEdges.length > 1) {
-                        // console.log(chalk.gray("info: checking sync edge between "+n2.uid+" and "+n.uid));
                         if (n2.isBefore(n)) {
-                            // console.log(chalk.gray("info: adding sync edge between "+n2.uid+" and "+n.uid));
                             n2.syncNodeIds.push(n.uid);
                             n.syncNodeIds.push(n2.uid);
                             this.syncEdges.push(new SyncEdge(n, n2, "sync"));

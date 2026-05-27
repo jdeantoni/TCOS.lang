@@ -1,8 +1,8 @@
 import chalk from "chalk";
-import { addComparisonVariableDeclaration, addCorrespondingCode, addQueuePushCode, getCurrentUID, getPreviousTypedNodes } from "./compilerBackend.js";
+import { addComparisonVariableDeclaration, addCorrespondingCode, addQueuePushCode, getPreviousTypedNodes } from "./codeEmission.js";
 export function visitAllNodes(ccfg, currentNode, generator, ctx, visitIsStarting = false) {
     ctx.recursLevel = ctx.recursLevel + 1;
-    const currentUID = getCurrentUID(currentNode);
+    const currentUID = currentNode.uid;
     let thisNodeCode = [];
     if (currentNode.outputEdges.length == 0)
         return [];
