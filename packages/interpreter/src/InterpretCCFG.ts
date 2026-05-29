@@ -9,16 +9,21 @@
 */
 import { Thread } from "./Thread.js";
 import { Stack } from "./TempList.js";
+import { CCFG } from "ccfg";
+import { IGenerator } from "backend-compiler/GeneratorInterface";
 import { compileFunctionDefs } from "./generationFunctionDefs.js";
 import { visitAllNodesInterpret } from "./visitAllNodesInterpreter.js";
 import { setAllFunctions } from "./functionExecution.js";
-export async function interpretfromCCFG(ccfg, generator, isDebug) {
-    const sigma = new Map();
-    const ThreadList = new Stack();
-    setAllFunctions(compileFunctionDefs(ccfg, generator, sigma, undefined));
-    if (ccfg.initialState) {
+
+export async function interpretfromCCFG(ccfg:CCFG, generator:IGenerator, isDebug:boolean):Promise<void>{
+    const sigma: Map<string, unknown> = new Map<string, unknown>();
+    const ThreadList : Stack<Thread> = new Stack();
+
+    setAllFunctions(compileFunctionDefs(ccfg,generator,sigma,undefined));
+
+    if(ccfg.initialState){
         const threadInit = new Thread(ccfg.initialState);
         ThreadList.push(threadInit);
         await visitAllNodesInterpret(ccfg.initialState, sigma, ThreadList); //breakpointAdresse should be a debug seesion
-    }
+    }  
 }

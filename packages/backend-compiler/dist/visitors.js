@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { addComparisonVariableDeclaration, addCorrespondingCode, addQueuePushCode, getPreviousTypedNodes } from "./codeEmission.js";
+import { addComparisonVariableDeclaration, addCorrespondingCode, addQueuePushCode, getPreviousTypedNodes } from "./generatesCode.js";
 export function visitAllNodes(ccfg, currentNode, generator, ctx, visitIsStarting = false) {
     ctx.recursLevel = ctx.recursLevel + 1;
     const currentUID = currentNode.uid;
