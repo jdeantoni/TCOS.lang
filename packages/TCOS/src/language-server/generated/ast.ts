@@ -40,6 +40,14 @@ export function isClassicalExpression(item: unknown): item is ClassicalExpressio
     return reflection.isInstance(item, ClassicalExpression);
 }
 
+export type CompositeEventEmission = EventEmission | ParallelEventEmission | SequentialEventEmission;
+
+export const CompositeEventEmission = 'CompositeEventEmission';
+
+export function isCompositeEventEmission(item: unknown): item is CompositeEventEmission {
+    return reflection.isInstance(item, CompositeEventEmission);
+}
+
 export type Condition = BooleanLiteral | Conjunction | Disjunction | Negation | ParameterReference;
 
 export const Condition = 'Condition';
@@ -62,7 +70,7 @@ export function isEventCombination(item: unknown): item is EventCombination {
     return reflection.isInstance(item, EventCombination);
 }
 
-export type EventEmission = RuleSync | SimpleEventEmission | ValuedEventEmission;
+export type EventEmission = BroadcastedEventEmission | LocalEventEmission;
 
 export const EventEmission = 'EventEmission';
 
@@ -78,7 +86,7 @@ export function isEventExpression(item: unknown): item is EventExpression {
     return reflection.isInstance(item, EventExpression);
 }
 
-export type EventRef = ExplicitEventRef | SingleRuleSync;
+export type EventRef = BroadcastedEventRef | ExplicitEventRef | SingleRuleSync;
 
 export const EventRef = 'EventRef';
 
@@ -90,6 +98,14 @@ export type FeatureName = 'current' | 'entry' | 'extends' | 'false' | 'fragment'
 
 export function isFeatureName(item: unknown): item is FeatureName {
     return isPrimitiveType(item) || item === 'current' || item === 'entry' || item === 'extends' || item === 'false' || item === 'fragment' || item === 'grammar' || item === 'hidden' || item === 'import' || item === 'interface' || item === 'returns' || item === 'terminal' || item === 'true' || item === 'type' || item === 'infer' || item === 'infers' || item === 'with' || (typeof item === 'string' && (/\^?[_a-zA-Z][\w_]*/.test(item)));
+}
+
+export type LocalEventEmission = RuleSync | SimpleEventEmission | ValuedEventEmission;
+
+export const LocalEventEmission = 'LocalEventEmission';
+
+export function isLocalEventEmission(item: unknown): item is LocalEventEmission {
+    return reflection.isInstance(item, LocalEventEmission);
 }
 
 export type NamedElement = FieldMember | MethodMember | RWRule | RuleOpening | SoSPrimitiveType | TemporaryVariable | VariableDeclaration;
@@ -183,7 +199,7 @@ export function isArrayType(item: unknown): item is ArrayType {
 }
 
 export interface BinaryExpression extends AstNode {
-    readonly $container: BinaryExpression | CollectionRuleSync | ExplicitEventRef | ExplicitValuedEventRef | ExplicitValuedEventRefConstantComparison | ImplicitValuedEventRef | ImplicitValuedEventRefConstantComparison | MemberCall | NaryEventExpression | Premise | SimpleEventEmission | SingleRuleSync | StateModification | UnaryExpression | ValuedEventEmission | VariableDeclaration;
+    readonly $container: BinaryExpression | CollectionAbortionRule | CollectionRuleSync | ExplicitEventRef | ExplicitValuedEventRef | ExplicitValuedEventRefConstantComparison | ImplicitValuedEventRef | ImplicitValuedEventRefConstantComparison | MemberCall | NaryEventExpression | Premise | SimpleEventEmission | SingleRuleSync | StateModification | UnaryExpression | ValuedEventEmission | VariableDeclaration;
     readonly $type: 'BinaryExpression';
     left: ClassicalExpression;
     operator: '!=' | '*' | '+' | '-' | '/' | '<' | '<=' | '==' | '>' | '>=' | 'and' | 'or' | 'xor';
@@ -197,7 +213,7 @@ export function isBinaryExpression(item: unknown): item is BinaryExpression {
 }
 
 export interface BooleanExpression extends AstNode {
-    readonly $container: BinaryExpression | CollectionRuleSync | ExplicitEventRef | ExplicitValuedEventRef | ExplicitValuedEventRefConstantComparison | ImplicitValuedEventRef | ImplicitValuedEventRefConstantComparison | MemberCall | NaryEventExpression | Premise | SimpleEventEmission | SingleRuleSync | StateModification | UnaryExpression | ValuedEventEmission | VariableDeclaration;
+    readonly $container: BinaryExpression | CollectionAbortionRule | CollectionRuleSync | ExplicitEventRef | ExplicitValuedEventRef | ExplicitValuedEventRefConstantComparison | ImplicitValuedEventRef | ImplicitValuedEventRefConstantComparison | MemberCall | NaryEventExpression | Premise | SimpleEventEmission | SingleRuleSync | StateModification | UnaryExpression | ValuedEventEmission | VariableDeclaration;
     readonly $type: 'BooleanExpression';
     value?: 'true';
 }
@@ -220,8 +236,45 @@ export function isBooleanLiteral(item: unknown): item is BooleanLiteral {
     return reflection.isInstance(item, BooleanLiteral);
 }
 
+export interface BroadcastedEventEmission extends AstNode {
+    readonly $container: CollectionRuleSync | Conclusion | ParallelEventEmission | SequentialEventEmission;
+    readonly $type: 'BroadcastedEventEmission';
+    eventEmission: LocalEventEmission;
+}
+
+export const BroadcastedEventEmission = 'BroadcastedEventEmission';
+
+export function isBroadcastedEventEmission(item: unknown): item is BroadcastedEventEmission {
+    return reflection.isInstance(item, BroadcastedEventEmission);
+}
+
+export interface BroadcastedEventRef extends AstNode {
+    readonly $container: EventConjunction | EventDisjunction | Premise;
+    readonly $type: 'BroadcastedEventRef';
+    eventRef: ExplicitEventRef;
+}
+
+export const BroadcastedEventRef = 'BroadcastedEventRef';
+
+export function isBroadcastedEventRef(item: unknown): item is BroadcastedEventRef {
+    return reflection.isInstance(item, BroadcastedEventRef);
+}
+
+export interface CollectionAbortionRule extends AstNode {
+    readonly $container: Conclusion;
+    readonly $type: 'CollectionAbortionRule';
+    collection: ClassicalExpression;
+    others: boolean;
+}
+
+export const CollectionAbortionRule = 'CollectionAbortionRule';
+
+export function isCollectionAbortionRule(item: unknown): item is CollectionAbortionRule {
+    return reflection.isInstance(item, CollectionAbortionRule);
+}
+
 export interface CollectionRuleSync extends AstNode {
-    readonly $container: CollectionRuleSync | Conclusion;
+    readonly $container: BroadcastedEventEmission | CollectionRuleSync | Conclusion | ParallelEventEmission | SequentialEventEmission;
     readonly $type: 'CollectionRuleSync';
     collection: ClassicalExpression;
     order: 'concurrent' | 'sequential';
@@ -238,8 +291,8 @@ export function isCollectionRuleSync(item: unknown): item is CollectionRuleSync 
 export interface Conclusion extends AstNode {
     readonly $container: RWRule;
     readonly $type: 'Conclusion';
-    eventEmissionOperator?: ';' | '||';
-    eventemissions: Array<EventEmission>;
+    abortion: Array<CollectionAbortionRule>;
+    eventemissions?: CompositeEventEmission;
     statemodifications: Array<StateModification>;
 }
 
@@ -302,7 +355,7 @@ export function isEventDisjunction(item: unknown): item is EventDisjunction {
 }
 
 export interface ExplicitEventRef extends AstNode {
-    readonly $container: EventConjunction | EventDisjunction | Premise;
+    readonly $container: BroadcastedEventRef | EventConjunction | EventDisjunction | Premise;
     readonly $type: 'ExplicitEventRef';
     membercall: ClassicalExpression;
 }
@@ -448,7 +501,7 @@ export function isInterface(item: unknown): item is Interface {
 }
 
 export interface MemberCall extends AstNode {
-    readonly $container: BinaryExpression | CollectionRuleSync | ExplicitEventRef | ExplicitValuedEventRef | ExplicitValuedEventRefConstantComparison | ImplicitValuedEventRef | ImplicitValuedEventRefConstantComparison | MemberCall | NaryEventExpression | Premise | SimpleEventEmission | SingleRuleSync | StateModification | UnaryExpression | ValuedEventEmission | VariableDeclaration;
+    readonly $container: BinaryExpression | CollectionAbortionRule | CollectionRuleSync | ExplicitEventRef | ExplicitValuedEventRef | ExplicitValuedEventRefConstantComparison | ImplicitValuedEventRef | ImplicitValuedEventRefConstantComparison | MemberCall | NaryEventExpression | Premise | SimpleEventEmission | SingleRuleSync | StateModification | UnaryExpression | ValuedEventEmission | VariableDeclaration;
     readonly $type: 'MemberCall';
     arguments: Array<ClassicalExpression>;
     element?: Reference<NamedElement>;
@@ -516,7 +569,7 @@ export function isNegation(item: unknown): item is Negation {
 }
 
 export interface NilExpression extends AstNode {
-    readonly $container: BinaryExpression | CollectionRuleSync | ExplicitEventRef | ExplicitValuedEventRef | ExplicitValuedEventRefConstantComparison | ImplicitValuedEventRef | ImplicitValuedEventRefConstantComparison | MemberCall | NaryEventExpression | Premise | SimpleEventEmission | SingleRuleSync | StateModification | UnaryExpression | ValuedEventEmission | VariableDeclaration;
+    readonly $container: BinaryExpression | CollectionAbortionRule | CollectionRuleSync | ExplicitEventRef | ExplicitValuedEventRef | ExplicitValuedEventRefConstantComparison | ImplicitValuedEventRef | ImplicitValuedEventRefConstantComparison | MemberCall | NaryEventExpression | Premise | SimpleEventEmission | SingleRuleSync | StateModification | UnaryExpression | ValuedEventEmission | VariableDeclaration;
     readonly $type: 'NilExpression';
     value: 'nil';
 }
@@ -528,7 +581,7 @@ export function isNilExpression(item: unknown): item is NilExpression {
 }
 
 export interface NumberExpression extends AstNode {
-    readonly $container: BinaryExpression | CollectionRuleSync | ExplicitEventRef | ExplicitValuedEventRef | ExplicitValuedEventRefConstantComparison | ImplicitValuedEventRef | ImplicitValuedEventRefConstantComparison | MemberCall | NaryEventExpression | Premise | SimpleEventEmission | SingleRuleSync | StateModification | UnaryExpression | ValuedEventEmission | VariableDeclaration;
+    readonly $container: BinaryExpression | CollectionAbortionRule | CollectionRuleSync | ExplicitEventRef | ExplicitValuedEventRef | ExplicitValuedEventRefConstantComparison | ImplicitValuedEventRef | ImplicitValuedEventRefConstantComparison | MemberCall | NaryEventExpression | Premise | SimpleEventEmission | SingleRuleSync | StateModification | UnaryExpression | ValuedEventEmission | VariableDeclaration;
     readonly $type: 'NumberExpression';
     value: number;
 }
@@ -549,6 +602,19 @@ export const NumberLiteral = 'NumberLiteral';
 
 export function isNumberLiteral(item: unknown): item is NumberLiteral {
     return reflection.isInstance(item, NumberLiteral);
+}
+
+export interface ParallelEventEmission extends AstNode {
+    readonly $container: Conclusion | ParallelEventEmission | SequentialEventEmission;
+    readonly $type: 'ParallelEventEmission';
+    lefteventemission: EventEmission;
+    righteventemission: CompositeEventEmission;
+}
+
+export const ParallelEventEmission = 'ParallelEventEmission';
+
+export function isParallelEventEmission(item: unknown): item is ParallelEventEmission {
+    return reflection.isInstance(item, ParallelEventEmission);
 }
 
 export interface Parameter extends AstNode {
@@ -677,8 +743,21 @@ export function isSelectionPolicy(item: unknown): item is SelectionPolicy {
     return reflection.isInstance(item, SelectionPolicy);
 }
 
+export interface SequentialEventEmission extends AstNode {
+    readonly $container: Conclusion | ParallelEventEmission | SequentialEventEmission;
+    readonly $type: 'SequentialEventEmission';
+    lefteventemission: EventEmission;
+    righteventemission: CompositeEventEmission;
+}
+
+export const SequentialEventEmission = 'SequentialEventEmission';
+
+export function isSequentialEventEmission(item: unknown): item is SequentialEventEmission {
+    return reflection.isInstance(item, SequentialEventEmission);
+}
+
 export interface SimpleEventEmission extends AstNode {
-    readonly $container: CollectionRuleSync | Conclusion;
+    readonly $container: BroadcastedEventEmission | CollectionRuleSync | Conclusion | ParallelEventEmission | SequentialEventEmission;
     readonly $type: 'SimpleEventEmission';
     event: ClassicalExpression;
 }
@@ -704,7 +783,7 @@ export function isSimpleType(item: unknown): item is SimpleType {
 }
 
 export interface SingleRuleSync extends AstNode {
-    readonly $container: CollectionRuleSync | Conclusion | EventConjunction | EventDisjunction | Premise;
+    readonly $container: BroadcastedEventEmission | CollectionRuleSync | Conclusion | EventConjunction | EventDisjunction | ParallelEventEmission | Premise | SequentialEventEmission;
     readonly $type: 'SingleRuleSync';
     member: ClassicalExpression;
 }
@@ -754,7 +833,7 @@ export function isStateModification(item: unknown): item is StateModification {
 }
 
 export interface StringExpression extends AstNode {
-    readonly $container: BinaryExpression | CollectionRuleSync | ExplicitEventRef | ExplicitValuedEventRef | ExplicitValuedEventRefConstantComparison | ImplicitValuedEventRef | ImplicitValuedEventRefConstantComparison | MemberCall | NaryEventExpression | Premise | SimpleEventEmission | SingleRuleSync | StateModification | UnaryExpression | ValuedEventEmission | VariableDeclaration;
+    readonly $container: BinaryExpression | CollectionAbortionRule | CollectionRuleSync | ExplicitEventRef | ExplicitValuedEventRef | ExplicitValuedEventRefConstantComparison | ImplicitValuedEventRef | ImplicitValuedEventRefConstantComparison | MemberCall | NaryEventExpression | Premise | SimpleEventEmission | SingleRuleSync | StateModification | UnaryExpression | ValuedEventEmission | VariableDeclaration;
     readonly $type: 'StringExpression';
     value: string;
 }
@@ -848,7 +927,7 @@ export function isTypeReference(item: unknown): item is TypeReference {
 }
 
 export interface UnaryExpression extends AstNode {
-    readonly $container: BinaryExpression | CollectionRuleSync | ExplicitEventRef | ExplicitValuedEventRef | ExplicitValuedEventRefConstantComparison | ImplicitValuedEventRef | ImplicitValuedEventRefConstantComparison | MemberCall | NaryEventExpression | Premise | SimpleEventEmission | SingleRuleSync | StateModification | UnaryExpression | ValuedEventEmission | VariableDeclaration;
+    readonly $container: BinaryExpression | CollectionAbortionRule | CollectionRuleSync | ExplicitEventRef | ExplicitValuedEventRef | ExplicitValuedEventRefConstantComparison | ImplicitValuedEventRef | ImplicitValuedEventRefConstantComparison | MemberCall | NaryEventExpression | Premise | SimpleEventEmission | SingleRuleSync | StateModification | UnaryExpression | ValuedEventEmission | VariableDeclaration;
     readonly $type: 'UnaryExpression';
     operator: '!' | '+' | '-';
     value: ClassicalExpression;
@@ -873,7 +952,7 @@ export function isUnionType(item: unknown): item is UnionType {
 }
 
 export interface ValuedEventEmission extends AstNode {
-    readonly $container: CollectionRuleSync | Conclusion;
+    readonly $container: BroadcastedEventEmission | CollectionRuleSync | Conclusion | ParallelEventEmission | SequentialEventEmission;
     readonly $type: 'ValuedEventEmission';
     data: ClassicalExpression;
     event: ClassicalExpression;
@@ -1108,9 +1187,13 @@ export type StructuralOperationalSemanticsAstType = {
     BinaryExpression: BinaryExpression
     BooleanExpression: BooleanExpression
     BooleanLiteral: BooleanLiteral
+    BroadcastedEventEmission: BroadcastedEventEmission
+    BroadcastedEventRef: BroadcastedEventRef
     CharacterRange: CharacterRange
     ClassicalExpression: ClassicalExpression
+    CollectionAbortionRule: CollectionAbortionRule
     CollectionRuleSync: CollectionRuleSync
+    CompositeEventEmission: CompositeEventEmission
     Conclusion: Conclusion
     Condition: Condition
     Conjunction: Conjunction
@@ -1136,6 +1219,7 @@ export type StructuralOperationalSemanticsAstType = {
     InferredType: InferredType
     Interface: Interface
     Keyword: Keyword
+    LocalEventEmission: LocalEventEmission
     MemberCall: MemberCall
     MethodMember: MethodMember
     NamedArgument: NamedArgument
@@ -1146,6 +1230,7 @@ export type StructuralOperationalSemanticsAstType = {
     NilExpression: NilExpression
     NumberExpression: NumberExpression
     NumberLiteral: NumberLiteral
+    ParallelEventEmission: ParallelEventEmission
     Parameter: Parameter
     ParameterReference: ParameterReference
     ParserRule: ParserRule
@@ -1158,6 +1243,7 @@ export type StructuralOperationalSemanticsAstType = {
     RuleOpening: RuleOpening
     RuleSync: RuleSync
     SelectionPolicy: SelectionPolicy
+    SequentialEventEmission: SequentialEventEmission
     SimpleEventEmission: SimpleEventEmission
     SimpleType: SimpleType
     SingleRuleSync: SingleRuleSync
@@ -1190,7 +1276,7 @@ export type StructuralOperationalSemanticsAstType = {
 export class StructuralOperationalSemanticsAstReflection extends AbstractAstReflection {
 
     getAllTypes(): string[] {
-        return [AbstractElement, AbstractRule, AbstractType, Action, Alternatives, ArrayLiteral, ArrayType, Assignment, BinaryExpression, BooleanExpression, BooleanLiteral, CharacterRange, ClassicalExpression, CollectionRuleSync, Conclusion, Condition, Conjunction, CrossReference, Disjunction, EndOfFile, EventCombination, EventConjunction, EventDisjunction, EventEmission, EventExpression, EventRef, ExplicitEventRef, ExplicitValuedEventRef, ExplicitValuedEventRefConstantComparison, FieldMember, Grammar, GrammarImport, Group, ImplicitValuedEventRef, ImplicitValuedEventRefConstantComparison, ImportStatement, InferredType, Interface, Keyword, MemberCall, MethodMember, NamedArgument, NamedElement, NaryEventExpression, NegatedToken, Negation, NilExpression, NumberExpression, NumberLiteral, Parameter, ParameterReference, ParserRule, Premise, RWRule, ReferenceType, RegexToken, ReturnType, RuleCall, RuleOpening, RuleSync, SelectionPolicy, SimpleEventEmission, SimpleType, SingleRuleSync, SoSPrimitiveType, SoSSpec, StateModification, StringExpression, StringLiteral, TemporaryVariable, TerminalAlternatives, TerminalGroup, TerminalRule, TerminalRuleCall, Type, TypeAttribute, TypeDefinition, TypeReference, UnaryExpression, UnionType, UnorderedGroup, UntilToken, ValueLiteral, ValuedEventEmission, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration, Wildcard];
+        return [AbstractElement, AbstractRule, AbstractType, Action, Alternatives, ArrayLiteral, ArrayType, Assignment, BinaryExpression, BooleanExpression, BooleanLiteral, BroadcastedEventEmission, BroadcastedEventRef, CharacterRange, ClassicalExpression, CollectionAbortionRule, CollectionRuleSync, CompositeEventEmission, Conclusion, Condition, Conjunction, CrossReference, Disjunction, EndOfFile, EventCombination, EventConjunction, EventDisjunction, EventEmission, EventExpression, EventRef, ExplicitEventRef, ExplicitValuedEventRef, ExplicitValuedEventRefConstantComparison, FieldMember, Grammar, GrammarImport, Group, ImplicitValuedEventRef, ImplicitValuedEventRefConstantComparison, ImportStatement, InferredType, Interface, Keyword, LocalEventEmission, MemberCall, MethodMember, NamedArgument, NamedElement, NaryEventExpression, NegatedToken, Negation, NilExpression, NumberExpression, NumberLiteral, ParallelEventEmission, Parameter, ParameterReference, ParserRule, Premise, RWRule, ReferenceType, RegexToken, ReturnType, RuleCall, RuleOpening, RuleSync, SelectionPolicy, SequentialEventEmission, SimpleEventEmission, SimpleType, SingleRuleSync, SoSPrimitiveType, SoSSpec, StateModification, StringExpression, StringLiteral, TemporaryVariable, TerminalAlternatives, TerminalGroup, TerminalRule, TerminalRuleCall, Type, TypeAttribute, TypeDefinition, TypeReference, UnaryExpression, UnionType, UnorderedGroup, UntilToken, ValueLiteral, ValuedEventEmission, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration, Wildcard];
     }
 
     protected override computeIsSubtype(subtype: string, supertype: string): boolean {
@@ -1237,6 +1323,14 @@ export class StructuralOperationalSemanticsAstReflection extends AbstractAstRefl
             case BooleanLiteral: {
                 return this.isSubtype(Condition, supertype) || this.isSubtype(ValueLiteral, supertype);
             }
+            case BroadcastedEventEmission:
+            case LocalEventEmission: {
+                return this.isSubtype(EventEmission, supertype);
+            }
+            case BroadcastedEventRef:
+            case ExplicitEventRef: {
+                return this.isSubtype(EventRef, supertype);
+            }
             case CollectionRuleSync: {
                 return this.isSubtype(RuleSync, supertype);
             }
@@ -1257,8 +1351,10 @@ export class StructuralOperationalSemanticsAstReflection extends AbstractAstRefl
             case EventDisjunction: {
                 return this.isSubtype(EventCombination, supertype);
             }
-            case ExplicitEventRef: {
-                return this.isSubtype(EventRef, supertype);
+            case EventEmission:
+            case ParallelEventEmission:
+            case SequentialEventEmission: {
+                return this.isSubtype(CompositeEventEmission, supertype);
             }
             case ExplicitValuedEventRef:
             case ImplicitValuedEventRef: {
@@ -1288,7 +1384,7 @@ export class StructuralOperationalSemanticsAstReflection extends AbstractAstRefl
             case RuleSync:
             case SimpleEventEmission:
             case ValuedEventEmission: {
-                return this.isSubtype(EventEmission, supertype);
+                return this.isSubtype(LocalEventEmission, supertype);
             }
             case SingleRuleSync: {
                 return this.isSubtype(EventRef, supertype) || this.isSubtype(RuleSync, supertype);
@@ -1393,6 +1489,31 @@ export class StructuralOperationalSemanticsAstReflection extends AbstractAstRefl
                     ]
                 };
             }
+            case BroadcastedEventEmission: {
+                return {
+                    name: BroadcastedEventEmission,
+                    properties: [
+                        { name: 'eventEmission' }
+                    ]
+                };
+            }
+            case BroadcastedEventRef: {
+                return {
+                    name: BroadcastedEventRef,
+                    properties: [
+                        { name: 'eventRef' }
+                    ]
+                };
+            }
+            case CollectionAbortionRule: {
+                return {
+                    name: CollectionAbortionRule,
+                    properties: [
+                        { name: 'collection' },
+                        { name: 'others', defaultValue: false }
+                    ]
+                };
+            }
             case CollectionRuleSync: {
                 return {
                     name: CollectionRuleSync,
@@ -1408,8 +1529,8 @@ export class StructuralOperationalSemanticsAstReflection extends AbstractAstRefl
                 return {
                     name: Conclusion,
                     properties: [
-                        { name: 'eventEmissionOperator' },
-                        { name: 'eventemissions', defaultValue: [] },
+                        { name: 'abortion', defaultValue: [] },
+                        { name: 'eventemissions' },
                         { name: 'statemodifications', defaultValue: [] }
                     ]
                 };
@@ -1625,6 +1746,15 @@ export class StructuralOperationalSemanticsAstReflection extends AbstractAstRefl
                     ]
                 };
             }
+            case ParallelEventEmission: {
+                return {
+                    name: ParallelEventEmission,
+                    properties: [
+                        { name: 'lefteventemission' },
+                        { name: 'righteventemission' }
+                    ]
+                };
+            }
             case Parameter: {
                 return {
                     name: Parameter,
@@ -1712,6 +1842,15 @@ export class StructuralOperationalSemanticsAstReflection extends AbstractAstRefl
                     name: SelectionPolicy,
                     properties: [
                         { name: 'operator' }
+                    ]
+                };
+            }
+            case SequentialEventEmission: {
+                return {
+                    name: SequentialEventEmission,
+                    properties: [
+                        { name: 'lefteventemission' },
+                        { name: 'righteventemission' }
                     ]
                 };
             }

@@ -32,8 +32,9 @@ function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
 
     // If the extension is launched in debug mode then the debug server options are used
     // Otherwise the run options are used
+    // Always enable inspector for attach capability, even in run mode
     const serverOptions: ServerOptions = {
-        run: { module: serverModule, transport: TransportKind.ipc },
+        run: { module: serverModule, transport: TransportKind.ipc, options: debugOptions },
         debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions }
     };
 
@@ -60,10 +61,5 @@ function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
     // Start the client. This will also launch the server
     client.start();
    
-    // //the 2 following lines force loading and then allow brealkpoints
-    //  generateAction("../sos_examples/fake.sos", {destination:"generated"})
-    //  new SoSScopeProvider(null).getScope(undefined);
-
-    
     return client;
 }

@@ -5,6 +5,13 @@
         #include <mutex>
         #include <iostream>
         #include <chrono>
+        #include <any>
+        #include <condition_variable>
+        #include <atomic>
+        #include <memory>
+        #include <vector>
+        #include <type_traits>
+        #include <stdexcept>
         #include "../utils/LockingQueue.hpp"
         
         using namespace std::chrono_literals;
@@ -14,59 +21,149 @@
         
         std::unordered_map<std::string, void*> sigma;
         std::mutex sigma_mutex;  // protects sigma
+
+        struct com_EventChannel {
+            int listenerCount;
+            std::string payloadKind;
+            LockingQueue<std::pair<std::any, int>> queue;
+            int nextToken;
+            std::unordered_map<int, int> pendingAcks;
+        };
+
+        std::unordered_map<std::string, std::shared_ptr<com_EventChannel>> eventChannels;
+        std::unordered_map<int, std::string> eventTokenToChannel;
+        std::mutex eventMutex;
+        int com_last_event_token = -1;
+
+        std::shared_ptr<com_EventChannel> com_get_event_channel(const std::string& name){
+            const std::lock_guard<std::mutex> lock(eventMutex);
+            auto it = eventChannels.find(name);
+            if (it == eventChannels.end()) {
+                throw std::runtime_error("Unknown event channel: " + name);
+            }
+            return it->second;
+        }
+
+        void com_create_event_channel(const std::string& name, int listenerCount, const std::string& payloadKind){
+            const std::lock_guard<std::mutex> lock(eventMutex);
+            if (eventChannels.find(name) != eventChannels.end()) {
+                return;
+            }
+            auto channel = std::make_shared<com_EventChannel>();
+            channel->listenerCount = listenerCount;
+            channel->payloadKind = payloadKind;
+            channel->nextToken = 1;
+            eventChannels[name] = channel;
+        }
+
+        void com_emit_event(const std::string& name, const std::any& payload, bool awaitAcks){
+            auto channel = com_get_event_channel(name);
+
+            int token;
+            {
+                const std::lock_guard<std::mutex> lock(eventMutex);
+                token = channel->nextToken;
+                channel->nextToken += 1;
+                int expectedAcks = awaitAcks ? channel->listenerCount : 0;
+                if (expectedAcks > 0) {
+                    channel->pendingAcks[token] = expectedAcks;
+                    eventTokenToChannel[token] = name;
+                }
+            }
+
+            channel->queue.push({payload, token});
+
+            if (awaitAcks){
+                int remaining = 0;
+                do {
+                    {
+                        const std::lock_guard<std::mutex> lock(eventMutex);
+                        auto it = channel->pendingAcks.find(token);
+                        remaining = (it == channel->pendingAcks.end()) ? 0 : it->second;
+                    }
+                    if (remaining > 0) {
+                        std::this_thread::sleep_for(10ms);
+                    }
+                } while (remaining > 0);
+
+                const std::lock_guard<std::mutex> lock(eventMutex);
+                channel->pendingAcks.erase(token);
+                eventTokenToChannel.erase(token);
+            }
+        }
+
+        std::pair<std::any, int> com_wait_event(const std::string& name){
+            auto channel = com_get_event_channel(name);
+            std::pair<std::any, int> event;
+            channel->queue.waitAndPop(event);
+            return event;
+        }
+
+        void com_ack_event(int token){
+            const std::lock_guard<std::mutex> lock(eventMutex);
+            auto tokenIt = eventTokenToChannel.find(token);
+            if (tokenIt == eventTokenToChannel.end()) {
+                return;
+            }
+
+            auto channelIt = eventChannels.find(tokenIt->second);
+            if (channelIt == eventChannels.end()) {
+                return;
+            }
+
+            auto channel = channelIt->second;
+            int remaining = 0;
+            auto pendingIt = channel->pendingAcks.find(token);
+            if (pendingIt != channel->pendingAcks.end()) {
+                remaining = pendingIt->second;
+            }
+            remaining -= 1;
+
+            if (remaining <= 0) {
+                channel->pendingAcks.erase(token);
+                eventTokenToChannel.erase(token);
+            } else {
+                channel->pendingAcks[token] = remaining;
+            }
+        }
         
-        void functioninit3Variable(){
+        void functioninit4Variable(){
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["Variable0_0_0_10currentValue"] = new int();}
 }
-void function5initializeVar(){
+void function6initializeVar(){
 	int Variable0_0_0_101432;
 	Variable0_0_0_101432 = 1;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable0_0_0_10currentValue"]) = Variable0_0_0_101432;}
 }
-void functioninit6Variable(){
+void functioninit8Variable(){
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["Variable1_0_1_10currentValue"] = new int();}
 }
-void function8initializeVar(){
+void function10initializeVar(){
 	int Variable1_0_1_101432;
 	Variable1_0_1_101432 = 4;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable1_0_1_10currentValue"]) = Variable1_0_1_101432;}
 }
-void functioninit9Variable(){
+void functioninit12Variable(){
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["Variable2_0_2_10currentValue"] = new int();}
 }
-void function11initializeVar(){
+void function14initializeVar(){
 	int Variable2_0_2_101432;
 	Variable2_0_2_101432 = 0;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable2_0_2_10currentValue"]) = Variable2_0_2_101432;}
 }
-void function89executeAssignment2(int resRight){
+void function80executeAssignment2(int resRight){
 	int Assignment16_0_16_202622;
 	Assignment16_0_16_202622 = resRight;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable2_0_2_10currentValue"]) = Assignment16_0_16_202622;}
 }
-int function50accessVarRef(){
+int function47accessVarRef(){
 	int VarRef7_4_7_61647;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	VarRef7_4_7_61647 = *(int*)sigma["Variable0_0_0_10currentValue"];}
 	int VarRef7_4_7_6terminates;
 	VarRef7_4_7_6terminates = VarRef7_4_7_61647;
 	return VarRef7_4_7_6terminates;
 }
-bool function95evaluateConjunction2(){
-	bool Conjunction16_5_16_20terminates;
-	Conjunction16_5_16_20terminates = false;
-	return Conjunction16_5_16_20terminates;
-}
-bool function96evaluateConjunction3(){
-	bool Conjunction16_5_16_20terminates;
-	Conjunction16_5_16_20terminates = false;
-	return Conjunction16_5_16_20terminates;
-}
-bool function99evaluateConjunction4(){
-	bool Conjunction16_5_16_20terminates;
-	Conjunction16_5_16_20terminates = true;
-	return Conjunction16_5_16_20terminates;
-}
-void function18executeAssignment2(int resRight){
+void function21executeAssignment2(int resRight){
 	int Assignment4_7_4_212622;
 	Assignment4_7_4_212622 = resRight;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable1_0_1_10currentValue"]) = Assignment4_7_4_212622;}
@@ -76,7 +173,7 @@ void function32executeAssignment2(int resRight){
 	Assignment5_7_5_212622 = resRight;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable1_0_1_10currentValue"]) = Assignment5_7_5_212622;}
 }
-bool function100evalBooleanConst(){
+bool function85evalBooleanConst(){
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["BooleanConst16_6_16_10constantValue"] = new bool();}
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((bool*)sigma["BooleanConst16_6_16_10constantValue"]) = true;}
 	bool BooleanConst16_6_16_104767;
@@ -85,43 +182,12 @@ bool function100evalBooleanConst(){
 	BooleanConst16_6_16_10terminates = BooleanConst16_6_16_104767;
 	return BooleanConst16_6_16_10terminates;
 }
-bool function102evalBooleanConst(){
-	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["BooleanConst16_14_16_19constantValue"] = new bool();}
-	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((bool*)sigma["BooleanConst16_14_16_19constantValue"]) = false;}
-	bool BooleanConst16_14_16_194767;
-	{const std::lock_guard<std::mutex> lock(sigma_mutex);	BooleanConst16_14_16_194767 = *(bool*)sigma["BooleanConst16_14_16_19constantValue"];}
-	bool BooleanConst16_14_16_19terminates;
-	BooleanConst16_14_16_19terminates = BooleanConst16_14_16_194767;
-	return BooleanConst16_14_16_19terminates;
-}
-int function24finishPlus(int n2, int n1){
-	int Plus4_12_4_214539;
-	Plus4_12_4_214539 = n1;
-	int Plus4_12_4_214544;
-	Plus4_12_4_214544 = n2;
-	int Plus4_12_4_214538;
-	Plus4_12_4_214538 = Plus4_12_4_214539 + Plus4_12_4_214544;
-	int Plus4_12_4_21terminates;
-	Plus4_12_4_21terminates = Plus4_12_4_214538;
-	return Plus4_12_4_21terminates;
-}
-int function38finishPlus(int n2, int n1){
-	int Plus5_12_5_214539;
-	Plus5_12_5_214539 = n1;
-	int Plus5_12_5_214544;
-	Plus5_12_5_214544 = n2;
-	int Plus5_12_5_214538;
-	Plus5_12_5_214538 = Plus5_12_5_214539 + Plus5_12_5_214544;
-	int Plus5_12_5_21terminates;
-	Plus5_12_5_21terminates = Plus5_12_5_214538;
-	return Plus5_12_5_21terminates;
-}
-void function58executeAssignment2(int resRight){
+void function55executeAssignment2(int resRight){
 	int Assignment9_4_9_182622;
 	Assignment9_4_9_182622 = resRight;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable1_0_1_10currentValue"]) = Assignment9_4_9_182622;}
 }
-void function75executeAssignment2(int resRight){
+void function69executeAssignment2(int resRight){
 	int Assignment12_4_12_182622;
 	Assignment12_4_12_182622 = resRight;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable0_0_0_10currentValue"]) = Assignment12_4_12_182622;}
@@ -133,219 +199,43 @@ int function27accessVarRef(){
 	VarRef4_18_4_20terminates = VarRef4_18_4_201647;
 	return VarRef4_18_4_20terminates;
 }
-int function25accessVarRef(){
-	int VarRef4_13_4_151647;
-	{const std::lock_guard<std::mutex> lock(sigma_mutex);	VarRef4_13_4_151647 = *(int*)sigma["Variable0_0_0_10currentValue"];}
-	int VarRef4_13_4_15terminates;
-	VarRef4_13_4_15terminates = VarRef4_13_4_151647;
-	return VarRef4_13_4_15terminates;
-}
-int function41accessVarRef(){
+int function38accessVarRef(){
 	int VarRef5_18_5_201647;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	VarRef5_18_5_201647 = *(int*)sigma["Variable1_0_1_10currentValue"];}
 	int VarRef5_18_5_20terminates;
 	VarRef5_18_5_20terminates = VarRef5_18_5_201647;
 	return VarRef5_18_5_20terminates;
 }
-int function39accessVarRef(){
-	int VarRef5_13_5_151647;
-	{const std::lock_guard<std::mutex> lock(sigma_mutex);	VarRef5_13_5_151647 = *(int*)sigma["Variable1_0_1_10currentValue"];}
-	int VarRef5_13_5_15terminates;
-	VarRef5_13_5_15terminates = VarRef5_13_5_151647;
-	return VarRef5_13_5_15terminates;
-}
-int function64finishPlus(int n2, int n1){
-	int Plus9_9_9_184539;
-	Plus9_9_9_184539 = n1;
-	int Plus9_9_9_184544;
-	Plus9_9_9_184544 = n2;
-	int Plus9_9_9_184538;
-	Plus9_9_9_184538 = Plus9_9_9_184539 + Plus9_9_9_184544;
-	int Plus9_9_9_18terminates;
-	Plus9_9_9_18terminates = Plus9_9_9_184538;
-	return Plus9_9_9_18terminates;
-}
-int function81finishPlus(int n2, int n1){
-	int Plus12_9_12_184539;
-	Plus12_9_12_184539 = n1;
-	int Plus12_9_12_184544;
-	Plus12_9_12_184544 = n2;
-	int Plus12_9_12_184538;
-	Plus12_9_12_184538 = Plus12_9_12_184539 + Plus12_9_12_184544;
-	int Plus12_9_12_18terminates;
-	Plus12_9_12_18terminates = Plus12_9_12_184538;
-	return Plus12_9_12_18terminates;
-}
-int function67accessVarRef(){
+int function61accessVarRef(){
 	int VarRef9_15_9_171647;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	VarRef9_15_9_171647 = *(int*)sigma["Variable0_0_0_10currentValue"];}
 	int VarRef9_15_9_17terminates;
 	VarRef9_15_9_17terminates = VarRef9_15_9_171647;
 	return VarRef9_15_9_17terminates;
 }
-int function65accessVarRef(){
-	int VarRef9_10_9_121647;
-	{const std::lock_guard<std::mutex> lock(sigma_mutex);	VarRef9_10_9_121647 = *(int*)sigma["Variable1_0_1_10currentValue"];}
-	int VarRef9_10_9_12terminates;
-	VarRef9_10_9_12terminates = VarRef9_10_9_121647;
-	return VarRef9_10_9_12terminates;
-}
-int function84accessVarRef(){
+int function75accessVarRef(){
 	int VarRef12_15_12_171647;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	VarRef12_15_12_171647 = *(int*)sigma["Variable0_0_0_10currentValue"];}
 	int VarRef12_15_12_17terminates;
 	VarRef12_15_12_17terminates = VarRef12_15_12_171647;
 	return VarRef12_15_12_17terminates;
 }
-int function82accessVarRef(){
-	int VarRef12_10_12_121647;
-	{const std::lock_guard<std::mutex> lock(sigma_mutex);	VarRef12_10_12_121647 = *(int*)sigma["Variable1_0_1_10currentValue"];}
-	int VarRef12_10_12_12terminates;
-	VarRef12_10_12_12terminates = VarRef12_10_12_121647;
-	return VarRef12_10_12_12terminates;
-}
 int main(){
-		functioninit3Variable();
-	function5initializeVar();
-	functioninit6Variable();
-	function8initializeVar();
-	functioninit9Variable();
-	function11initializeVar();
-	bool flag49 = true;
-	LockingQueue<Void> synch49;
-	bool flag115 = true;
-	LockingQueue<Void> synch115;
-	LockingQueue<bool> queue97;
-	LockingQueue<bool> queue98;
-	LockingQueue<int> queue24;
-	LockingQueue<int> queue64;
-	std::thread thread15([&](){
-		std::thread thread27([&](){
-			int result27accessVarRef = function27accessVarRef();
-			queue24.push(result27accessVarRef);
-		});
-		thread27.detach();
-		std::thread thread25([&](){
-			int result25accessVarRef = function25accessVarRef();
-			queue24.push(result25accessVarRef);
-		});
-		thread25.detach();
-		int AndJoinPopped_24_0;
-		queue24.waitAndPop(AndJoinPopped_24_0);
-		int AndJoinPopped_24_1;
-		queue24.waitAndPop(AndJoinPopped_24_1);
-		int result24finishPlus = function24finishPlus(AndJoinPopped_24_0, AndJoinPopped_24_1);
-		function18executeAssignment2(result24finishPlus);
-		{Void fakeParam115;
- 		synch115.push(fakeParam115);}
+		functioninit4Variable();
+	function6initializeVar();
+	functioninit8Variable();
+	function10initializeVar();
+	functioninit12Variable();
+	function14initializeVar();
+	bool flag101 = true;
+	LockingQueue<Void> synch101;
+	std::thread thread18([&](){
+		int result27accessVarRef = function27accessVarRef();
 	});
-	thread15.detach();
+	thread18.detach();
 	std::thread thread29([&](){
-		LockingQueue<int> queue38;
-		std::thread thread41([&](){
-			int result41accessVarRef = function41accessVarRef();
-			queue38.push(result41accessVarRef);
-		});
-		thread41.detach();
-		std::thread thread39([&](){
-			int result39accessVarRef = function39accessVarRef();
-			queue38.push(result39accessVarRef);
-		});
-		thread39.detach();
-		int AndJoinPopped_38_0;
-		queue38.waitAndPop(AndJoinPopped_38_0);
-		int AndJoinPopped_38_1;
-		queue38.waitAndPop(AndJoinPopped_38_1);
-		int result38finishPlus = function38finishPlus(AndJoinPopped_38_0, AndJoinPopped_38_1);
-		function32executeAssignment2(result38finishPlus);
-		{Void fakeParam115;
- 		synch115.push(fakeParam115);}
+		int result38accessVarRef = function38accessVarRef();
 	});
 	thread29.detach();
-	{Void joinPopped115;
- 	synch115.waitAndPop(joinPopped115);}
-	int result50accessVarRef = function50accessVarRef();
-	int VarRef7_4_7_6terminate;
-	VarRef7_4_7_6terminate = result50accessVarRef;
-	if (VarRef7_4_7_6terminate == true){
-		std::thread thread67([&](){
-			int result67accessVarRef = function67accessVarRef();
-			queue64.push(result67accessVarRef);
-		});
-		thread67.detach();
-		std::thread thread65([&](){
-			int result65accessVarRef = function65accessVarRef();
-			queue64.push(result65accessVarRef);
-		});
-		thread65.detach();
-		int AndJoinPopped_64_0;
-		queue64.waitAndPop(AndJoinPopped_64_0);
-		int AndJoinPopped_64_1;
-		queue64.waitAndPop(AndJoinPopped_64_1);
-		int result64finishPlus = function64finishPlus(AndJoinPopped_64_0, AndJoinPopped_64_1);
-		function58executeAssignment2(result64finishPlus);
-		{Void fakeParam49;
- 		synch49.push(fakeParam49);}
-	}
-	if (VarRef7_4_7_6terminate == false){
-		LockingQueue<int> queue81;
-		std::thread thread84([&](){
-			int result84accessVarRef = function84accessVarRef();
-			queue81.push(result84accessVarRef);
-		});
-		thread84.detach();
-		std::thread thread82([&](){
-			int result82accessVarRef = function82accessVarRef();
-			queue81.push(result82accessVarRef);
-		});
-		thread82.detach();
-		int AndJoinPopped_81_0;
-		queue81.waitAndPop(AndJoinPopped_81_0);
-		int AndJoinPopped_81_1;
-		queue81.waitAndPop(AndJoinPopped_81_1);
-		int result81finishPlus = function81finishPlus(AndJoinPopped_81_0, AndJoinPopped_81_1);
-		function75executeAssignment2(result81finishPlus);
-		{Void fakeParam49;
- 		synch49.push(fakeParam49);}
-	}
-	{Void joinPopped49;
- 	synch49.waitAndPop(joinPopped49);}
-	std::thread thread100([&](){
-		bool result100evalBooleanConst = function100evalBooleanConst();
-		queue98.push(result100evalBooleanConst);
-		bool BooleanConst16_6_16_10terminate;
-		BooleanConst16_6_16_10terminate = result100evalBooleanConst;
-		if (BooleanConst16_6_16_10terminate == false){
-			bool result95evaluateConjunction2 = function95evaluateConjunction2();
-			queue97.push(result95evaluateConjunction2);
-		}
-	});
-	thread100.detach();
-	std::thread thread102([&](){
-		bool result102evalBooleanConst = function102evalBooleanConst();
-		queue98.push(result102evalBooleanConst);
-		bool BooleanConst16_14_16_19terminate;
-		BooleanConst16_14_16_19terminate = result102evalBooleanConst;
-		if (BooleanConst16_14_16_19terminate == false){
-			bool result96evaluateConjunction3 = function96evaluateConjunction3();
-			queue97.push(result96evaluateConjunction3);
-		}
-	});
-	thread102.detach();
-	bool AndJoinPopped_98_0;
-	queue98.waitAndPop(AndJoinPopped_98_0);
-	bool AndJoinPopped_98_1;
-	queue98.waitAndPop(AndJoinPopped_98_1);
-	bool BooleanConst16_6_16_10terminate;
-	BooleanConst16_6_16_10terminate = AndJoinPopped_98_0;
-	bool BooleanConst16_14_16_19terminate;
-	BooleanConst16_14_16_19terminate = AndJoinPopped_98_1;
-	if (BooleanConst16_6_16_10terminate == true && BooleanConst16_14_16_19terminate == true){
-		bool result99evaluateConjunction4 = function99evaluateConjunction4();
-		queue97.push(result99evaluateConjunction4);
-		bool OrJoinPopped_97;
-		queue97.waitAndPop(OrJoinPopped_97);
-		function89executeAssignment2(OrJoinPopped_97);
-	}
 for(auto entry : sigma){ std::cout << entry.first << " : " << *((int*)entry.second) << std::endl;}
 }

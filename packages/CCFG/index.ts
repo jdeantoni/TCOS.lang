@@ -52,6 +52,60 @@ export class CreateGlobalVarInstruction extends Instruction{
     }
 }
 
+export class CreateEventChannelInstruction extends Instruction {
+    channelName: string = ""
+    listenerCount: integer = 0
+    payloadKind: string = ""
+    constructor(name: string, listenerCount: integer, payloadKind: string) {
+        super("createEventChannelInstruction")
+        this.channelName = name
+        this.listenerCount = listenerCount
+        this.payloadKind = payloadKind
+    }
+    toString(): string {
+        return "createEventChannel,"+this.channelName+","+this.listenerCount+","+this.payloadKind
+    }
+}
+
+export class EmitEventInstruction extends Instruction {
+    channelName: string = ""
+    payload: string = ""
+    awaitAcks: boolean = true
+    constructor(name: string, payload: string, awaitAcks: boolean = true) {
+        super("emitEventInstruction")
+        this.channelName = name
+        this.payload = payload
+        this.awaitAcks = awaitAcks
+    }
+    toString(): string {
+        return "emitEvent,"+this.channelName+","+this.payload+","+this.awaitAcks
+    }
+}
+
+export class WaitEventInstruction extends Instruction {
+    channelName: string = ""
+    outPayload: string = ""
+    constructor(name: string, outPayload: string) {
+        super("waitEventInstruction")
+        this.channelName = name
+        this.outPayload = outPayload
+    }
+    toString(): string {
+        return "waitEvent,"+this.channelName+","+this.outPayload
+    }
+}
+
+export class AckEventInstruction extends Instruction {
+    token: string = ""
+    constructor(token: string) {
+        super("ackEventInstruction")
+        this.token = token
+    }
+    toString(): string {
+        return "ackEvent,"+this.token
+    }
+}
+
 export class AssignVarInstruction extends Instruction{
     value: string = ""
     varName: string = ""
@@ -153,7 +207,7 @@ export class TypedElement {
 export enum NodeType {
     starts = "starts",
     terminates = "terminates",
-    multipleSynchro = "multipleSynchro",
+    multipleSynchro = "multipleSynchro"
 }
 
 export abstract class Node {
@@ -261,8 +315,8 @@ export class Edge {
 export class CCFG {
     nodes: Node[];
     edges: Edge[];
-    syncEdges: SyncEdge[] = []
-    ;
+    syncEdges: SyncEdge[] = [];
+    alreadyUsedToFillHole: boolean = false;
 
     initialState: Node | undefined;
 
@@ -702,6 +756,10 @@ export class CCFG {
                 return "cylinder";
             case "CollectionHole":
                 return "cylinder";
+            case "BroadcastEventEmission":
+                return "cds";
+            case "BroadcastEventReception":
+                return "cds";
             default:
                 return "box";
         }
@@ -802,6 +860,22 @@ export class CollectionHole extends Hole {
     }
     isSequential: boolean = false;
     parallelSyncPolicy: string = "lastOf";
+}
+
+export class BroadcastEventEmission extends Node {
+    eventName: string = ""
+    constructor(astNode:AstNode, eventName: string) {
+        super(astNode);
+        this.eventName = eventName;
+    }
+}
+
+export class BroadcastEventReception extends Node {
+    eventName: string = ""
+    constructor(astNode:AstNode, eventName: string) {
+        super(astNode);
+        this.eventName = eventName;
+    }
 }
 
 // export class Timer extends Node {

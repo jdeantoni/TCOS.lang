@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { AstNode, Grammar} from 'langium';
 import { CompositeGeneratorNode ,NL,toString} from 'langium/generate';
-import { Assignment, BinaryExpression, CollectionRuleSync, EventCombination, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, NaryEventExpression, RWRule, RuleOpening, SingleRuleSync, SoSSpec, TypeReference, ValuedEventEmission, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration } from '../language-server/generated/ast.js'; //VariableDeclaration
+import { Assignment, BinaryExpression, BroadcastedEventRef, ClassicalExpression, CollectionRuleSync, CompositeEventEmission, EventCombination, EventEmission, EventExpression, MemberCall, MethodMember, NamedElement, NaryEventExpression, RWRule, RuleOpening, SimpleEventEmission, SingleRuleSync, SoSSpec, TypeReference, ValuedEventEmission, ValuedEventRef, ValuedEventRefConstantComparison, VariableDeclaration, isParallelEventEmission, isSequentialEventEmission } from '../language-server/generated/ast.js'; //VariableDeclaration
 import { extractDestinationAndName, FilePathData } from './cli-util.js';
 import path from 'path';
 import { inferType } from '../language-server/type-system/infer.js';
@@ -129,10 +129,11 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
      * @returns the local CCFG (with holes)
      */
     create${conceptName}LocalCCFG(node: ${conceptName}): CCFG {`);
-
-    visitVariableDeclaration(openedRule.runtimeState as VariableDeclaration[], file);
     file.append(`
         let localCCFG = new CCFG()
+    `)
+    visitVariableDeclaration(openedRule.runtimeState as VariableDeclaration[], file);
+    file.append(`
         let starts${conceptName}Node: Node = new Step(node,NodeType.starts,[${getVariableDeclarationCode(openedRule.runtimeState as VariableDeclaration[])}])
         if(starts${conceptName}Node.functionsDefs.length>0){
             starts${conceptName}Node.returnType = "void"
@@ -168,6 +169,9 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
         }else
         if (isACollectionHole(h)){
             let refNode : string = `node.${h.startingParticipants.slice(0,h.startingParticipants.length-2).filter(p => p.type != "event").map(p => p.name).join('.')}`
+            if (isReferenceBased(h.startingParticipants)){
+                refNode = refNode + ".map(t => t.ref).filter(ref => ref !== undefined).map(ref => ref as AstNode)"
+            }
             file.append(`
         let ${h.startingParticipants.slice(0,h.startingParticipants.length-2).filter(p => p.type != "event").map(p => p.name).join('_')}Hole: CollectionHole = new CollectionHole(${refNode})
         ${h.startingParticipants.slice(0,h.startingParticipants.length-2).filter(p => p.type != "event").map(p => p.name).join('_')}Hole.isSequential = ${(h as CollectionHoleSpecifier).isSequential}
@@ -188,44 +192,141 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
         }
     }
 
-    const startingRules = retrieveStartingRules(rulesCF);
+    const startingRules = retrieveStartingRules(rulesCF, conceptName);
     if (startingRules.length > 1) {
         throw new Error("multiple starting rules are not supported");
     }
 
-    let startRule: RuleControlFlow = startingRules[0];
-    handleRuleConclusion(startRule, holes, file, `starts${conceptName}Node`);
+    let startRule: RuleControlFlow | undefined = startingRules[0];
+    
+    if (startRule != undefined) {
+        // Handle premise for starting rule if it has multiple participant groups (conjunction/disjunction)
+        if (startRule.premiseParticipants.length > 1) {
+            let startingPremiseNodeName = getPreviousNodeNameFromPremiseParticipants(startRule, conceptName, holes);
+            if(DEBUG) file.append(`        // premise handling for starting rule ${startRule.rule.name}: ${startRule.premiseParticipants.length} participant groups`, NL);
+            if(DEBUG) file.append(`        // Creating ${startingPremiseNodeName.endsWith("OrJoinNode")?"OrJoin":"AndJoin"} for conjunction/disjunction`, NL);
+            
+            file.append(`
+        let ${startingPremiseNodeName}: Node = new ${startingPremiseNodeName.endsWith("OrJoinNode")?"OrJoin":"AndJoin"}(node)
+        localCCFG.addNode(${startingPremiseNodeName})\n `);
+            
+            for (let participants of startRule.premiseParticipants) {
+                if (holes.map(h => h.startingParticipants).some(p => areParticipantsEqualsOrCoupled(p, participants))) {
+                    if (DEBUG) file.append(`             //premise participant is a hole`);
+                    file.append(`
+        localCCFG.addEdge(${participants.filter(p => p.type != "event").map(p => p.name).join('_')}Hole,${startingPremiseNodeName})\n`);
+                } else {
+                    // For starting rule, handle broadcast reception or variable declaration events
+                    if (isBroadcastReceptionParticipants(participants)) {
+                        file.append(`
+        let ${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode : BroadcastEventReception = new BroadcastEventReception(node.${participants.filter(p => p.type != "event").map(p => p.name).join('_')}?.ref??node, "${participants.filter(p => p.type != "event").map(p => p.name).join('_')}")
+        localCCFG.addNode(${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode)
+        ${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode.functionsNames = [\`\${${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode.uid}receive${participants.filter(p => p.type != "event").map(p => p.name).join('_')}\`]
+        //removed from below: , new AckEventInstruction(\`\${this.getASTNodeUID(node.${participants.filter(p => p.type != "event").map(p => p.name).join('_')}?.ref??node)}Token
+        ${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode.functionsDefs = [new WaitEventInstruction(\`\${this.getASTNodeUID(node.${participants.filter(p => p.type != "event").map(p => p.name).join('_')}?.ref??node)}\`,\`\${this.getASTNodeUID(node.${participants.filter(p => p.type != "event").map(p => p.name).join('_')}?.ref??node)}${participants.filter(p => p.type != "event").map(p => p.name).join('_')}Payload\`)\`)]
+        ${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode.returnType = "void"
+        localCCFG.addEdge(${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode,${startingPremiseNodeName})
+        `);
+                    } else {
+                        let ruleName : string = ""
+                        if ((participants[0].astNode as VariableDeclaration).$container.$type == "RuleOpening") {
+                            ruleName = ((participants[0].astNode as VariableDeclaration).$container as RuleOpening).onRule?.$refText ?? ""
+                        }
+                        file.append(`
+        localCCFG.addEdge(${participants[0].name+ruleName}Node,${startingPremiseNodeName})
+        `);
+                    }
+                }
+            }
+            
+            // Call handleRuleConclusion with the premise node as the starting point
+            handleRuleConclusion(startRule, holes, file, startingPremiseNodeName);
+        } else {
+            // No conjunction in premise, use original handling
+            handleRuleConclusion(startRule, holes, file, `starts${conceptName}Node`);
+        }
+    }
 
 
     for (let ruleCF of rulesCF) {
-        if (ruleCF != startingRules[0]) {
-            let premiseNodeName : string= getPreviousNodeNameFromPremiseParticipants(ruleCF, conceptName)
-            //manage premise (most of the time the premise's node is already existing since a hole.)
-            
+        if (ruleCF != startRule) {
+            let premiseNodeName : string= getPreviousNodeNameFromPremiseParticipants(ruleCF, conceptName, holes)
+            let allEventValuedComparisons = getValuedEventRefConstantComparison(ruleCF.rule.premise.eventExpression)
+            const routeBooleanPremiseGuardToEntryEdge =
+                ruleCF.premiseParticipants.length > 1 &&
+                ruleCF.rule.premise.booleanExpression.length > 0 &&
+                allEventValuedComparisons.length == 0;
+            const premiseGuardString = buildPremiseGuardString(ruleCF)
+            let premiseGuardAppliedOnEntryEdge = false
+            //manage premise (most of the time the premise's node is already existing since a hole. (but sometimes from event in varDeclaration))
+            if(DEBUG) file.append(`        // premise handling for rule ${ruleCF.rule.name}: ${ruleCF.premiseParticipants.length} participant groups`, NL)
+
             if (ruleCF.premiseParticipants.length > 1) {
-                file.append(`
+                const causalReceptionPattern = getCausalReceptionPattern(ruleCF, holes);
+                if (causalReceptionPattern != undefined) {
+                    if (DEBUG) file.append(`        // Causal lowering for conjunction: trigger event then broadcast reception`, NL);
+                    const receptionParticipantName = causalReceptionPattern.receptionParticipants.filter(p => p.type != "event").map(p => p.name).join('_');
+                    const triggerNodeName = getSingleParticipantNodeName(causalReceptionPattern.triggerParticipants);
+                    file.append(`
+        let ${receptionParticipantName}ReceptionNode : BroadcastEventReception = new BroadcastEventReception(node.${receptionParticipantName}?.ref??node, "${receptionParticipantName}")
+        localCCFG.addNode(${receptionParticipantName}ReceptionNode)
+        ${receptionParticipantName}ReceptionNode.functionsNames = [\`\${${receptionParticipantName}ReceptionNode.uid}receive${receptionParticipantName}\`]
+        ${receptionParticipantName}ReceptionNode.functionsDefs = [new WaitEventInstruction(\`\${this.getASTNodeUID(node.${receptionParticipantName}?.ref??node)}\`,\`\${this.getASTNodeUID(node.${receptionParticipantName}?.ref??node)}${receptionParticipantName}Payload\`), new AckEventInstruction(\`\${this.getASTNodeUID(node.${receptionParticipantName}?.ref??node)}Token\`)]
+        ${receptionParticipantName}ReceptionNode.returnType = "void"
+        ${triggerNodeName ? `localCCFG.addEdge(${triggerNodeName},${receptionParticipantName}ReceptionNode)` : `// no trigger node identified for causal reception`}
+        `);
+                    premiseNodeName = `${receptionParticipantName}ReceptionNode`;
+                } else {
+                    if(DEBUG) file.append(`        // Creating ${premiseNodeName.endsWith("OrJoinNode")?"OrJoin":"AndJoin"} for conjunction/disjunction`, NL)
+                    file.append(`
         let ${premiseNodeName}: Node = new ${premiseNodeName.endsWith("OrJoinNode")?"OrJoin":"AndJoin"}(node)
-        localCCFG.addNode(${premiseNodeName})
-                `);
-                for (let participants of ruleCF.premiseParticipants) {
-                    if (holes.map(h => h.startingParticipants).some(p => areParticipantsEqualsOrCoupled(p, participants))) {
-                        if (DEBUG) file.append(`             //mark a`);
-                        file.append(`
-        localCCFG.addEdge(${participants.filter(p => p.type != "event").map(p => p.name).join('_')}Hole,${premiseNodeName})
-                            `);
-                    } else {
-                        file.append(`
-                //premise participants in parallel collection but not a hole: ${participants.map(p => p.toJSON())}
-                        `);
+        localCCFG.addNode(${premiseNodeName})\n `);
+                    for (let participants of ruleCF.premiseParticipants) {
+                        if (holes.map(h => h.startingParticipants).some(p => areParticipantsEqualsOrCoupled(p, participants))) {
+                            if (DEBUG) file.append(`             //mark a`);
+                            file.append(`
+        localCCFG.addEdge(${participants.filter(p => p.type != "event").map(p => p.name).join('_')}Hole,${premiseNodeName})\n`);
+                        } else {
+                            file.append(`               //premise participants in parallel collection but not a hole: ${participants.map(p => p.toJSON())}`);
+                            if (isBroadcastReceptionParticipants(participants)) { // explicit broadcast reception in premise
+                                file.append(`
+        let ${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode : BroadcastEventReception = new BroadcastEventReception(node.${participants.filter(p => p.type != "event").map(p => p.name).join('_')}?.ref??node, "${participants.filter(p => p.type != "event").map(p => p.name).join('_')}")
+        localCCFG.addNode(${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode)
+        ${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode.functionsNames = [\`\${${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode.uid}receive${participants.filter(p => p.type != "event").map(p => p.name).join('_')}\`]
+        ${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode.functionsDefs = [new WaitEventInstruction(\`\${this.getASTNodeUID(node.${participants.filter(p => p.type != "event").map(p => p.name).join('_')}?.ref??node)}\`,\`\${this.getASTNodeUID(node.${participants.filter(p => p.type != "event").map(p => p.name).join('_')}?.ref??node)}${participants.filter(p => p.type != "event").map(p => p.name).join('_')}Payload\`), new AckEventInstruction(\`\${this.getASTNodeUID(node.${participants.filter(p => p.type != "event").map(p => p.name).join('_')}?.ref??node)}Token\`)]
+        ${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode.returnType = "void"
+        localCCFG.addEdge(${participants.filter(p => p.type != "event").map(p => p.name).join('_')}ReceptionNode,${premiseNodeName})
+        `);
+                            }else{ // this is an event from a variable Declaration
+                                const participantNodeName = getSingleParticipantNodeName(participants);
+                                const edgeGuardString = (routeBooleanPremiseGuardToEntryEdge && !premiseGuardAppliedOnEntryEdge) ? premiseGuardString : "";
+                                if (edgeGuardString.length > 0) {
+                                    premiseGuardAppliedOnEntryEdge = true;
+                                }
+                                file.append(`
+        ${participantNodeName ? `{
+        let premiseParticipantSource = ${participantNodeName}
+        if(${participantNodeName}.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
+            premiseParticipantSource = ${participantNodeName}.outputEdges.filter(e => e.to.getType() == "Choice")[0].to
+        }
+        {let e = localCCFG.addEdge(premiseParticipantSource,${premiseNodeName})
+        e.guards = [...e.guards, ...[${edgeGuardString}]]}
+        }` : `// no participant node identified`}
+        `);
+                            }
+                        }
                     }
                 }
             }
 
 
-            let allEventValuedComparisons = getValuedEventRefConstantComparison(ruleCF.rule.premise.eventExpression)
+            let hasPremiseGuards =
+                allEventValuedComparisons.length > 0 ||
+                (ruleCF.rule.premise.booleanExpression.length > 0 && !routeBooleanPremiseGuardToEntryEdge)
             
-            if (allEventValuedComparisons.length > 0) {
-                    let refNode = `node.${ruleCF.premiseParticipants[0].filter(p => p.type != "event").map(p => p.name).join('.')}`
+            if (hasPremiseGuards) {
+                    let refPath = ruleCF.premiseParticipants[0].filter(p => p.type != "event").map(p => p.name).join('.')
+                    let refNode = refPath.length > 0 ? `node.${refPath}` : `node`
                     file.append(`
         let ${ruleCF.rule.name}ChoiceNode = undefined
         if(${premiseNodeName}.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
@@ -239,7 +340,7 @@ function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, conceptN
                     premiseNodeName = `${ruleCF.rule.name}ChoiceNode`
                 }
 
-            handleRuleConclusion(ruleCF, holes, file, premiseNodeName);
+            handleRuleConclusion(ruleCF, holes, file, premiseNodeName, routeBooleanPremiseGuardToEntryEdge);
 
         }
     }
@@ -279,11 +380,15 @@ function isReferenceBased(participants: TypedElement[]): boolean {
     return participants.some(p => p.type != undefined && p.type[0] == "[")
 }
 
-function getPreviousNodeNameFromPremiseParticipants(ruleCF: RuleControlFlow, conceptName: string) : string{
+function getPreviousNodeNameFromPremiseParticipants(ruleCF: RuleControlFlow, conceptName: string, holes: HoleSpecifier[]) : string{
     if (ruleCF.premiseParticipants.length == 1) {
         let participants = ruleCF.premiseParticipants[0];
         if (participants.length == 1) { //simple event
-            return participants[0].name+conceptName+"Hole"
+            if (holes.some(h => areParticipantsEqualsOrCoupled(h.startingParticipants, participants))) {
+                return participants[0].name+conceptName+"Hole"
+            }else{
+                return participants[0].name+conceptName+"Node"
+            }
         }
         if (isParticipantCollectionBased(participants)) {
             if (ruleCF.rule.premise.eventExpression.$type == "NaryEventExpression") { //parallel sync premise on collection
@@ -311,16 +416,112 @@ function getPreviousNodeNameFromPremiseParticipants(ruleCF: RuleControlFlow, con
     
 }
 
-function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], file: CompositeGeneratorNode, previousNodeName: string) {
+function getSingleParticipantNodeName(participants: TypedElement[]): string | undefined {
+    if (participants.length != 1) {
+        return undefined;
+    }
+    let ruleName = "";
+    if ((participants[0].astNode as VariableDeclaration).$container.$type == "RuleOpening") {
+        ruleName = ((participants[0].astNode as VariableDeclaration).$container as RuleOpening).onRule?.$refText ?? "";
+    }
+    return participants[0].name + ruleName + "Node";
+}
+
+function getCausalReceptionPattern(ruleCF: RuleControlFlow, holes: HoleSpecifier[]): { triggerParticipants: TypedElement[]; receptionParticipants: TypedElement[] } | undefined {
+    if (ruleCF.rule.premise.eventExpression.$type != "EventConjunction") {
+        return undefined;
+    }
+    if (ruleCF.premiseParticipants.length != 2) {
+        return undefined;
+    }
+
+    const p0 = ruleCF.premiseParticipants[0];
+    const p1 = ruleCF.premiseParticipants[1];
+    const isHole = (participants: TypedElement[]) => holes.some(h => areParticipantsEqualsOrCoupled(h.startingParticipants, participants));
+    const isReception = (participants: TypedElement[]) => isBroadcastReceptionParticipants(participants) && !isHole(participants);
+    const isTrigger = (participants: TypedElement[]) => participants.length == 1 && !isHole(participants);
+
+    if (isReception(p0) && isTrigger(p1)) {
+        return { triggerParticipants: p1, receptionParticipants: p0 };
+    }
+    if (isReception(p1) && isTrigger(p0)) {
+        return { triggerParticipants: p0, receptionParticipants: p1 };
+    }
+    return undefined;
+}
+
+function isBroadcastReceptionParticipants(participants: TypedElement[]): boolean {
+    return participants.length > 1 && participants.some(p => p.isBroadcast === true);
+}
+
+function formatPremiseGuardOperand(expression: ClassicalExpression | undefined): string | undefined {
+    if (expression == undefined) {
+        return undefined;
+    }
+
+    if (expression.$type == "MemberCall") {
+        const memberCall = expression as MemberCall;
+        if (memberCall.element?.ref != undefined) {
+            const previous = (memberCall.previous as MemberCall | undefined)?.element;
+            return `\`\${this.getASTNodeUID(node${previous != undefined ? "." + previous.$refText : ""})}${memberCall.element.ref.name}\``;
+        }
+        if (memberCall.previous != undefined) {
+            return formatPremiseGuardOperand(memberCall.previous as ClassicalExpression);
+        }
+        return undefined;
+    }
+
+    if (expression.$type == "BooleanExpression" || expression.$type == "NumberExpression" || expression.$type == "StringExpression") {
+        return `\`${expression.$cstNode?.text}\``;
+    }
+
+    return undefined;
+}
+
+function visitPremiseBooleanComparison(expression: ClassicalExpression | undefined): string {
+    if (expression == undefined || expression.$type != "BinaryExpression") {
+        return "";
+    }
+
+    const comparison = expression as BinaryExpression;
+    if (comparison.operator != "==") {
+        return "";
+    }
+
+    const left = formatPremiseGuardOperand(comparison.left);
+    const right = formatPremiseGuardOperand(comparison.right);
+    if (left == undefined || right == undefined) {
+        return "";
+    }
+
+    return `new VerifyEqualInstruction(${left},${right})`;
+}
+
+function buildPremiseGuardString(ruleCF: RuleControlFlow): string {
+    const guards: string[] = [];
+
+    for (const comparison of getValuedEventRefConstantComparison(ruleCF.rule.premise.eventExpression)) {
+        const guard = visitValuedEventRefComparison(comparison);
+        if (guard.length > 0) {
+            guards.push(guard);
+        }
+    }
+
+    for (const comparison of ruleCF.rule.premise.booleanExpression) {
+        const guard = visitPremiseBooleanComparison(comparison);
+        if (guard.length > 0) {
+            guards.push(guard);
+        }
+    }
+
+    return guards.join(",");
+}
+
+function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], file: CompositeGeneratorNode, previousNodeName: string, suppressPremiseGuard: boolean = false) {
     let actionsstring = ""
     actionsstring = visitStateModifications(ruleCF, actionsstring);
-    let guardString = ""
-    let allEventValuedComparisons = getValuedEventRefConstantComparison(ruleCF.rule.premise.eventExpression)
-    let sep = ""
-    for(let comparison of allEventValuedComparisons){
-        guardString = guardString + sep + visitValuedEventRefComparison(comparison)
-        sep =","
-    }
+    let guardString = suppressPremiseGuard ? "" : buildPremiseGuardString(ruleCF)
+    let downstreamGuardString = guardString
     
     if(actionsstring.length>0){
         file.append(`
@@ -332,11 +533,13 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
         ${previousNodeName} = ${ruleCF.rule.name}StateModificationNode
         }
     `)
+        // Guard already applied on the edge to the state-modification node.
+        downstreamGuardString = ""
     }
 
     let params : TypedElement[] = []
     let allValuedEventRef = getValuedEventRef(ruleCF.rule.premise.eventExpression)
-    sep = ""
+    let sep = ""
     for(let valuedEventRef of allValuedEventRef){
         let [actions, param] = visitValuedEventRef(valuedEventRef)
         actionsstring = actionsstring + sep + actions   
@@ -346,9 +549,11 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
 
     let eventEmissionActions = ""
     let functionType = "void"
-    for(let emission of ruleCF.rule.conclusion.eventemissions){
-        if(emission.$type == "ValuedEventEmission"){
-            let [visitedEmission, returnType] =  visitValuedEventEmission(emission as ValuedEventEmission,file)
+    const _allLeafEmissions = ruleCF.rule.conclusion.eventemissions ? flattenCompositeEmission(ruleCF.rule.conclusion.eventemissions) : []
+    for(let emission of _allLeafEmissions){
+        const valuedEmission = getValuedEmissionFromLeaf(emission)
+        if(valuedEmission != undefined){
+            let [visitedEmission, returnType] =  visitValuedEventEmission(valuedEmission,file)
             functionType = returnType
             eventEmissionActions = eventEmissionActions + visitedEmission
         }
@@ -363,86 +568,181 @@ function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], f
     file.append(`
         ${previousNodeName}.params = [...${previousNodeName}.params, ...[${formattedParams}]]
         ${previousNodeName}.returnType = "${functionType}"
-        ${previousNodeName}.functionsNames = [\`\${${previousNodeName}.uid}${ruleCF.rule.name}\`] //overwrite existing name
-        ${previousNodeName}.functionsDefs =[...${previousNodeName}.functionsDefs, ...[${eventEmissionActions}]] //GG
+        ${previousNodeName}.functionsNames = [\`\${${previousNodeName}.uid}${ruleCF.rule.name}\`] // overwrite existing name
+        ${previousNodeName}.functionsDefs =[...${previousNodeName}.functionsDefs, ...[${eventEmissionActions}]] // GG
     `);
 
+    // Generic conclusion processing preserving seq/par structure by stages.
+    // Each stage is a list of parallel emissions; stages are chained sequentially.
+    const conclusion = ruleCF.rule.conclusion.eventemissions;
+    if (!conclusion) {
+        return;
+    }
 
-    if (ruleCF.conclusionParticipants.length == 1 && isRuleConclusionCollectionBased(ruleCF) == false) {
-        let participants = ruleCF.conclusionParticipants[0];
-        if (holes.map(h => h.startingParticipants).some(p => areParticipantsEqualsOrCoupled(p,participants))) {
-            if(DEBUG) file.append(`            //mark 0`);
-            file.append(`
-        {let e = localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type != "event").map(p => p.name?.replace(/\(\)/,"")).join('_')}Hole)
-        e.guards = [...e.guards, ...[${guardString}]]}
-            `);
+    const stages = buildEmissionStages(conclusion);
+    let localPrev = previousNodeName;
+    let stageCounter = 0;
+    let emissionCounter = 0;
+
+    for (const stage of stages) {
+        // Expand a stage to participant branches (an emission can theoretically map to several branches).
+        const stageBranches: { participants: TypedElement[]; emission: EventEmission }[] = [];
+        for (const emission of stage) {
+            for (const participants of getEventEmissionParticipants(emission)) {
+                stageBranches.push({ participants, emission });
+            }
+        }
+        if (stageBranches.length === 0) {
+            stageCounter++;
+            continue;
+        }
+
+        if (stageBranches.length === 1) {
+            localPrev = appendConclusionBranch(file, ruleCF, holes, localPrev, stageBranches[0].participants, stageBranches[0].emission, downstreamGuardString, emissionCounter++);
         } else {
-            if(DEBUG) file.append(`            //mark 1 ${participants.map(p=>p.toJSON())}`);
+            const forkNodeName = `fork${ruleCF.rule.name}Stage${stageCounter}`;
             file.append(`
-        {let e = localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type == "event").map(p => p.name).join('_')}${(ruleCF.rule.$container as RuleOpening)?.onRule?.ref?.name}Node)
-        e.guards = [...e.guards, ...[${guardString}]]}
-        `);
-        console.log(`${participants.filter(p=>p.type == "event").map(p => p.name).join('_')}${(ruleCF.rule.$container as RuleOpening)?.onRule?.ref?.name}Node`)
-    
-        }
-    }
-    //Several participants in the conclusion
-    
-        //collection based conclusion are handles as special holes
-    if (isRuleConclusionCollectionBased(ruleCF)) {
-        let nodeName : string = ""
-        if (ruleCF.rule.premise.eventExpression.$type == "NaryEventExpression") { //parallel sync premise on collection
-            nodeName = ruleCF.conclusionParticipants[0].filter(p => p.type != "event").map(p => p.name).join('_') + "Hole"
-        }
-
-        //sequential collection based premise
-        let participantsNoEvent = ruleCF.conclusionParticipants[0].filter(p => p.type != "event")
-        nodeName =  participantsNoEvent.slice(0,ruleCF.conclusionParticipants[0].length-2).map(p => p.name).join('_') + "Hole"
-        if(DEBUG) file.append(`            //mark 1.5`);
-        file.append(`
-        localCCFG.addEdge(${previousNodeName},${nodeName})
-        `)
-    }
-
-    if (ruleCF.rule.conclusion.eventEmissionOperator == ";") {
-        for (let participants of ruleCF.conclusionParticipants) {
-            if (holes.map(h => h.startingParticipants).some(p => areParticipantsEquals(p,participants))) {
-                if(DEBUG) file.append(`                    //mark 2`);
-                file.append(`
-        localCCFG.addEdge(${previousNodeName},${participants.filter(p=>p.type != "event").map(p => p.name).join('_')}Hole)
-                    ${previousNodeName} = ${participants.filter(p=>p.type != "event").map(p => p.name).join('_')}Hole
-                    `);
-            } else {
-                if(DEBUG) file.append(`
-                //conclusion participants in sequential collection but not a hole: ${participants.map(p=>p.toJSON())}
-                `);
-            }
-        }
-    }
-    if (ruleCF.rule.conclusion.eventEmissionOperator == "||") {
-        file.append(`
-        let fork${ruleCF.rule.name}Node: Node = new Fork(node)
-        localCCFG.addNode(fork${ruleCF.rule.name}Node)
-        localCCFG.addEdge(${previousNodeName},fork${ruleCF.rule.name}Node)
+        let ${forkNodeName}: Node = new Fork(node)
+        localCCFG.addNode(${forkNodeName})
+        {let e = localCCFG.addEdge(${localPrev},${forkNodeName})
+        e.guards = [...e.guards, ...[${downstreamGuardString}]]}
             `, NL);
-        for (let participants of ruleCF.conclusionParticipants) {
-            if (holes.map(h => h.startingParticipants).some(p => areParticipantsEqualsOrCoupled(p,participants))) {
-                if(DEBUG) file.append(`                    //mark 3`);
+
+            const branchEnds: string[] = [];
+            for (const branch of stageBranches) {
+                const endNode = appendConclusionBranch(file, ruleCF, holes, forkNodeName, branch.participants, branch.emission, downstreamGuardString, emissionCounter++);
+                branchEnds.push(endNode);
+            }
+
+            const hasNextSequentialStage = stageCounter < stages.length - 1;
+            if (hasNextSequentialStage) {
+                const joinNodeName = `join${ruleCF.rule.name}Stage${stageCounter}`;
                 file.append(`
-        localCCFG.addEdge(fork${ruleCF.rule.name}Node,${participants.filter(p=>p.type != "event").map(p => p.name).join('_')}Hole)
-                    `);
-            } else {
-                if(DEBUG) file.append(`
-                //conclusion participants in parallel collection but not a hole: ${participants.map(p => p.toJSON())}
-                `);
+        let ${joinNodeName}: Node = new OrJoin(node)
+        localCCFG.addNode(${joinNodeName})
+                `, NL);
+                for (const endNode of branchEnds) {
+                    file.append(`
+        localCCFG.addEdge(${endNode},${joinNodeName})
+                    `, NL);
+                }
+                localPrev = joinNodeName;
             }
         }
+
+        stageCounter++;
     }
+}
+
+function appendConclusionBranch(
+    file: CompositeGeneratorNode,
+    ruleCF: RuleControlFlow,
+    holes: HoleSpecifier[],
+    fromNodeName: string,
+    participants: TypedElement[],
+    emission: EventEmission,
+    guardString: string,
+    emissionCounter: number
+): string {
+    // Prefer hole routing whenever a matching hole exists.
+    if (holes.map(h => h.startingParticipants).some(p => areParticipantsEqualsOrCoupled(p, participants))) {
+        let holeNodeName = participants.filter(p => p.type != "event").map(p => p.name).join('_') + "Hole";
+        if (isParticipantCollectionBased(participants)) {
+            const participantsNoEvent = participants.filter(p => p.type != "event");
+            holeNodeName = participantsNoEvent.slice(0, participants.length - 2).map(p => p.name).join('_') + "Hole";
+        }
+        file.append(`
+        {let e = localCCFG.addEdge(${fromNodeName},${holeNodeName})
+        e.guards = [...e.guards, ...[${guardString}]]}
+        `, NL);
+        return holeNodeName;
+    }
+
+    // Fallback for collection-based routes that are not explicit holes.
+    if (isParticipantCollectionBased(participants)) {
+        const participantsNoEvent = participants.filter(p => p.type != "event");
+        const nodeName = participantsNoEvent.slice(0, participants.length - 2).map(p => p.name).join('_') + "Hole";
+        file.append(`
+        {let e = localCCFG.addEdge(${fromNodeName},${nodeName})
+        e.guards = [...e.guards, ...[${guardString}]]}
+        `, NL);
+        return nodeName;
+    }
+
+    if (participants[0].isBroadcast) {
+        const emissionVarName = `${participants[0].name}EmissionNode${emissionCounter}`;
+        const payloadVarName = `\${this.getASTNodeUID(node.${participants[0].name}?.ref??node)}${participants[0].name}Payload`;
+        const valuedEmission = getValuedEmissionFromLeaf(emission);
+        const payloadValue = valuedEmission != undefined
+            ? `\${this.getASTNodeUID(node)}${(valuedEmission.event as MemberCall).element?.ref?.name}`
+            : "0";
+        file.append(`
+        let ${emissionVarName} : BroadcastEventEmission = new BroadcastEventEmission(node.${participants[0].name}?.ref??node, "${participants[0].name}")
+        localCCFG.addNode(${emissionVarName})
+        ${emissionVarName}.functionsNames = [\`\${${emissionVarName}.uid}emit${participants[0].name}\`]
+        ${emissionVarName}.functionsDefs = [new CreateVarInstruction(\`${payloadVarName}\`,\`std::any\`), new AssignVarInstruction(\`${payloadVarName}\`,\`${payloadValue}\`,\`std::any\`), new EmitEventInstruction(\`\${this.getASTNodeUID(node.${participants[0].name}?.ref??node)}\`,\`${payloadVarName}\`,true)]
+        ${emissionVarName}.returnType = "void"
+        {let e = localCCFG.addEdge(${fromNodeName},${emissionVarName})
+        e.guards = [...e.guards, ...[${guardString}]]}
+        `, NL);
+        return emissionVarName;
+    }
+
+    // Reference-based participants (for example `<initialState,σ>`) target another concept instance.
+    // They must route through the generated hole node, not through a local variable node.
+    if (isReferenceBased(participants)) {
+        const nodeName = participants.filter(p => p.type != "event").map(p => p.name).join('_') + "Hole";
+        file.append(`
+        {let e = localCCFG.addEdge(${fromNodeName},${nodeName})
+        e.guards = [...e.guards, ...[${guardString}]]}
+        `, NL);
+        return nodeName;
+    }
+
+    let ruleName: string = "";
+    if ((participants[0].astNode as VariableDeclaration).$container.$type == "RuleOpening") {
+        ruleName = ((participants[0].astNode as VariableDeclaration).$container as RuleOpening).onRule?.$refText ?? "";
+    }
+    const nodeName = `${participants[0].name + ruleName}Node`;
+    file.append(`
+        {let e = localCCFG.addEdge(${fromNodeName},${nodeName})
+        e.guards = [...e.guards, ...[${guardString}]]}
+    `, NL);
+    return nodeName;
+}
+
+function buildEmissionStages(ce: CompositeEventEmission): EventEmission[][] {
+    if (isSequentialEventEmission(ce)) {
+        return [[ce.lefteventemission], ...buildEmissionStages(ce.righteventemission)];
+    }
+    if (isParallelEventEmission(ce)) {
+        const rightStages = buildEmissionStages(ce.righteventemission);
+        if (rightStages.length === 0) {
+            return [[ce.lefteventemission]];
+        }
+        // Left emission starts in parallel with the first stage of the right process.
+        rightStages[0] = [ce.lefteventemission, ...rightStages[0]];
+        return rightStages;
+    }
+    return [[ce as EventEmission]];
+}
+
+function getValuedEmissionFromLeaf(emission: EventEmission): ValuedEventEmission | undefined {
+    if (emission.$type == "ValuedEventEmission") {
+        return emission as ValuedEventEmission;
+    }
+    if (emission.$type == "BroadcastedEventEmission") {
+        const nested = (emission as any).eventEmission as EventEmission | undefined;
+        if (nested != undefined && nested.$type == "ValuedEventEmission") {
+            return nested as ValuedEventEmission;
+        }
+    }
+    return undefined;
 }
 
 
 /**
- * traverse all the rules and identifies the holes. A hole is a participant that is the conclusion of a rule and the premise of another rule
+ * traverse all the rules and identifies the holes. A hole is a participant that is the conclusion of a rule and the premise of another rule (BUT FOR BROADCAST ?)
  * 
  * @param rulesCF: the list of rules of the opened concept 
  * @returns the list of holes, given as a list of TypedElements (the participants of a memberCall) (the ending event is not relevant) 
@@ -459,20 +759,26 @@ function identifiesHoles(rulesCF: RuleControlFlow[]): HoleSpecifier[] {
             for(let conclusionP of currentConclusionParticipants){
                 for(let premiseP of anotherRulePremiseParticipants){
                     if(areParticipantsCoupled(conclusionP, premiseP)){
-                        if(conclusionP.some(te => te.isCollection)){
-                            let holeSpecifier = new CollectionHoleSpecifier(conclusionP, premiseP)
-                            holeSpecifier.isSequential = currentRule.rule.conclusion.eventemissions[0].$type == "CollectionRuleSync" && (currentRule.rule.conclusion.eventemissions[0] as CollectionRuleSync).order == "sequential"
-                            holeSpecifier.parallelSyncPolicy = (anotherRule.rule.premise.eventExpression.$type == "NaryEventExpression") ?(anotherRule.rule.premise.eventExpression as NaryEventExpression).policy.operator+"" : "undefined"
-                            if(res.map(h => h.startingParticipants).some(p => areParticipantsEquals(p, holeSpecifier.startingParticipants)) == false){
-                                res.push(holeSpecifier)
+                        if (conclusionP.some(te => te.isBroadcast)){
+                            //broadcasted events do not create holes ? what do they do ?
+                            console.log(chalk.yellow("broadcasted event detected in hole identification, skipping hole creation for participants: "+conclusionP.map(tp => tp.name+":"+tp.type+(tp.isCollection?"[]":"")).join(", ")))
+                        }else{
+                            if(conclusionP.some(te => te.isCollection)){
+                                let holeSpecifier = new CollectionHoleSpecifier(conclusionP, premiseP)
+                                const _firstEmission = currentRule.rule.conclusion.eventemissions ? getFirstLeafEmission(currentRule.rule.conclusion.eventemissions) : undefined
+                                holeSpecifier.isSequential = _firstEmission?.$type == "CollectionRuleSync" && (_firstEmission as CollectionRuleSync).order == "sequential"
+                                holeSpecifier.parallelSyncPolicy = (anotherRule.rule.premise.eventExpression.$type == "NaryEventExpression") ?(anotherRule.rule.premise.eventExpression as NaryEventExpression).policy.operator+"" : "undefined"
+                                if(res.map(h => h.startingParticipants).some(p => areParticipantsEquals(p, holeSpecifier.startingParticipants)) == false){
+                                    res.push(holeSpecifier)
+                                }
                             }
-                        }
-                        else{
-                            let holeSpecifier = new HoleSpecifier(conclusionP, premiseP)
-                            if(res.map(h => h.startingParticipants).some(p => areParticipantsEquals(p, holeSpecifier.startingParticipants)) == false){
-                                res.push(holeSpecifier)
-                            }
-                        }                        
+                            else{
+                                let holeSpecifier = new HoleSpecifier(conclusionP, premiseP)
+                                if(res.map(h => h.startingParticipants).some(p => areParticipantsEquals(p, holeSpecifier.startingParticipants)) == false){
+                                    res.push(holeSpecifier)
+                                }
+                            }     
+                        }                   
                     }
                 }
             } 
@@ -495,8 +801,9 @@ function identifiesHolesAndSemiHoles(rulesCF: RuleControlFlow[]): HoleSpecifier[
         const currentRule = rulesCF[i];
         const currentConclusionParticipants = currentRule.conclusionParticipants;
         for (let p of currentConclusionParticipants) {
-            if (p[p.length - 1].name == "starts") {
+            if (p[p.length - 1].name == "starts" && ! p[0].isBroadcast) {
                 if (!res.some(h => areParticipantsEquals(h.startingParticipants, p))) {
+                    console.log(chalk.yellow("adding semi-hole for participants: "+p.map(tp => tp.name+":"+tp.type+(tp.isCollection?"[]":"")).join(", ")))
                     res.push(new HoleSpecifier(p, undefined))
                 }
             }
@@ -575,6 +882,9 @@ function areParticipantsEqualsOrCoupled(p1: TypedElement[], p2: TypedElement[]):
     }
     
     if(p1[p1.length-1].type == "event" &&  p2[p2.length-1].type == "event"){
+        if (p1.length == 1) {
+            return p1[0].name == p2[0].name && p1[0].type == p2[0].type;
+        }
         return true
     }
 
@@ -586,38 +896,57 @@ function areParticipantsEqualsOrCoupled(p1: TypedElement[], p2: TypedElement[]):
 /**  retrieves the starting rule of the concept
  * @param rulesCF: the rule to be analyzed
  * */
-function retrieveStartingRules(rulesCF: RuleControlFlow[]) {
+function retrieveStartingRules(rulesCF: RuleControlFlow[], conceptName?: string) {
     let startingRule = [];
+    let guardedStartRules: string[] = [];
     for (let r of rulesCF) {
-        for (let participants of r.premiseParticipants) {
-            for (let p of participants) {
-                if (p.name != undefined && p.name == "starts") {
-                    startingRule.push(r);
-                }
-            }
+        const hasStartsParticipant = r.premiseParticipants.some(participants => participants[0]?.name == "starts");
+        if (!hasStartsParticipant) {
+            continue;
+        }
+
+        const isGuarded = r.rule.premise.booleanExpression.length > 0;
+        const isPlainStartsPremise = r.premiseParticipants.length == 1
+            && r.premiseParticipants[0].length == 1
+            && r.premiseParticipants[0][0].name == "starts";
+
+        if (!isGuarded && isPlainStartsPremise) {
+            startingRule.push(r);
+        } else {
+            guardedStartRules.push(r.rule.name);
         }
     }
+
+    if (guardedStartRules.length > 0) {
+        console.warn(chalk.yellow(`warning: ${conceptName ?? "concept"} has guarded or composite start-related rule(s) (${guardedStartRules.join(", ")}); they will not be treated as the unique bootstrap start rule.`));
+    }
+
     return startingRule;
 }
 
 
 
 /**
- * returns the participants of the event expression
- * @param ruleCF  the current rule
- * @returns a boolean indicating if the event emission is collection based
+ * Recursively flattens a CompositeEventEmission tree into its leaf EventEmissions,
+ * preserving left-to-right order. Do NOT use when structure matters (sequential chains,
+ * parallel forks with nested children) — only use for analysis/scanning passes.
  */
-function isRuleConclusionCollectionBased(ruleCF: RuleControlFlow) {
-    let isEventEmissionACollection: boolean = false;
-    for (let participant of ruleCF.conclusionParticipants) {
-        isEventEmissionACollection = isParticipantCollectionBased(participant);
-        if (isEventEmissionACollection) {
-            return true;
-        }
+function flattenCompositeEmission(ce: CompositeEventEmission): EventEmission[] {
+    if (isParallelEventEmission(ce) || isSequentialEventEmission(ce)) {
+        return [ce.lefteventemission, ...flattenCompositeEmission(ce.righteventemission)];
     }
-    return false;
+    return [ce as EventEmission];
 }
 
+/**
+ * Returns the leftmost leaf EventEmission of a CompositeEventEmission tree.
+ */
+function getFirstLeafEmission(ce: CompositeEventEmission): EventEmission | undefined {
+    if (isParallelEventEmission(ce) || isSequentialEventEmission(ce)) {
+        return ce.lefteventemission;
+    }
+    return ce as EventEmission;
+}
 
 /**
  * retrieves a litst of the rule control flows from the openedRule and adds an explanation of the premisses and conclusions of the rules in the file 
@@ -631,11 +960,15 @@ function extractRuleControlFlowsFromRules(fileNode: CompositeGeneratorNode, open
         if (rwr.$type == "RWRule") {
 
             if(DEBUG) fileNode.append(`// rule ${rwr.name}`, NL)
+            if(DEBUG) fileNode.append(`   //premise expr type: ${rwr.premise.eventExpression.$type}`, NL)
             let premiseEventParticipants: TypedElement[][] = getEventSynchronisationParticipants(rwr.premise.eventExpression);
+            if(DEBUG) fileNode.append(`   //premise participants count: ${premiseEventParticipants.length}`, NL)
             if(DEBUG) fileNode.append(`   //premise: ${premiseEventParticipants.map(pa => pa.map(p => p.name + ":" + p.type + (p.isCollection ? "[]" : ""))).join("\n\t//")}`, NL)
             let conclusionEventParticipants: TypedElement[][] = []
-            for (let emission of rwr.conclusion.eventemissions) {
-                conclusionEventParticipants = [...conclusionEventParticipants, ...getEventEmissionParticipants(emission)]
+            if (rwr.conclusion.eventemissions) {
+                for (let emission of flattenCompositeEmission(rwr.conclusion.eventemissions)) {
+                    conclusionEventParticipants = [...conclusionEventParticipants, ...getEventEmissionParticipants(emission)]
+                }
             }
             if(DEBUG) fileNode.append(`   //conclusion: ${conclusionEventParticipants.map(pa => pa.map(p => p.name + ":" + p.type + (p.isCollection ? "[]" : ""))).join("\n\t//")}`, NL)
             let ruleControlFlow = new RuleControlFlow(rwr, premiseEventParticipants, conclusionEventParticipants)
@@ -678,12 +1011,14 @@ class TypedElement {
     name: (string | undefined)
     type: (string | undefined)
     isCollection: boolean
+    isBroadcast: boolean = false
 
-    constructor(astNode: AstNode | undefined, name: string | undefined, type: string | undefined, isCollection: boolean = false) {
+    constructor(astNode: AstNode | undefined, name: string | undefined, type: string | undefined, isCollection: boolean = false, isBroadcast: boolean = false) {
         this.astNode = astNode
         this.name = name
         this.type = type
         this.isCollection = isCollection
+        this.isBroadcast = isBroadcast
     }
 
     equals(other: TypedElement): boolean {
@@ -741,6 +1076,12 @@ function getEventEmissionParticipants(eventEmission: EventEmission): TypedElemen
     if (eventEmission.$type == "CollectionRuleSync") {
         res = getCollectionRuleSyncEventExpressionParticipants(eventEmission as CollectionRuleSync)
     }
+    if (eventEmission.$type == "BroadcastedEventEmission") {
+        console.log(chalk.yellow("BroadcastedEventEmission detected in getEventEmissionParticipants "+eventEmission.$cstNode?.text))
+        res.push(getExplicitEventExpressionParticipants((eventEmission.eventEmission as SimpleEventEmission).event as MemberCall, true))
+        // TODO: too restrictive since the eventemission in the broadcast can be also a valued event emission or event a collection one
+
+    }
 
     return res
 }
@@ -754,6 +1095,14 @@ function getEventEmissionParticipants(eventEmission: EventEmission): TypedElemen
 function getEventSynchronisationParticipants(eventExpression: EventExpression): TypedElement[][] {
     let res: TypedElement[][] = []
     // console.log(chalk.red("-------------------"))
+    if (eventExpression.$type == "BroadcastedEventRef") {
+        const broadcasted = eventExpression as BroadcastedEventRef;
+        if ((broadcasted.eventRef.membercall as MemberCall)?.element?.ref != undefined) {
+            res.push(getExplicitEventExpressionParticipants(broadcasted.eventRef.membercall as MemberCall, true));
+        }
+        return res;
+    }
+
     //explicit event ref
     if (eventExpression.$type == "ExplicitEventRef") {
         if ((eventExpression.membercall as MemberCall)?.element?.ref != undefined) {
@@ -803,7 +1152,16 @@ function getEventSynchronisationParticipants(eventExpression: EventExpression): 
 
     if (eventExpression.$type == "NaryEventExpression") {
         // console.log(chalk.bgGreenBright("nary event expression"))
-        res.push(getExplicitEventExpressionParticipants(eventExpression.collection as MemberCall))
+        // For firstOf/lastOf on collections, we need to represent this as a participant group
+        // that will trigger OrJoin semantics when combined with other premises via conjunction
+        const collectionParticipants = getExplicitEventExpressionParticipants(eventExpression.collection as MemberCall);
+        
+        if (collectionParticipants.length > 0) {
+            // Treat the entire collection path as a single participant group
+            // The isCollection flag on the participant will trigger special handling
+            res.push(collectionParticipants);
+        }
+        
         return res
     }
 
@@ -870,7 +1228,7 @@ function getCollectionRuleSyncEventExpressionParticipants(rule: CollectionRuleSy
  * @param membercall a member call
  * @returns a typed element list of the event expression participants
  */
-function getExplicitEventExpressionParticipants(membercall: MemberCall): TypedElement[] {
+function getExplicitEventExpressionParticipants(membercall: MemberCall, isBroadcast: boolean = false): TypedElement[] {
     let res: TypedElement[] = []
 
     if (membercall?.element?.ref != undefined) {
@@ -884,7 +1242,8 @@ function getExplicitEventExpressionParticipants(membercall: MemberCall): TypedEl
                 membercall,
                 ass.feature,
                 type,
-                ass.operator == "+="
+                ass.operator == "+=",
+                isBroadcast
             )
             res.push(typedElement)
         } else {
@@ -895,13 +1254,15 @@ function getExplicitEventExpressionParticipants(membercall: MemberCall): TypedEl
             let typedElement: TypedElement = new TypedElement(
                 namedElem,
                 name,
-                type
+                type,
+                false,
+                isBroadcast
             )
             res.push(typedElement)
         }
     }
     if (membercall.previous != undefined) {
-        return res = [...getExplicitEventExpressionParticipants(membercall.previous as MemberCall), ...res]
+        return res = [...getExplicitEventExpressionParticipants(membercall.previous as MemberCall, isBroadcast), ...res]
     }
     return res
 }
@@ -998,13 +1359,17 @@ function visitValuedEventRef(valuedEventRef: ValuedEventRef | undefined): [strin
 function visitVariableDeclaration(runtimeState: VariableDeclaration[] | undefined, file : CompositeGeneratorNode): void {
     if (runtimeState != undefined) {
         for(let vardDecl of runtimeState){
-            if(vardDecl.type != undefined && vardDecl.type.$cstNode?.text == "Event"){
+            if(vardDecl.type != undefined){
+                let ruleName : string = ""
+                if (vardDecl.$container.$type == "RuleOpening") {
+                    ruleName = (vardDecl.$container as RuleOpening).onRule?.$refText ?? ""
+                }
                 file.append(`
-                let starts${vardDecl.name}Node: Node = new Step("starts${vardDecl.name}"+getASTNodeUID(node))\n
-                localCCFG.addNode(starts${vardDecl.name}Node)
-                let terminates${vardDecl.name}Node: Node = new Step("terminates${vardDecl.name}"+getASTNodeUID(node))\n
-                localCCFG.addNode(terminates${vardDecl.name}Node)
-                localCCFG.addEdge(starts${vardDecl.name}Node,terminates${vardDecl.name}Node)
+                let ${vardDecl.name+ruleName}Node: Node = new Step(node,NodeType.starts,[])\n
+                localCCFG.addNode(${vardDecl.name+ruleName}Node)
+                // let terminates${vardDecl.name+ruleName}Node: Node = new Step(node,NodeType.terminates,[])\n
+                // localCCFG.addNode(terminates${vardDecl.name+ruleName}Node)
+                // localCCFG.addEdge(starts${vardDecl.name+ruleName}Node,terminates${vardDecl.name+ruleName}Node)
                 `)
             }
         }
@@ -1024,7 +1389,7 @@ function getVariableDeclarationCode(runtimeState: VariableDeclaration[] | undefi
        // res = res + `\`const std::lock_guard<std::mutex> lock(sigma_mutex);\`,`
         let sep = ""
         for(let vardDecl of runtimeState){
-            if(vardDecl.type != undefined && vardDecl.type.$cstNode?.text == "Event"){
+            if(vardDecl.type != undefined && vardDecl.type.$cstNode?.text == "event"){
                 continue
             }else{
                  if(vardDecl.value != undefined && vardDecl.value.$type == "MemberCall"){
@@ -1035,6 +1400,7 @@ function getVariableDeclarationCode(runtimeState: VariableDeclaration[] | undefi
                    
                 //    `\`${assignVar},\${getASTNodeUID(node)}${vardDecl.name},${(vardDecl.value != undefined)?(vardDecl.value as MemberCall).element?.$refText:""}\``
                 }else{
+                    // TEMP test if (vardDecl.type?.primitive && vardDecl.type.primitive.name !== "event")
                     //res = res + sep + `\`sigma["\${getASTNodeUID(node)}${vardDecl.name}"] = new ${getVariableType(vardDecl.type)}(${(vardDecl.value != undefined)?vardDecl.value.$cstNode?.text:""});\``
                     res = res + sep + `new CreateGlobalVarInstruction(\`\${this.getASTNodeUID(node)}${vardDecl.name}\`,\`${getVariableType(vardDecl.type)}\`)`
                     sep = ","
@@ -1154,23 +1520,28 @@ function visitStateModifications(ruleCF: RuleControlFlow, actionsstring: string)
             let lhsType = inferType(action.lhs, new Map())
             typeName = getCPPVariableTypeName(lhsType.$type);
         }
-        let rhsElem = (action.rhs as MemberCall).element?.ref
-        if (rhsElem == undefined) {
-            return actionsstring
-        }
         let lhsPrev = ((action.lhs as MemberCall).previous as MemberCall)?.element
         let lhsElem = (action.lhs as MemberCall).element?.ref
         if (lhsElem == undefined) {
             return actionsstring
         }
 
-        actionsstring = actionsstring + sep + createVariableFromMemberCall(action.rhs as MemberCall, typeName)
-        sep = ","
-        
-        if(rhsElem.$type == "TemporaryVariable"){
-            actionsstring = actionsstring + sep + `new SetGlobalVarInstruction(\`\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}\`,\`\${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset}\`,\`${typeName}\`)`
-        }else{
-            actionsstring = actionsstring + sep + `new SetGlobalVarInstruction(\`\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}\`,\`\${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset}\`,\`${typeName}\`)`
+        if (action.rhs.$type == "MemberCall") {
+            let rhsElem = (action.rhs as MemberCall).element?.ref
+            if (rhsElem == undefined) {
+                return actionsstring
+            }
+
+            actionsstring = actionsstring + sep + createVariableFromMemberCall(action.rhs as MemberCall, typeName)
+            sep = ","
+            
+            if(rhsElem.$type == "TemporaryVariable"){
+                actionsstring = actionsstring + sep + `new SetGlobalVarInstruction(\`\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}\`,\`\${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset}\`,\`${typeName}\`)`
+            }else{
+                actionsstring = actionsstring + sep + `new SetGlobalVarInstruction(\`\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}\`,\`\${this.getASTNodeUID(node)}${(action.rhs as MemberCall).$cstNode?.offset}\`,\`${typeName}\`)`
+            }
+        } else if (action.rhs.$type == "BooleanExpression" || action.rhs.$type == "NumberExpression" || action.rhs.$type == "StringExpression") {
+            actionsstring = actionsstring + sep + `new SetGlobalVarInstruction(\`\${this.getASTNodeUID(node${lhsPrev != undefined ? "."+lhsPrev.$refText : ""})}${lhsElem.name}\`,\`${action.rhs.$cstNode?.text}\`,\`${typeName}\`)`
         }
     }
     return actionsstring;
@@ -1249,7 +1620,7 @@ function writePreambule(fileNode: CompositeGeneratorNode, data: FilePathData) {
     fileNode.append(`
 import fs from 'fs';
 import { AstNode, Reference, isReference, AstUtils } from "langium";
-import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole, AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction} from "ccfg";`, NL)
+import { AndJoin, Choice, Fork, CCFG, Node, OrJoin, Step, NodeType, Hole, TypedElement, TimerHole, CollectionHole, AddSleepInstruction, AssignVarInstruction, CreateGlobalVarInstruction, CreateVarInstruction, OperationInstruction, ReturnInstruction, SetGlobalVarInstruction, SetVarFromGlobalInstruction, VerifyEqualInstruction, BroadcastEventEmission, BroadcastEventReception, CreateEventChannelInstruction, EmitEventInstruction, WaitEventInstruction, AckEventInstruction} from "ccfg";`, NL)
 }
 
 
@@ -1286,8 +1657,8 @@ function addUtilFunctions(fileNode: CompositeGeneratorNode,rootTypeName: string)
                     this.fillTimerHole(holeNode as TimerHole, globalCCFG)
                     continue
                 }if (holeNode.getType() == "CollectionHole") {
-                    if (debug) console.log("filling timer hole: "+holeNode.uid)
-                        this.fillCollectionHole(holeNode as CollectionHole, globalCCFG)
+                    if (debug) console.log("filling collection hole: "+holeNode.uid)
+                        this.fillCollectionHole(holeNode as CollectionHole, globalCCFG, astNodeToLocalCCFG)
                         continue
                 }else{
                     if (debug) console.log("filling hole: "+holeNode.uid)
@@ -1295,16 +1666,30 @@ function addUtilFunctions(fileNode: CompositeGeneratorNode,rootTypeName: string)
                         throw new Error("Hole has undefined astNode :"+holeNode.uid)
                     }
                     let holeNodeLocalCCFG = astNodeToLocalCCFG.get(holeNode.astNode) as CCFG
-                    globalCCFG.fillHole(holeNode, holeNodeLocalCCFG)
+                    if (holeNodeLocalCCFG.alreadyUsedToFillHole) { //is already filled as a consequence of another hole being filled in this same iteration of the loop
+                        let sourceEdge = holeNode.inputEdges[0];
+                        let newEdge = globalCCFG.addEdge(sourceEdge.from, holeNodeLocalCCFG.initialState as Node, sourceEdge.label)
+                        newEdge.guards = [...newEdge.guards, ...sourceEdge.guards]
+                        //clean global CCFG from old hole and edge to hole
+                        globalCCFG.nodes = globalCCFG.nodes.filter(node => node !== holeNode)
+                        globalCCFG.edges = globalCCFG.edges.filter(edge => edge !== sourceEdge)
+                    }else{
+                        globalCCFG.fillHole(holeNode, holeNodeLocalCCFG)
+                        holeNodeLocalCCFG.alreadyUsedToFillHole = true
+                    }
                 }
             }
             holeNodes = this.retrieveHoles(globalCCFG)
+
         }
+
+        // Post-process once after all holes are filled.
+        this.postProcessCCFGForChannelInitialization(globalCCFG);
 
         return globalCCFG
     }
 
-    fillCollectionHole(hole: CollectionHole, ccfg: CCFG) {
+    fillCollectionHole(hole: CollectionHole, globalCCFG: CCFG, astNodeToLocalCCFG: Map<AstNode, CCFG>) {
         let holeNodeLocalCCFG = new CCFG()
         let startsCollectionHoleNode: Node = new Step(hole.astNode,NodeType.starts,[])
         holeNodeLocalCCFG.addNode(startsCollectionHoleNode)
@@ -1320,7 +1705,17 @@ function addUtilFunctions(fileNode: CompositeGeneratorNode,rootTypeName: string)
                 previousNode = collectionHole
             }
             holeNodeLocalCCFG.addEdge(previousNode,terminatesCollectionHoleNode)
-            ccfg.fillHole(hole, holeNodeLocalCCFG)
+            if (holeNodeLocalCCFG.alreadyUsedToFillHole) { //is already filled as a consequence of another hole being filled in this same iteration of the loop
+                let sourceEdge = hole.inputEdges[0];
+                let newEdge = globalCCFG.addEdge(sourceEdge.from, holeNodeLocalCCFG.initialState as Node, sourceEdge.label)
+                newEdge.guards = [...newEdge.guards, ...sourceEdge.guards]
+                //clean global CCFG from old hole and edge to hole
+                globalCCFG.nodes = globalCCFG.nodes.filter(node => node !== hole)
+                globalCCFG.edges = globalCCFG.edges.filter(edge => edge !== sourceEdge)
+            }else{
+                globalCCFG.fillHole(hole, holeNodeLocalCCFG)
+                holeNodeLocalCCFG.alreadyUsedToFillHole = true
+            }
         }
         else{
             let forkNode = new Fork(hole.astNode)
@@ -1333,6 +1728,8 @@ function addUtilFunctions(fileNode: CompositeGeneratorNode,rootTypeName: string)
                 joinNode = new OrJoin(hole.astNode)
             } 
             holeNodeLocalCCFG.addNode(joinNode)
+            joinNode.syncNodeIds.push(forkNode.uid)
+            forkNode.syncNodeIds.push(joinNode.uid)
             holeNodeLocalCCFG.addEdge(joinNode,terminatesCollectionHoleNode)
             for (let e of hole.astNodeCollection){
                 let collectionHole : Hole = new Hole(e)
@@ -1340,7 +1737,17 @@ function addUtilFunctions(fileNode: CompositeGeneratorNode,rootTypeName: string)
                 holeNodeLocalCCFG.addEdge(forkNode,collectionHole)
                 holeNodeLocalCCFG.addEdge(collectionHole,joinNode)
             }
-            ccfg.fillHole(hole, holeNodeLocalCCFG)
+             if (holeNodeLocalCCFG.alreadyUsedToFillHole) { //is already filled as a consequence of another hole being filled in this same iteration of the loop
+                let sourceEdge = hole.inputEdges[0];
+                let newEdge = globalCCFG.addEdge(sourceEdge.from, holeNodeLocalCCFG.initialState as Node, sourceEdge.label)
+                newEdge.guards = [...newEdge.guards, ...sourceEdge.guards]
+                //clean global CCFG from old hole and edge to hole
+                globalCCFG.nodes = globalCCFG.nodes.filter(node => node !== hole)
+                globalCCFG.edges = globalCCFG.edges.filter(edge => edge !== sourceEdge)
+            }else{
+                globalCCFG.fillHole(hole, holeNodeLocalCCFG)
+                holeNodeLocalCCFG.alreadyUsedToFillHole = true
+            }
         }
         return
     }
@@ -1397,6 +1804,45 @@ function addUtilFunctions(fileNode: CompositeGeneratorNode,rootTypeName: string)
         var r = node.$cstNode?.range
         return node.$type+r?.start.line+"_"+r?.start.character+"_"+r?.end.line+"_"+r?.end.character;
     }
+
+    postProcessCCFGForChannelInitialization(ccfg: CCFG): void {
+            if (ccfg.initialState == undefined) {
+                return;
+            }
+
+            const channels = new Map<string, { listenerCount: number; payloadKind: string }>();
+
+            // Collect all event channels from all nodes
+            for (const node of ccfg.nodes) {
+                for (const fdef of node.functionsDefs) {
+                    if (fdef instanceof CreateEventChannelInstruction) {
+                        const previous = channels.get(fdef.channelName);
+                        if (previous == undefined) {
+                            channels.set(fdef.channelName, { listenerCount: fdef.listenerCount, payloadKind: fdef.payloadKind });
+                        } else {
+                            channels.set(fdef.channelName, {
+                                listenerCount: Math.max(previous.listenerCount, fdef.listenerCount),
+                                payloadKind: previous.payloadKind != "void" ? previous.payloadKind : fdef.payloadKind
+                            });
+                        }
+                    } else if (fdef instanceof EmitEventInstruction || fdef instanceof WaitEventInstruction) {
+                        const channelName = fdef.channelName;
+                        if (!channels.has(channelName)) {
+                            channels.set(channelName, { listenerCount: 1, payloadKind: "void" });
+                        }
+                    }
+                }
+            }
+
+            // Prepend channel initialization instructions to the start node
+            const channelInstructions = [];
+            for (const [channelName, cfg] of channels) {
+                channelInstructions.push(new CreateEventChannelInstruction(channelName, cfg.listenerCount, cfg.payloadKind));
+            }
+
+            // Prepend to existing instructions at the start node
+            ccfg.initialState.functionsDefs = [...channelInstructions, ...ccfg.initialState.functionsDefs];
+        }
     `)
 }
 

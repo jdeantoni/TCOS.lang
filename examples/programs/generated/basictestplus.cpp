@@ -5,6 +5,13 @@
         #include <mutex>
         #include <iostream>
         #include <chrono>
+        #include <any>
+        #include <condition_variable>
+        #include <atomic>
+        #include <memory>
+        #include <vector>
+        #include <type_traits>
+        #include <stdexcept>
         #include "../utils/LockingQueue.hpp"
         
         using namespace std::chrono_literals;
@@ -14,48 +21,153 @@
         
         std::unordered_map<std::string, void*> sigma;
         std::mutex sigma_mutex;  // protects sigma
+
+        struct com_EventChannel {
+            int listenerCount;
+            std::string payloadKind;
+            LockingQueue<std::pair<std::any, int>> queue;
+            int nextToken;
+            std::unordered_map<int, int> pendingAcks;
+        };
+
+        std::unordered_map<std::string, std::shared_ptr<com_EventChannel>> eventChannels;
+        std::unordered_map<int, std::string> eventTokenToChannel;
+        std::mutex eventMutex;
+        int com_last_event_token = -1;
+
+        std::shared_ptr<com_EventChannel> com_get_event_channel(const std::string& name){
+            const std::lock_guard<std::mutex> lock(eventMutex);
+            auto it = eventChannels.find(name);
+            if (it == eventChannels.end()) {
+                throw std::runtime_error("Unknown event channel: " + name);
+            }
+            return it->second;
+        }
+
+        void com_create_event_channel(const std::string& name, int listenerCount, const std::string& payloadKind){
+            const std::lock_guard<std::mutex> lock(eventMutex);
+            if (eventChannels.find(name) != eventChannels.end()) {
+                return;
+            }
+            auto channel = std::make_shared<com_EventChannel>();
+            channel->listenerCount = listenerCount;
+            channel->payloadKind = payloadKind;
+            channel->nextToken = 1;
+            eventChannels[name] = channel;
+        }
+
+        void com_emit_event(const std::string& name, const std::any& payload, bool awaitAcks){
+            auto channel = com_get_event_channel(name);
+
+            int token;
+            {
+                const std::lock_guard<std::mutex> lock(eventMutex);
+                token = channel->nextToken;
+                channel->nextToken += 1;
+                int expectedAcks = awaitAcks ? channel->listenerCount : 0;
+                if (expectedAcks > 0) {
+                    channel->pendingAcks[token] = expectedAcks;
+                    eventTokenToChannel[token] = name;
+                }
+            }
+
+            channel->queue.push({payload, token});
+
+            if (awaitAcks){
+                int remaining = 0;
+                do {
+                    {
+                        const std::lock_guard<std::mutex> lock(eventMutex);
+                        auto it = channel->pendingAcks.find(token);
+                        remaining = (it == channel->pendingAcks.end()) ? 0 : it->second;
+                    }
+                    if (remaining > 0) {
+                        std::this_thread::sleep_for(10ms);
+                    }
+                } while (remaining > 0);
+
+                const std::lock_guard<std::mutex> lock(eventMutex);
+                channel->pendingAcks.erase(token);
+                eventTokenToChannel.erase(token);
+            }
+        }
+
+        std::pair<std::any, int> com_wait_event(const std::string& name){
+            auto channel = com_get_event_channel(name);
+            std::pair<std::any, int> event;
+            channel->queue.waitAndPop(event);
+            return event;
+        }
+
+        void com_ack_event(int token){
+            const std::lock_guard<std::mutex> lock(eventMutex);
+            auto tokenIt = eventTokenToChannel.find(token);
+            if (tokenIt == eventTokenToChannel.end()) {
+                return;
+            }
+
+            auto channelIt = eventChannels.find(tokenIt->second);
+            if (channelIt == eventChannels.end()) {
+                return;
+            }
+
+            auto channel = channelIt->second;
+            int remaining = 0;
+            auto pendingIt = channel->pendingAcks.find(token);
+            if (pendingIt != channel->pendingAcks.end()) {
+                remaining = pendingIt->second;
+            }
+            remaining -= 1;
+
+            if (remaining <= 0) {
+                channel->pendingAcks.erase(token);
+                eventTokenToChannel.erase(token);
+            } else {
+                channel->pendingAcks[token] = remaining;
+            }
+        }
         
-        void functioninit3Variable(){
+        void functioninit4Variable(){
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["Variable2_0_2_10currentValue"] = new int();}
 }
-void function5initializeVar(){
+void function6initializeVar(){
 	int Variable2_0_2_101432;
 	Variable2_0_2_101432 = 1;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable2_0_2_10currentValue"]) = Variable2_0_2_101432;}
 }
-void functioninit6Variable(){
+void functioninit8Variable(){
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["Variable4_0_4_10currentValue"] = new int();}
 }
-void function8initializeVar(){
+void function10initializeVar(){
 	int Variable4_0_4_101432;
 	Variable4_0_4_101432 = 3;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable4_0_4_10currentValue"]) = Variable4_0_4_101432;}
 }
-int function16accessVarRef(){
+int function18accessVarRef(){
 	int VarRef8_4_8_61647;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	VarRef8_4_8_61647 = *(int*)sigma["Variable2_0_2_10currentValue"];}
 	int VarRef8_4_8_6terminates;
 	VarRef8_4_8_6terminates = VarRef8_4_8_61647;
 	return VarRef8_4_8_6terminates;
 }
-void function24executeAssignment2(int resRight){
+void function26executeAssignment2(int resRight){
 	int Assignment9_4_9_112622;
 	Assignment9_4_9_112622 = resRight;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable2_0_2_10currentValue"]) = Assignment9_4_9_112622;}
 }
-void function33executeAssignment2(int resRight){
+void function35executeAssignment2(int resRight){
 	int Assignment11_4_11_92622;
 	Assignment11_4_11_92622 = resRight;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((int*)sigma["Variable4_0_4_10currentValue"]) = Assignment11_4_11_92622;}
 }
-int function25accessVarRef(){
+int function27accessVarRef(){
 	int VarRef9_9_9_111647;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	VarRef9_9_9_111647 = *(int*)sigma["Variable4_0_4_10currentValue"];}
 	int VarRef9_9_9_11terminates;
 	VarRef9_9_9_11terminates = VarRef9_9_9_111647;
 	return VarRef9_9_9_11terminates;
 }
-int function34accessVarRef(){
+int function36accessVarRef(){
 	int VarRef11_7_11_91647;
 	{const std::lock_guard<std::mutex> lock(sigma_mutex);	VarRef11_7_11_91647 = *(int*)sigma["Variable2_0_2_10currentValue"];}
 	int VarRef11_7_11_9terminates;
@@ -63,28 +175,28 @@ int function34accessVarRef(){
 	return VarRef11_7_11_9terminates;
 }
 int main(){
-		functioninit3Variable();
-	function5initializeVar();
-	functioninit6Variable();
-	function8initializeVar();
-	int result16accessVarRef = function16accessVarRef();
-	bool flag15 = true;
-	LockingQueue<Void> synch15;
+		functioninit4Variable();
+	function6initializeVar();
+	functioninit8Variable();
+	function10initializeVar();
+	int result18accessVarRef = function18accessVarRef();
+	bool flag17 = true;
+	LockingQueue<Void> synch17;
 	int VarRef8_4_8_6terminate;
-	VarRef8_4_8_6terminate = result16accessVarRef;
+	VarRef8_4_8_6terminate = result18accessVarRef;
 	if (VarRef8_4_8_6terminate == true){
-		int result25accessVarRef = function25accessVarRef();
-		function24executeAssignment2(result25accessVarRef);
-		{Void fakeParam15;
- 		synch15.push(fakeParam15);}
+		int result27accessVarRef = function27accessVarRef();
+		function26executeAssignment2(result27accessVarRef);
+		{Void fakeParam17;
+ 		synch17.push(fakeParam17);}
 	}
 	if (VarRef8_4_8_6terminate == false){
-		int result34accessVarRef = function34accessVarRef();
-		function33executeAssignment2(result34accessVarRef);
-		{Void fakeParam15;
- 		synch15.push(fakeParam15);}
+		int result36accessVarRef = function36accessVarRef();
+		function35executeAssignment2(result36accessVarRef);
+		{Void fakeParam17;
+ 		synch17.push(fakeParam17);}
 	}
-	{Void joinPopped15;
- 	synch15.waitAndPop(joinPopped15);}
+	{Void joinPopped17;
+ 	synch17.waitAndPop(joinPopped17);}
 for(auto entry : sigma){ std::cout << entry.first << " : " << *((int*)entry.second) << std::endl;}
 }

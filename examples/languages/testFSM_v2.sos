@@ -46,7 +46,7 @@ open Transition{
          <this,σ> ~> isSensitive := false;
                      emits source.stopOtherTransitions;
                      emits source.askTermination;
-                     <sentEvent,σ>
+                     broadcasts sentEvent
                      
               when <sentEvent,σ>
     ----------------------------------------------                  transitionEnd

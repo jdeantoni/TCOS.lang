@@ -56,7 +56,7 @@ open Transition{
       when <guardEvent,σ> [isSensitive == true]
     ------------------------------------------------------ fire
          <this,σ> ~> isSensitive := false;
-                     <sentEvent,σ>
+                     broadcasts emits sentEvent
                      
               when <sentEvent,σ>
     ----------------------------------------------                  transitionEnd

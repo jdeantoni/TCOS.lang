@@ -31,7 +31,7 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
 
 
     
-    let debug: boolean = false;
+    let debug: boolean = opts.debug != undefined && opts.debug;
     let ccfg = doGenerateCCFG(dotFile, model,debug);
     const codeFile = new CompositeGeneratorNode();
     

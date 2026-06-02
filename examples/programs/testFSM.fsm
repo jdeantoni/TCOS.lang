@@ -3,14 +3,15 @@ event e2
 
 event ea
 event eb
-fsm fsm1 [s1]
-    state s1{
-        out : t1 //t3
+fsm fsm1 [S1]
+    state S1{
+        out : t1 
+        in: t2
     }
-    state s2{
+    state S2{
         out:  t2
+        in: t1
     }
     
-    t1: s1 ---when e1/ea--> s2
-//    t3: s1 ---when e2/eb--> s1
-    t2: s2 ---when e2/eb--> s1
+    t1: S1 ---when e1/ea--> S2
+    t2: S2 ---when e2/eb--> S1

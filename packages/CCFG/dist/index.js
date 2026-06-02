@@ -42,6 +42,56 @@ export class CreateGlobalVarInstruction extends Instruction {
         return "createGlobalVar," + this.type + "," + this.varName;
     }
 }
+export class CreateEventChannelInstruction extends Instruction {
+    channelName = "";
+    listenerCount = 0;
+    payloadKind = "";
+    constructor(name, listenerCount, payloadKind) {
+        super("createEventChannelInstruction");
+        this.channelName = name;
+        this.listenerCount = listenerCount;
+        this.payloadKind = payloadKind;
+    }
+    toString() {
+        return "createEventChannel," + this.channelName + "," + this.listenerCount + "," + this.payloadKind;
+    }
+}
+export class EmitEventInstruction extends Instruction {
+    channelName = "";
+    payload = "";
+    awaitAcks = true;
+    constructor(name, payload, awaitAcks = true) {
+        super("emitEventInstruction");
+        this.channelName = name;
+        this.payload = payload;
+        this.awaitAcks = awaitAcks;
+    }
+    toString() {
+        return "emitEvent," + this.channelName + "," + this.payload + "," + this.awaitAcks;
+    }
+}
+export class WaitEventInstruction extends Instruction {
+    channelName = "";
+    outPayload = "";
+    constructor(name, outPayload) {
+        super("waitEventInstruction");
+        this.channelName = name;
+        this.outPayload = outPayload;
+    }
+    toString() {
+        return "waitEvent," + this.channelName + "," + this.outPayload;
+    }
+}
+export class AckEventInstruction extends Instruction {
+    token = "";
+    constructor(token) {
+        super("ackEventInstruction");
+        this.token = token;
+    }
+    toString() {
+        return "ackEvent," + this.token;
+    }
+}
 export class AssignVarInstruction extends Instruction {
     value = "";
     varName = "";
@@ -225,6 +275,7 @@ export class CCFG {
     nodes;
     edges;
     syncEdges = [];
+    alreadyUsedToFillHole = false;
     initialState;
     constructor() {
         this.nodes = [];
@@ -623,6 +674,10 @@ export class CCFG {
                 return "cylinder";
             case "CollectionHole":
                 return "cylinder";
+            case "BroadcastEventEmission":
+                return "cds";
+            case "BroadcastEventReception":
+                return "cds";
             default:
                 return "box";
         }
@@ -704,6 +759,20 @@ export class CollectionHole extends Hole {
     }
     isSequential = false;
     parallelSyncPolicy = "lastOf";
+}
+export class BroadcastEventEmission extends Node {
+    eventName = "";
+    constructor(astNode, eventName) {
+        super(astNode);
+        this.eventName = eventName;
+    }
+}
+export class BroadcastEventReception extends Node {
+    eventName = "";
+    constructor(astNode, eventName) {
+        super(astNode);
+        this.eventName = eventName;
+    }
 }
 // export class Timer extends Node {
 //     constructor(value: any) {

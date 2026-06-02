@@ -1,0 +1,23 @@
+digraph G {
+  "26" [label="26[]:Step_starts" shape="ellipse" ];
+  "27" [label="27[]:Step_starts:
+void functioninit27State(){
+createGlobalVar,bool,State9_4_11_5isInitial
+setGlobalVar,bool,State9_4_11_5isInitial,false
+}" shape="ellipse" ];
+  "28" [label="28[]:Step_terminates" shape="ellipse" ];
+  "29" [label="29[]:CollectionHole" shape="cylinder" ];
+  "30" [label="30[]:Step:
+void function30firstStartOfInitialState(){
+setGlobalVar,bool,State9_4_11_5isInitial,false
+}" shape="ellipse" ];
+  "31" [label="31[]:AndJoin" shape="invtriangle" ];
+  "32" [label="32[]:OrJoin" shape="invtriangle" ];
+  "27" -> "30" [label="verifyEqual,State9_4_11_5isInitial,true"];
+  "30" -> "32" [label="verifyEqual,State9_4_11_5isInitial,true"];
+  "30" -> "31" [label=""];
+  "28" -> "31" [label=""];
+  "31" -> "32" [label="verifyEqual,State9_4_11_5isInitial,false"];
+  "32" -> "29" [label=""];
+  "29" -> "28" [label=""];
+}
