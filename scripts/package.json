@@ -13,7 +13,6 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@graphty/algorithms": "^1.7.1",
     "chokidar": "^5.0.0",
     "dotparser": "^1.1.1"
   }

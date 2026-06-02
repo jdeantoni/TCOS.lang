@@ -11,19 +11,8 @@ import { registerValidationChecks } from "../../node_modules/langium/lib/grammar
 import { StructuralOperationalSemanticsGeneratedModule, StructuralOperationalSemanticsGeneratedSharedModule } from "./generated/module.js";
 import { StructuralOperationalSemanticsValidator, registerSoSValidationChecks } from "./structural-operational-semantics-validator.js";
 import { SoSScopeProvider } from "./sos-scope.js";
-// import { LangiumGrammarDocument } from 'langium/lib/grammar/workspace/documents';
 import { registerTypeValidationChecks } from "../../node_modules/langium/lib/grammar/validation/types-validator.js";
 import { SoSSemanticTokenProvider } from "./structural-operational-semantics-semantic-token.js";
-
-
-//import {LangiumGrammarGeneratedModule /*, LangiumGrammarGeneratedSharedModule*/ } from 'langium/src/grammar/generated/module';
-//import { LangiumGrammarModule} from 'langium';
-
-
-//import { SoSScopeComputation, SoSScopeProvider } from './sos-scope';
-
-
-
 
 /**
  * Declaration of custom services - add your own service classes here.
@@ -46,12 +35,7 @@ export type StructuralOperationalSemanticsServices = LangiumServices & Structura
  * selected services, while the custom services must be fully specified.
  */
 export const StructuralOperationalSemanticsModule: Module<StructuralOperationalSemanticsServices, PartialLangiumServices & StructuralOperationalSemanticsAddedServices> = {
-    references: {
-  //      ScopeComputation: (services) => new SoSScopeComputation(services),
-        ScopeProvider: (services) => new SoSScopeProvider(services)//,
-        // QualifiedNameProvider: () => new QualifiedNameProvider()
-    },
-    
+    references: { ScopeProvider: (services) => new SoSScopeProvider(services) },
     validation: {
         StructuralOperationalSemanticsValidator: () => new StructuralOperationalSemanticsValidator()
     },
@@ -76,45 +60,27 @@ export const StructuralOperationalSemanticsModule: Module<StructuralOperationalS
  * @returns An object wrapping the shared services and the language-specific services
  */
 export function createStructuralOperationalSemanticsServices(context: DefaultSharedModuleContext): {
-    shared: LangiumSharedServices,
+    sharedService: LangiumSharedServices,
     langiumServices: LangiumServices,
     StructuralOperationalSemantics: StructuralOperationalSemanticsServices
 } {
-    const shared = inject(
+    const sharedService = inject(
         createDefaultSharedModule(context),
         StructuralOperationalSemanticsGeneratedSharedModule
     );
     const StructuralOperationalSemantics = inject(
-        createDefaultModule({ shared }),
+        createDefaultModule({ shared: sharedService }),
         StructuralOperationalSemanticsGeneratedModule,
         StructuralOperationalSemanticsModule
     );
-    const langiumServices = /*inject(
-        createDefaultModule({ shared }),
-        LangiumGrammarGeneratedModule,
-        LangiumGrammarModule
-    );*/
-    createLangiumGrammarServices(context).grammar;
+    const langiumServices = createLangiumGrammarServices(context).grammar;
 
-
-    // addTypeCollectionPhase(shared, langiumServices);
-    shared.ServiceRegistry.register(langiumServices);
+    sharedService.ServiceRegistry.register(langiumServices);
 
     registerValidationChecks(langiumServices);
     registerTypeValidationChecks(langiumServices);
 
-    shared.ServiceRegistry.register(StructuralOperationalSemantics);
+    sharedService.ServiceRegistry.register(StructuralOperationalSemantics);
     registerSoSValidationChecks(StructuralOperationalSemantics);
-    return { shared,langiumServices, StructuralOperationalSemantics };
+    return { sharedService: sharedService,langiumServices, StructuralOperationalSemantics };
 }
-// function addTypeCollectionPhase(sharedServices: LangiumSharedServices, grammarServices: LangiumGrammarServices) {
-//     const documentBuilder = sharedServices.workspace.DocumentBuilder;
-//     documentBuilder.onBuildPhase(DocumentState.IndexedReferences, async (documents, cancelToken) => {
-//         for (const document of documents) {
-//             await interruptAndCheck(cancelToken);
-//             const typeCollector = grammarServices.validation.ValidationResourcesCollector;
-//             const grammar = document.parseResult.value as Grammar;
-//             (document as LangiumGrammarDocument).validationResources = typeCollector.collectValidationResources(grammar);
-//         }
-//     });
-// }

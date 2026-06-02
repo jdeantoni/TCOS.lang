@@ -24,9 +24,7 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
     
 };
 
-export type GenerateOptions = {
-    destination?: string;
-}
+export type GenerateOptions = { destination?: string; }
 
 export default function(): void {
     const program = new Command();
