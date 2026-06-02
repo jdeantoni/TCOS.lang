@@ -7,6 +7,7 @@ import { executeCommand } from './commands';
 import { DAG, LANGUAGES, ROOT } from './project';
 import { info, success, error, popIndent, pushIndent } from './display';
 import { installationOptions, InstallResult, LanguageConfig } from './types';
+import { getNodePath } from './utils';
 
 /**
  * Run the standard npm pipeline in the given folder.
@@ -87,7 +88,7 @@ export async function installAllLanguages(): Promise<InstallResult[]>{
 async function installPackage(name: string, dependances: string[]): Promise<InstallResult> {
     info(`${name} installation...`);
     pushIndent();
-    const folder = path.join(ROOT, "packages", name);
+    const folder = getNodePath(name);
 
     try {
         await runNpmPipeline(folder, {
