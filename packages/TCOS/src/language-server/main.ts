@@ -7,7 +7,7 @@ import { createStructuralOperationalSemanticsServices } from "./structural-opera
 const connection = createConnection(ProposedFeatures.all);
 
 // Inject the shared services and language-specific services
-const { sharedService: shared } = createStructuralOperationalSemanticsServices({ connection, ...NodeFileSystem });
+const { shared } = createStructuralOperationalSemanticsServices({ connection, ...NodeFileSystem });
 
 // Start the language server with the shared services
 startLanguageServer(shared);

@@ -18,16 +18,14 @@ import { SoSSemanticTokenProvider } from "./structural-operational-semantics-sem
  * Declaration of custom services - add your own service classes here.
  */
 export type StructuralOperationalSemanticsAddedServices = {
-    validation: {
-        StructuralOperationalSemanticsValidator: StructuralOperationalSemanticsValidator
-    }
+    validation: { StructuralOperationalSemanticsValidator: StructuralOperationalSemanticsValidator }
 }
 
 /**
  * Union of Langium default services and your custom services - use this as constructor parameter
  * of custom service classes.
  */
-export type StructuralOperationalSemanticsServices = LangiumServices & StructuralOperationalSemanticsAddedServices
+export type StructuralOperationalSemanticsServices = LangiumServices & StructuralOperationalSemanticsAddedServices;
 
 /**
  * Dependency injection module that overrides Langium default services and contributes the
@@ -60,27 +58,27 @@ export const StructuralOperationalSemanticsModule: Module<StructuralOperationalS
  * @returns An object wrapping the shared services and the language-specific services
  */
 export function createStructuralOperationalSemanticsServices(context: DefaultSharedModuleContext): {
-    sharedService: LangiumSharedServices,
+    shared: LangiumSharedServices,
     langiumServices: LangiumServices,
     StructuralOperationalSemantics: StructuralOperationalSemanticsServices
 } {
-    const sharedService = inject(
+    const shared = inject(
         createDefaultSharedModule(context),
         StructuralOperationalSemanticsGeneratedSharedModule
     );
     const StructuralOperationalSemantics = inject(
-        createDefaultModule({ shared: sharedService }),
+        createDefaultModule({ shared: shared }),
         StructuralOperationalSemanticsGeneratedModule,
         StructuralOperationalSemanticsModule
     );
     const langiumServices = createLangiumGrammarServices(context).grammar;
 
-    sharedService.ServiceRegistry.register(langiumServices);
+    shared.ServiceRegistry.register(langiumServices);
 
     registerValidationChecks(langiumServices);
     registerTypeValidationChecks(langiumServices);
 
-    sharedService.ServiceRegistry.register(StructuralOperationalSemantics);
+    shared.ServiceRegistry.register(StructuralOperationalSemantics);
     registerSoSValidationChecks(StructuralOperationalSemantics);
-    return { sharedService: sharedService,langiumServices, StructuralOperationalSemantics };
+    return { shared: shared,langiumServices, StructuralOperationalSemantics };
 }

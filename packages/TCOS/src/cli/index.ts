@@ -4,7 +4,7 @@ import { StructuralOperationalSemanticsLanguageMetaData } from "../language-serv
 import { createStructuralOperationalSemanticsServices } from "../language-server/structural-operational-semantics-module.js";
 
 import { extractSosAndGrammarModels } from "./cli-util.js";
-import { generateCompilerFrontEndFromSoS } from "./generatorCCFGCompiler.js";
+import { generateCompilerFrontEndFromSoS } from "./compilerFrontEnd/generateCompilerFrontEnd.js";
 import { NodeFileSystem } from "langium/node";
 
 import * as url from "node:url";
