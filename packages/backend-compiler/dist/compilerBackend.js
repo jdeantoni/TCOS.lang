@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import { visitAllNodes } from "./visitors.js";
-import { TraversalContext } from "./TraversalContext.js";
+import { TraversalContext } from "./class/TraversalContext.js";
 import { compileFunctionDefs } from "./generationFunctionDefs.js";
 export function generatefromCCFG(ccfg, codeFile, generator, filePath, debug) {
     const ctx = new TraversalContext();

@@ -2,7 +2,7 @@
 import chalk from "chalk";
 import { visitAllNodes } from "./visitors.js";
 import { CompositeGeneratorNode } from "langium/generate";
-import { TraversalContext } from "./TraversalContext.js";
+import { TraversalContext } from "./class/TraversalContext.js";
 import { CCFG } from "ccfg";
 import { compileFunctionDefs } from "./generationFunctionDefs.js";
 import { IGenerator } from "./generator/GeneratorInterface.js";

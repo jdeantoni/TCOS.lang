@@ -1,5 +1,5 @@
 import { CCFG, Edge, Node } from "ccfg";
-import { TraversalContext } from "./TraversalContext.js";
+import { TraversalContext } from "./class/TraversalContext.js";
 import { IGenerator } from "./generator/GeneratorInterface.js";
 
 const debug = false;

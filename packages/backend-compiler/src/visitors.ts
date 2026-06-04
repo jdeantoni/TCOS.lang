@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { TraversalContext } from "./TraversalContext.js";
+import { TraversalContext } from "./class/TraversalContext.js";
 import { IGenerator } from "./generator/GeneratorInterface.js";
 import { CCFG, Edge, Node, VerifyEqualInstruction } from "ccfg";
 import { addComparisonVariableDeclaration, addCorrespondingCode, addQueuePushCode, getPreviousTypedNodes } from "./generatesCode.js";
