@@ -4,12 +4,19 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test:simplel": "npm run build && node scripts/interpret-simpleL.mjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "dependencies": {
+    "ccfg": "file:../CCFG"
+  },
   "devDependencies": {
+    "@types/node": "^14.18.63",
     "typescript": "^6.0.3"
-  }
+  },
+  "type": "module"
 }
