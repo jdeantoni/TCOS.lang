@@ -1,5 +1,5 @@
-import { IGenerator } from "./GeneratorInterface.js";
 import { TypedElement } from "ccfg";
+import { IGenerator } from "./GeneratorInterface.js";
 
 
 export class CppGenerator implements IGenerator {
@@ -9,6 +9,7 @@ export class CppGenerator implements IGenerator {
     constructor(debug: boolean = false) {
         this.debug = debug;
     }
+
     setDebug(debug: boolean): void {
         this.debug = debug;
     }
@@ -16,6 +17,7 @@ export class CppGenerator implements IGenerator {
     nameFile(filename: string): string {
         return `${filename}.cpp`;
     }
+
     createBase(): string[] {    
         let res:string[] = []
         res.push(`
@@ -152,9 +154,11 @@ export class CppGenerator implements IGenerator {
         `);// global variables
         return res
     }
+
     endFile():string[] {
         return []
     }
+
     createFunction( fname: string, params: TypedElement[], returnType: string,insideFunction:string[]): string[] {
         let res:string[] = []
         res.push(returnType + " function" + fname + `(${params.map(p => (p as TypedElement).toString()).join(", ")}){\n`)
@@ -167,6 +171,7 @@ export class CppGenerator implements IGenerator {
         res.push("}\n")
         return res
     }
+
     createMainFunction(insideMain:string[]): string[] {
         let res:string[] = []
         res.push("int main(){\n\t")
@@ -177,6 +182,7 @@ export class CppGenerator implements IGenerator {
         res.push("}\n")
         return res
     }
+
     createFuncCall( fname: string, params: string[], typeName: string): string[] {
         if (typeName == "void"){
             return [`function${fname}(${params.join(", ")});\n`]
@@ -184,6 +190,7 @@ export class CppGenerator implements IGenerator {
         
         return [typeName+ " result"+fname+" = function"+fname + `(${params.join(", ")});\n`]
     }
+
     createIf( guards: string[],insideOfIf:string[]): string[] {
         let createIfString:string[] = []
 
@@ -197,6 +204,7 @@ export class CppGenerator implements IGenerator {
         createIfString.push("}\n")
         return createIfString
     }
+
     createAndOpenThread( uid: number,insideThreadCode:string[]): string[] {
         let threadCode:string[] = []
         threadCode = [...threadCode,`std::thread thread${uid}([&](){\n`]
@@ -207,32 +215,37 @@ export class CppGenerator implements IGenerator {
             threadCode = [...threadCode, "\t"+insideThreadCode[i]]
         }
         threadCode = [...threadCode,`});\n`, `thread${uid}.detach();\n`]
-        return threadCode
-
-
+        return threadCode;
     }
+
     createQueue( queueUID: number): string[] {
         return [`LockingQueue<Void> sync${queueUID};\n`]
     }
+
     createLockingQueue( typeName: string, queueUID: number): string[] {
         return [`LockingQueue<${typeName}> sync${queueUID};\n`]
     }
+
     receiveFromQueue( queueUID: number, typeName: string, varName: string): string[] {
         return ["sync" + queueUID + ".waitAndPop("+varName+");\n"]
     }
+
     sendToQueue( queueUID: number, typeName: string, varName: string): string[] {
         return ["sync" + queueUID + ".push(" + varName + ");\n"]
-
     }
+
     createSynchronizer( synchUID: number): string[] {
         return [`bool flag${synchUID} = true;\n`,`LockingQueue<Void> synch${synchUID};\n`]
     }
+
     activateSynchronizer( synchUID: number): string[] {
         return ["{Void fakeParam"+synchUID+";\n " ,"synch" + synchUID + ".push(fakeParam"+synchUID+");}\n"]
     }
+
     waitForSynchronizer( synchUID: number): string[] {
         return ["{Void joinPopped"+synchUID+";\n " ,"synch" + synchUID + ".waitAndPop(joinPopped"+synchUID+");}\n"]
     }
+
     createLoop( uid:number, insideLoop: string[]): string[] {
         let res = ["flag"+uid+"= true;\nwhile (flag"+uid+ " == true){\n\tflag"+uid+" = false;\n"]
         for (let i = 0; i < insideLoop.length; i++) {
@@ -245,30 +258,39 @@ export class CppGenerator implements IGenerator {
     setLoopFlag( uid:number): string[] {
         return ["flag"+uid+ " = true;\n"]
     }
+
     createEqualsVerif(firstValue: string, secondValue: string): string {
         return firstValue + " == " + secondValue
     }
+
     assignVar( varName: string, value: string): string[] {
         return [varName + " = " + value + ";\n"]
     }
+
     returnVar( varName: string): string[] {
         return ["return " + varName + ";\n"]
     }
+
     createVar( type: string, varName: string): string[] {
         return [type + " " + varName + ";\n"]
     }
+
     createGlobalVar( type: string, varName: string): string[] {
         return [`{const std::lock_guard<std::mutex> lock(sigma_mutex);`,"sigma[\"" + varName + "\"] = new "+type+"();}\n"]
     }
+
     setVarFromGlobal( type: string, varName: string, value: string): string[] {
         return [`{const std::lock_guard<std::mutex> lock(sigma_mutex);`,varName + " = *(" + type + "*)sigma[\"" + value + "\"];}\n"]
     }
+
     setGlobalVar( type: string, varName: string, value: string): string[] {
         return [`{const std::lock_guard<std::mutex> lock(sigma_mutex);`,"*(("+type+"*)sigma[\"" + varName + "\"]) = "+value +";}\n"]
     }
+    
     operation( varName: string, n1: string, op: string, n2: string): string[] {
         return [varName + " = " + n1 + " " + op + " " + n2 + ";\n"]
     }
+
     createSleep( duration: string): string[] {
         return [`std::this_thread::sleep_for(${duration}ms);\n`]
     }

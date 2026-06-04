@@ -6,9 +6,6 @@ export class PythonGenerator {
     setDebug(debug) {
         this.debug = debug;
     }
-    // goToFlag(codeFile: CompositeGeneratorNode, queueUID: number): string[] {
-    //     throw new Error("Method not implemented.");
-    // }
     setLoopFlag(queueUID) {
         return [`flag${queueUID} = True\n`];
     }
