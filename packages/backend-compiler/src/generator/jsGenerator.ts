@@ -1,5 +1,5 @@
-import { IGenerator } from "./GeneratorInterface.js";
 import { TypedElement } from "ccfg";
+import { IGenerator } from "./GeneratorInterface.js";
 
 
 export class JsGenerator implements IGenerator {
