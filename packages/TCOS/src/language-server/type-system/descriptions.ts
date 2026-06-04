@@ -138,9 +138,6 @@ export function isParserRuleType(item: TypeDescription): item is ParserRuleTypeD
 
 
 
-
-
-
 export interface RuleOpeningTypeDescription {
     readonly $type: "ruleOpening"
     readonly literal: RuleOpening

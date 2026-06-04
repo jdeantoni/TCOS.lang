@@ -1,5 +1,5 @@
 import { AstNode } from "langium";
-import { BinaryExpression, /*RuleOpening, */isBinaryExpression, isBooleanExpression, isFieldMember, isMemberCall,  isNilExpression, isNumberExpression, isStringExpression, isTypeReference, isUnaryExpression, isVariableDeclaration, MemberCall, TypeReference, isRuleOpening, RuleOpening, isAssignment, ParserRule, isRuleCall, isTemporaryVariable, isCrossReference } from "../generated/ast.js";
+import { BinaryExpression, isBinaryExpression, isBooleanExpression, isFieldMember, isMemberCall,  isNilExpression, isNumberExpression, isStringExpression, isTypeReference, isUnaryExpression, isVariableDeclaration, MemberCall, TypeReference, isRuleOpening, RuleOpening, isAssignment, ParserRule, isRuleCall, isTemporaryVariable, isCrossReference } from "../generated/ast.js";
 import { createBooleanType, createRuleOpeningType as createRuleOpeningType, createErrorType, createNilType, createNumberType, createStringType, createVoidType, isFunctionType, isStringType, TypeDescription, createParserRuleType } from "./descriptions.js";
 
 export function inferType(node: AstNode | undefined, cache: Map<AstNode, TypeDescription>): TypeDescription {
@@ -21,13 +21,6 @@ export function inferType(node: AstNode | undefined, cache: Map<AstNode, TypeDes
         type = createBooleanType(node);
     } else if (isNilExpression(node)) {
         type = createNilType();
-    // } else if (isFunctionDeclaration(node) || isMethodMember(node)) {
-    //     const returnType = inferType(node.returnType, cache);
-    //     const parameters = node.parameters.map(e => ({
-    //         name: e.name,
-    //         type: inferType(e.type, cache)
-    //     }));
-    //     type = createFunctionType(returnType, parameters);
     } else if (isTypeReference(node)) {
         type = inferTypeRef(node, cache);
     } else if (isMemberCall(node)) {
@@ -45,8 +38,6 @@ export function inferType(node: AstNode | undefined, cache: Map<AstNode, TypeDes
         } else {
             type = createErrorType('No type hint for this element', node);
         }
-    // } else if (isParameter(node)) {
-    //     type = inferType(node.type, cache);
     }
     else if (isTemporaryVariable(node)) {
         if (node.type) {
@@ -54,8 +45,6 @@ export function inferType(node: AstNode | undefined, cache: Map<AstNode, TypeDes
         } else {
             type = createErrorType('No type hint for this element', node);
         }
-    // } else if (isParameter(node)) {
-    //     type = inferType(node.type, cache);
     } else if (isFieldMember(node)) {
         type = inferType(node.type, cache);
     } else if (isRuleOpening(node)) {
@@ -68,14 +57,6 @@ export function inferType(node: AstNode | undefined, cache: Map<AstNode, TypeDes
         } else {
             type = createNumberType();
         }
-    // } else if (isPrintStatement(node)) {
-    //     type = createVoidType();
-    // } else if (isReturnStatement(node)) {
-    //     if (!node.value) {
-    //         type = createVoidType();
-    //     } else {
-    //         type = inferType(node.value, cache);
-    //     }
     } else if(isAssignment(node)){
         if(isRuleCall(node.terminal)){
             type = createParserRuleType(node.terminal.rule.ref as ParserRule)
@@ -85,10 +66,7 @@ export function inferType(node: AstNode | undefined, cache: Map<AstNode, TypeDes
         }
     }else if(isRuleCall(node)){
             type = createParserRuleType(node.rule.ref as ParserRule)
-        }
-        
-
-
+    }
     if (!type) {
         type = createErrorType('Could not infer type for ' + node.$type, node);
     }
@@ -112,13 +90,6 @@ function inferTypeRef(node: TypeReference, cache: Map<AstNode, TypeDescription>)
         if (node.reference.ref && isRuleOpening(node.reference.ref)) {
             return createRuleOpeningType(node.reference.ref);
         }
-    // } else if (node.returnType) {
-    //     const returnType = inferType(node.returnType, cache);
-    //     const parameters = node.parameters.map((e, i) => ({
-    //         name: e.name ?? `$${i}`,
-    //         type: inferType(e.type, cache)
-    //     }));
-    //     return createFunctionType(returnType, parameters);
     }
     return createErrorType('Could not infer type for this reference', node);
 }
@@ -152,9 +123,7 @@ function inferBinaryExpression(expr: BinaryExpression, cache: Map<AstNode, TypeD
             return createNumberType();
         }
     }
-    /* else if (expr.operator === ':=') {
-        return right;
-    }*/
+
     return createErrorType('Could not infer type from binary expression', expr);
 }
 
@@ -163,7 +132,6 @@ export function getRuleOpeningChain(ruleOpeningItem: RuleOpening): RuleOpening[]
     let value: RuleOpening | undefined = ruleOpeningItem;
     while (value && !set.has(value)) {
         set.add(value);
-       // value = value.superClass?.ref;
     }
     // Sets preserve insertion order
     return Array.from(set);

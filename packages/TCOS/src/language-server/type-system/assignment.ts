@@ -1,5 +1,4 @@
 import { isRuleOpeningType, isFunctionType, isNilType, TypeDescription } from "./descriptions.js";
-// import { getClassChain } from "./infer";
 
 export function isAssignable(from: TypeDescription, to: TypeDescription): boolean {
     if (isRuleOpeningType(from)) {
@@ -7,7 +6,7 @@ export function isAssignable(from: TypeDescription, to: TypeDescription): boolea
             return false;
         }
         const fromLit = from.literal;
-        const fromChain = [fromLit]//getClassChain(fromLit);
+        const fromChain = [fromLit]
         const toClass = to.literal;
         for (const fromClass of fromChain) {
             if (fromClass === toClass) {

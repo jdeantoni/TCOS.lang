@@ -34,18 +34,13 @@ export class SoSScopeProvider extends DefaultScopeProvider {
     }
 
     override getScope(context: ReferenceInfo): Scope {
-        // target element of member calls
-        //console.log("###getScopeProvider: context.property = "+context.property+"\n\t context.reference.$refText = "+context.reference.$refText)        
-        
 
-
-        if (context.property === 'element' /*|| context.property === 'left' || context.property === 'right' || context.property === "reference"*/) {
+        if (context.property === 'element') {
             const memberCall = context.container as MemberCall;
             const previous = memberCall.previous;
             if (!previous) {
                 const ruleOpeningItem = AstUtils.getContainerOfType(context.container, isRuleOpening);
                 
-               // return super.getScope(context);
                 if (ruleOpeningItem) {
                     return this.scopeRuleOpeningMembers(ruleOpeningItem);
                 }
@@ -109,7 +104,6 @@ export class SoSScopeProvider extends DefaultScopeProvider {
             const previousType = inferType(previous, new Map());
             if (isRuleOpeningType(previousType)) {
                 throw new String("in sos-scope.ts line 54")
-               // return this.scopeRuleOpeningMembers(previousType.literal);
             }else if (isParserRuleType(previousType)) {
                 //either the rule has been open and then we need the cope of this ruleOpening or not and then only "assigments" have to be considered
                 const sosSpecItem: SoSSpec | undefined = AstUtils.getContainerOfType(previous?.$container, isSoSSpec);
@@ -125,17 +119,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                 }
                 if(isMemberCall(previous)){
                     const ruleOpeningItem: RuleOpening | undefined = AstUtils.getContainerOfType(previous?.$container, isRuleOpening);
-                //     console.log(chalk.red("previous is ", previous.$type))
-                //     if(isReference(previous.element)){
-                //         console.log(chalk.red("isReference", previous.element.$refText))
-                //         if (ruleOpeningItem && previous.element.ref && previous.element.ref.$type.toString() == "Assignment" && ((previous.element.ref as unknown as  Assignment).terminal as CrossReference).type){
 
-                //             let parserRuleItem = ((previous.element.ref as unknown as  Assignment).terminal as CrossReference).type.ref as ParserRule
-                //             if(parserRuleItem){
-                //                 return this.scopeParsingRule(parserRuleItem, ruleOpeningItem);
-                //             }
-                //         }
-                //     }
                     if (ruleOpeningItem){
                         return this.scopeParsingRule(previousType.literal, ruleOpeningItem);
                     }
@@ -147,14 +131,6 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         }
         return super.getScope(context);
     }
-
-    // private scopeCollectionRuleMembers(collectionRuleItem: CollectionRuleSync, ruleOpeningItem: RuleOpening): Scope {
-    //     var allScopeElements: AstNode[] = (parserRuleItem !== undefined)?this.getAllAssignments(parserRuleItem.definition) : [];
-    //     this.addListFunctions(ruleOpeningItem, allScopeElements);
-    //     allScopeElements = allScopeElements.concat(this.addClocks(ruleOpeningItem))
-
-    //     return this.createScopeForNodes(allScopeElements);
-    // }
 
     private scopeParsingRule(parserRuleItem: ParserRule, ruleOpeningItem: RuleOpening, initialMembers: AstNode[] = []): Scope {
         var allScopeElements: AstNode[] = (parserRuleItem !== undefined)?this.getAllAssignments(parserRuleItem.definition) : [];
@@ -180,7 +156,6 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                 $type: 'TypeReference'
             }
         }
-
 
         var p: Parameter = {
             $container: atFunction,
@@ -215,6 +190,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                 $type: 'TypeReference'
             }
         }
+
         if(context){
             var type = getType(context)
             var returnType : TypeReference = {
@@ -240,6 +216,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                 $type: 'TypeReference'
             }
         }
+
         if(context){
             var type = getType(context)
             var returnType : TypeReference = {
@@ -309,7 +286,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         var allScopeElements: AstNode[] = (ruleOpeningItem.onRule?.ref !== undefined)?this.getAllAssignments(ruleOpeningItem.onRule.ref.definition) : [];
         allScopeElements = allScopeElements.concat(initialMembers)
         allScopeElements = allScopeElements.concat((ruleOpeningItem.onRule?.ref !== undefined)?this.getAllRules(ruleOpeningItem.onRule.ref.definition):[])        
-        //if (! isForControlFlowRule)
+
         var allMembers:AstNode[] = []
         if (context && context.element && context.element.ref && isAssignment(context.element.ref) 
             && isCrossReference((context.element.ref as unknown as Assignment).terminal)){
@@ -338,34 +315,29 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                 }
             }         
         }
-            for(let rule of ruleOpeningItem.rules){
+
+        for(let rule of ruleOpeningItem.rules){
+            if(isRWRule(rule)){
+                /**
+                 * TODO: add temporary variable in scope with recursive call
+                 */
+                for(let expr of AstUtils.streamAllContents((rule as RWRule).premise.eventExpression)){
+                    if(isTemporaryVariable(expr)){
+                        allMembers.push(expr)
+                    }
+                }
+            }
+        }
+        allScopeElements = allMembers.concat(allScopeElements)
+        for(var rule of ruleOpeningItem.rules){
+            if(rule){
                 if(isRWRule(rule)){
-                    /**
-                     * TODO: add temporary variable in scope with recursive call
-                     */
-                    for(let expr of AstUtils.streamAllContents((rule as RWRule).premise.eventExpression)){
-                        if(isTemporaryVariable(expr)){
-                            allMembers.push(expr)
-                        }
-                    }
+                    allScopeElements.push(rule)
                 }
             }
-            allScopeElements = allMembers.concat(allScopeElements)
-        //}else{
-            for(var rule of ruleOpeningItem.rules){
-                if(rule){
-                    if(isRWRule(rule)){
-                        allScopeElements.push(rule)
-                    }
-                    // if(isControlFlowRule(rule)){
-                    //     if(rule.loop){
-                    //         allScopeElements.push(rule.loop.itVar)
-                    //     }
-                    // }
-                }
-                
-            }
-       // }
+            
+        }
+
         allScopeElements = allScopeElements.concat(this.addClocks(ruleOpeningItem))
         allScopeElements = allScopeElements.concat(this.getAllTemporaryVariable(ruleOpeningItem))
         this.addListFunctions(ruleOpeningItem,allScopeElements,context)
@@ -404,7 +376,6 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         return this.createScopeForNodes(allScopeElements);
     }
     
-
     private addClocks(ruleOpeningItem: RuleOpening): AstNode[] {
         var res : AstNode[] =[]
         res.push(this.addClock(ruleOpeningItem, "starts"));
@@ -486,7 +457,6 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         return allAssignments
     }
 
-
     private getAllRules(element: AbstractElement): AbstractRule[] {
         var allAbstractRules: AbstractRule[] = [];
         const grammar = AstUtils.getContainerOfType(element.$container, isGrammar);
@@ -498,35 +468,26 @@ export class SoSScopeProvider extends DefaultScopeProvider {
     }
 
 
-        /**
+    /**
      * Create a scope for the given collection of AST nodes, which need to be transformed into respective
      * descriptions first. This is done using the `NameProvider` and `AstNodeDescriptionProvider` services.
      */
-        protected override createScopeForNodes(elements: Iterable<AstNode>, outerScope?: Scope, options?: ScopeOptions): Scope {
-            const s = stream(elements).map(e => {
-                var name
-                if(isAssignment(e)){
-                    name=(e as Assignment).feature
-                }else{
-                    name = this.nameProvider.getName(e);
-                }
-                if (name) {
-                    return this.descriptions.createDescription(e, name);
-                }
-                return undefined;
-            }).nonNullable();
-            return new StreamScope(s, outerScope, options);
-        }
+    protected override createScopeForNodes(elements: Iterable<AstNode>, outerScope?: Scope, options?: ScopeOptions): Scope {
+        const s = stream(elements).map(e => {
+            var name
+            if(isAssignment(e)){
+                name=(e as Assignment).feature
+            }else{
+                name = this.nameProvider.getName(e);
+            }
+            if (name) {
+                return this.descriptions.createDescription(e, name);
+            }
+            return undefined;
+        }).nonNullable();
+        return new StreamScope(s, outerScope, options);
+    }
 }
-
-
-
-
-
-
-
-
-
 
 export class SoSScopeComputation extends DefaultScopeComputation {
 
