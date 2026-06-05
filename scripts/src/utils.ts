@@ -5,7 +5,7 @@
 
 import * as path from 'path';
 import { DAG, LANGUAGES, ROOT } from './project';
-import { FoundNode, LanguageConfig } from './types';
+import { FoundNode } from './types';
 
 const dependents: Record<string, string[]> = {};
 

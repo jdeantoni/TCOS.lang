@@ -16,7 +16,7 @@ export class PythonGenerator implements IGenerator {
     }
 
     createLoop( uid: number, insideLoop: string[]): string[] {
-        let res = [`while flag${uid} == True: \n`,`\tflag${uid} = False \n`];
+        const res = [`while flag${uid} == True: \n`,`\tflag${uid} = False \n`];
         for (let i = 0; i < insideLoop.length; i++) {
             res.push("\t"+insideLoop[i])
         }
@@ -35,7 +35,7 @@ export class PythonGenerator implements IGenerator {
     }
 
     createBase(): string[] {
-        let res:string[] = []
+        const res:string[] = []
         // imports ----------------------------------------------------------------------------------------------------
         res.push(`import threading \n`) 
         res.push(`import time \n`) 
@@ -118,14 +118,14 @@ export class PythonGenerator implements IGenerator {
     }
 
     endFile(): string[] {
-        let res:string[] = []
+        const res:string[] = []
         res.push(`if __name__ == "__main__": \n`)
         res.push(`\tmain() \n`)
         return res
     }
 
-    createFunction( fname: string, params: TypedElement[], returnType: string,insideFunction:string[]): string[] {
-        let res:string[] = []
+    createFunction( fname: string, params: TypedElement[], _returnType: string,insideFunction:string[]): string[] {
+        const res:string[] = []
         res.push(`def function${fname}(${params.map(p => (p as TypedElement).name).join(", ")}): \n`)
         if (this.debug){
             res.push(`\tprint("\tfunction${fname} started") \n`)
@@ -137,7 +137,7 @@ export class PythonGenerator implements IGenerator {
     }
 
     createMainFunction(insideMain:string[]): string[] {
-        let res:string[] = []
+        const res:string[] = []
         res.push(`def main(): \n`)
         for (let i = 0; i < insideMain.length; i++) {
             res.push("\t"+insideMain[i])
@@ -156,7 +156,7 @@ export class PythonGenerator implements IGenerator {
     }
 
     createIf( guards: string[],insideOfIf:string[]): string[] {
-        let createIfString:string[] = []
+        const createIfString:string[] = []
 
         createIfString.push(`if ${guards.join(" and ")}: \n`);
         if (this.debug){
@@ -192,7 +192,7 @@ export class PythonGenerator implements IGenerator {
         return res
     }
 
-    endThread( uid: number): string[] {
+    endThread( _uid: number): string[] {
         return [`return \n`];
     }
 
@@ -227,7 +227,7 @@ export class PythonGenerator implements IGenerator {
         return [`return ${varName} \n`];
     }
 
-    createVar( type: string, varName: string): string[] {
+    createVar( _type: string, _varName: string): string[] {
         return [`\n`];
     }
 

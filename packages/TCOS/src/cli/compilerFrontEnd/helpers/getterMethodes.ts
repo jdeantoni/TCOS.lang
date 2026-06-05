@@ -10,8 +10,8 @@ export function getValuedEventRefConstantComparison(eventExpression : EventExpre
     if (eventExpression.$type == "ExplicitValuedEventRefConstantComparison" || eventExpression.$type == "ImplicitValuedEventRefConstantComparison") {
         res.push(eventExpression as ValuedEventRefConstantComparison)
     } else if (eventExpression.$type == "EventConjunction" || eventExpression.$type == "EventDisjunction") {
-        let lhsRes = getValuedEventRefConstantComparison((eventExpression as EventCombination).lhs)
-        let rhsRes = getValuedEventRefConstantComparison((eventExpression as EventCombination).rhs)
+        const lhsRes = getValuedEventRefConstantComparison((eventExpression as EventCombination).lhs)
+        const rhsRes = getValuedEventRefConstantComparison((eventExpression as EventCombination).rhs)
         res = res.concat(lhsRes).concat(rhsRes)
     }
     return res
@@ -22,8 +22,8 @@ export function getValuedEventRef(eventExpression : EventExpression): ValuedEven
     if (eventExpression.$type == "ExplicitValuedEventRef" || eventExpression.$type == "ImplicitValuedEventRef") {
         res.push(eventExpression as ValuedEventRef)
     } else if (eventExpression.$type == "EventConjunction" || eventExpression.$type == "EventDisjunction") {
-        let lhsRes = getValuedEventRef((eventExpression as EventCombination).lhs)
-        let rhsRes = getValuedEventRef((eventExpression as EventCombination).rhs)
+        const lhsRes = getValuedEventRef((eventExpression as EventCombination).lhs)
+        const rhsRes = getValuedEventRef((eventExpression as EventCombination).rhs)
         res = res.concat(lhsRes).concat(rhsRes)
     }
     return res
@@ -31,7 +31,7 @@ export function getValuedEventRef(eventExpression : EventExpression): ValuedEven
 
 export function getPreviousNodeNameFromPremiseParticipants(ruleCF: RuleControlFlow, conceptName: string, holes: HoleSpecifier[]) : string{
     if (ruleCF.premiseParticipants.length == 1) {
-        let participants = ruleCF.premiseParticipants[0];
+        const participants = ruleCF.premiseParticipants[0];
         if (participants.length == 1) { //simple event
             if (holes.some(h => areParticipantsEqualsOrCoupled(h.startingParticipants, participants))) {
                 return participants[0].name+conceptName+"Hole"
@@ -45,7 +45,7 @@ export function getPreviousNodeNameFromPremiseParticipants(ruleCF: RuleControlFl
             }
 
             //sequential collection based premise
-            let participantsNoEvent = participants.filter(p => p.type != "event")
+            const participantsNoEvent = participants.filter(p => p.type != "event")
             return participantsNoEvent.slice(0,participants.length-2).map(p => p.name).join('_') + "Hole"
         }
 
@@ -114,7 +114,7 @@ export function getEventEmissionParticipants(eventEmission: EventEmission): Type
     }
     //SingleRuleSync | CollectionRuleSync
     if (eventEmission.$type == "SingleRuleSync") {
-        let tmp = getSingleRuleSyncEventExpressionParticipants(eventEmission as SingleRuleSync)
+        const tmp = getSingleRuleSyncEventExpressionParticipants(eventEmission as SingleRuleSync)
         tmp.push(new TypedElement(undefined,"starts", "event")) //implicit in conclusion
         res.push(tmp)
     }
@@ -154,7 +154,7 @@ export function getEventSynchronisationParticipants(eventExpression: EventExpres
         return res
     }
     if (eventExpression.$type == "SingleRuleSync") {
-        let tmp = getSingleRuleSyncEventExpressionParticipants(eventExpression)
+        const tmp = getSingleRuleSyncEventExpressionParticipants(eventExpression)
         tmp.push(new TypedElement(undefined,"terminates", "event")) //implicit in premise
         res.push(tmp)
         return res
@@ -162,7 +162,7 @@ export function getEventSynchronisationParticipants(eventExpression: EventExpres
 
     if (eventExpression.$type == "ExplicitValuedEventRef" || eventExpression.$type == "ImplicitValuedEventRef") {
         if ((eventExpression.membercall as MemberCall)?.element?.ref != undefined) {
-            let tmp = getValuedEventRefParticipants(eventExpression as ValuedEventRef)
+            const tmp = getValuedEventRefParticipants(eventExpression as ValuedEventRef)
             if (eventExpression.$type == "ImplicitValuedEventRef") {
                 tmp.push(new TypedElement(undefined,"terminates", "event")) //implicit in premise
             }
@@ -172,7 +172,7 @@ export function getEventSynchronisationParticipants(eventExpression: EventExpres
     }
     if (eventExpression.$type == "ExplicitValuedEventRefConstantComparison" || eventExpression.$type == "ImplicitValuedEventRefConstantComparison") {
         if ((eventExpression.membercall as MemberCall)?.element?.ref != undefined) {
-            let tmp = getValuedEventRefConstantComparisonParticipants(eventExpression as ValuedEventRefConstantComparison)
+            const tmp = getValuedEventRefConstantComparisonParticipants(eventExpression as ValuedEventRefConstantComparison)
             if (eventExpression.$type == "ImplicitValuedEventRefConstantComparison") {
                 tmp.push(new TypedElement(undefined,"terminates", "event")) //implicit in premise
             }
@@ -182,8 +182,8 @@ export function getEventSynchronisationParticipants(eventExpression: EventExpres
     }
 
     if (eventExpression.$type == "EventConjunction" || eventExpression.$type == "EventDisjunction") {
-        let left = getEventSynchronisationParticipants(eventExpression.lhs)
-        let right = getEventSynchronisationParticipants(eventExpression.rhs)
+        const left = getEventSynchronisationParticipants(eventExpression.lhs)
+        const right = getEventSynchronisationParticipants(eventExpression.rhs)
         res = [...left, ...right]
         return res
     }
@@ -251,7 +251,7 @@ function getSingleRuleSyncEventExpressionParticipants(rule: SingleRuleSync): Typ
  * @returns a typed element list of the participants to the event expression
  */
 function getCollectionRuleSyncEventExpressionParticipants(rule: CollectionRuleSync): TypedElement[][] {
-    let res: TypedElement[][] = []
+    const res: TypedElement[][] = []
     if ((rule.collection as MemberCall)?.element?.ref != undefined) {
         res.push(getExplicitEventExpressionParticipants(rule.collection as MemberCall))
         res[0].forEach((p) => p.isCollection = true)
@@ -270,12 +270,12 @@ function getExplicitEventExpressionParticipants(membercall: MemberCall, isBroadc
 
     if (membercall?.element?.ref != undefined) {
         if (membercall.element.ref.$type.toString() == "Assignment") {
-            let ass = ((membercall.element.ref as unknown) as Assignment)
+            const ass = ((membercall.element.ref as unknown) as Assignment)
             let type = ass.terminal.$cstNode?.text
             if (ass.terminal.$cstNode != undefined && type?.startsWith("(")) {
                 type = type.substring(1, ass.terminal.$cstNode.text.length - 1)
             }
-            let typedElement: TypedElement = new TypedElement(
+            const typedElement: TypedElement = new TypedElement(
                 membercall,
                 ass.feature,
                 type,
@@ -284,11 +284,11 @@ function getExplicitEventExpressionParticipants(membercall: MemberCall, isBroadc
             )
             res.push(typedElement)
         } else {
-            let namedElem = ((membercall.element.ref as unknown) as NamedElement)
+            const namedElem = ((membercall.element.ref as unknown) as NamedElement)
 
-            let [name, type] = getNameAndTypeOfElement(namedElem);
+            const [name, type] = getNameAndTypeOfElement(namedElem);
 
-            let typedElement: TypedElement = new TypedElement(
+            const typedElement: TypedElement = new TypedElement(
                 namedElem,
                 name,
                 type,
@@ -335,10 +335,10 @@ function getNameAndTypeOfElement(namedElem: NamedElement): [(string | undefined)
  * @returns 
  */
 export function getVariableDeclarationCode(runtimeState: VariableDeclaration[] | undefined): string {
-    var res : string = ""
+    let res : string = ""
     if (runtimeState != undefined) {
         let sep = ""
-        for(let vardDecl of runtimeState){
+        for(const vardDecl of runtimeState){
             if(vardDecl.type != undefined && vardDecl.type.$cstNode?.text == "event"){
                 continue
             }else{

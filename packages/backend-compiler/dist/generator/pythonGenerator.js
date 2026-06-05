@@ -10,7 +10,7 @@ export class PythonGenerator {
         return [`flag${queueUID} = True\n`];
     }
     createLoop(uid, insideLoop) {
-        let res = [`while flag${uid} == True: \n`, `\tflag${uid} = False \n`];
+        const res = [`while flag${uid} == True: \n`, `\tflag${uid} = False \n`];
         for (let i = 0; i < insideLoop.length; i++) {
             res.push("\t" + insideLoop[i]);
         }
@@ -26,7 +26,7 @@ export class PythonGenerator {
         return `${filename}.py`;
     }
     createBase() {
-        let res = [];
+        const res = [];
         // imports ----------------------------------------------------------------------------------------------------
         res.push(`import threading \n`);
         res.push(`import time \n`);
@@ -107,13 +107,13 @@ export class PythonGenerator {
         return res;
     }
     endFile() {
-        let res = [];
+        const res = [];
         res.push(`if __name__ == "__main__": \n`);
         res.push(`\tmain() \n`);
         return res;
     }
-    createFunction(fname, params, returnType, insideFunction) {
-        let res = [];
+    createFunction(fname, params, _returnType, insideFunction) {
+        const res = [];
         res.push(`def function${fname}(${params.map(p => p.name).join(", ")}): \n`);
         if (this.debug) {
             res.push(`\tprint("\tfunction${fname} started") \n`);
@@ -124,7 +124,7 @@ export class PythonGenerator {
         return res;
     }
     createMainFunction(insideMain) {
-        let res = [];
+        const res = [];
         res.push(`def main(): \n`);
         for (let i = 0; i < insideMain.length; i++) {
             res.push("\t" + insideMain[i]);
@@ -142,7 +142,7 @@ export class PythonGenerator {
             return [`result${fname} = function${fname}(${params.join(", ")}); \n`];
     }
     createIf(guards, insideOfIf) {
-        let createIfString = [];
+        const createIfString = [];
         createIfString.push(`if ${guards.join(" and ")}: \n`);
         if (this.debug) {
             createIfString.push(`\tprint("(${guards.join(" and ")}) is TRUE") \n`);
@@ -172,7 +172,7 @@ export class PythonGenerator {
         res = [...res, ...[`thread${uid} = threading.Thread(target=codeThread${uid}) \n`, `thread${uid}.start() \n`]];
         return res;
     }
-    endThread(uid) {
+    endThread(_uid) {
         return [`return \n`];
     }
     endSection() {
@@ -199,7 +199,7 @@ export class PythonGenerator {
     returnVar(varName) {
         return [`return ${varName} \n`];
     }
-    createVar(type, varName) {
+    createVar(_type, _varName) {
         return [`\n`];
     }
     createGlobalVar(type, varName) {

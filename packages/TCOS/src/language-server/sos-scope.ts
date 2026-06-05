@@ -51,7 +51,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                 const collectionRuleSync = AstUtils.getContainerOfType(previous.$container, isCollectionRuleSync);
                 if(collectionRuleSync){
                     if((collectionRuleSync.collection as MemberCall).element?.ref){
-                        let collectionElemRef = (collectionRuleSync.collection as MemberCall).element?.ref
+                        const collectionElemRef = (collectionRuleSync.collection as MemberCall).element?.ref
                         if(collectionElemRef != undefined){
                             var terminal = (collectionElemRef as unknown as Assignment).terminal
                             if (isCrossReference(terminal)){
@@ -74,7 +74,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                     }
                 }
                 if(isReference(previous.element)){
-                    let elemRef = previous.element?.ref
+                    const elemRef = previous.element?.ref
                         if(elemRef != undefined){
                             var terminal = (elemRef as unknown as Assignment).terminal
                             if (isCrossReference(terminal)){
@@ -133,7 +133,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
     }
 
     private scopeParsingRule(parserRuleItem: ParserRule, ruleOpeningItem: RuleOpening, initialMembers: AstNode[] = []): Scope {
-        var allScopeElements: AstNode[] = (parserRuleItem !== undefined)?this.getAllAssignments(parserRuleItem.definition) : [];
+        let allScopeElements: AstNode[] = (parserRuleItem !== undefined)?this.getAllAssignments(parserRuleItem.definition) : [];
         allScopeElements = allScopeElements.concat(initialMembers)
         this.addListFunctions(ruleOpeningItem, allScopeElements);
         allScopeElements = allScopeElements.concat(this.addClocks(ruleOpeningItem))
@@ -143,7 +143,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
     }
 
     private addListFunctions(ruleOpeningItem: RuleOpening, allScopeElements: AstNode[], context:MemberCall | undefined = undefined) {
-        var atFunction: MethodMember = {
+        const atFunction: MethodMember = {
             name: "at",
             $containerProperty: "methods",
             $container: ruleOpeningItem,
@@ -157,7 +157,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
             }
         }
 
-        var p: Parameter = {
+        const p: Parameter = {
             $container: atFunction,
             $type: 'Parameter',
             name: 'i'
@@ -177,7 +177,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
 
         allScopeElements.push(atFunction);
 
-        var lengthFunction: MethodMember = {
+        const lengthFunction: MethodMember = {
             name: "length",
             $containerProperty: "methods",
             $container: ruleOpeningItem,
@@ -203,7 +203,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
 
         allScopeElements.push(lengthFunction);
         
-        var firstFunction: MethodMember = {
+        const firstFunction: MethodMember = {
             name: "first",
             $containerProperty: "methods",
             $container: ruleOpeningItem,
@@ -229,7 +229,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
 
         allScopeElements.push(firstFunction);
 
-        var lastFunction: MethodMember = {
+        const lastFunction: MethodMember = {
             name: "last",
             $containerProperty: "methods",
             $container: ruleOpeningItem,
@@ -254,7 +254,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         }
         allScopeElements.push(lastFunction);
 
-        var allReaders: MethodMember = {
+        const allReaders: MethodMember = {
             name: "allReaders",
             $containerProperty: "methods",
             $container: ruleOpeningItem,
@@ -287,14 +287,14 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         allScopeElements = allScopeElements.concat(initialMembers)
         allScopeElements = allScopeElements.concat((ruleOpeningItem.onRule?.ref !== undefined)?this.getAllRules(ruleOpeningItem.onRule.ref.definition):[])        
 
-        var allMembers:AstNode[] = []
+        let allMembers:AstNode[] = []
         if (context && context.element && context.element.ref && isAssignment(context.element.ref) 
             && isCrossReference((context.element.ref as unknown as Assignment).terminal)){
-            var parserRule = ((context.element.ref as unknown as Assignment).terminal as CrossReference).type.ref
-            var sosSpec =  AstUtils.getContainerOfType(ruleOpeningItem?.$container, isSoSSpec);
-            var contextRuleOpeningItem = undefined
+            const parserRule = ((context.element.ref as unknown as Assignment).terminal as CrossReference).type.ref
+            const sosSpec =  AstUtils.getContainerOfType(ruleOpeningItem?.$container, isSoSSpec);
+            let contextRuleOpeningItem = undefined
             if (sosSpec){
-                for(let rule of sosSpec?.rtdAndRules){
+                for(const rule of sosSpec?.rtdAndRules){
                     if (isRuleOpening(rule) && rule.onRule?.ref === parserRule){
                         contextRuleOpeningItem = rule
                     }
@@ -307,7 +307,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
             allMembers = getRuleOpeningChain(ruleOpeningItem).flatMap(e => e.runtimeState);
             if(context && isReference(context.element)){
                 if (ruleOpeningItem && context.element.ref && context.element.ref.$type.toString() == "Assignment" && ((context.element.ref as unknown as  Assignment).terminal as CrossReference).type){
-                    let parserRuleItem = ((context.element.ref as unknown as  Assignment).terminal as CrossReference).type.ref as ParserRule
+                    const parserRuleItem = ((context.element.ref as unknown as  Assignment).terminal as CrossReference).type.ref as ParserRule
                     if(parserRuleItem){
                         var allScopeElements: AstNode[] = (parserRuleItem !== undefined)?this.getAllAssignments(parserRuleItem.definition) : [];
                         allMembers = allMembers.concat(allScopeElements)
@@ -316,12 +316,12 @@ export class SoSScopeProvider extends DefaultScopeProvider {
             }         
         }
 
-        for(let rule of ruleOpeningItem.rules){
+        for(const rule of ruleOpeningItem.rules){
             if(isRWRule(rule)){
                 /**
                  * TODO: add temporary variable in scope with recursive call
                  */
-                for(let expr of AstUtils.streamAllContents((rule as RWRule).premise.eventExpression)){
+                for(const expr of AstUtils.streamAllContents((rule as RWRule).premise.eventExpression)){
                     if(isTemporaryVariable(expr)){
                         allMembers.push(expr)
                     }
@@ -329,7 +329,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
             }
         }
         allScopeElements = allMembers.concat(allScopeElements)
-        for(var rule of ruleOpeningItem.rules){
+        for(const rule of ruleOpeningItem.rules){
             if(rule){
                 if(isRWRule(rule)){
                     allScopeElements.push(rule)
@@ -342,7 +342,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         allScopeElements = allScopeElements.concat(this.getAllTemporaryVariable(ruleOpeningItem))
         this.addListFunctions(ruleOpeningItem,allScopeElements,context)
 
-        for(let v of ruleOpeningItem.runtimeState){
+        for(const v of ruleOpeningItem.runtimeState){
             if ((v as VariableDeclaration).type?.primitive?.name == "Timer"){
                 const starts: FieldMember = {
                     $container: ruleOpeningItem,
@@ -377,7 +377,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
     }
     
     private addClocks(ruleOpeningItem: RuleOpening): AstNode[] {
-        var res : AstNode[] =[]
+        const res : AstNode[] =[]
         res.push(this.addClock(ruleOpeningItem, "starts"));
         res.push(this.addClock(ruleOpeningItem, "updates"));
         res.push(this.addClock(ruleOpeningItem, "cleanup"));
@@ -412,7 +412,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
     }
 
     private getAllTemporaryVariable(ruleOpeningItem: RuleOpening): AstNode[] {
-        var alltempVars: AstNode[] = [];
+        const alltempVars: AstNode[] = [];
         ruleOpeningItem.rules.forEach(rule => {
             if (isRWRule(rule) && (rule as RWRule)?.conclusion !== undefined){
                 const composite = (rule as RWRule)?.conclusion?.eventemissions;
@@ -433,20 +433,20 @@ export class SoSScopeProvider extends DefaultScopeProvider {
     }
 
     private getAllRuntimeState(ruleOpeningItem: RuleOpening): AstNode[] {
-        var allVars: AstNode[] = [];
+        const allVars: AstNode[] = [];
         ruleOpeningItem.runtimeState.forEach(v => allVars.push(v));
         return allVars
     }
 
     private getAllAssignments(element: AbstractElement): Assignment[] {
-        var allAssignments: Assignment[] = [];
+        let allAssignments: Assignment[] = [];
 
         if (isGroup(element)) {
-            for (let e of (element as Group).elements) {
+            for (const e of (element as Group).elements) {
                 allAssignments = allAssignments.concat(this.getAllAssignments(e));
             }
         } else if (isAlternatives(element)) {
-            for (let e of (element as Alternatives).elements) {
+            for (const e of (element as Alternatives).elements) {
                 allAssignments = allAssignments.concat(this.getAllAssignments(e));
             }
         }
@@ -458,7 +458,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
     }
 
     private getAllRules(element: AbstractElement): AbstractRule[] {
-        var allAbstractRules: AbstractRule[] = [];
+        let allAbstractRules: AbstractRule[] = [];
         const grammar = AstUtils.getContainerOfType(element.$container, isGrammar);
 
         if (grammar) {
@@ -474,7 +474,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
      */
     protected override createScopeForNodes(elements: Iterable<AstNode>, outerScope?: Scope, options?: ScopeOptions): Scope {
         const s = stream(elements).map(e => {
-            var name
+            let name
             if(isAssignment(e)){
                 name=(e as Assignment).feature
             }else{

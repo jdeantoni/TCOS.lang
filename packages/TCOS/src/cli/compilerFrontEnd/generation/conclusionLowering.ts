@@ -12,7 +12,7 @@ import { buildPremiseGuardString } from '../analysis/premiseGuards.js';
 export function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifier[], file: CompositeGeneratorNode, previousNodeName: string, suppressPremiseGuard: boolean = false) {
     let actionsstring = ""
     actionsstring = visitStateModifications(ruleCF, actionsstring);
-    let guardString = suppressPremiseGuard ? "" : buildPremiseGuardString(ruleCF)
+    const guardString = suppressPremiseGuard ? "" : buildPremiseGuardString(ruleCF)
     let downstreamGuardString = guardString
     
     if(actionsstring.length>0){
@@ -29,11 +29,11 @@ export function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifi
         downstreamGuardString = ""
     }
 
-    let params : TypedElement[] = []
-    let allValuedEventRef = getValuedEventRef(ruleCF.rule.premise.eventExpression)
+    const params : TypedElement[] = []
+    const allValuedEventRef = getValuedEventRef(ruleCF.rule.premise.eventExpression)
     let sep = ""
-    for(let valuedEventRef of allValuedEventRef){
-        let [actions, param] = visitValuedEventRef(valuedEventRef)
+    for(const valuedEventRef of allValuedEventRef){
+        const [actions, param] = visitValuedEventRef(valuedEventRef)
         actionsstring = actionsstring + sep + actions   
         params.push(param)
         sep = ","
@@ -42,17 +42,17 @@ export function handleRuleConclusion(ruleCF: RuleControlFlow, holes: HoleSpecifi
     let eventEmissionActions = ""
     let functionType = "void"
     const _allLeafEmissions = ruleCF.rule.conclusion.eventemissions ? flattenCompositeEmission(ruleCF.rule.conclusion.eventemissions) : []
-    for(let emission of _allLeafEmissions){
+    for(const emission of _allLeafEmissions){
         const valuedEmission = getValuedEmissionFromLeaf(emission)
         if(valuedEmission != undefined){
-            let [visitedEmission, returnType] =  visitValuedEventEmission(valuedEmission,file)
+            const [visitedEmission, returnType] =  visitValuedEventEmission(valuedEmission,file)
             functionType = returnType
             eventEmissionActions = eventEmissionActions + visitedEmission
         }
     }
     let formattedParams = ""
     sep = ""
-    for(let p of params){
+    for(const p of params){
         formattedParams = formattedParams+ sep + `Object.assign( new TypedElement(), JSON.parse(\`${p.toJSON()}\`))`
         sep = ","
     }

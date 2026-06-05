@@ -12,17 +12,17 @@ import { getCPPVariableTypeName } from "./helpers/getterMethodes.js";
  * @returns
  */
 export function visitValuedEventRefComparison(valuedEventRefComparison: ValuedEventRefConstantComparison | undefined): string {
-    var res : string = ""
+    let res : string = ""
     
     if (valuedEventRefComparison != undefined) {
-        let v = valuedEventRefComparison.literal
+        const v = valuedEventRefComparison.literal
 
         //guardactions
         if(valuedEventRefComparison.$type == "ImplicitValuedEventRefConstantComparison"){
             res = res + `new VerifyEqualInstruction(\`\${this.getASTNodeUID(node.${(valuedEventRefComparison.membercall as MemberCall).element?.$refText})}${"terminate"}\`,\`${(typeof(v) == "string")?v:v.$cstNode?.text}\`)`
         }
         if(valuedEventRefComparison.$type == "ExplicitValuedEventRefConstantComparison"){
-            let prev = (valuedEventRefComparison.membercall as MemberCall)?.previous
+            const prev = (valuedEventRefComparison.membercall as MemberCall)?.previous
             res = res + `new VerifyEqualInstruction(\`\${this.getASTNodeUID(node.${prev != undefined?(prev as MemberCall).element?.ref?.name:"TOFIX"})}${(valuedEventRefComparison.membercall as MemberCall).element?.$refText}\`,\`${(typeof(v) == "string")?v:v.$cstNode?.text}\`)`
         }
         
@@ -37,21 +37,21 @@ export function visitValuedEventRefComparison(valuedEventRefComparison: ValuedEv
  * @returns
  */
 export function visitValuedEventRef(valuedEventRef: ValuedEventRef | undefined): [string, TypedElement] {
-    var res : string = ""
+    let res : string = ""
     if (valuedEventRef != undefined) {
-        let v = valuedEventRef.tempVar
-        let varType = inferType(v, new Map())
-        let typeName = getCPPVariableTypeName(varType.$type)
+        const v = valuedEventRef.tempVar
+        const varType = inferType(v, new Map())
+        const typeName = getCPPVariableTypeName(varType.$type)
         if(v != undefined && valuedEventRef.$type == "ImplicitValuedEventRef"){
             res = res + `new CreateVarInstruction(\`\${this.getASTNodeUID(node)}${v.$cstNode?.offset}\`,\`${typeName}\`)`
             res = res + `new SetVarInstruction(\`\${this.getASTNodeUID(node)}${v.$cstNode?.offset}\`,\`${v.name}\`,\`${typeName}\`)`
-            let param:TypedElement = new TypedElement(v,v.name, typeName)
+            const param:TypedElement = new TypedElement(v,v.name, typeName)
             return [res, param]
         }
         if(v != undefined && valuedEventRef.$type == "ExplicitValuedEventRef"){
             res = res + `new CreateVarInstruction(\`\${this.getASTNodeUID(node)}${v.$cstNode?.offset}\`,\`${typeName}\`)`
             res = res + `new SetVarInstruction(\`\${this.getASTNodeUID(node)}${v.$cstNode?.offset}\`,\`${v.name}\`,\`${typeName}\`)`
-            let param:TypedElement = new TypedElement(v,v.name, typeName)
+            const param:TypedElement = new TypedElement(v,v.name, typeName)
             return [res, param]
         }
     
@@ -67,7 +67,7 @@ export function visitValuedEventRef(valuedEventRef: ValuedEventRef | undefined):
  */
 export function visitVariableDeclaration(runtimeState: VariableDeclaration[] | undefined, file : CompositeGeneratorNode): void {
     if (runtimeState != undefined) {
-        for(let vardDecl of runtimeState){
+        for(const vardDecl of runtimeState){
             if(vardDecl.type != undefined){
                 let ruleName : string = ""
                 if (vardDecl.$container.$type == "RuleOpening") {
@@ -92,10 +92,10 @@ export function visitVariableDeclaration(runtimeState: VariableDeclaration[] | u
  * @returns 
  */
 export function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefined, file:CompositeGeneratorNode): [string, string] {
-    var res : string = ""
+    let res : string = ""
     if (valuedEmission != undefined) {
-        let varType = inferType(valuedEmission.data, new Map())
-        let typeName = getCPPVariableTypeName(varType.$type)
+        const varType = inferType(valuedEmission.data, new Map())
+        const typeName = getCPPVariableTypeName(varType.$type)
 
         if(valuedEmission.data != undefined && valuedEmission.data.$type == "MemberCall"){
             
@@ -104,19 +104,19 @@ export function visitValuedEventEmission(valuedEmission: ValuedEventEmission | u
         }
         if(valuedEmission.data != undefined && valuedEmission.data.$type == "BinaryExpression"){
             //todo write a node that joins the two variable nodes and saves the result
-            let lhs = (valuedEmission.data as BinaryExpression).left
-            let lhsType = inferType(lhs, new Map())
-            let lhsTypeName = getCPPVariableTypeName(lhsType.$type)
+            const lhs = (valuedEmission.data as BinaryExpression).left
+            const lhsType = inferType(lhs, new Map())
+            const lhsTypeName = getCPPVariableTypeName(lhsType.$type)
             let leftRes: string = ""; // Declare the variable rightRes
             leftRes = createVariableFromMemberCall(lhs as MemberCall, lhsTypeName);
             res = res + leftRes+","
-            let rhs = (valuedEmission.data as BinaryExpression).right
-            let rhsType = inferType(rhs, new Map())
-            let rhsTypeName = getCPPVariableTypeName(rhsType.$type)
+            const rhs = (valuedEmission.data as BinaryExpression).right
+            const rhsType = inferType(rhs, new Map())
+            const rhsTypeName = getCPPVariableTypeName(rhsType.$type)
             let rightRes: string = ""; // Declare the variable rightRes
             rightRes  = createVariableFromMemberCall(rhs as MemberCall, rhsTypeName);
             res = res + rightRes+","
-            let applyOp = (valuedEmission.data as BinaryExpression).operator
+            const applyOp = (valuedEmission.data as BinaryExpression).operator
             res = res + `new CreateVarInstruction(\`\${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,\`${typeName}\`),`
             res = res + `new OperationInstruction(\`\${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,\`\${this.getASTNodeUID(node)}${lhs.$cstNode?.offset}\`,\`${applyOp}\`,\`\${this.getASTNodeUID(node)}${rhs.$cstNode?.offset}\`,\`${typeName}\`)`
         }
@@ -150,22 +150,22 @@ export function visitStateModifications(ruleCF: RuleControlFlow, actionsstring: 
     if(actionsstring.length > 0){
         sep = ","
     }
-    for (let action of ruleCF.rule.conclusion.statemodifications) {
+    for (const action of ruleCF.rule.conclusion.statemodifications) {
         let typeName = ""; 
-        let rhsType = inferType(action.rhs, new Map());
+        const rhsType = inferType(action.rhs, new Map());
         typeName = getCPPVariableTypeName(rhsType.$type);
         if (typeName == "unknown") {
-            let lhsType = inferType(action.lhs, new Map())
+            const lhsType = inferType(action.lhs, new Map())
             typeName = getCPPVariableTypeName(lhsType.$type);
         }
-        let lhsPrev = ((action.lhs as MemberCall).previous as MemberCall)?.element
-        let lhsElem = (action.lhs as MemberCall).element?.ref
+        const lhsPrev = ((action.lhs as MemberCall).previous as MemberCall)?.element
+        const lhsElem = (action.lhs as MemberCall).element?.ref
         if (lhsElem == undefined) {
             return actionsstring
         }
 
         if (action.rhs.$type == "MemberCall") {
-            let rhsElem = (action.rhs as MemberCall).element?.ref
+            const rhsElem = (action.rhs as MemberCall).element?.ref
             if (rhsElem == undefined) {
                 return actionsstring
             }
@@ -187,8 +187,8 @@ export function visitStateModifications(ruleCF: RuleControlFlow, actionsstring: 
 
 export function createVariableFromMemberCall(data: MemberCall, typeName: string): string {
     let res: string = ""
-    let prev = (data.previous as MemberCall)?.element
-    let elem = data.element?.ref
+    const prev = (data.previous as MemberCall)?.element
+    const elem = data.element?.ref
     
     if (elem == undefined) {
         return res

@@ -10,7 +10,7 @@ export function isBroadcastReceptionParticipants(participants: TypedElement[]): 
 }
 
 export function isParticipantCollectionBased(participant: TypedElement[]): boolean {
-    for (let p of participant) {
+    for (const p of participant) {
         if (p.isCollection) {
             return true;
         }
@@ -78,8 +78,8 @@ export function areParticipantsCoupled(p1: TypedElement[], p2: TypedElement[]): 
     
     if(isParticipantCollectionBased(p1) && isParticipantCollectionBased(p2)){
         //sanitize collection based participants
-        let p1Copy = []
-        for(let p of p1){
+        const p1Copy = []
+        for(const p of p1){
             if(p.isCollection){
                 p1Copy.push(p)
                 break
@@ -88,8 +88,8 @@ export function areParticipantsCoupled(p1: TypedElement[], p2: TypedElement[]): 
         }
         p1Copy.push(p1[p1.length-1])
         p1= p1Copy
-        let p2Copy = []
-        for(let p of p2){
+        const p2Copy = []
+        for(const p of p2){
             if(p.isCollection){
                 p2Copy.push(p)
                 break

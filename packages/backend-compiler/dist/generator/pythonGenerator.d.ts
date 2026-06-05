@@ -11,7 +11,7 @@ export declare class PythonGenerator implements IGenerator {
     nameFile(filename: string): string;
     createBase(): string[];
     endFile(): string[];
-    createFunction(fname: string, params: TypedElement[], returnType: string, insideFunction: string[]): string[];
+    createFunction(fname: string, params: TypedElement[], _returnType: string, insideFunction: string[]): string[];
     createMainFunction(insideMain: string[]): string[];
     createFuncCall(fname: string, params: string[], typeName: string): string[];
     createIf(guards: string[], insideOfIf: string[]): string[];
@@ -19,7 +19,7 @@ export declare class PythonGenerator implements IGenerator {
     waitForSynchronizer(synchUID: number): string[];
     activateSynchronizer(synchUID: number): string[];
     createAndOpenThread(uid: number, insideThreadCode: string[]): string[];
-    endThread(uid: number): string[];
+    endThread(_uid: number): string[];
     endSection(): void;
     createQueue(queueUID: number): string[];
     createLockingQueue(typeName: string, queueUID: number): string[];
@@ -27,7 +27,7 @@ export declare class PythonGenerator implements IGenerator {
     sendToQueue(queueUID: number, typeName: string, varName: string): string[];
     assignVar(varName: string, value: string): string[];
     returnVar(varName: string): string[];
-    createVar(type: string, varName: string): string[];
+    createVar(_type: string, _varName: string): string[];
     createGlobalVar(type: string, varName: string): string[];
     setVarFromGlobal(type: string, varName: string, value: string): string[];
     setGlobalVar(type: string, varName: string, value: string): string[];

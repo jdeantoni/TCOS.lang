@@ -34,23 +34,23 @@ export function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, c
         localCCFG.addNode(terminates${conceptName}Node)
         `);
 
-    let tempHole = conceptNameToHoles.get(conceptName)
+    const tempHole = conceptNameToHoles.get(conceptName)
     if (tempHole == undefined) {
         throw new Error("holes not found: "+conceptName)
     }
     const holes : HoleSpecifier[] = tempHole;
-    let tempRulesCF = conceptNameToRulesCF.get(conceptName)
+    const tempRulesCF = conceptNameToRulesCF.get(conceptName)
     if (tempRulesCF == undefined) {
         throw new Error("rulesCF not found: "+conceptName)
     }
     const rulesCF: RuleControlFlow[] = tempRulesCF
 
     //creates hole nodes
-    for (let h of holes) {
+    for (const h of holes) {
         
         if (isATimerHole(h.startingParticipants)){
-            let refNode = `node`
-            let duration = ((openedRule.runtimeState as VariableDeclaration[]).filter(rs => rs.name == h.startingParticipants[h.startingParticipants.length-2 >= 0 ? h.startingParticipants.length-2:0].name)[0] as VariableDeclaration).value?.$cstNode?.text;
+            const refNode = `node`
+            const duration = ((openedRule.runtimeState as VariableDeclaration[]).filter(rs => rs.name == h.startingParticipants[h.startingParticipants.length-2 >= 0 ? h.startingParticipants.length-2:0].name)[0] as VariableDeclaration).value?.$cstNode?.text;
             file.append(`
         let ${h.startingParticipants.filter(p => p.type != "event").map(p => p.name).join('_')}Hole: Hole = new TimerHole(${refNode},node.${duration}) //timer hole to ease specific filling
         localCCFG.addNode(${h.startingParticipants.filter(p => p.type != "event").map(p => p.name).join('_')}Hole)
@@ -86,12 +86,12 @@ export function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, c
         throw new Error("multiple starting rules are not supported");
     }
 
-    let startRule: RuleControlFlow | undefined = startingRules[0];
+    const startRule: RuleControlFlow | undefined = startingRules[0];
     
     if (startRule != undefined) {
         // Handle premise for starting rule if it has multiple participant groups (conjunction/disjunction)
         if (startRule.premiseParticipants.length > 1) {
-            let startingPremiseNodeName = getPreviousNodeNameFromPremiseParticipants(startRule, conceptName, holes);
+            const startingPremiseNodeName = getPreviousNodeNameFromPremiseParticipants(startRule, conceptName, holes);
             if(DEBUG) file.append(`        // premise handling for starting rule ${startRule.rule.name}: ${startRule.premiseParticipants.length} participant groups`, NL);
             if(DEBUG) file.append(`        // Creating ${startingPremiseNodeName.endsWith("OrJoinNode")?"OrJoin":"AndJoin"} for conjunction/disjunction`, NL);
             
@@ -99,7 +99,7 @@ export function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, c
         let ${startingPremiseNodeName}: Node = new ${startingPremiseNodeName.endsWith("OrJoinNode")?"OrJoin":"AndJoin"}(node)
         localCCFG.addNode(${startingPremiseNodeName})\n `);
             
-            for (let participants of startRule.premiseParticipants) {
+            for (const participants of startRule.premiseParticipants) {
                 if (holes.map(h => h.startingParticipants).some(p => areParticipantsEqualsOrCoupled(p, participants))) {
                     if (DEBUG) file.append(`             //premise participant is a hole`);
                     file.append(`
@@ -137,10 +137,10 @@ export function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, c
     }
 
 
-    for (let ruleCF of rulesCF) {
+    for (const ruleCF of rulesCF) {
         if (ruleCF != startRule) {
             let premiseNodeName : string= getPreviousNodeNameFromPremiseParticipants(ruleCF, conceptName, holes)
-            let allEventValuedComparisons = getValuedEventRefConstantComparison(ruleCF.rule.premise.eventExpression)
+            const allEventValuedComparisons = getValuedEventRefConstantComparison(ruleCF.rule.premise.eventExpression)
             const routeBooleanPremiseGuardToEntryEdge =
                 ruleCF.premiseParticipants.length > 1 &&
                 ruleCF.rule.premise.booleanExpression.length > 0 &&
@@ -170,7 +170,7 @@ export function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, c
                     file.append(`
         let ${premiseNodeName}: Node = new ${premiseNodeName.endsWith("OrJoinNode")?"OrJoin":"AndJoin"}(node)
         localCCFG.addNode(${premiseNodeName})\n `);
-                    for (let participants of ruleCF.premiseParticipants) {
+                    for (const participants of ruleCF.premiseParticipants) {
                         if (holes.map(h => h.startingParticipants).some(p => areParticipantsEqualsOrCoupled(p, participants))) {
                             if (DEBUG) file.append(`             //mark a`);
                             file.append(`
@@ -209,13 +209,13 @@ export function generateCreateLocalCCFGFunctions(file: CompositeGeneratorNode, c
             }
 
 
-            let hasPremiseGuards =
+            const hasPremiseGuards =
                 allEventValuedComparisons.length > 0 ||
                 (ruleCF.rule.premise.booleanExpression.length > 0 && !routeBooleanPremiseGuardToEntryEdge)
             
             if (hasPremiseGuards) {
-                    let refPath = ruleCF.premiseParticipants[0].filter(p => p.type != "event").map(p => p.name).join('.')
-                    let refNode = refPath.length > 0 ? `node.${refPath}` : `node`
+                    const refPath = ruleCF.premiseParticipants[0].filter(p => p.type != "event").map(p => p.name).join('.')
+                    const refNode = refPath.length > 0 ? `node.${refPath}` : `node`
                     file.append(`
         let ${ruleCF.rule.name}ChoiceNode = undefined
         if(${premiseNodeName}.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){

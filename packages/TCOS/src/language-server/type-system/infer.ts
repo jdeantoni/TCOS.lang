@@ -129,7 +129,7 @@ function inferBinaryExpression(expr: BinaryExpression, cache: Map<AstNode, TypeD
 
 export function getRuleOpeningChain(ruleOpeningItem: RuleOpening): RuleOpening[] {
     const set = new Set<RuleOpening>();
-    let value: RuleOpening | undefined = ruleOpeningItem;
+    const value: RuleOpening | undefined = ruleOpeningItem;
     while (value && !set.has(value)) {
         set.add(value);
     }

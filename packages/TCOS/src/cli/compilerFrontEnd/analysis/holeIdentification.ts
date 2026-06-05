@@ -12,7 +12,7 @@ import { CollectionRuleSync, NaryEventExpression } from "../../../language-serve
  * @returns the list of holes, given as a list of TypedElements (the participants of a memberCall) (the ending event is not relevant) 
  */
 export function identifiesHoles(rulesCF: RuleControlFlow[]): HoleSpecifier[] {
-    let res: HoleSpecifier[] = []
+    const res: HoleSpecifier[] = []
     for (let i = 0; i < rulesCF.length; i++) {
         const currentRule = rulesCF[i];
         const currentConclusionParticipants = currentRule.conclusionParticipants;
@@ -20,15 +20,15 @@ export function identifiesHoles(rulesCF: RuleControlFlow[]): HoleSpecifier[] {
             const anotherRule = rulesCF[j];
             const anotherRulePremiseParticipants = anotherRule.premiseParticipants;
 
-            for(let conclusionP of currentConclusionParticipants){
-                for(let premiseP of anotherRulePremiseParticipants){
+            for(const conclusionP of currentConclusionParticipants){
+                for(const premiseP of anotherRulePremiseParticipants){
                     if(areParticipantsCoupled(conclusionP, premiseP)){
                         if (conclusionP.some(te => te.isBroadcast)){
                             //broadcasted events do not create holes ? what do they do ?
                             console.log(chalk.yellow("broadcasted event detected in hole identification, skipping hole creation for participants: "+conclusionP.map(tp => tp.name+":"+tp.type+(tp.isCollection?"[]":"")).join(", ")))
                         }else{
                             if(conclusionP.some(te => te.isCollection)){
-                                let holeSpecifier = new CollectionHoleSpecifier(conclusionP, premiseP)
+                                const holeSpecifier = new CollectionHoleSpecifier(conclusionP, premiseP)
                                 const _firstEmission = currentRule.rule.conclusion.eventemissions ? getFirstLeafEmission(currentRule.rule.conclusion.eventemissions) : undefined
                                 holeSpecifier.isSequential = _firstEmission?.$type == "CollectionRuleSync" && (_firstEmission as CollectionRuleSync).order == "sequential"
                                 holeSpecifier.parallelSyncPolicy = (anotherRule.rule.premise.eventExpression.$type == "NaryEventExpression") ?(anotherRule.rule.premise.eventExpression as NaryEventExpression).policy.operator+"" : "undefined"
@@ -37,7 +37,7 @@ export function identifiesHoles(rulesCF: RuleControlFlow[]): HoleSpecifier[] {
                                 }
                             }
                             else{
-                                let holeSpecifier = new HoleSpecifier(conclusionP, premiseP)
+                                const holeSpecifier = new HoleSpecifier(conclusionP, premiseP)
                                 if(res.map(h => h.startingParticipants).some(p => areParticipantsEquals(p, holeSpecifier.startingParticipants)) == false){
                                     res.push(holeSpecifier)
                                 }
@@ -58,11 +58,11 @@ export function identifiesHoles(rulesCF: RuleControlFlow[]): HoleSpecifier[] {
  * @returns the list of holes and semi holes, given as a list of TypedElements (the participants of a memberCall) (the ending event is not relevant)
  */
 export function identifiesHolesAndSemiHoles(rulesCF: RuleControlFlow[]): HoleSpecifier[] {
-    let res: HoleSpecifier[] = identifiesHoles(rulesCF)
+    const res: HoleSpecifier[] = identifiesHoles(rulesCF)
     for (let i = 0; i < rulesCF.length; i++) {
         const currentRule = rulesCF[i];
         const currentConclusionParticipants = currentRule.conclusionParticipants;
-        for (let p of currentConclusionParticipants) {
+        for (const p of currentConclusionParticipants) {
             if (p[p.length - 1].name == "starts" && ! p[0].isBroadcast) {
                 if (!res.some(h => areParticipantsEquals(h.startingParticipants, p))) {
                     console.log(chalk.yellow("adding semi-hole for participants: "+p.map(tp => tp.name+":"+tp.type+(tp.isCollection?"[]":"")).join(", ")))
