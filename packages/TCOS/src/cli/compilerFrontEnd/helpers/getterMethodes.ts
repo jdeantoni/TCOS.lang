@@ -3,7 +3,7 @@ import { Assignment, BroadcastedEventRef, CollectionRuleSync, EventCombination, 
 import { HoleSpecifier } from "../class/HoleSpecifier.js";
 import { RuleControlFlow } from "../class/RuleControlFlow.js";
 import { TypedElement } from "../class/TypeElement.js";
-import { areParticipantsEqualsOrCoupled, isBroadcastReceptionParticipants, isParticipantCollectionBased } from "../analysis/participants.js";
+import { areParticipantsEqualsOrCoupled, isBroadcastReceptionParticipants, isParticipantCollectionBased, participantNames } from "../analysis/participants.js";
 
 export function getValuedEventRefConstantComparison(eventExpression : EventExpression): ValuedEventRefConstantComparison[] {
     let res: ValuedEventRefConstantComparison[] = []
@@ -41,7 +41,7 @@ export function getPreviousNodeNameFromPremiseParticipants(ruleCF: RuleControlFl
         }
         if (isParticipantCollectionBased(participants)) {
             if (ruleCF.rule.premise.eventExpression.$type == "NaryEventExpression") { //parallel sync premise on collection
-                return participants.filter(p => p.type != "event").map(p => p.name).join('_') + "Hole"
+                return participantNames(participants) + "Hole"
             }
 
             //sequential collection based premise
@@ -49,7 +49,7 @@ export function getPreviousNodeNameFromPremiseParticipants(ruleCF: RuleControlFl
             return participantsNoEvent.slice(0,participants.length-2).map(p => p.name).join('_') + "Hole"
         }
 
-        return participants.filter(p => p.type != "event").map(p => p.name).join('_') + "Hole"
+        return participantNames(participants) + "Hole"
     }
     if (ruleCF.premiseParticipants.length > 1) {
         if (ruleCF.rule.premise.eventExpression.$type == "EventConjunction"){

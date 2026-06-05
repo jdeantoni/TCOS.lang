@@ -5,7 +5,7 @@ import { RuleControlFlow } from '../class/RuleControlFlow.js';
 import { TypedElement } from '../class/TypeElement.js';
 import { HoleSpecifier } from '../class/HoleSpecifier.js';
 import { visitStateModifications, visitValuedEventEmission, visitValuedEventRef } from '../visitor.js';
-import { areParticipantsEqualsOrCoupled, isParticipantCollectionBased, isReferenceBased } from '../analysis/participants.js';
+import { areParticipantsEqualsOrCoupled, isParticipantCollectionBased, isReferenceBased, participantNames } from '../analysis/participants.js';
 import { buildEmissionStages, flattenCompositeEmission, getValuedEmissionFromLeaf } from '../emissionTree.js';
 import { buildPremiseGuardString } from '../analysis/premiseGuards.js';
 
@@ -138,7 +138,7 @@ export function appendConclusionBranch(
 ): string {
     // Prefer hole routing whenever a matching hole exists.
     if (holes.map(h => h.startingParticipants).some(p => areParticipantsEqualsOrCoupled(p, participants))) {
-        let holeNodeName = participants.filter(p => p.type != "event").map(p => p.name).join('_') + "Hole";
+        let holeNodeName = participantNames(participants) + "Hole";
         if (isParticipantCollectionBased(participants)) {
             const participantsNoEvent = participants.filter(p => p.type != "event");
             holeNodeName = participantsNoEvent.slice(0, participants.length - 2).map(p => p.name).join('_') + "Hole";
@@ -183,7 +183,7 @@ export function appendConclusionBranch(
     // Reference-based participants (for example `<initialState,σ>`) target another concept instance.
     // They must route through the generated hole node, not through a local variable node.
     if (isReferenceBased(participants)) {
-        const nodeName = participants.filter(p => p.type != "event").map(p => p.name).join('_') + "Hole";
+        const nodeName = participantNames(participants) + "Hole";
         file.append(`
         {let e = localCCFG.addEdge(${fromNodeName},${nodeName})
         e.guards = [...e.guards, ...[${guardString}]]}

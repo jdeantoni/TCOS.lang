@@ -119,3 +119,11 @@ export function areParticipantsCoupled(p1: TypedElement[], p2: TypedElement[]): 
         return false
     }
 }
+
+export function participantNames(participants: TypedElement[], separator: string = "_"): string {
+    return participants.filter(p => p.type != "event").map(p => p.name).join(separator);
+}
+
+export function leadingParticipant(participants: TypedElement[]): TypedElement[] {
+    return participants.slice(0, participants.length - 2);
+}
