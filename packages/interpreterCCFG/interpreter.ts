@@ -738,8 +738,6 @@ function mapVariables(variables: Map<string, unknown>): types.VariableSnapshot[]
 }
 
 function looseEquals(left: unknown, right: unknown): boolean {
-    // CCFG guards are generated with JavaScript truthiness in mind: e.g. 1 == true, 0 == false.
-    // eslint-disable-next-line eqeqeq
     return left == right;
 }
 
