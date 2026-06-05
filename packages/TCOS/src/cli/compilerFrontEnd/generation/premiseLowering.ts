@@ -3,6 +3,7 @@ import { RuleControlFlow } from "../class/RuleControlFlow.js";
 import { TypedElement } from "../class/TypeElement.js";
 import { RuleOpening, VariableDeclaration } from "../../../language-server/generated/ast.js";
 import { isBroadcastReceptionParticipants } from "../analysis/participants.js";
+import { NL } from "langium/generate";
 
 export function createJoinNode(file: CompositeGeneratorNode, premiseNodeName: string) {
     file.append(`
@@ -66,6 +67,13 @@ export function createChoiceNodeForGuards(ruleCF: RuleControlFlow, file: Composi
         `);
 
     return `${ruleCF.rule.name}ChoiceNode`;
+}
+
+export function appendEdgeWithGuard(file: CompositeGeneratorNode, fromNodeName: string, toNodeName: string, guardString: string) {
+    file.append(`
+        {let e = localCCFG.addEdge(${fromNodeName},${toNodeName})
+        e.guards = [...e.guards, ...[${guardString}]]}
+    `, NL);
 }
 
 export function connectStartingRuleNonHoleParticipant(participants: TypedElement[], file: CompositeGeneratorNode, participantName: string, startingPremiseNodeName: string) {
