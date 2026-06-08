@@ -21,6 +21,7 @@ const ccfg = compilerFrontEnd.generateCCFG(model, false);
 ccfg.addSyncEdge();
 ccfg.detectCycles();
 ccfg.collectCycles();
+console.log(ccfg.toDot());
 
 if (process.env.DUMP === "1") {
     console.log(JSON.stringify({
