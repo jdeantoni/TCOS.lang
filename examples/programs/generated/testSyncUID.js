@@ -74,40 +74,40 @@ async function functioninit4Variable(){
 	sigma.set("Variable0_0_0_10currentValue", undefined);
 }
 async function function6initializeVar(){
-	let Variable0_0_0_101432;
-	Variable0_0_0_101432 = 1;
-	sigma.set("Variable0_0_0_10currentValue", Variable0_0_0_101432);
+	let Variable0_0_0_101376;
+	Variable0_0_0_101376 = 1;
+	sigma.set("Variable0_0_0_10currentValue", Variable0_0_0_101376);
 }
 async function functioninit8Variable(){
 	sigma.set("Variable1_0_1_10currentValue", undefined);
 }
 async function function10initializeVar(){
-	let Variable1_0_1_101432;
-	Variable1_0_1_101432 = 4;
-	sigma.set("Variable1_0_1_10currentValue", Variable1_0_1_101432);
+	let Variable1_0_1_101376;
+	Variable1_0_1_101376 = 4;
+	sigma.set("Variable1_0_1_10currentValue", Variable1_0_1_101376);
 }
 async function function17executeAssignment2(resRight){
-	let Assignment3_7_3_142622;
-	Assignment3_7_3_142622 = resRight;
-	sigma.set("Variable1_0_1_10currentValue", Assignment3_7_3_142622);
+	let Assignment3_7_3_142523;
+	Assignment3_7_3_142523 = resRight;
+	sigma.set("Variable1_0_1_10currentValue", Assignment3_7_3_142523);
 }
 async function function23executeAssignment2(resRight){
-	let Assignment4_7_4_142622;
-	Assignment4_7_4_142622 = resRight;
-	sigma.set("Variable0_0_0_10currentValue", Assignment4_7_4_142622);
+	let Assignment4_7_4_142523;
+	Assignment4_7_4_142523 = resRight;
+	sigma.set("Variable0_0_0_10currentValue", Assignment4_7_4_142523);
 }
 async function function18accessVarRef(){
-	let VarRef3_12_3_141647;
-	VarRef3_12_3_141647 = sigma.get("Variable0_0_0_10currentValue");
+	let VarRef3_12_3_141582;
+	VarRef3_12_3_141582 = sigma.get("Variable0_0_0_10currentValue");
 	let VarRef3_12_3_14terminates;
-	VarRef3_12_3_14terminates = VarRef3_12_3_141647;
+	VarRef3_12_3_14terminates = VarRef3_12_3_141582;
 	return VarRef3_12_3_14terminates;
 }
 async function function24accessVarRef(){
-	let VarRef4_12_4_141647;
-	VarRef4_12_4_141647 = sigma.get("Variable1_0_1_10currentValue");
+	let VarRef4_12_4_141582;
+	VarRef4_12_4_141582 = sigma.get("Variable1_0_1_10currentValue");
 	let VarRef4_12_4_14terminates;
-	VarRef4_12_4_14terminates = VarRef4_12_4_141647;
+	VarRef4_12_4_14terminates = VarRef4_12_4_141582;
 	return VarRef4_12_4_14terminates;
 }
 async function main(){

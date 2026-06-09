@@ -74,47 +74,47 @@ async function functioninit4Variable(){
 	sigma.set("Variable0_0_0_10currentValue", undefined);
 }
 async function function6initializeVar(){
-	let Variable0_0_0_101432;
-	Variable0_0_0_101432 = 1;
-	sigma.set("Variable0_0_0_10currentValue", Variable0_0_0_101432);
+	let Variable0_0_0_101376;
+	Variable0_0_0_101376 = 1;
+	sigma.set("Variable0_0_0_10currentValue", Variable0_0_0_101376);
 }
 async function functioninit8Variable(){
 	sigma.set("Variable1_0_1_10currentValue", undefined);
 }
 async function function10initializeVar(){
-	let Variable1_0_1_101432;
-	Variable1_0_1_101432 = 0;
-	sigma.set("Variable1_0_1_10currentValue", Variable1_0_1_101432);
+	let Variable1_0_1_101376;
+	Variable1_0_1_101376 = 0;
+	sigma.set("Variable1_0_1_10currentValue", Variable1_0_1_101376);
 }
 async function function12periodicStart(){
 	sigma.set("PeriodicBloc3_0_5_3blocTrigger", undefined);
 	sigma.set("PeriodicBloc3_0_5_3blocTrigger", 1000);
 }
 async function function33executeAssignment2(resRight){
-	let Assignment7_0_7_72622;
-	Assignment7_0_7_72622 = resRight;
-	sigma.set("Variable1_0_1_10currentValue", Assignment7_0_7_72622);
+	let Assignment7_0_7_72523;
+	Assignment7_0_7_72523 = resRight;
+	sigma.set("Variable1_0_1_10currentValue", Assignment7_0_7_72523);
 }
 async function functioninit42Timer(){
 	await new Promise(resolve => setTimeout(resolve, 1000));
 }
 async function function34accessVarRef(){
-	let VarRef7_5_7_71647;
-	VarRef7_5_7_71647 = sigma.get("Variable0_0_0_10currentValue");
+	let VarRef7_5_7_71582;
+	VarRef7_5_7_71582 = sigma.get("Variable0_0_0_10currentValue");
 	let VarRef7_5_7_7terminates;
-	VarRef7_5_7_7terminates = VarRef7_5_7_71647;
+	VarRef7_5_7_7terminates = VarRef7_5_7_71582;
 	return VarRef7_5_7_7terminates;
 }
 async function function22executeAssignment2(resRight){
-	let Assignment4_4_4_162622;
-	Assignment4_4_4_162622 = resRight;
-	sigma.set("Variable0_0_0_10currentValue", Assignment4_4_4_162622);
+	let Assignment4_4_4_162523;
+	Assignment4_4_4_162523 = resRight;
+	sigma.set("Variable0_0_0_10currentValue", Assignment4_4_4_162523);
 }
 async function function28accessVarRef(){
-	let VarRef4_13_4_151647;
-	VarRef4_13_4_151647 = sigma.get("Variable0_0_0_10currentValue");
+	let VarRef4_13_4_151582;
+	VarRef4_13_4_151582 = sigma.get("Variable0_0_0_10currentValue");
 	let VarRef4_13_4_15terminates;
-	VarRef4_13_4_15terminates = VarRef4_13_4_151647;
+	VarRef4_13_4_15terminates = VarRef4_13_4_151582;
 	return VarRef4_13_4_15terminates;
 }
 async function main(){
@@ -123,7 +123,5 @@ async function main(){
 	await functioninit8Variable();
 	await function10initializeVar();
 	await function12periodicStart();
-	await functioninit42Timer();
-	let result28accessVarRef = await function28accessVarRef();
 }
 main();

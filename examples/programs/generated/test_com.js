@@ -124,54 +124,11 @@ async function main(){
 	await function6perioStart();
 	var sync11 = [];
 	sync11.push(42);
-	flag11 = true;
-	var flag11 = true;
-	while(flag11){
-		flag11 = false;
-		{
+	{
+		fakeVar11 = sync11.pop();
+		while (fakeVar11 == undefined){
+			await new Promise(resolve => setTimeout(resolve, 100));
 			fakeVar11 = sync11.pop();
-			while (fakeVar11 == undefined){
-				await new Promise(resolve => setTimeout(resolve, 100));
-				fakeVar11 = sync11.pop();
-			}
-		}
-		await functioninit53Timer();
-		var sync17 = [];
-		async function thread12(){
-            			console.log("thread12 started");
-			async function thread18(){
-            				console.log("thread18 started");
-				await function25finishWait();
-				await function31fugaceStmt1();
-				await function34fugaceStmt1();
-				sync17.push(42);
-			}
-			thread18();
-			async function thread36(){
-            				console.log("thread36 started");
-				await function45fugaceStmt2();
-				await function48fugaceStmt2();
-				await function52emitnotifyID();
-				sync17.push(42);
-			}
-			thread36();
-		}
-		thread12();
-		sync11.push(42);
-		flag11 = true;
-		{
-			fakeVar17 = sync17.pop();
-			while (fakeVar17 == undefined){
-				await new Promise(resolve => setTimeout(resolve, 100));
-				fakeVar17 = sync17.pop();
-			}
-		}
-		{
-			fakeVar17 = sync17.pop();
-			while (fakeVar17 == undefined){
-				await new Promise(resolve => setTimeout(resolve, 100));
-				fakeVar17 = sync17.pop();
-			}
 		}
 	}
 	for (let v of sigma){

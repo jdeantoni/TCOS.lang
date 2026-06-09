@@ -714,6 +714,9 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
         let terminatesTimerHoleNode: Node = new Step(node,NodeType.terminates)
         timerHoleLocalCCFG.addNode(terminatesTimerHoleNode)
         timerHoleLocalCCFG.addEdge(startsTimerHoleNode,terminatesTimerHoleNode)
+        
+        timerHoleLocalCCFG.addEdge(terminatesTimerHoleNode, startsTimerHoleNode)
+
         ccfg.fillHole(hole, timerHoleLocalCCFG)
     }
 

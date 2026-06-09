@@ -121,34 +121,7 @@ def main():
 	function4perioStart() 
 	sync9 = Queue() 
 	sync9.put(42) 
-	flag9 = True
-	while flag9 == True: 
-		flag9 = False 
-		sync9.get() 
-		functioninit36Timer() 
-		sync15 = Queue() 
-		def codeThread10():
-			print("thread10 started") 
-			def codeThread16():
-				print("thread16 started") 
-				function21fugaceStmt1() 
-				function24fugaceStmt1() 
-				sync15.put(42) 
-			thread16 = threading.Thread(target=codeThread16) 
-			thread16.start() 
-			def codeThread26():
-				print("thread26 started") 
-				function31fugaceStmt2() 
-				function34fugaceStmt2() 
-				sync15.put(42) 
-			thread26 = threading.Thread(target=codeThread26) 
-			thread26.start() 
-		thread10 = threading.Thread(target=codeThread10) 
-		thread10.start() 
-		sync9.put(42) 
-		flag9 = True
-		sync15.get() 
-		sync15.get() 
+	sync9.get() 
 	for v in sigma:
 		print(str(v)+" = " + str(sigma[v])) 
 if __name__ == "__main__": 

@@ -103,52 +103,11 @@ async function main(){
 		await function4perioStart();
 	var sync9 = [];
 	sync9.push(42);
-	flag9 = true;
-	var flag9 = true;
-	while(flag9){
-		flag9 = false;
-		{
+	{
+		fakeVar9 = sync9.pop();
+		while (fakeVar9 == undefined){
+			await new Promise(resolve => setTimeout(resolve, 100));
 			fakeVar9 = sync9.pop();
-			while (fakeVar9 == undefined){
-				await new Promise(resolve => setTimeout(resolve, 100));
-				fakeVar9 = sync9.pop();
-			}
-		}
-		await functioninit36Timer();
-		var sync15 = [];
-		async function thread10(){
-            			console.log("thread10 started");
-			async function thread16(){
-            				console.log("thread16 started");
-				await function21fugaceStmt1();
-				await function24fugaceStmt1();
-				sync15.push(42);
-			}
-			thread16();
-			async function thread26(){
-            				console.log("thread26 started");
-				await function31fugaceStmt2();
-				await function34fugaceStmt2();
-				sync15.push(42);
-			}
-			thread26();
-		}
-		thread10();
-		sync9.push(42);
-		flag9 = true;
-		{
-			fakeVar15 = sync15.pop();
-			while (fakeVar15 == undefined){
-				await new Promise(resolve => setTimeout(resolve, 100));
-				fakeVar15 = sync15.pop();
-			}
-		}
-		{
-			fakeVar15 = sync15.pop();
-			while (fakeVar15 == undefined){
-				await new Promise(resolve => setTimeout(resolve, 100));
-				fakeVar15 = sync15.pop();
-			}
 		}
 	}
 	for (let v of sigma){

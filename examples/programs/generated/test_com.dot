@@ -12,7 +12,7 @@ setGlobalVar,int,Perio2_0_4_1blocTrigger,1000
 }" shape="ellipse" ];
   "7" [label="7[]:Step_terminates" shape="ellipse" ];
   "10" [label="10[11,17]:Fork" shape="triangle" ];
-  "11" [label="11[10]:OrJoin" shape="invtriangle" style="filled" fillcolor="lightblue"];
+  "11" [label="11[10]:OrJoin" shape="invtriangle" ];
   "53" [label="53[]:Step_starts:
 void functioninit53Timer(){
 addSleep,1000
@@ -82,6 +82,7 @@ setGlobalVar,int,Stmt23_46_3_51fakeState,0
   "10" -> "11" [label=""];
   "11" -> "53" [label=""];
   "53" -> "54" [label=""];
+  "54" -> "53" [label=""];
   "12" -> "16" [label=""];
   "16" -> "18" [label=""];
   "16" -> "36" [label=""];

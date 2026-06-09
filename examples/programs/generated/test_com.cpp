@@ -183,44 +183,7 @@ int main(){
 	LockingQueue<Void> synch11;
 	{Void fakeParam11;
  	synch11.push(fakeParam11);}
-	flag11 = true;
-	flag11= true;
-while (flag11 == true){
-	flag11 = false;
-		{Void joinPopped11;
- 		synch11.waitAndPop(joinPopped11);}
-		functioninit53Timer();
-		bool flag17 = true;
-		LockingQueue<Void> synch17;
-		std::thread thread12([&](){
-		std::cout << "thread12 started" << std::endl;
-			std::thread thread18([&](){
-			std::cout << "thread18 started" << std::endl;
-				function25finishWait();
-				function31fugaceStmt1();
-				function34fugaceStmt1();
-				{Void fakeParam17;
- 				synch17.push(fakeParam17);}
-			});
-			thread18.detach();
-			std::thread thread36([&](){
-			std::cout << "thread36 started" << std::endl;
-				function45fugaceStmt2();
-				function48fugaceStmt2();
-				function52emitnotifyID();
-				{Void fakeParam17;
- 				synch17.push(fakeParam17);}
-			});
-			thread36.detach();
-		});
-		thread12.detach();
-		{Void fakeParam11;
- 		synch11.push(fakeParam11);}
-		flag11 = true;
-		{Void joinPopped17;
- 		synch17.waitAndPop(joinPopped17);}
-		{Void joinPopped17;
- 		synch17.waitAndPop(joinPopped17);}
-	}
+	{Void joinPopped11;
+ 	synch11.waitAndPop(joinPopped11);}
 for(auto entry : sigma){ std::cout << entry.first << " : " << *((int*)entry.second) << std::endl;}
 }
