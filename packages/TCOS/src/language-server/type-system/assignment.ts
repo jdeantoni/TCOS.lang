@@ -1,4 +1,5 @@
-import { isRuleOpeningType, isFunctionType, isNilType, TypeDescription } from "./descriptions.js";
+import { isRuleOpeningType, isFunctionType, isNilType } from "./descriptions.js";
+import { TypeDescription } from "./interfaces/TypeDescription.js";
 
 export function isAssignable(from: TypeDescription, to: TypeDescription): boolean {
     if (isRuleOpeningType(from)) {

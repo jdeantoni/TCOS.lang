@@ -1,4 +1,4 @@
-import { TypeDescription } from "./descriptions.js";
+import { TypeDescription } from "./interfaces/TypeDescription.js";
 
 export function isLegalOperation(operator: string, left: TypeDescription, right?: TypeDescription): boolean {
     if (operator === '+') {
