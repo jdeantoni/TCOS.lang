@@ -11,7 +11,7 @@ export class CppGenerator {
         return `${filename}.cpp`;
     }
     createBase() {
-        let res = [];
+        const res = [];
         res.push(`
         #include <string>
         #include <unordered_map>
@@ -149,7 +149,7 @@ export class CppGenerator {
         return [];
     }
     createFunction(fname, params, returnType, insideFunction) {
-        let res = [];
+        const res = [];
         res.push(returnType + " function" + fname + `(${params.map(p => p.toString()).join(", ")}){\n`);
         if (this.debug) {
             res.push(`std::cout << "\tfunction${fname} started" << std::endl;\n`);
@@ -161,7 +161,7 @@ export class CppGenerator {
         return res;
     }
     createMainFunction(insideMain) {
-        let res = [];
+        const res = [];
         res.push("int main(){\n\t");
         for (let i = 0; i < insideMain.length; i++) {
             res.push("\t" + insideMain[i]);
@@ -177,7 +177,7 @@ export class CppGenerator {
         return [typeName + " result" + fname + " = function" + fname + `(${params.join(", ")});\n`];
     }
     createIf(guards, insideOfIf) {
-        let createIfString = [];
+        const createIfString = [];
         createIfString.push("if (" + guards.join(" && ") + "){\n");
         if (this.debug) {
             createIfString.push(`std::cout << "(${guards.join(" && ")}) is TRUE" << std::endl;\n`);
@@ -222,7 +222,7 @@ export class CppGenerator {
         return ["{Void joinPopped" + synchUID + ";\n ", "synch" + synchUID + ".waitAndPop(joinPopped" + synchUID + ");}\n"];
     }
     createLoop(uid, insideLoop) {
-        let res = ["flag" + uid + "= true;\nwhile (flag" + uid + " == true){\n\tflag" + uid + " = false;\n"];
+        const res = ["flag" + uid + "= true;\nwhile (flag" + uid + " == true){\n\tflag" + uid + " = false;\n"];
         for (let i = 0; i < insideLoop.length; i++) {
             res.push("\t" + insideLoop[i]);
         }

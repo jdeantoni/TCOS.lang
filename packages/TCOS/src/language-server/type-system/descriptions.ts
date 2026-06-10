@@ -1,4 +1,3 @@
-
 import { AstNode } from "langium";
 import {
     BooleanExpression,
@@ -7,21 +6,7 @@ import {
     StringExpression,
     ParserRule
 } from "../generated/ast.js"
-
-export type TypeDescription =
-    | NilTypeDescription
-    | VoidTypeDescription
-    | BooleanTypeDescription
-    | StringTypeDescription
-    | NumberTypeDescription
-    | FunctionTypeDescription
-    | RuleOpeningTypeDescription
-    | ParserRuleTypeDescription
-    | ErrorType;
-
-export interface NilTypeDescription {
-    readonly $type: "nil"
-}
+import { BooleanTypeDescription, ErrorType, FunctionParameter, FunctionTypeDescription, NilTypeDescription, NumberTypeDescription, ParserRuleTypeDescription, RuleOpeningTypeDescription, StringTypeDescription, TypeDescription, VoidTypeDescription } from "./interfaces/TypeDescription.js";
 
 export function createNilType(): NilTypeDescription {
     return {
@@ -33,10 +18,6 @@ export function isNilType(item: TypeDescription): item is NilTypeDescription {
     return item.$type === "nil";
 }
 
-export interface VoidTypeDescription {
-    readonly $type: "void"
-}
-
 export function createVoidType(): VoidTypeDescription {
     return {
         $type: "void"
@@ -45,11 +26,6 @@ export function createVoidType(): VoidTypeDescription {
 
 export function isVoidType(item: TypeDescription): item is VoidTypeDescription {
     return item.$type === "void";
-}
-
-export interface BooleanTypeDescription {
-    readonly $type: "boolean"
-    readonly literal?: BooleanExpression
 }
 
 export function createBooleanType(literal?: BooleanExpression): BooleanTypeDescription {
@@ -63,11 +39,6 @@ export function isBooleanType(item: TypeDescription): item is BooleanTypeDescrip
     return item.$type === "boolean";
 }
 
-export interface StringTypeDescription {
-    readonly $type: "string"
-    readonly literal?: StringExpression
-}
-
 export function createStringType(literal?: StringExpression): StringTypeDescription {
     return {
         $type: "string",
@@ -79,11 +50,6 @@ export function isStringType(item: TypeDescription): item is StringTypeDescripti
     return item.$type === "string";
 }
 
-export interface NumberTypeDescription {
-    readonly $type: "integer",
-    readonly literal?: NumberExpression
-}
-
 export function createNumberType(literal?: NumberExpression): NumberTypeDescription {
     return {
         $type: "integer",
@@ -93,17 +59,6 @@ export function createNumberType(literal?: NumberExpression): NumberTypeDescript
 
 export function isNumberType(item: TypeDescription): item is NumberTypeDescription {
     return item.$type === "integer";
-}
-
-export interface FunctionTypeDescription {
-    readonly $type: "function"
-    readonly returnType: TypeDescription
-    readonly parameters: FunctionParameter[]
-}
-
-export interface FunctionParameter {
-    name: string
-    type: TypeDescription
 }
 
 export function createFunctionType(returnType: TypeDescription, parameters: FunctionParameter[]): FunctionTypeDescription {
@@ -118,13 +73,6 @@ export function isFunctionType(item: TypeDescription): item is FunctionTypeDescr
     return item.$type === "function";
 }
 
-
-
-export interface ParserRuleTypeDescription {
-    readonly $type: "ParserRule"
-    readonly literal: ParserRule
-}
-
 export function createParserRuleType(literal: ParserRule): ParserRuleTypeDescription {
     return {
         $type: "ParserRule",
@@ -136,16 +84,6 @@ export function isParserRuleType(item: TypeDescription): item is ParserRuleTypeD
     return item.$type === "ParserRule";
 }
 
-
-
-
-
-
-export interface RuleOpeningTypeDescription {
-    readonly $type: "ruleOpening"
-    readonly literal: RuleOpening
-}
-
 export function createRuleOpeningType(literal: RuleOpening): RuleOpeningTypeDescription {
     return {
         $type: "ruleOpening",
@@ -155,12 +93,6 @@ export function createRuleOpeningType(literal: RuleOpening): RuleOpeningTypeDesc
 
 export function isRuleOpeningType(item: TypeDescription): item is RuleOpeningTypeDescription {
     return item.$type === "ruleOpening";
-}
-
-export interface ErrorType {
-    readonly $type: "error"
-    readonly source?: AstNode
-    readonly message: string
 }
 
 export function createErrorType(message: string, source?: AstNode): ErrorType {

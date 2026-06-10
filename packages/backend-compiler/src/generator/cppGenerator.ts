@@ -19,7 +19,7 @@ export class CppGenerator implements IGenerator {
     }
 
     createBase(): string[] {    
-        let res:string[] = []
+        const res:string[] = []
         res.push(`
         #include <string>
         #include <unordered_map>
@@ -160,7 +160,7 @@ export class CppGenerator implements IGenerator {
     }
 
     createFunction( fname: string, params: TypedElement[], returnType: string,insideFunction:string[]): string[] {
-        let res:string[] = []
+        const res:string[] = []
         res.push(returnType + " function" + fname + `(${params.map(p => (p as TypedElement).toString()).join(", ")}){\n`)
         if (this.debug){
             res.push(`std::cout << "\tfunction${fname} started" << std::endl;\n`)
@@ -173,7 +173,7 @@ export class CppGenerator implements IGenerator {
     }
 
     createMainFunction(insideMain:string[]): string[] {
-        let res:string[] = []
+        const res:string[] = []
         res.push("int main(){\n\t")
         for (let i = 0; i < insideMain.length; i++) {
             res.push("\t"+insideMain[i])
@@ -192,7 +192,7 @@ export class CppGenerator implements IGenerator {
     }
 
     createIf( guards: string[],insideOfIf:string[]): string[] {
-        let createIfString:string[] = []
+        const createIfString:string[] = []
 
         createIfString.push("if (" + guards.join(" && ") + "){\n")
         if(this.debug){
@@ -247,7 +247,7 @@ export class CppGenerator implements IGenerator {
     }
 
     createLoop( uid:number, insideLoop: string[]): string[] {
-        let res = ["flag"+uid+"= true;\nwhile (flag"+uid+ " == true){\n\tflag"+uid+" = false;\n"]
+        const res = ["flag"+uid+"= true;\nwhile (flag"+uid+ " == true){\n\tflag"+uid+" = false;\n"]
         for (let i = 0; i < insideLoop.length; i++) {
             res.push("\t"+insideLoop[i])
         }

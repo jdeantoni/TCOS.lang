@@ -14,7 +14,7 @@ export class JsGenerator implements IGenerator {
         return `${filename}.js`;
     }
     createBase(): string[] {  
-        let res:string[] = []  
+        const res:string[] = []  
 
         res.push(`
 class Void{}
@@ -95,7 +95,7 @@ let com_last_event_token = undefined;
         return [`main();\n`]
     }
     createFunction( fname: string, params: TypedElement[], returnType: string,insideFunction:string[]): string[] {
-        let res:string[] = []
+        const res:string[] = []
         res.push("async function function" + fname + `(${params.map(p => (p as TypedElement).name).join(", ")}){\n`)
 
         if (this.debug){
@@ -108,7 +108,7 @@ let com_last_event_token = undefined;
         return res
     }
     createMainFunction(insideMain:string[]): string[] {
-        let res:string[] = []
+        const res:string[] = []
         res.push("async function main(){\n\t");
         for (let i = 0; i < insideMain.length; i++) {
             res.push("\t"+insideMain[i])
@@ -129,7 +129,7 @@ let com_last_event_token = undefined;
         return ["let result"+fname+" = await function"+fname + `(${params.join(", ")});\n`]
     }
     createIf( guards: string[],insideOfIf:string[]): string[] {
-        let createIfString:string[] = []
+        const createIfString:string[] = []
 
         createIfString.push("if (" + guards.join(" && ") + "){\n")
         if (this.debug){
@@ -180,7 +180,7 @@ let com_last_event_token = undefined;
 
     }
     createLoop( uid:number, insideLoop: string[]): string[] {
-        let res = []
+        const res = []
         res.push(`var flag${uid} = true;\n`)
         res.push(`while(flag${uid}){\n`)
         res.push(`\tflag${uid} = false;\n`)
