@@ -128,134 +128,128 @@
         }
         
         void function0FSMstart(){
-	com_create_event_channel("Event0_0_0_8", 1, "void");
 	com_create_event_channel("Event3_0_3_8", 1, "void");
-	com_create_event_channel("Event1_0_1_8", 1, "void");
 	com_create_event_channel("Event4_0_4_8", 1, "void");
 }
 void function18init(){
-	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((bool*)sigma["State6_4_8_5isInitial"]) = true;}
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((bool*)sigma["State6_4_9_5isInitial"]) = true;}
 }
 void functioninit20State(){
-	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["State6_4_8_5isInitial"] = new bool();}
-	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((bool*)sigma["State6_4_8_5isInitial"]) = false;}
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["State6_4_9_5isInitial"] = new bool();}
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((bool*)sigma["State6_4_9_5isInitial"]) = false;}
 }
-void function23firstStartOfInitialState(){
-	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((bool*)sigma["State6_4_8_5isInitial"]) = false;}
+void function24firstStartOfInitialState(){
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((bool*)sigma["State6_4_9_5isInitial"]) = false;}
 }
-void function37fire(){
-	
-		auto event = com_wait_event("Event0_0_0_8");
-		auto Event0_0_0_8guardEventPayload = std::any{};
-		auto Event0_0_0_8Token = event.second;
-		com_last_event_token = event.second;
-	
-	com_ack_event(Event0_0_0_8Token);
-}
-void function38emitsentEvent(){
+void function40emitsentEvent(){
 	std::any Event3_0_3_8sentEventPayload;
 	Event3_0_3_8sentEventPayload = 0;
 	com_emit_event("Event3_0_3_8", Event3_0_3_8sentEventPayload, true);
 }
-void functioninit27State(){
-	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["State9_4_11_5isInitial"] = new bool();}
-	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((bool*)sigma["State9_4_11_5isInitial"]) = false;}
+void functioninit28State(){
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	sigma["State10_4_13_5isInitial"] = new bool();}
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((bool*)sigma["State10_4_13_5isInitial"]) = false;}
 }
-void function30firstStartOfInitialState(){
-	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((bool*)sigma["State9_4_11_5isInitial"]) = false;}
+void function32firstStartOfInitialState(){
+	{const std::lock_guard<std::mutex> lock(sigma_mutex);	*((bool*)sigma["State10_4_13_5isInitial"]) = false;}
 }
-void function44fire(){
-	
-		auto event = com_wait_event("Event1_0_1_8");
-		auto Event1_0_1_8guardEventPayload = std::any{};
-		auto Event1_0_1_8Token = event.second;
-		com_last_event_token = event.second;
-	
-	com_ack_event(Event1_0_1_8Token);
-}
-void function45emitsentEvent(){
+void function47emitsentEvent(){
 	std::any Event4_0_4_8sentEventPayload;
 	Event4_0_4_8sentEventPayload = 0;
 	com_emit_event("Event4_0_4_8", Event4_0_4_8sentEventPayload, true);
 }
 int main(){
 		function0FSMstart();
-	bool flag50 = true;
-	LockingQueue<Void> synch50;
+	bool flag52 = true;
+	LockingQueue<Void> synch52;
 	std::thread thread15([&](){
 		function18init();
-		bool flag62 = true;
-		LockingQueue<Void> synch62;
-		{Void fakeParam62;
- 		synch62.push(fakeParam62);}
-		{Void joinPopped62;
- 		synch62.waitAndPop(joinPopped62);}
-		functioninit20State();
-		function23firstStartOfInitialState();
-		bool flag25 = true;
-		LockingQueue<Void> synch25;
-		{Void fakeParam25;
- 		synch25.push(fakeParam25);}
-		flag25 = true;
-		flag25= true;
-while (flag25 == true){
-	flag25 = false;
-			{Void joinPopped25;
- 			synch25.waitAndPop(joinPopped25);}
-			bool flag55 = true;
-			LockingQueue<Void> synch55;
-			std::thread thread34([&](){
-				function37fire();
-				function38emitsentEvent();
-				bool flag24 = true;
-				LockingQueue<Void> synch24;
-				std::thread thread35([&](){
-					{Void joinPopped55;
- 					synch55.waitAndPop(joinPopped55);}
-				});
-				thread35.detach();
-				std::thread thread27([&](){
-					functioninit27State();
-					function30firstStartOfInitialState();
-					bool flag32 = true;
-					LockingQueue<Void> synch32;
-					{Void fakeParam32;
- 					synch32.push(fakeParam32);}
-					{Void joinPopped32;
- 					synch32.waitAndPop(joinPopped32);}
-					bool flag60 = true;
-					LockingQueue<Void> synch60;
-					std::thread thread41([&](){
-						function44fire();
-						function45emitsentEvent();
-						bool flag31 = true;
-						LockingQueue<Void> synch31;
-						std::thread thread42([&](){
-							{Void joinPopped60;
- 							synch60.waitAndPop(joinPopped60);}
-						});
-						thread42.detach();
-						std::thread thread43([&](){
-						});
-						thread43.detach();
-						std::thread thread62([&](){
-						});
-						thread62.detach();
+		bool flag64 = true;
+		LockingQueue<Void> synch64;
+		{Void fakeParam64;
+ 		synch64.push(fakeParam64);}
+		flag64 = true;
+		flag64= true;
+while (flag64 == true){
+	flag64 = false;
+			{Void joinPopped64;
+ 			synch64.waitAndPop(joinPopped64);}
+			functioninit20State();
+			bool flag25 = true;
+			LockingQueue<Void> synch25;
+			bool flag26 = true;
+			LockingQueue<Void> synch26;
+			bool flag57 = true;
+			LockingQueue<Void> synch57;
+			bool flag39 = true;
+			LockingQueue<Void> synch39;
+			if (State6_4_9_5isInitial == true){
+				function24firstStartOfInitialState();
+				{Void fakeParam26;
+ 				synch26.push(fakeParam26);}
+				{Void joinPopped26;
+ 				synch26.waitAndPop(joinPopped26);}
+				std::thread thread36([&](){
+					{Void joinPopped39;
+ 					synch39.waitAndPop(joinPopped39);}
+					function40emitsentEvent();
+					std::thread thread37([&](){
+						{Void joinPopped57;
+ 						synch57.waitAndPop(joinPopped57);}
 					});
-					thread41.detach();
+					thread37.detach();
+					std::thread thread28([&](){
+						functioninit28State();
+						bool flag33 = true;
+						LockingQueue<Void> synch33;
+						bool flag34 = true;
+						LockingQueue<Void> synch34;
+						bool flag62 = true;
+						LockingQueue<Void> synch62;
+						bool flag46 = true;
+						LockingQueue<Void> synch46;
+						if (State10_4_13_5isInitial == true){
+							function32firstStartOfInitialState();
+							{Void fakeParam34;
+ 							synch34.push(fakeParam34);}
+							{Void joinPopped34;
+ 							synch34.waitAndPop(joinPopped34);}
+							std::thread thread43([&](){
+								{Void joinPopped46;
+ 								synch46.waitAndPop(joinPopped46);}
+								function47emitsentEvent();
+								std::thread thread44([&](){
+									{Void joinPopped62;
+ 									synch62.waitAndPop(joinPopped62);}
+								});
+								thread44.detach();
+								std::thread thread45([&](){
+								});
+								thread45.detach();
+								std::thread thread64([&](){
+								});
+								thread64.detach();
+							});
+							thread43.detach();
+						}
+						if (State10_4_13_5isInitial == false){
+							{Void joinPopped33;
+ 							synch33.waitAndPop(joinPopped33);}
+							{Void fakeParam33;
+ 							synch33.push(fakeParam33);}
+						}
+					});
+					thread28.detach();
 				});
-				thread27.detach();
-				{Void joinPopped31;
- 				synch31.waitAndPop(joinPopped31);}
-				{Void joinPopped31;
- 				synch31.waitAndPop(joinPopped31);}
-			});
-			thread34.detach();
+				thread36.detach();
+			}
+			if (State6_4_9_5isInitial == false){
+				{Void joinPopped25;
+ 				synch25.waitAndPop(joinPopped25);}
+				{Void fakeParam25;
+ 				synch25.push(fakeParam25);}
+			}
 		}
-		{Void joinPopped24;
- 		synch24.waitAndPop(joinPopped24);}
-		{Void joinPopped24;
- 		synch24.waitAndPop(joinPopped24);}
 	});
 	thread15.detach();
 for(auto entry : sigma){ std::cout << entry.first << " : " << *((int*)entry.second) << std::endl;}

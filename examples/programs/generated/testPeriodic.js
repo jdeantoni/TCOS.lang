@@ -90,32 +90,50 @@ async function function12periodicStart(){
 	sigma.set("PeriodicBloc3_0_5_3blocTrigger", undefined);
 	sigma.set("PeriodicBloc3_0_5_3blocTrigger", 1000);
 }
-async function function33executeAssignment2(resRight){
+async function function38executeAssignment2(resRight){
 	let Assignment7_0_7_72523;
 	Assignment7_0_7_72523 = resRight;
 	sigma.set("Variable1_0_1_10currentValue", Assignment7_0_7_72523);
 }
-async function functioninit42Timer(){
+async function functioninit47Timer(){
 	await new Promise(resolve => setTimeout(resolve, 1000));
 }
-async function function34accessVarRef(){
+async function function39accessVarRef(){
 	let VarRef7_5_7_71582;
 	VarRef7_5_7_71582 = sigma.get("Variable0_0_0_10currentValue");
 	let VarRef7_5_7_7terminates;
 	VarRef7_5_7_7terminates = VarRef7_5_7_71582;
 	return VarRef7_5_7_7terminates;
 }
-async function function22executeAssignment2(resRight){
+async function function24executeAssignment2(resRight){
 	let Assignment4_4_4_162523;
 	Assignment4_4_4_162523 = resRight;
 	sigma.set("Variable0_0_0_10currentValue", Assignment4_4_4_162523);
 }
-async function function28accessVarRef(){
+async function function30finishPlus(n2, n1){
+	let Plus4_9_4_164390;
+	Plus4_9_4_164390 = n1;
+	let Plus4_9_4_164395;
+	Plus4_9_4_164395 = n2;
+	let Plus4_9_4_164389;
+	Plus4_9_4_164389 = Plus4_9_4_164390 + Plus4_9_4_164395;
+	let Plus4_9_4_16terminates;
+	Plus4_9_4_16terminates = Plus4_9_4_164389;
+	return Plus4_9_4_16terminates;
+}
+async function function33accessVarRef(){
 	let VarRef4_13_4_151582;
 	VarRef4_13_4_151582 = sigma.get("Variable0_0_0_10currentValue");
 	let VarRef4_13_4_15terminates;
 	VarRef4_13_4_15terminates = VarRef4_13_4_151582;
 	return VarRef4_13_4_15terminates;
+}
+async function function31accessVarRef(){
+	let VarRef4_10_4_121582;
+	VarRef4_10_4_121582 = sigma.get("Variable0_0_0_10currentValue");
+	let VarRef4_10_4_12terminates;
+	VarRef4_10_4_12terminates = VarRef4_10_4_121582;
+	return VarRef4_10_4_12terminates;
 }
 async function main(){
 		await functioninit4Variable();
@@ -123,5 +141,54 @@ async function main(){
 	await functioninit8Variable();
 	await function10initializeVar();
 	await function12periodicStart();
+	var sync17 = [];
+	sync17.push(42);
+	flag17 = true;
+	var flag17 = true;
+	while(flag17){
+		flag17 = false;
+		{
+			fakeVar17 = sync17.pop();
+			while (fakeVar17 == undefined){
+				await new Promise(resolve => setTimeout(resolve, 100));
+				fakeVar17 = sync17.pop();
+			}
+		}
+		await functioninit47Timer();
+		var queue30 = [];
+		async function thread18(){
+            			async function thread33(){
+            				let result33accessVarRef = await function33accessVarRef();
+				queue30.push(result33accessVarRef);
+			}
+			thread33();
+			async function thread31(){
+            				let result31accessVarRef = await function31accessVarRef();
+				queue30.push(result31accessVarRef);
+			}
+			thread31();
+			let AndJoinPopped_30_0;
+			{
+			AndJoinPopped_30_0 = queue30.pop();
+				while (AndJoinPopped_30_0 == undefined){
+					await new Promise(resolve => setTimeout(resolve, 100));
+					AndJoinPopped_30_0 = queue30.pop();
+				}
+			}
+			let AndJoinPopped_30_1;
+			{
+			AndJoinPopped_30_1 = queue30.pop();
+				while (AndJoinPopped_30_1 == undefined){
+					await new Promise(resolve => setTimeout(resolve, 100));
+					AndJoinPopped_30_1 = queue30.pop();
+				}
+			}
+			let result30finishPlus = await function30finishPlus(AndJoinPopped_30_0, AndJoinPopped_30_1);
+			await function24executeAssignment2(result30finishPlus);
+		}
+		thread18();
+		sync17.push(42);
+		flag17 = true;
+	}
 }
 main();

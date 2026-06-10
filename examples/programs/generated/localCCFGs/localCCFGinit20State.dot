@@ -18,7 +18,6 @@ setGlobalVar,bool,State6_4_9_5isInitial,false
   "23" -> "24" [label="verifyEqual,State6_4_9_5isInitial,true"];
   "24" -> "26" [label=""];
   "23" -> "25" [label="verifyEqual,State6_4_9_5isInitial,false"];
-  "21" -> "25" [label=""];
   "25" -> "26" [label=""];
   "26" -> "22" [label=""];
   "22" -> "21" [label=""];

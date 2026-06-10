@@ -195,7 +195,7 @@ open PeriodicBloc{
   
           when <blocTrigger,σ> 
       -------------------------------------------------         periodicBodyStart
-        <this,σ> ~> <bloc,σ> || <blocTrigger,σ>
+        <this,σ> ~> (<bloc,σ> || <blocTrigger,σ>)
                   
   
       //          when <bloc,σ>
