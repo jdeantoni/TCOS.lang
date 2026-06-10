@@ -80,9 +80,9 @@ def functioninit4Variable():
 	sigma_mutex.release()
 def function6initializeVar(): 
 	
-	Variable0_0_0_101432 = 1 
+	Variable0_0_0_101376 = 1 
 	sigma_mutex.acquire()
-	sigma["Variable0_0_0_10currentValue"] = Variable0_0_0_101432
+	sigma["Variable0_0_0_10currentValue"] = Variable0_0_0_101376
 	sigma_mutex.release()
 def functioninit8Variable(): 
 	sigma_mutex.acquire()
@@ -90,9 +90,9 @@ def functioninit8Variable():
 	sigma_mutex.release()
 def function10initializeVar(): 
 	
-	Variable1_0_1_101432 = 0 
+	Variable1_0_1_101376 = 0 
 	sigma_mutex.acquire()
-	sigma["Variable1_0_1_10currentValue"] = Variable1_0_1_101432
+	sigma["Variable1_0_1_10currentValue"] = Variable1_0_1_101376
 	sigma_mutex.release()
 def function12periodicStart(): 
 	sigma_mutex.acquire()
@@ -101,43 +101,88 @@ def function12periodicStart():
 	sigma_mutex.acquire()
 	sigma["PeriodicBloc3_0_5_3blocTrigger"] = 1000
 	sigma_mutex.release()
-def function33executeAssignment2(resRight): 
+def function38executeAssignment2(resRight): 
 	
-	Assignment7_0_7_72622 = resRight 
+	Assignment7_0_7_72523 = resRight 
 	sigma_mutex.acquire()
-	sigma["Variable1_0_1_10currentValue"] = Assignment7_0_7_72622
+	sigma["Variable1_0_1_10currentValue"] = Assignment7_0_7_72523
 	sigma_mutex.release()
-def functioninit42Timer(): 
+def functioninit47Timer(): 
 	time.sleep(1000//1000) 
-def function34accessVarRef(): 
+def function39accessVarRef(): 
 	
 	sigma_mutex.acquire()
-	VarRef7_5_7_71647 = sigma["Variable0_0_0_10currentValue"]
+	VarRef7_5_7_71582 = sigma["Variable0_0_0_10currentValue"]
 	sigma_mutex.release()
 	
-	VarRef7_5_7_7terminates = VarRef7_5_7_71647 
+	VarRef7_5_7_7terminates = VarRef7_5_7_71582 
 	return VarRef7_5_7_7terminates 
-def function22executeAssignment2(resRight): 
+def function24executeAssignment2(resRight): 
 	
-	Assignment4_4_4_162622 = resRight 
+	Assignment4_4_4_162523 = resRight 
 	sigma_mutex.acquire()
-	sigma["Variable0_0_0_10currentValue"] = Assignment4_4_4_162622
+	sigma["Variable0_0_0_10currentValue"] = Assignment4_4_4_162523
 	sigma_mutex.release()
-def function28accessVarRef(): 
+def function30finishPlus(n2, n1): 
+	
+	Plus4_9_4_164390 = n1 
+	
+	Plus4_9_4_164395 = n2 
+	
+	Plus4_9_4_164389 = Plus4_9_4_164390 + Plus4_9_4_164395 
+	
+	Plus4_9_4_16terminates = Plus4_9_4_164389 
+	return Plus4_9_4_16terminates 
+def function33accessVarRef(): 
 	
 	sigma_mutex.acquire()
-	VarRef4_13_4_151647 = sigma["Variable0_0_0_10currentValue"]
+	VarRef4_13_4_151582 = sigma["Variable0_0_0_10currentValue"]
 	sigma_mutex.release()
 	
-	VarRef4_13_4_15terminates = VarRef4_13_4_151647 
+	VarRef4_13_4_15terminates = VarRef4_13_4_151582 
 	return VarRef4_13_4_15terminates 
+def function31accessVarRef(): 
+	
+	sigma_mutex.acquire()
+	VarRef4_10_4_121582 = sigma["Variable0_0_0_10currentValue"]
+	sigma_mutex.release()
+	
+	VarRef4_10_4_12terminates = VarRef4_10_4_121582 
+	return VarRef4_10_4_12terminates 
 def main(): 
 	functioninit4Variable() 
 	function6initializeVar() 
 	functioninit8Variable() 
 	function10initializeVar() 
 	function12periodicStart() 
-	functioninit42Timer() 
-	result28accessVarRef = function28accessVarRef(); 
+	sync17 = Queue() 
+	sync17.put(42) 
+	flag17 = True
+	while flag17 == True: 
+		flag17 = False 
+		sync17.get() 
+		functioninit47Timer() 
+		queue30 = Queue() 
+		def codeThread18():
+			def codeThread33():
+				result33accessVarRef = function33accessVarRef(); 
+				queue30.put(result33accessVarRef) 
+			thread33 = threading.Thread(target=codeThread33) 
+			thread33.start() 
+			def codeThread31():
+				result31accessVarRef = function31accessVarRef(); 
+				queue30.put(result31accessVarRef) 
+			thread31 = threading.Thread(target=codeThread31) 
+			thread31.start() 
+			
+			AndJoinPopped_30_0 = queue30.get() 
+			
+			AndJoinPopped_30_1 = queue30.get() 
+			result30finishPlus = function30finishPlus(AndJoinPopped_30_0, AndJoinPopped_30_1); 
+			function24executeAssignment2(result30finishPlus) 
+		thread18 = threading.Thread(target=codeThread18) 
+		thread18.start() 
+		sync17.put(42) 
+		flag17 = True
 if __name__ == "__main__": 
 	main() 

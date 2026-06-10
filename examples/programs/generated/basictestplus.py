@@ -80,9 +80,9 @@ def functioninit4Variable():
 	sigma_mutex.release()
 def function6initializeVar(): 
 	
-	Variable2_0_2_101432 = 1 
+	Variable2_0_2_101376 = 1 
 	sigma_mutex.acquire()
-	sigma["Variable2_0_2_10currentValue"] = Variable2_0_2_101432
+	sigma["Variable2_0_2_10currentValue"] = Variable2_0_2_101376
 	sigma_mutex.release()
 def functioninit8Variable(): 
 	sigma_mutex.acquire()
@@ -90,45 +90,45 @@ def functioninit8Variable():
 	sigma_mutex.release()
 def function10initializeVar(): 
 	
-	Variable4_0_4_101432 = 3 
+	Variable4_0_4_101376 = 3 
 	sigma_mutex.acquire()
-	sigma["Variable4_0_4_10currentValue"] = Variable4_0_4_101432
+	sigma["Variable4_0_4_10currentValue"] = Variable4_0_4_101376
 	sigma_mutex.release()
 def function18accessVarRef(): 
 	
 	sigma_mutex.acquire()
-	VarRef8_4_8_61647 = sigma["Variable2_0_2_10currentValue"]
+	VarRef8_4_8_61582 = sigma["Variable2_0_2_10currentValue"]
 	sigma_mutex.release()
 	
-	VarRef8_4_8_6terminates = VarRef8_4_8_61647 
+	VarRef8_4_8_6terminates = VarRef8_4_8_61582 
 	return VarRef8_4_8_6terminates 
 def function26executeAssignment2(resRight): 
 	
-	Assignment9_4_9_112622 = resRight 
+	Assignment9_4_9_112523 = resRight 
 	sigma_mutex.acquire()
-	sigma["Variable2_0_2_10currentValue"] = Assignment9_4_9_112622
+	sigma["Variable2_0_2_10currentValue"] = Assignment9_4_9_112523
 	sigma_mutex.release()
 def function35executeAssignment2(resRight): 
 	
-	Assignment11_4_11_92622 = resRight 
+	Assignment11_4_11_92523 = resRight 
 	sigma_mutex.acquire()
-	sigma["Variable4_0_4_10currentValue"] = Assignment11_4_11_92622
+	sigma["Variable4_0_4_10currentValue"] = Assignment11_4_11_92523
 	sigma_mutex.release()
 def function27accessVarRef(): 
 	
 	sigma_mutex.acquire()
-	VarRef9_9_9_111647 = sigma["Variable4_0_4_10currentValue"]
+	VarRef9_9_9_111582 = sigma["Variable4_0_4_10currentValue"]
 	sigma_mutex.release()
 	
-	VarRef9_9_9_11terminates = VarRef9_9_9_111647 
+	VarRef9_9_9_11terminates = VarRef9_9_9_111582 
 	return VarRef9_9_9_11terminates 
 def function36accessVarRef(): 
 	
 	sigma_mutex.acquire()
-	VarRef11_7_11_91647 = sigma["Variable2_0_2_10currentValue"]
+	VarRef11_7_11_91582 = sigma["Variable2_0_2_10currentValue"]
 	sigma_mutex.release()
 	
-	VarRef11_7_11_9terminates = VarRef11_7_11_91647 
+	VarRef11_7_11_9terminates = VarRef11_7_11_91582 
 	return VarRef11_7_11_9terminates 
 def main(): 
 	functioninit4Variable() 

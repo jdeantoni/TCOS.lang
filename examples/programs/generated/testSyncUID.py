@@ -80,9 +80,9 @@ def functioninit4Variable():
 	sigma_mutex.release()
 def function6initializeVar(): 
 	
-	Variable0_0_0_101432 = 1 
+	Variable0_0_0_101376 = 1 
 	sigma_mutex.acquire()
-	sigma["Variable0_0_0_10currentValue"] = Variable0_0_0_101432
+	sigma["Variable0_0_0_10currentValue"] = Variable0_0_0_101376
 	sigma_mutex.release()
 def functioninit8Variable(): 
 	sigma_mutex.acquire()
@@ -90,37 +90,37 @@ def functioninit8Variable():
 	sigma_mutex.release()
 def function10initializeVar(): 
 	
-	Variable1_0_1_101432 = 4 
+	Variable1_0_1_101376 = 4 
 	sigma_mutex.acquire()
-	sigma["Variable1_0_1_10currentValue"] = Variable1_0_1_101432
+	sigma["Variable1_0_1_10currentValue"] = Variable1_0_1_101376
 	sigma_mutex.release()
 def function17executeAssignment2(resRight): 
 	
-	Assignment3_7_3_142622 = resRight 
+	Assignment3_7_3_142523 = resRight 
 	sigma_mutex.acquire()
-	sigma["Variable1_0_1_10currentValue"] = Assignment3_7_3_142622
+	sigma["Variable1_0_1_10currentValue"] = Assignment3_7_3_142523
 	sigma_mutex.release()
 def function23executeAssignment2(resRight): 
 	
-	Assignment4_7_4_142622 = resRight 
+	Assignment4_7_4_142523 = resRight 
 	sigma_mutex.acquire()
-	sigma["Variable0_0_0_10currentValue"] = Assignment4_7_4_142622
+	sigma["Variable0_0_0_10currentValue"] = Assignment4_7_4_142523
 	sigma_mutex.release()
 def function18accessVarRef(): 
 	
 	sigma_mutex.acquire()
-	VarRef3_12_3_141647 = sigma["Variable0_0_0_10currentValue"]
+	VarRef3_12_3_141582 = sigma["Variable0_0_0_10currentValue"]
 	sigma_mutex.release()
 	
-	VarRef3_12_3_14terminates = VarRef3_12_3_141647 
+	VarRef3_12_3_14terminates = VarRef3_12_3_141582 
 	return VarRef3_12_3_14terminates 
 def function24accessVarRef(): 
 	
 	sigma_mutex.acquire()
-	VarRef4_12_4_141647 = sigma["Variable1_0_1_10currentValue"]
+	VarRef4_12_4_141582 = sigma["Variable1_0_1_10currentValue"]
 	sigma_mutex.release()
 	
-	VarRef4_12_4_14terminates = VarRef4_12_4_141647 
+	VarRef4_12_4_14terminates = VarRef4_12_4_141582 
 	return VarRef4_12_4_14terminates 
 def main(): 
 	functioninit4Variable() 

@@ -75,45 +75,104 @@ def com_ack_event(token: int) -> None:
 		else:
 			channel.pending_acks[token] = remaining
 def function0FSMstart(): 
-	com_create_event_channel("Event0_0_0_8", 1, "void") 
 	com_create_event_channel("Event3_0_3_8", 1, "void") 
-	com_create_event_channel("Event1_0_1_8", 1, "void") 
 	com_create_event_channel("Event4_0_4_8", 1, "void") 
-def function28fire(): 
-	global com_last_event_token
-	(Event0_0_0_8guardEventPayload, com_last_event_token) = com_wait_event("Event0_0_0_8") 
-	Event0_0_0_8Token = com_last_event_token 
-	com_ack_event(Event0_0_0_8Token) 
-def function29emitsentEvent(): 
+def function18init(): 
+	sigma_mutex.acquire()
+	sigma["State6_4_9_5isInitial"] = True
+	sigma_mutex.release()
+def functioninit20State(): 
+	sigma_mutex.acquire()
+	sigma["State6_4_9_5isInitial"] = bool()
+	sigma_mutex.release()
+	sigma_mutex.acquire()
+	sigma["State6_4_9_5isInitial"] = False
+	sigma_mutex.release()
+def function24firstStartOfInitialState(): 
+	sigma_mutex.acquire()
+	sigma["State6_4_9_5isInitial"] = False
+	sigma_mutex.release()
+def function40emitsentEvent(): 
 	
 	Event3_0_3_8sentEventPayload = 0 
 	com_emit_event("Event3_0_3_8", Event3_0_3_8sentEventPayload, True) 
-def function34fire(): 
-	global com_last_event_token
-	(Event1_0_1_8guardEventPayload, com_last_event_token) = com_wait_event("Event1_0_1_8") 
-	Event1_0_1_8Token = com_last_event_token 
-	com_ack_event(Event1_0_1_8Token) 
-def function35emitsentEvent(): 
+def functioninit28State(): 
+	sigma_mutex.acquire()
+	sigma["State10_4_13_5isInitial"] = bool()
+	sigma_mutex.release()
+	sigma_mutex.acquire()
+	sigma["State10_4_13_5isInitial"] = False
+	sigma_mutex.release()
+def function32firstStartOfInitialState(): 
+	sigma_mutex.acquire()
+	sigma["State10_4_13_5isInitial"] = False
+	sigma_mutex.release()
+def function47emitsentEvent(): 
 	
 	Event4_0_4_8sentEventPayload = 0 
 	com_emit_event("Event4_0_4_8", Event4_0_4_8sentEventPayload, True) 
 def main(): 
 	function0FSMstart() 
-	sync39 = Queue() 
+	sync52 = Queue() 
 	def codeThread15():
-		while flag51 == True: 
-			flag51 = False 
-			sync51.get() 
-			sync44 = Queue() 
-			function28fire() 
-			function29emitsentEvent() 
-			sync44.put(42) 
-			sync49 = Queue() 
-			function34fire() 
-			function35emitsentEvent() 
-			sync49.put(42) 
-			sync49.get() 
-			sync44.get() 
+		function18init() 
+		sync64 = Queue() 
+		sync64.put(42) 
+		flag64 = True
+		while flag64 == True: 
+			flag64 = False 
+			sync64.get() 
+			functioninit20State() 
+			sync25 = Queue() 
+			sync26 = Queue() 
+			sync57 = Queue() 
+			sync39 = Queue() 
+			if State6_4_9_5isInitial == True: 
+				function24firstStartOfInitialState() 
+				sync26.put(42) 
+				sync26.get() 
+				def codeThread36():
+					sync39.get() 
+					function40emitsentEvent() 
+					def codeThread37():
+						sync57.get() 
+					thread37 = threading.Thread(target=codeThread37) 
+					thread37.start() 
+					def codeThread28():
+						functioninit28State() 
+						sync33 = Queue() 
+						sync34 = Queue() 
+						sync62 = Queue() 
+						sync46 = Queue() 
+						if State10_4_13_5isInitial == True: 
+							function32firstStartOfInitialState() 
+							sync34.put(42) 
+							sync34.get() 
+							def codeThread43():
+								sync46.get() 
+								function47emitsentEvent() 
+								def codeThread44():
+									sync62.get() 
+								thread44 = threading.Thread(target=codeThread44) 
+								thread44.start() 
+								def codeThread45():
+								thread45 = threading.Thread(target=codeThread45) 
+								thread45.start() 
+								def codeThread64():
+								thread64 = threading.Thread(target=codeThread64) 
+								thread64.start() 
+							thread43 = threading.Thread(target=codeThread43) 
+							thread43.start() 
+						if State10_4_13_5isInitial == False: 
+							sync33.get() 
+							sync33.put(42) 
+					thread28 = threading.Thread(target=codeThread28) 
+					thread28.start() 
+				thread36 = threading.Thread(target=codeThread36) 
+				thread36.start() 
+			if State6_4_9_5isInitial == False: 
+				sync25.get() 
+				sync25.put(42) 
 	thread15 = threading.Thread(target=codeThread15) 
 	thread15.start() 
 if __name__ == "__main__": 

@@ -6,13 +6,14 @@
   "engines": {
     "vscode": "^1.56.0"
   },
-  "main": "GeneratorInterface.ts",
+  "main": "src/GeneratorInterface.ts",
   "types": "dist/GeneratorInterface.d.ts",
   "categories": [
     "Programming Languages"
   ],
   "files": [
     ".",
+    "src",
     "dist"
   ],
   "exports": {
@@ -22,24 +23,24 @@
       "types": "./dist/compilerBackend.d.ts"
     },
     "./GeneratorInterface": {
-      "import": "./dist/GeneratorInterface.js",
-      "require": "./dist/GeneratorInterface.js",
-      "types": "./dist/GeneratorInterface.d.ts"
+      "import": "./dist/generator/GeneratorInterface.js",
+      "require": "./dist/generator/GeneratorInterface.js",
+      "types": "./dist/generator/GeneratorInterface.d.ts"
     },
     "./cppGenerator": {
-      "import": "./dist/cppGenerator.js",
-      "require": "./dist/cppGenerator.js",
-      "types": "./dist/cppGenerator.d.ts"
+      "import": "./dist/generator/cppGenerator.js",
+      "require": "./dist/generator/cppGenerator.js",
+      "types": "./dist/generator/cppGenerator.d.ts"
     },
     "./jsGenerator": {
-      "import": "./dist/jsGenerator.js",
-      "require": "./dist/jsGenerator.js",
-      "types": "./dist/jsGenerator.d.ts"
+      "import": "./dist/generator/jsGenerator.js",
+      "require": "./dist/generator/jsGenerator.js",
+      "types": "./dist/generator/jsGenerator.d.ts"
     },
     "./pythonGenerator": {
-      "import": "./dist/pythonGenerator.js",
-      "require": "./dist/pythonGenerator.js",
-      "types": "./dist/pythonGenerator.d.ts"
+      "import": "./dist/generator/pythonGenerator.js",
+      "require": "./dist/generator/pythonGenerator.js",
+      "types": "./dist/generator/pythonGenerator.d.ts"
     }
   },
   "scripts": {

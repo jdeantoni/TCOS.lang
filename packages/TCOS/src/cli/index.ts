@@ -4,12 +4,12 @@ import { StructuralOperationalSemanticsLanguageMetaData } from '../language-serv
 import { createStructuralOperationalSemanticsServices } from '../language-server/structural-operational-semantics-module.js';
 
 import { extractSosAndGrammarModels } from './cli-util.js';
-import { generateCompilerFrontEndFromSoS } from './generatorCCFGCompiler.js';
 import { NodeFileSystem } from 'langium/node';
 
 import * as url from 'node:url';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { generateCompilerFrontEndFromSoS } from './compilerFrontEnd/generation/generateCompilerFrontEnd.js';
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 const packagePath = path.resolve(__dirname, '..', '..', 'package.json');

@@ -100,6 +100,7 @@ async function installPackage(name: string, dependances: string[]): Promise<Inst
         return {name, type: "package", status: "success"};
     } catch (err) {
         popIndent();
+        error(`${err}`);
         error(`${name} installation failed!`);
         return {name, type: "package", status: "error"};
     }
@@ -145,6 +146,7 @@ async function installLanguage(name: string, config: LanguageConfig): Promise<In
         return {name, type: "language", status: "success"};
     } catch (err) {
         popIndent();
+        error(`${err}`);
         error(`${name} installation failed!`);
         return {name, type: "language", status: "error"};
     }

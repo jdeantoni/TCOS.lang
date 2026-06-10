@@ -133,7 +133,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
     
         {let e = localCCFG.addEdge(startsModelNode,statementsHole)
         e.guards = [...e.guards, ...[]]}
-        
+    
         // premise handling for rule finishModel: 1 participant groups
 
         statementsHole.params = [...statementsHole.params, ...[]]
@@ -188,7 +188,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
     
         {let e = localCCFG.addEdge(startsBlocNode,statementsHole)
         e.guards = [...e.guards, ...[]]}
-        
+    
         // premise handling for rule finishBloc: 1 participant groups
 
         statementsHole.params = [...statementsHole.params, ...[]]
@@ -243,7 +243,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
     
         {let e = localCCFG.addEdge(startsParallelBlocNode,statementsHole)
         e.guards = [...e.guards, ...[]]}
-        
+    
         // premise handling for rule finishParallelBloc: 1 participant groups
 
         statementsHole.params = [...statementsHole.params, ...[]]
@@ -290,7 +290,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
         localCCFG.addNode(terminatesVariableNode)
         
         {
-        let initializeVarStateModificationNode: Node = new Step(node, undefined, [new CreateVarInstruction(`${this.getASTNodeUID(node)}1432`,`int`),new AssignVarInstruction(`${this.getASTNodeUID(node)}1432`,`${node.initialValue}`,`int`),new SetGlobalVarInstruction(`${this.getASTNodeUID(node)}currentValue`,`${this.getASTNodeUID(node)}1432`,`int`)])
+        let initializeVarStateModificationNode: Node = new Step(node, undefined, [new CreateVarInstruction(`${this.getASTNodeUID(node)}1376`,`int`),new AssignVarInstruction(`${this.getASTNodeUID(node)}1376`,`${node.initialValue}`,`int`),new SetGlobalVarInstruction(`${this.getASTNodeUID(node)}currentValue`,`${this.getASTNodeUID(node)}1376`,`int`)])
         localCCFG.addNode(initializeVarStateModificationNode)
         {let e = localCCFG.addEdge(startsVariableNode,initializeVarStateModificationNode)
         e.guards = [...e.guards, ...[]]}
@@ -335,7 +335,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
         startsVarRefNode.params = [...startsVarRefNode.params, ...[]]
         startsVarRefNode.returnType = "int"
         startsVarRefNode.functionsNames = [`${startsVarRefNode.uid}accessVarRef`] // overwrite existing name
-        startsVarRefNode.functionsDefs =[...startsVarRefNode.functionsDefs, ...[new CreateVarInstruction(`${this.getASTNodeUID(node)}1647`,`int`),new SetVarFromGlobalInstruction(`${this.getASTNodeUID(node)}1647`,`${this.getASTNodeUID(node.theVar)}currentValue`,`int`),new CreateVarInstruction(`${this.getASTNodeUID(node)}terminates`,`int`),new AssignVarInstruction(`${this.getASTNodeUID(node)}terminates`,`${this.getASTNodeUID(node)}1647`,`int`),new ReturnInstruction(`${this.getASTNodeUID(node)}terminates`),]] // GG
+        startsVarRefNode.functionsDefs =[...startsVarRefNode.functionsDefs, ...[new CreateVarInstruction(`${this.getASTNodeUID(node)}1582`,`int`),new SetVarFromGlobalInstruction(`${this.getASTNodeUID(node)}1582`,`${this.getASTNodeUID(node.theVar)}currentValue`,`int`),new CreateVarInstruction(`${this.getASTNodeUID(node)}terminates`,`int`),new AssignVarInstruction(`${this.getASTNodeUID(node)}terminates`,`${this.getASTNodeUID(node)}1582`,`int`),new ReturnInstruction(`${this.getASTNodeUID(node)}terminates`),]] // GG
     
         {let e = localCCFG.addEdge(startsVarRefNode,terminatesVarRefNode)
         e.guards = [...e.guards, ...[]]}
@@ -399,7 +399,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
     
         {let e = localCCFG.addEdge(startsIfNode,condHole)
         e.guards = [...e.guards, ...[]]}
-        
+    
         // premise handling for rule condTrueStart: 1 participant groups
 
         let condTrueStartChoiceNode = undefined
@@ -410,7 +410,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
             localCCFG.addNode(condTrueStartChoiceNode)
         }
         localCCFG.addEdge(condHole,condTrueStartChoiceNode)
-                
+        
         condTrueStartChoiceNode.params = [...condTrueStartChoiceNode.params, ...[]]
         condTrueStartChoiceNode.returnType = "void"
         condTrueStartChoiceNode.functionsNames = [`${condTrueStartChoiceNode.uid}condTrueStart`] // overwrite existing name
@@ -418,7 +418,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
     
         {let e = localCCFG.addEdge(condTrueStartChoiceNode,thenHole)
         e.guards = [...e.guards, ...[new VerifyEqualInstruction(`${this.getASTNodeUID(node.cond)}terminate`,`true`)]]}
-        
+    
         // premise handling for rule condFalseStart: 1 participant groups
 
         let condFalseStartChoiceNode = undefined
@@ -429,7 +429,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
             localCCFG.addNode(condFalseStartChoiceNode)
         }
         localCCFG.addEdge(condHole,condFalseStartChoiceNode)
-                
+        
         condFalseStartChoiceNode.params = [...condFalseStartChoiceNode.params, ...[]]
         condFalseStartChoiceNode.returnType = "void"
         condFalseStartChoiceNode.functionsNames = [`${condFalseStartChoiceNode.uid}condFalseStart`] // overwrite existing name
@@ -437,7 +437,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
     
         {let e = localCCFG.addEdge(condFalseStartChoiceNode,elseHole)
         e.guards = [...e.guards, ...[new VerifyEqualInstruction(`${this.getASTNodeUID(node.cond)}terminate`,`false`)]]}
-        
+    
         // premise handling for rule condStop: 2 participant groups
         // Creating OrJoin for conjunction/disjunction
 
@@ -498,11 +498,11 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
     
         {let e = localCCFG.addEdge(startsAssignmentNode,exprHole)
         e.guards = [...e.guards, ...[]]}
-        
+    
         // premise handling for rule executeAssignment2: 1 participant groups
 
         {
-        let executeAssignment2StateModificationNode: Node = new Step(node, undefined, [new CreateVarInstruction(this.getASTNodeUID(node)+`2622`,`int`),new AssignVarInstruction(this.getASTNodeUID(node)+`2622`,`resRight`,`int`),new SetGlobalVarInstruction(`${this.getASTNodeUID(node.variable)}currentValue`,`${this.getASTNodeUID(node)}2622`,`int`)])
+        let executeAssignment2StateModificationNode: Node = new Step(node, undefined, [new CreateVarInstruction(this.getASTNodeUID(node)+`2523`,`int`),new AssignVarInstruction(this.getASTNodeUID(node)+`2523`,`resRight`,`int`),new SetGlobalVarInstruction(`${this.getASTNodeUID(node.variable)}currentValue`,`${this.getASTNodeUID(node)}2523`,`int`)])
         localCCFG.addNode(executeAssignment2StateModificationNode)
         {let e = localCCFG.addEdge(exprHole,executeAssignment2StateModificationNode)
         e.guards = [...e.guards, ...[]]}
@@ -525,6 +525,23 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
    //premise participants count: 1
    //premise: starts:event
    //conclusion: lhs:BooleanExpression,starts:event
+	//rhs:BooleanExpression,starts:event
+// rule evaluateConjunction2
+   //premise expr type: ImplicitValuedEventRefConstantComparison
+   //premise participants count: 1
+   //premise: lhs:BooleanExpression,terminates:event
+   //conclusion: terminates:event
+// rule evaluateConjunction3
+   //premise expr type: ImplicitValuedEventRefConstantComparison
+   //premise participants count: 1
+   //premise: rhs:BooleanExpression,terminates:event
+   //conclusion: terminates:event
+// rule evaluateConjunction4
+   //premise expr type: EventConjunction
+   //premise participants count: 2
+   //premise: lhs:BooleanExpression,terminates:event
+	//rhs:BooleanExpression,terminates:event
+   //conclusion: terminates:event
 
     /**
      * returns the local CCFG of the Conjunction node
@@ -547,14 +564,92 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
         let lhsHole: Hole = new Hole(node.lhs)
         localCCFG.addNode(lhsHole)
         
+        let rhsHole: Hole = new Hole(node.rhs)
+        localCCFG.addNode(rhsHole)
+        
         startsConjunctionNode.params = [...startsConjunctionNode.params, ...[]]
         startsConjunctionNode.returnType = "void"
         startsConjunctionNode.functionsNames = [`${startsConjunctionNode.uid}evaluateConjunction`] // overwrite existing name
         startsConjunctionNode.functionsDefs =[...startsConjunctionNode.functionsDefs, ...[]] // GG
     
-        {let e = localCCFG.addEdge(startsConjunctionNode,lhsHole)
+        let forkevaluateConjunctionStage0: Node = new Fork(node)
+        localCCFG.addNode(forkevaluateConjunctionStage0)
+        {let e = localCCFG.addEdge(startsConjunctionNode,forkevaluateConjunctionStage0)
         e.guards = [...e.guards, ...[]]}
+            
+
+        {let e = localCCFG.addEdge(forkevaluateConjunctionStage0,lhsHole)
+        e.guards = [...e.guards, ...[]]}
+    
+
+        {let e = localCCFG.addEdge(forkevaluateConjunctionStage0,rhsHole)
+        e.guards = [...e.guards, ...[]]}
+    
+        // premise handling for rule evaluateConjunction2: 1 participant groups
+
+        let evaluateConjunction2ChoiceNode = undefined
+        if(lhsHole.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
+            evaluateConjunction2ChoiceNode = lhsHole.outputEdges.filter(e => e.to.getType() == "Choice")[0].to
+        }else{
+            evaluateConjunction2ChoiceNode = new Choice(node.lhs)
+            localCCFG.addNode(evaluateConjunction2ChoiceNode)
+        }
+        localCCFG.addEdge(lhsHole,evaluateConjunction2ChoiceNode)
         
+        evaluateConjunction2ChoiceNode.params = [...evaluateConjunction2ChoiceNode.params, ...[]]
+        evaluateConjunction2ChoiceNode.returnType = "bool"
+        evaluateConjunction2ChoiceNode.functionsNames = [`${evaluateConjunction2ChoiceNode.uid}evaluateConjunction2`] // overwrite existing name
+        evaluateConjunction2ChoiceNode.functionsDefs =[...evaluateConjunction2ChoiceNode.functionsDefs, ...[new CreateVarInstruction(`${this.getASTNodeUID(node)}terminates`,`bool`),new AssignVarInstruction(`${this.getASTNodeUID(node)}terminates`,`false`,`bool`),new ReturnInstruction(`${this.getASTNodeUID(node)}terminates`),]] // GG
+    
+        {let e = localCCFG.addEdge(evaluateConjunction2ChoiceNode,terminatesConjunctionNode)
+        e.guards = [...e.guards, ...[new VerifyEqualInstruction(`${this.getASTNodeUID(node.lhs)}terminate`,`false`)]]}
+    
+        // premise handling for rule evaluateConjunction3: 1 participant groups
+
+        let evaluateConjunction3ChoiceNode = undefined
+        if(rhsHole.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
+            evaluateConjunction3ChoiceNode = rhsHole.outputEdges.filter(e => e.to.getType() == "Choice")[0].to
+        }else{
+            evaluateConjunction3ChoiceNode = new Choice(node.rhs)
+            localCCFG.addNode(evaluateConjunction3ChoiceNode)
+        }
+        localCCFG.addEdge(rhsHole,evaluateConjunction3ChoiceNode)
+        
+        evaluateConjunction3ChoiceNode.params = [...evaluateConjunction3ChoiceNode.params, ...[]]
+        evaluateConjunction3ChoiceNode.returnType = "bool"
+        evaluateConjunction3ChoiceNode.functionsNames = [`${evaluateConjunction3ChoiceNode.uid}evaluateConjunction3`] // overwrite existing name
+        evaluateConjunction3ChoiceNode.functionsDefs =[...evaluateConjunction3ChoiceNode.functionsDefs, ...[new CreateVarInstruction(`${this.getASTNodeUID(node)}terminates`,`bool`),new AssignVarInstruction(`${this.getASTNodeUID(node)}terminates`,`false`,`bool`),new ReturnInstruction(`${this.getASTNodeUID(node)}terminates`),]] // GG
+    
+        {let e = localCCFG.addEdge(evaluateConjunction3ChoiceNode,terminatesConjunctionNode)
+        e.guards = [...e.guards, ...[new VerifyEqualInstruction(`${this.getASTNodeUID(node.rhs)}terminate`,`false`)]]}
+    
+        // premise handling for rule evaluateConjunction4: 2 participant groups
+        // Creating AndJoin for conjunction/disjunction
+
+        let evaluateConjunction4AndJoinNode: Node = new AndJoin(node)
+        localCCFG.addNode(evaluateConjunction4AndJoinNode)
+              //mark a
+        localCCFG.addEdge(lhsHole,evaluateConjunction4AndJoinNode)
+             //mark a
+        localCCFG.addEdge(rhsHole,evaluateConjunction4AndJoinNode)
+
+        let evaluateConjunction4ChoiceNode = undefined
+        if(evaluateConjunction4AndJoinNode.outputEdges.filter(e => e.to.getType() == "Choice").length == 1){
+            evaluateConjunction4ChoiceNode = evaluateConjunction4AndJoinNode.outputEdges.filter(e => e.to.getType() == "Choice")[0].to
+        }else{
+            evaluateConjunction4ChoiceNode = new Choice(node.lhs)
+            localCCFG.addNode(evaluateConjunction4ChoiceNode)
+        }
+        localCCFG.addEdge(evaluateConjunction4AndJoinNode,evaluateConjunction4ChoiceNode)
+        
+        evaluateConjunction4ChoiceNode.params = [...evaluateConjunction4ChoiceNode.params, ...[]]
+        evaluateConjunction4ChoiceNode.returnType = "bool"
+        evaluateConjunction4ChoiceNode.functionsNames = [`${evaluateConjunction4ChoiceNode.uid}evaluateConjunction4`] // overwrite existing name
+        evaluateConjunction4ChoiceNode.functionsDefs =[...evaluateConjunction4ChoiceNode.functionsDefs, ...[new CreateVarInstruction(`${this.getASTNodeUID(node)}terminates`,`bool`),new AssignVarInstruction(`${this.getASTNodeUID(node)}terminates`,`true`,`bool`),new ReturnInstruction(`${this.getASTNodeUID(node)}terminates`),]] // GG
+    
+        {let e = localCCFG.addEdge(evaluateConjunction4ChoiceNode,terminatesConjunctionNode)
+        e.guards = [...e.guards, ...[new VerifyEqualInstruction(`${this.getASTNodeUID(node.lhs)}terminate`,`true`),new VerifyEqualInstruction(`${this.getASTNodeUID(node.rhs)}terminate`,`true`)]]}
+    
 
         return localCCFG;
     }
@@ -563,6 +658,13 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
    //premise participants count: 1
    //premise: starts:event
    //conclusion: right:Expr,starts:event
+	//left:Expr,starts:event
+// rule finishPlus
+   //premise expr type: EventConjunction
+   //premise participants count: 2
+   //premise: right:Expr,terminates:event
+	//left:Expr,terminates:event
+   //conclusion: terminates:event
 
     /**
      * returns the local CCFG of the Plus node
@@ -585,14 +687,45 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
         let rightHole: Hole = new Hole(node.right)
         localCCFG.addNode(rightHole)
         
+        let leftHole: Hole = new Hole(node.left)
+        localCCFG.addNode(leftHole)
+        
         startsPlusNode.params = [...startsPlusNode.params, ...[]]
         startsPlusNode.returnType = "void"
         startsPlusNode.functionsNames = [`${startsPlusNode.uid}startPlus`] // overwrite existing name
         startsPlusNode.functionsDefs =[...startsPlusNode.functionsDefs, ...[]] // GG
     
-        {let e = localCCFG.addEdge(startsPlusNode,rightHole)
+        let forkstartPlusStage0: Node = new Fork(node)
+        localCCFG.addNode(forkstartPlusStage0)
+        {let e = localCCFG.addEdge(startsPlusNode,forkstartPlusStage0)
         e.guards = [...e.guards, ...[]]}
-        
+            
+
+        {let e = localCCFG.addEdge(forkstartPlusStage0,rightHole)
+        e.guards = [...e.guards, ...[]]}
+    
+
+        {let e = localCCFG.addEdge(forkstartPlusStage0,leftHole)
+        e.guards = [...e.guards, ...[]]}
+    
+        // premise handling for rule finishPlus: 2 participant groups
+        // Creating AndJoin for conjunction/disjunction
+
+        let finishPlusAndJoinNode: Node = new AndJoin(node)
+        localCCFG.addNode(finishPlusAndJoinNode)
+              //mark a
+        localCCFG.addEdge(rightHole,finishPlusAndJoinNode)
+             //mark a
+        localCCFG.addEdge(leftHole,finishPlusAndJoinNode)
+
+        finishPlusAndJoinNode.params = [...finishPlusAndJoinNode.params, ...[Object.assign( new TypedElement(), JSON.parse(`{ "name": "n2", "type": "int"}`)),Object.assign( new TypedElement(), JSON.parse(`{ "name": "n1", "type": "int"}`))]]
+        finishPlusAndJoinNode.returnType = "int"
+        finishPlusAndJoinNode.functionsNames = [`${finishPlusAndJoinNode.uid}finishPlus`] // overwrite existing name
+        finishPlusAndJoinNode.functionsDefs =[...finishPlusAndJoinNode.functionsDefs, ...[new CreateVarInstruction(this.getASTNodeUID(node)+`4390`,`int`),new AssignVarInstruction(this.getASTNodeUID(node)+`4390`,`n1`,`int`),new CreateVarInstruction(this.getASTNodeUID(node)+`4395`,`int`),new AssignVarInstruction(this.getASTNodeUID(node)+`4395`,`n2`,`int`),new CreateVarInstruction(`${this.getASTNodeUID(node)}4389`,`int`),new OperationInstruction(`${this.getASTNodeUID(node)}4389`,`${this.getASTNodeUID(node)}4390`,`+`,`${this.getASTNodeUID(node)}4395`,`int`),new CreateVarInstruction(`${this.getASTNodeUID(node)}terminates`,`int`),new AssignVarInstruction(`${this.getASTNodeUID(node)}terminates`,`${this.getASTNodeUID(node)}4389`,`int`),new ReturnInstruction(`${this.getASTNodeUID(node)}terminates`),]] // GG
+    
+        {let e = localCCFG.addEdge(finishPlusAndJoinNode,terminatesPlusNode)
+        e.guards = [...e.guards, ...[]]}
+    
 
         return localCCFG;
     }
@@ -631,7 +764,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
         startsBooleanConstNode.params = [...startsBooleanConstNode.params, ...[]]
         startsBooleanConstNode.returnType = "bool"
         startsBooleanConstNode.functionsNames = [`${startsBooleanConstNode.uid}evalBooleanConst`] // overwrite existing name
-        startsBooleanConstNode.functionsDefs =[...startsBooleanConstNode.functionsDefs, ...[new CreateVarInstruction(`${this.getASTNodeUID(node)}4767`,`bool`),new SetVarFromGlobalInstruction(`${this.getASTNodeUID(node)}4767`,`${this.getASTNodeUID(node)}constantValue`,`bool`),new CreateVarInstruction(`${this.getASTNodeUID(node)}terminates`,`bool`),new AssignVarInstruction(`${this.getASTNodeUID(node)}terminates`,`${this.getASTNodeUID(node)}4767`,`bool`),new ReturnInstruction(`${this.getASTNodeUID(node)}terminates`),]] // GG
+        startsBooleanConstNode.functionsDefs =[...startsBooleanConstNode.functionsDefs, ...[new CreateVarInstruction(`${this.getASTNodeUID(node)}4609`,`bool`),new SetVarFromGlobalInstruction(`${this.getASTNodeUID(node)}4609`,`${this.getASTNodeUID(node)}constantValue`,`bool`),new CreateVarInstruction(`${this.getASTNodeUID(node)}terminates`,`bool`),new AssignVarInstruction(`${this.getASTNodeUID(node)}terminates`,`${this.getASTNodeUID(node)}4609`,`bool`),new ReturnInstruction(`${this.getASTNodeUID(node)}terminates`),]] // GG
     
         {let e = localCCFG.addEdge(startsBooleanConstNode,terminatesBooleanConstNode)
         e.guards = [...e.guards, ...[]]}
@@ -691,7 +824,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
     
         {let e = localCCFG.addEdge(startsWhileNode,condHole)
         e.guards = [...e.guards, ...[]]}
-        
+    
         // premise handling for rule whileBodyStart: 1 participant groups
 
         let whileBodyStartChoiceNode = undefined
@@ -702,7 +835,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
             localCCFG.addNode(whileBodyStartChoiceNode)
         }
         localCCFG.addEdge(condHole,whileBodyStartChoiceNode)
-                
+        
         whileBodyStartChoiceNode.params = [...whileBodyStartChoiceNode.params, ...[]]
         whileBodyStartChoiceNode.returnType = "void"
         whileBodyStartChoiceNode.functionsNames = [`${whileBodyStartChoiceNode.uid}whileBodyStart`] // overwrite existing name
@@ -710,7 +843,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
     
         {let e = localCCFG.addEdge(whileBodyStartChoiceNode,bodyHole)
         e.guards = [...e.guards, ...[new VerifyEqualInstruction(`${this.getASTNodeUID(node.cond)}terminate`,`true`)]]}
-        
+    
         // premise handling for rule whileBodyEnd: 1 participant groups
 
         bodyHole.params = [...bodyHole.params, ...[]]
@@ -720,7 +853,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
     
         {let e = localCCFG.addEdge(bodyHole,condHole)
         e.guards = [...e.guards, ...[]]}
-        
+    
         // premise handling for rule whileEnd: 1 participant groups
 
         let whileEndChoiceNode = undefined
@@ -731,7 +864,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
             localCCFG.addNode(whileEndChoiceNode)
         }
         localCCFG.addEdge(condHole,whileEndChoiceNode)
-                
+        
         whileEndChoiceNode.params = [...whileEndChoiceNode.params, ...[]]
         whileEndChoiceNode.returnType = "void"
         whileEndChoiceNode.functionsNames = [`${whileEndChoiceNode.uid}whileEnd`] // overwrite existing name
@@ -753,6 +886,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
    //premise participants count: 1
    //premise: blocTrigger:Timer,terminates:event
    //conclusion: bloc:Bloc,starts:event
+	//blocTrigger:Timer,starts:event
 
     /**
      * returns the local CCFG of the PeriodicBloc node
@@ -793,7 +927,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
     
         {let e = localCCFG.addEdge(startsPeriodicBlocNode,blocTriggerHole)
         e.guards = [...e.guards, ...[]]}
-        
+    
         // premise handling for rule periodicBodyStart: 1 participant groups
 
         blocTriggerHole.params = [...blocTriggerHole.params, ...[]]
@@ -801,9 +935,19 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
         blocTriggerHole.functionsNames = [`${blocTriggerHole.uid}periodicBodyStart`] // overwrite existing name
         blocTriggerHole.functionsDefs =[...blocTriggerHole.functionsDefs, ...[]] // GG
     
-        {let e = localCCFG.addEdge(blocTriggerHole,blocHole)
+        let forkperiodicBodyStartStage0: Node = new Fork(node)
+        localCCFG.addNode(forkperiodicBodyStartStage0)
+        {let e = localCCFG.addEdge(blocTriggerHole,forkperiodicBodyStartStage0)
         e.guards = [...e.guards, ...[]]}
-        
+            
+
+        {let e = localCCFG.addEdge(forkperiodicBodyStartStage0,blocHole)
+        e.guards = [...e.guards, ...[]]}
+    
+
+        {let e = localCCFG.addEdge(forkperiodicBodyStartStage0,blocTriggerHole)
+        e.guards = [...e.guards, ...[]]}
+    
 
         return localCCFG;
     }
@@ -856,7 +1000,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
     
         {let e = localCCFG.addEdge(startsFunctionCallNode,argsHole)
         e.guards = [...e.guards, ...[]]}
-        
+    
         // premise handling for rule functionCallStarts: 1 participant groups
 
         argsHole.params = [...argsHole.params, ...[Object.assign( new TypedElement(), JSON.parse(`{ "name": "evaluatedArgs", "type": "unknown"}`))]]
@@ -866,7 +1010,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
     
         {let e = localCCFG.addEdge(argsHole,theFunctionHole)
         e.guards = [...e.guards, ...[]]}
-        
+    
         // premise handling for rule functionCallEnd: 1 participant groups
 
         theFunctionHole.params = [...theFunctionHole.params, ...[]]
@@ -919,7 +1063,7 @@ export class SimpleLCompilerFrontEnd implements CompilerFrontEnd {
     
         {let e = localCCFG.addEdge(startsFunctionDefNode,bodyHole)
         e.guards = [...e.guards, ...[]]}
-        
+    
         // premise handling for rule functionDefEnd: 1 participant groups
 
         bodyHole.params = [...bodyHole.params, ...[]]

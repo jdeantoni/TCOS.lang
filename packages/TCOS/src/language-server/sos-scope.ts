@@ -7,12 +7,12 @@
 import {
     AstNode,
     AstUtils,
-    DefaultScopeComputation, DefaultScopeProvider, EMPTY_SCOPE, isReference, ReferenceInfo,Scope, ScopeOptions, stream , StreamScope
+    DefaultScopeProvider, EMPTY_SCOPE, isReference, ReferenceInfo,Scope, ScopeOptions, stream , StreamScope
 } from 'langium';
 
 
 import { AbstractRule, Assignment, CollectionRuleSync, CompositeEventEmission, CrossReference, EventEmission, isAbstractRule, isAlternatives, isAssignment, isCollectionRuleSync, isMemberCall, isParallelEventEmission, isRuleOpening, isRuleSync, isRWRule, isSequentialEventEmission, 
-         isSoSSpec, isTemporaryVariable, MemberCall, Parameter,isCrossReference, isGrammar,
+         isSoSSpec, isTemporaryVariable, MemberCall,isCrossReference, isGrammar,
          ParserRule, RuleOpening, RWRule, SoSSpec, TypeReference, VariableDeclaration,
          Alternatives, MethodMember, FieldMember, 
          isParserRule} from './generated/ast.js';
@@ -24,9 +24,6 @@ import { Group } from './generated/ast.js';
 import { getType } from '../utils/sos-utils.js';
 import { LangiumServices } from 'langium/lsp';
 
-
-
-
 export class SoSScopeProvider extends DefaultScopeProvider {
 
     constructor(services: LangiumServices) {
@@ -34,18 +31,13 @@ export class SoSScopeProvider extends DefaultScopeProvider {
     }
 
     override getScope(context: ReferenceInfo): Scope {
-        // target element of member calls
-        //console.log("###getScopeProvider: context.property = "+context.property+"\n\t context.reference.$refText = "+context.reference.$refText)        
-        
 
-
-        if (context.property === 'element' /*|| context.property === 'left' || context.property === 'right' || context.property === "reference"*/) {
+        if (context.property === 'element') {
             const memberCall = context.container as MemberCall;
             const previous = memberCall.previous;
             if (!previous) {
                 const ruleOpeningItem = AstUtils.getContainerOfType(context.container, isRuleOpening);
                 
-               // return super.getScope(context);
                 if (ruleOpeningItem) {
                     return this.scopeRuleOpeningMembers(ruleOpeningItem);
                 }
@@ -56,48 +48,20 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                 const collectionRuleSync = AstUtils.getContainerOfType(previous.$container, isCollectionRuleSync);
                 if(collectionRuleSync){
                     if((collectionRuleSync.collection as MemberCall).element?.ref){
-                        let collectionElemRef = (collectionRuleSync.collection as MemberCall).element?.ref
+                        const collectionElemRef = (collectionRuleSync.collection as MemberCall).element?.ref
                         if(collectionElemRef != undefined){
-                            var terminal = (collectionElemRef as unknown as Assignment).terminal
-                            if (isCrossReference(terminal)){
-                                if(isParserRule((terminal as CrossReference).type.ref)){
-                                    const parserRuleItem = (terminal as CrossReference).type.ref
-                                    const sosSpec = AstUtils.getContainerOfType(context.container, isSoSSpec)
-                                    if(sosSpec){
-                                        for(var ro of sosSpec.rtdAndRules){
-                                            if (isRuleOpening(ro)){
-                                                if (ro.onRule?.ref?.name === (parserRuleItem as ParserRule).name){
-                                                    return this.scopeParsingRule(parserRuleItem as ParserRule,ro)
-                                                }
-                                            }
-                                        }
-                                        //should only take assignement as a variant of scopePArsingRule
-                                    }
-                                }
-                            }
+                            const terminal = this.getTerminalFromRef(collectionElemRef);
+                            const scope = this.scopeFromCrossReferenceTerminal(terminal, context);
+                            if (scope) return scope;
                         }
                     }
                 }
                 if(isReference(previous.element)){
-                    let elemRef = previous.element?.ref
+                    const elemRef = previous.element?.ref
                         if(elemRef != undefined){
-                            var terminal = (elemRef as unknown as Assignment).terminal
-                            if (isCrossReference(terminal)){
-                                if(isParserRule((terminal as CrossReference).type.ref)){
-                                    const parserRuleItem = (terminal as CrossReference).type.ref
-                                    const sosSpec = AstUtils.getContainerOfType(context.container, isSoSSpec)
-                                    if(sosSpec){
-                                        for(var ro of sosSpec.rtdAndRules){
-                                            if (isRuleOpening(ro)){
-                                                if (ro.onRule?.ref?.name === (parserRuleItem as ParserRule).name){
-                                                    return this.scopeParsingRule(parserRuleItem as ParserRule,ro)
-                                                }
-                                            }
-                                        }
-                                        //should only take assignement as a variant of scopePArsingRule
-                                    }
-                                }
-                            }
+                            const terminal = this.getTerminalFromRef(elemRef);
+                            const scope = this.scopeFromCrossReferenceTerminal(terminal, context);
+                            if (scope) return scope;
                         }
                 }
                 const ruleOpeningItem = AstUtils.getContainerOfType(previous.$container, isRuleOpening);
@@ -109,15 +73,13 @@ export class SoSScopeProvider extends DefaultScopeProvider {
             const previousType = inferType(previous, new Map());
             if (isRuleOpeningType(previousType)) {
                 throw new String("in sos-scope.ts line 54")
-               // return this.scopeRuleOpeningMembers(previousType.literal);
             }else if (isParserRuleType(previousType)) {
                 //either the rule has been open and then we need the cope of this ruleOpening or not and then only "assigments" have to be considered
                 const sosSpecItem: SoSSpec | undefined = AstUtils.getContainerOfType(previous?.$container, isSoSSpec);
                 if (sosSpecItem){
-                    for(var ro of sosSpecItem.rtdAndRules){
+                    for(const ro of sosSpecItem.rtdAndRules){
                         if (isRuleOpening(ro)){
                             if (ro.onRule?.$refText === previousType.literal.name){
-                                
                                 return this.scopeRuleOpeningMembers(ro);
                             }
                         }
@@ -125,39 +87,48 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                 }
                 if(isMemberCall(previous)){
                     const ruleOpeningItem: RuleOpening | undefined = AstUtils.getContainerOfType(previous?.$container, isRuleOpening);
-                //     console.log(chalk.red("previous is ", previous.$type))
-                //     if(isReference(previous.element)){
-                //         console.log(chalk.red("isReference", previous.element.$refText))
-                //         if (ruleOpeningItem && previous.element.ref && previous.element.ref.$type.toString() == "Assignment" && ((previous.element.ref as unknown as  Assignment).terminal as CrossReference).type){
 
-                //             let parserRuleItem = ((previous.element.ref as unknown as  Assignment).terminal as CrossReference).type.ref as ParserRule
-                //             if(parserRuleItem){
-                //                 return this.scopeParsingRule(parserRuleItem, ruleOpeningItem);
-                //             }
-                //         }
-                //     }
                     if (ruleOpeningItem){
                         return this.scopeParsingRule(previousType.literal, ruleOpeningItem);
                     }
                 }
-
-
             }
             return EMPTY_SCOPE;
         }
         return super.getScope(context);
     }
 
-    // private scopeCollectionRuleMembers(collectionRuleItem: CollectionRuleSync, ruleOpeningItem: RuleOpening): Scope {
-    //     var allScopeElements: AstNode[] = (parserRuleItem !== undefined)?this.getAllAssignments(parserRuleItem.definition) : [];
-    //     this.addListFunctions(ruleOpeningItem, allScopeElements);
-    //     allScopeElements = allScopeElements.concat(this.addClocks(ruleOpeningItem))
+    private getTerminalFromRef(ref: AstNode): AbstractElement | undefined {
+        const asAssignment = ref as unknown as Assignment;
+        if (isAssignment(asAssignment)) {
+            return (ref as unknown as Assignment).terminal;
+        }
+        return undefined;
+    }
 
-    //     return this.createScopeForNodes(allScopeElements);
-    // }
+    private scopeFromCrossReferenceTerminal(terminal: unknown, context: ReferenceInfo): Scope | undefined {
+        if (isCrossReference(terminal as any)) {
+            const crossRef = terminal as CrossReference;
+            if (isParserRule(crossRef.type.ref)) {
+                const parserRuleItem = crossRef.type.ref as ParserRule;
+                const sosSpec = AstUtils.getContainerOfType(context.container, isSoSSpec);
+                if (sosSpec) {
+                    for (const ro of sosSpec.rtdAndRules) {
+                        if (isRuleOpening(ro)) {
+                            if (ro.onRule?.ref?.name === parserRuleItem.name) {
+                                return this.scopeParsingRule(parserRuleItem, ro);
+                            }
+                        }
+                    }
+                    // should only take assignment as a variant of scopeParsingRule
+                }
+            }
+        }
+        return undefined;
+    }
 
     private scopeParsingRule(parserRuleItem: ParserRule, ruleOpeningItem: RuleOpening, initialMembers: AstNode[] = []): Scope {
-        var allScopeElements: AstNode[] = (parserRuleItem !== undefined)?this.getAllAssignments(parserRuleItem.definition) : [];
+        let allScopeElements: AstNode[] = (parserRuleItem !== undefined)?this.getAllAssignments(parserRuleItem.definition) : [];
         allScopeElements = allScopeElements.concat(initialMembers)
         this.addListFunctions(ruleOpeningItem, allScopeElements);
         allScopeElements = allScopeElements.concat(this.addClocks(ruleOpeningItem))
@@ -166,9 +137,37 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         return this.createScopeForNodes(allScopeElements);
     }
 
-    private addListFunctions(ruleOpeningItem: RuleOpening, allScopeElements: AstNode[], context:MemberCall | undefined = undefined) {
-        var atFunction: MethodMember = {
-            name: "at",
+    private addListFunctions(ruleOpeningItem: RuleOpening, allScopeElements: AstNode[], context: MemberCall | undefined = undefined) {
+        const contextType = context ? getType(context) : undefined;
+        const ruleRef = (isAbstractRule(contextType) ? contextType : undefined);
+        const refText = (isAbstractRule(contextType) ? contextType.name : 'undefined');
+
+        const at = this.makeMethodMember("at", ruleOpeningItem);
+        at.parameters.push({ $container: at, $type: 'Parameter', name: 'i' });
+        if (contextType) {
+            at.returnType = { reference: { ref: ruleRef, $refText: refText }, $container: at, $type: "TypeReference" };
+        }
+        allScopeElements.push(at);
+
+        const length = this.makeMethodMember("length", ruleOpeningItem);
+        if (contextType) {
+            length.returnType = { $container: length, $type: "TypeReference" };
+            length.returnType.primitive = { name: "integer", $container: length.returnType, $type: 'SoSPrimitiveType' };
+        }
+        allScopeElements.push(length);
+
+        for (const name of ["first", "last", "allReaders"] as const) {
+            const method = this.makeMethodMember(name, ruleOpeningItem);
+            if (contextType) {
+                method.returnType = { reference: { ref: ruleRef, $refText: refText }, $container: method, $type: "TypeReference" };
+            }
+            allScopeElements.push(method);
+        }
+    }
+
+    private makeMethodMember(name: string, ruleOpeningItem: RuleOpening): MethodMember {
+        return {
+            name,
             $containerProperty: "methods",
             $container: ruleOpeningItem,
             $document: ruleOpeningItem.$document,
@@ -179,145 +178,23 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                 $container: undefined as unknown as MethodMember, //not sure how to do better
                 $type: 'TypeReference'
             }
-        }
-
-
-        var p: Parameter = {
-            $container: atFunction,
-            $type: 'Parameter',
-            name: 'i'
-        }
-
-        if(context){
-            var type = getType(context)
-            var returnType : TypeReference = {
-                reference: {ref:(isAbstractRule(type)?type:undefined), $refText:((isAbstractRule(type)?type.name:'undefined'))},
-                $container: atFunction,
-                $type: "TypeReference"
-            }
-            atFunction.returnType = returnType
-        }
-
-        atFunction.parameters.push(p)
-
-        allScopeElements.push(atFunction);
-
-        var lengthFunction: MethodMember = {
-            name: "length",
-            $containerProperty: "methods",
-            $container: ruleOpeningItem,
-            $document: ruleOpeningItem.$document,
-            $cstNode: ruleOpeningItem.$cstNode,
-            parameters: [],
-            $type: 'MethodMember',
-            returnType: {
-                $container: undefined as unknown as MethodMember, //not sure how to do better
-                $type: 'TypeReference'
-            }
-        }
-        if(context){
-            var type = getType(context)
-            var returnType : TypeReference = {
-                $container: lengthFunction,
-                $type: "TypeReference"
-            }
-            returnType.primitive={name:"integer",$container:returnType,$type:"SoSPrimitiveType"}
-            lengthFunction.returnType = returnType
-        }
-
-        allScopeElements.push(lengthFunction);
-        
-        var firstFunction: MethodMember = {
-            name: "first",
-            $containerProperty: "methods",
-            $container: ruleOpeningItem,
-            $document: ruleOpeningItem.$document,
-            $cstNode: ruleOpeningItem.$cstNode,
-            parameters: [],
-            $type: 'MethodMember',
-            returnType: {
-                $container: undefined as unknown as MethodMember, //not sure how to do better
-                $type: 'TypeReference'
-            }
-        }
-        if(context){
-            var type = getType(context)
-            var returnType : TypeReference = {
-                reference: {ref:(isAbstractRule(type)?type:undefined), $refText:((isAbstractRule(type)?type.name:'undefined'))},
-                $container: firstFunction,
-                $type: "TypeReference"
-            }
-            firstFunction.returnType = returnType
-        }
-
-        allScopeElements.push(firstFunction);
-
-        var lastFunction: MethodMember = {
-            name: "last",
-            $containerProperty: "methods",
-            $container: ruleOpeningItem,
-            $document: ruleOpeningItem.$document,
-            $cstNode: ruleOpeningItem.$cstNode,
-            parameters: [],
-            $type: 'MethodMember',
-            returnType: {
-                $container: undefined as unknown as MethodMember, //not sure how to do better
-                $type: 'TypeReference'
-            }
-        }
-
-        if(context){
-            var type = getType(context)
-            var returnType : TypeReference = {
-                reference: {ref:(isAbstractRule(type)?type:undefined), $refText:((isAbstractRule(type)?type.name:'undefined'))},
-                $container: lastFunction,
-                $type: "TypeReference"
-            }
-            lastFunction.returnType = returnType
-        }
-        allScopeElements.push(lastFunction);
-
-        var allReaders: MethodMember = {
-            name: "allReaders",
-            $containerProperty: "methods",
-            $container: ruleOpeningItem,
-            $document: ruleOpeningItem.$document,
-            $cstNode: ruleOpeningItem.$cstNode,
-            parameters: [],
-            $type: 'MethodMember',
-            returnType: {
-                $container: undefined as unknown as MethodMember, //not sure how to do better
-                $type: 'TypeReference'
-            }
-        }
-
-        if(context){
-            var type = getType(context)
-            var returnType : TypeReference = {
-                reference: {ref:(isAbstractRule(type)?type:undefined), $refText:((isAbstractRule(type)?type.name:'undefined'))},
-                $container: allReaders,
-                $type: "TypeReference"
-            }
-            allReaders.returnType = returnType
-        }
-        allScopeElements.push(allReaders);
-
+        };
     }
 
     private scopeRuleOpeningMembers(ruleOpeningItem: RuleOpening, context: MemberCall | undefined = undefined, initialMembers:AstNode[] = []): Scope {
         
-        var allScopeElements: AstNode[] = (ruleOpeningItem.onRule?.ref !== undefined)?this.getAllAssignments(ruleOpeningItem.onRule.ref.definition) : [];
+        let allScopeElements: AstNode[] = (ruleOpeningItem.onRule?.ref !== undefined)?this.getAllAssignments(ruleOpeningItem.onRule.ref.definition) : [];
         allScopeElements = allScopeElements.concat(initialMembers)
         allScopeElements = allScopeElements.concat((ruleOpeningItem.onRule?.ref !== undefined)?this.getAllRules(ruleOpeningItem.onRule.ref.definition):[])        
-        //if (! isForControlFlowRule)
-        var allMembers:AstNode[] = []
+
+        let allMembers: AstNode[] = []
         if (context && context.element && context.element.ref && isAssignment(context.element.ref) 
             && isCrossReference((context.element.ref as unknown as Assignment).terminal)){
-            var parserRule = ((context.element.ref as unknown as Assignment).terminal as CrossReference).type.ref
-            var sosSpec =  AstUtils.getContainerOfType(ruleOpeningItem?.$container, isSoSSpec);
-            var contextRuleOpeningItem = undefined
+            const parserRule = ((context.element.ref as unknown as Assignment).terminal as CrossReference).type.ref
+            const sosSpec =  AstUtils.getContainerOfType(ruleOpeningItem?.$container, isSoSSpec);
+            let contextRuleOpeningItem = undefined
             if (sosSpec){
-                for(let rule of sosSpec?.rtdAndRules){
+                for(const rule of sosSpec?.rtdAndRules){
                     if (isRuleOpening(rule) && rule.onRule?.ref === parserRule){
                         contextRuleOpeningItem = rule
                     }
@@ -330,83 +207,79 @@ export class SoSScopeProvider extends DefaultScopeProvider {
             allMembers = getRuleOpeningChain(ruleOpeningItem).flatMap(e => e.runtimeState);
             if(context && isReference(context.element)){
                 if (ruleOpeningItem && context.element.ref && context.element.ref.$type.toString() == "Assignment" && ((context.element.ref as unknown as  Assignment).terminal as CrossReference).type){
-                    let parserRuleItem = ((context.element.ref as unknown as  Assignment).terminal as CrossReference).type.ref as ParserRule
+                    const parserRuleItem = ((context.element.ref as unknown as  Assignment).terminal as CrossReference).type.ref as ParserRule
                     if(parserRuleItem){
-                        var allScopeElements: AstNode[] = (parserRuleItem !== undefined)?this.getAllAssignments(parserRuleItem.definition) : [];
+                        let allScopeElements: AstNode[] = (parserRuleItem !== undefined)?this.getAllAssignments(parserRuleItem.definition) : [];
                         allMembers = allMembers.concat(allScopeElements)
                     }
                 }
             }         
         }
-            for(let rule of ruleOpeningItem.rules){
+
+        for(const rule of ruleOpeningItem.rules){
+            if(isRWRule(rule)){
+                /**
+                 * TODO: add temporary variable in scope with recursive call
+                 */
+                for(const expr of AstUtils.streamAllContents((rule as RWRule).premise.eventExpression)){
+                    if(isTemporaryVariable(expr)){
+                        allMembers.push(expr)
+                    }
+                }
+            }
+        }
+
+        allScopeElements = allMembers.concat(allScopeElements)
+        for(const rule of ruleOpeningItem.rules){
+            if(rule){
                 if(isRWRule(rule)){
-                    /**
-                     * TODO: add temporary variable in scope with recursive call
-                     */
-                    for(let expr of AstUtils.streamAllContents((rule as RWRule).premise.eventExpression)){
-                        if(isTemporaryVariable(expr)){
-                            allMembers.push(expr)
-                        }
-                    }
+                    allScopeElements.push(rule)
                 }
             }
-            allScopeElements = allMembers.concat(allScopeElements)
-        //}else{
-            for(var rule of ruleOpeningItem.rules){
-                if(rule){
-                    if(isRWRule(rule)){
-                        allScopeElements.push(rule)
-                    }
-                    // if(isControlFlowRule(rule)){
-                    //     if(rule.loop){
-                    //         allScopeElements.push(rule.loop.itVar)
-                    //     }
-                    // }
-                }
-                
-            }
-       // }
+            
+        }
+
         allScopeElements = allScopeElements.concat(this.addClocks(ruleOpeningItem))
         allScopeElements = allScopeElements.concat(this.getAllTemporaryVariable(ruleOpeningItem))
         this.addListFunctions(ruleOpeningItem,allScopeElements,context)
 
-        for(let v of ruleOpeningItem.runtimeState){
-            if ((v as VariableDeclaration).type?.primitive?.name == "Timer"){
-                const starts: FieldMember = {
-                    $container: ruleOpeningItem,
-                    $type: 'FieldMember',
-                    name: "starts",
-                    $cstNode: ruleOpeningItem.$cstNode,
-                    $containerProperty: "clocks",
-                   type:{} as TypeReference
-                };
+        for(const variable of ruleOpeningItem.runtimeState){
+            if ((variable as VariableDeclaration).type?.primitive?.name == "Timer"){
+                const starts: FieldMember = this.makeFieldMember("starts", ruleOpeningItem);
                 starts.type = {
                     $container: starts,
                     $type: 'TypeReference',
                 };
                 starts.type.primitive = { name: 'event', $container: starts.type, $type: 'SoSPrimitiveType' };
-                const terminates: FieldMember = {
-                    $container: ruleOpeningItem,
-                    $type: 'FieldMember',
-                    name: "terminates",
-                    $cstNode: ruleOpeningItem.$cstNode,
-                    $containerProperty: "clocks",
-                    type:{} as TypeReference
-                };
+                const terminates: FieldMember = this.makeFieldMember("terminates", ruleOpeningItem);
                 terminates.type = {
                     $container: terminates,
                     $type: 'TypeReference',
                 };
+                // TODO: starts.type? its not terminates.type 
                 terminates.type.primitive = { name: 'event', $container: starts.type, $type: 'SoSPrimitiveType' };
+                
+                allScopeElements.push(starts);
+                allScopeElements.push(terminates);
             }
         }
 
         return this.createScopeForNodes(allScopeElements);
     }
-    
 
+    private makeFieldMember(name: string, ruleOpeningItem: RuleOpening): FieldMember{
+        return {
+            $container: ruleOpeningItem,
+            $type: 'FieldMember',
+            name,
+            $cstNode: ruleOpeningItem.$cstNode,
+            $containerProperty: "clocks",
+            type:{} as TypeReference
+        };
+    }
+    
     private addClocks(ruleOpeningItem: RuleOpening): AstNode[] {
-        var res : AstNode[] =[]
+        const res : AstNode[] =[]
         res.push(this.addClock(ruleOpeningItem, "starts"));
         res.push(this.addClock(ruleOpeningItem, "updates"));
         res.push(this.addClock(ruleOpeningItem, "cleanup"));
@@ -441,7 +314,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
     }
 
     private getAllTemporaryVariable(ruleOpeningItem: RuleOpening): AstNode[] {
-        var alltempVars: AstNode[] = [];
+        const alltempVars: AstNode[] = [];
         ruleOpeningItem.rules.forEach(rule => {
             if (isRWRule(rule) && (rule as RWRule)?.conclusion !== undefined){
                 const composite = (rule as RWRule)?.conclusion?.eventemissions;
@@ -462,20 +335,20 @@ export class SoSScopeProvider extends DefaultScopeProvider {
     }
 
     private getAllRuntimeState(ruleOpeningItem: RuleOpening): AstNode[] {
-        var allVars: AstNode[] = [];
+        const allVars: AstNode[] = [];
         ruleOpeningItem.runtimeState.forEach(v => allVars.push(v));
         return allVars
     }
 
     private getAllAssignments(element: AbstractElement): Assignment[] {
-        var allAssignments: Assignment[] = [];
+        let allAssignments: Assignment[] = [];
 
         if (isGroup(element)) {
-            for (let e of (element as Group).elements) {
+            for (const e of (element as Group).elements) {
                 allAssignments = allAssignments.concat(this.getAllAssignments(e));
             }
         } else if (isAlternatives(element)) {
-            for (let e of (element as Alternatives).elements) {
+            for (const e of (element as Alternatives).elements) {
                 allAssignments = allAssignments.concat(this.getAllAssignments(e));
             }
         }
@@ -486,9 +359,8 @@ export class SoSScopeProvider extends DefaultScopeProvider {
         return allAssignments
     }
 
-
     private getAllRules(element: AbstractElement): AbstractRule[] {
-        var allAbstractRules: AbstractRule[] = [];
+        let allAbstractRules: AbstractRule[] = [];
         const grammar = AstUtils.getContainerOfType(element.$container, isGrammar);
 
         if (grammar) {
@@ -498,100 +370,23 @@ export class SoSScopeProvider extends DefaultScopeProvider {
     }
 
 
-        /**
+    /**
      * Create a scope for the given collection of AST nodes, which need to be transformed into respective
      * descriptions first. This is done using the `NameProvider` and `AstNodeDescriptionProvider` services.
      */
-        protected override createScopeForNodes(elements: Iterable<AstNode>, outerScope?: Scope, options?: ScopeOptions): Scope {
-            const s = stream(elements).map(e => {
-                var name
-                if(isAssignment(e)){
-                    name=(e as Assignment).feature
-                }else{
-                    name = this.nameProvider.getName(e);
-                }
-                if (name) {
-                    return this.descriptions.createDescription(e, name);
-                }
-                return undefined;
-            }).nonNullable();
-            return new StreamScope(s, outerScope, options);
-        }
+    protected override createScopeForNodes(elements: Iterable<AstNode>, outerScope?: Scope, options?: ScopeOptions): Scope {
+        const s = stream(elements).map(e => {
+            let name
+            if(isAssignment(e)){
+                name=(e as Assignment).feature
+            }else{
+                name = this.nameProvider.getName(e);
+            }
+            if (name) {
+                return this.descriptions.createDescription(e, name);
+            }
+            return undefined;
+        }).nonNullable();
+        return new StreamScope(s, outerScope, options);
+    }
 }
-
-
-
-
-
-
-
-
-
-
-export class SoSScopeComputation extends DefaultScopeComputation {
-
-    // // qualifiedNameProvider: QualifiedNameProvider;
-
-    // constructor(services: StructuralOperationalSemanticsServices) {
-    //     super(services);
-    //     // this.qualifiedNameProvider = services.references.QualifiedNameProvider;
-    // }
-
-    // // /**
-    // //  * Exports only types (`DataType or `Entity`) with their qualified names.
-    // //  */
-    // // override async computeExports(document: LangiumDocument, cancelToken = CancellationToken.None): Promise<AstNodeDescription[]> {
-    // //     const descr: AstNodeDescription[] = [];
-    // //     for (const modelNode of streamAllContents(document.parseResult.value)) {
-    // //         await interruptAndCheck(cancelToken);
-    // //         if (isType(modelNode)) {
-    // //             let name = this.nameProvider.getName(modelNode);
-    // //             if (name) {
-    // //                 if (isPackageDeclaration(modelNode.$container)) {
-    // //                     name = this.qualifiedNameProvider.getQualifiedName(modelNode.$container as PackageDeclaration, name);
-    // //                 }
-    // //                 descr.push(this.descriptions.createDescription(modelNode, name, document));
-    // //             }
-    // //         }
-    // //     }
-    // //     return descr;
-    // // }
-
-    // override async computeLocalScopes(document: LangiumDocument, cancelToken = CancellationToken.None): Promise<PrecomputedScopes> {
-    //     const model = document.parseResult.value as SoSSpec;
-    //     const scopes = new MultiMap<AstNode, AstNodeDescription>();
-    //     await this.processContainer(model, scopes, document, cancelToken);
-    //     return scopes;
-    // }
-
-    // protected async processContainer(container: SoSSpec, scopes: PrecomputedScopes, document: LangiumDocument, cancelToken: CancellationToken): Promise<AstNodeDescription[]> {
-    //     const localDescriptions: AstNodeDescription[] = [];
-    //     for (const stateVar of container.sigma) {
-    //         await interruptAndCheck(cancelToken);
-    //         // if (isType(stateVar)) {
-    //         const description = this.descriptions.createDescription(stateVar, stateVar.name, document);
-    //         localDescriptions.push(description);
-           
-    //         // } else if (isPackageDeclaration(stateVar)) {
-    //         //     const nestedDescriptions = await this.processContainer(stateVar, scopes, document, cancelToken);
-    //         //     for (const description of nestedDescriptions) {
-    //         //         // Add qualified names to the container
-    //         //         const qualified = this.createQualifiedDescription(stateVar, description, document);
-    //         //         localDescriptions.push(qualified);
-    //         //     }
-    //         // }
-    //     }
-
-    //     scopes.addAll(container, localDescriptions);
-    //     return localDescriptions;
-    // }
-
-    // protected createQualifiedDescription(pack: PackageDeclaration, description: AstNodeDescription, document: LangiumDocument): AstNodeDescription {
-    //     const name = this.qualifiedNameProvider.getQualifiedName(pack.name, description.name);
-    //     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    //     return this.descriptions.createDescription(description.node!, name, document);
-    // }
-
-}
-
-
