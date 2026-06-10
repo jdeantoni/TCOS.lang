@@ -59,7 +59,7 @@ open Stmt1  {
 }
 
 open Stmt2  {
-  var fakeState:integer = 0
+  var fakeState:integer = 0;
         when starts
     ------------------------ fugaceStmt2
     <this,σ> ~> fakeState := fakeState - 1;

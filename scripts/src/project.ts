@@ -37,10 +37,10 @@ export const LANGUAGES: Record<string, LanguageConfig> = {
         npmLinks: ["ccfg", "backend-compiler"],
         tcosFile: "simpleL.tcos"
     },
-    "fsm": {
+    "FiniteStateMachine": {
         extension: ".fsm",
         npmLinks: ["ccfg", "backend-compiler"],
-        tcosFile: "testFSM.sos"
+        tcosFile: "testFSM_variant.sos"
     }
 };
 
@@ -87,7 +87,7 @@ export const DAG: Record<string, NodeInfo> = {
         folder: "examples/languages",
         dependsOn: ["ccfg", "backend-compiler", "tcos"]
     },
-    "fsm": {
+    "FiniteStateMachine": {
         folder: "examples/languages",
         dependsOn: ["ccfg", "backend-compiler", "tcos"]
     }

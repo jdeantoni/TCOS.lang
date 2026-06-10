@@ -12,7 +12,7 @@ import { executeCommand } from './commands';
 import { DAG, LANGUAGES, ROOT } from './project';
 import { BatchResult, InstallResult } from './types';
 import { regenerateOneProgram, regeneratePrograms } from './generation';
-import { success, warning, error, info, printFullSummary, startWatcher, printSummary } from './display';
+import { success, warning, error, info, printFullSummary, startWatcher } from './display';
 import { buildDependants, checkAbort, computeCascade, findNode, getNodePath } from './utils';
 
 let currentBuildController: AbortController | null = null;

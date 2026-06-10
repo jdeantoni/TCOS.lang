@@ -3,11 +3,7 @@ digraph G {
   "36" [label="36[]:Step_starts" shape="ellipse" ];
   "37" [label="37[]:Step_terminates" shape="ellipse" ];
   "38" [label="38[]:Hole" shape="cylinder" ];
-  "39" [label="39[]:BroadcastEventReception:
-void function39fire(){
-waitEvent,Event0_0_0_8,Event0_0_0_8guardEventPayload
-ackEvent,Event0_0_0_8Token
-}" shape="cds" ];
+  "39" [label="39[]:AndJoin" shape="invtriangle" ];
   "40" [label="40[]:BroadcastEventEmission:
 void function40emitsentEvent(){
 createVar,std::any,Event3_0_3_8sentEventPayload

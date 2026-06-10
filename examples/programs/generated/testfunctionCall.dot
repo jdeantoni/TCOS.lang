@@ -11,9 +11,9 @@ createGlobalVar,int,Variable8_0_8_10currentValue
   "25" [label="25[]:Step_terminates" shape="ellipse" ];
   "26" [label="26[]:Step:
 void function26initializeVar(){
-createVar,int,Variable8_0_8_101432
-assignVar,Variable8_0_8_101432,0
-setGlobalVar,int,Variable8_0_8_10currentValue,Variable8_0_8_101432
+createVar,int,Variable8_0_8_101376
+assignVar,Variable8_0_8_101376,0
+setGlobalVar,int,Variable8_0_8_10currentValue,Variable8_0_8_101376
 }" shape="ellipse" ];
   "27" [label="27[]:Step_starts" shape="ellipse" ];
   "28" [label="28[]:Step_terminates" shape="ellipse" ];
@@ -23,10 +23,10 @@ setGlobalVar,int,Variable8_0_8_10currentValue,Variable8_0_8_101432
   "4" [label="4[]:Step_terminates" shape="ellipse" ];
   "31" [label="31[]:Step_starts:
 int function31accessVarRef(){
-createVar,int,VarRef9_3_9_51647
-setVarFromGlobal,int,VarRef9_3_9_51647,Variable8_0_8_10currentValue
+createVar,int,VarRef9_3_9_51582
+setVarFromGlobal,int,VarRef9_3_9_51582,Variable8_0_8_10currentValue
 createVar,int,VarRef9_3_9_5terminates
-assignVar,VarRef9_3_9_5terminates,VarRef9_3_9_51647
+assignVar,VarRef9_3_9_5terminates,VarRef9_3_9_51582
 return,VarRef9_3_9_5terminates
 }" shape="ellipse" ];
   "32" [label="32[]:Step_terminates" shape="ellipse" ];
@@ -42,9 +42,9 @@ createGlobalVar,int,Variable1_4_1_14currentValue
   "11" [label="11[]:Step_terminates" shape="ellipse" ];
   "12" [label="12[]:Step:
 void function12initializeVar(){
-createVar,int,Variable1_4_1_141432
-assignVar,Variable1_4_1_141432,1
-setGlobalVar,int,Variable1_4_1_14currentValue,Variable1_4_1_141432
+createVar,int,Variable1_4_1_141376
+assignVar,Variable1_4_1_141376,1
+setGlobalVar,int,Variable1_4_1_14currentValue,Variable1_4_1_141376
 }" shape="ellipse" ];
   "13" [label="13[]:Step_starts" shape="ellipse" ];
   "14" [label="14[]:Step_starts:
@@ -54,24 +54,24 @@ createGlobalVar,int,Variable2_4_2_14currentValue
   "15" [label="15[]:Step_terminates" shape="ellipse" ];
   "16" [label="16[]:Step:
 void function16initializeVar(){
-createVar,int,Variable2_4_2_141432
-assignVar,Variable2_4_2_141432,0
-setGlobalVar,int,Variable2_4_2_14currentValue,Variable2_4_2_141432
+createVar,int,Variable2_4_2_141376
+assignVar,Variable2_4_2_141376,0
+setGlobalVar,int,Variable2_4_2_14currentValue,Variable2_4_2_141376
 }" shape="ellipse" ];
   "17" [label="17[]:Step_starts" shape="ellipse" ];
   "18" [label="18[]:Step_terminates" shape="ellipse" ];
   "20" [label="20[]:Step:
 void function20executeAssignment2(int resRight){
-createVar,int,Assignment3_4_3_112622
-assignVar,Assignment3_4_3_112622,resRight
-setGlobalVar,int,Variable2_4_2_14currentValue,Assignment3_4_3_112622
+createVar,int,Assignment3_4_3_112523
+assignVar,Assignment3_4_3_112523,resRight
+setGlobalVar,int,Variable2_4_2_14currentValue,Assignment3_4_3_112523
 }" shape="ellipse" ];
   "21" [label="21[]:Step_starts:
 int function21accessVarRef(){
-createVar,int,VarRef3_9_3_111647
-setVarFromGlobal,int,VarRef3_9_3_111647,Variable1_4_1_14currentValue
+createVar,int,VarRef3_9_3_111582
+setVarFromGlobal,int,VarRef3_9_3_111582,Variable1_4_1_14currentValue
 createVar,int,VarRef3_9_3_11terminates
-assignVar,VarRef3_9_3_11terminates,VarRef3_9_3_111647
+assignVar,VarRef3_9_3_11terminates,VarRef3_9_3_111582
 return,VarRef3_9_3_11terminates
 }" shape="ellipse" ];
   "22" [label="22[]:Step_terminates" shape="ellipse" ];
