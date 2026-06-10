@@ -111,7 +111,7 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
     
         {let e = localCCFG.addEdge(startsProgramNode,stmtHole)
         e.guards = [...e.guards, ...[]]}
-        
+    
         // premise handling for rule finishProgram: 1 participant groups
 
         stmtHole.params = [...stmtHole.params, ...[]]
@@ -172,7 +172,7 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
     
         {let e = localCCFG.addEdge(startsSeqNode,lhsHole)
         e.guards = [...e.guards, ...[]]}
-        
+    
         // premise handling for rule startsRhsSeq: 1 participant groups
 
         lhsHole.params = [...lhsHole.params, ...[]]
@@ -182,7 +182,7 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
     
         {let e = localCCFG.addEdge(lhsHole,rhsHole)
         e.guards = [...e.guards, ...[]]}
-        
+    
         // premise handling for rule finishSeq: 1 participant groups
 
         rhsHole.params = [...rhsHole.params, ...[]]
@@ -246,11 +246,11 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
 
         {let e = localCCFG.addEdge(forkstartsParStage0,lhsHole)
         e.guards = [...e.guards, ...[]]}
-        
+    
 
         {let e = localCCFG.addEdge(forkstartsParStage0,rhsHole)
         e.guards = [...e.guards, ...[]]}
-        
+    
         // premise handling for rule finishPar: 2 participant groups
         // Creating AndJoin for conjunction/disjunction
 
@@ -323,7 +323,7 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
     
         {let e = localCCFG.addEdge(startsPerioNode,blocTriggerHole)
         e.guards = [...e.guards, ...[]]}
-        
+    
         // premise handling for rule perioExpires: 1 participant groups
 
         blocTriggerHole.params = [...blocTriggerHole.params, ...[]]
@@ -339,11 +339,11 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
 
         {let e = localCCFG.addEdge(forkperioExpiresStage0,stmtHole)
         e.guards = [...e.guards, ...[]]}
-        
+    
 
         {let e = localCCFG.addEdge(forkperioExpiresStage0,blocTriggerHole)
         e.guards = [...e.guards, ...[]]}
-        
+    
 
         return localCCFG;
     }
@@ -468,9 +468,11 @@ export class ParLangCompilerFrontEnd implements CompilerFrontEnd {
         notifyIDEmissionNode0.functionsNames = [`${notifyIDEmissionNode0.uid}emitnotifyID`]
         notifyIDEmissionNode0.functionsDefs = [new CreateVarInstruction(`${this.getASTNodeUID(node.notifyID?.ref??node)}notifyIDPayload`,`std::any`), new AssignVarInstruction(`${this.getASTNodeUID(node.notifyID?.ref??node)}notifyIDPayload`,`0`,`std::any`), new EmitEventInstruction(`${this.getASTNodeUID(node.notifyID?.ref??node)}`,`${this.getASTNodeUID(node.notifyID?.ref??node)}notifyIDPayload`,true)]
         notifyIDEmissionNode0.returnType = "void"
+        
+
         {let e = localCCFG.addEdge(startsNotifyNode,notifyIDEmissionNode0)
         e.guards = [...e.guards, ...[]]}
-        
+    
 
         {let e = localCCFG.addEdge(notifyIDEmissionNode0,terminatesNotifyNode)
         e.guards = [...e.guards, ...[]]}
