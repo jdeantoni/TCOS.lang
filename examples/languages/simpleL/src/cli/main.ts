@@ -31,8 +31,8 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
 
 
     
-    let debug: boolean = false;
-    let ccfg = doGenerateCCFG(dotFile, model,debug);
+    const debug: boolean = false;
+    const ccfg = doGenerateCCFG(dotFile, model,debug);
     const codeFile = new CompositeGeneratorNode();
     
     if (!fs.existsSync(data.destination)) {
@@ -52,8 +52,8 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
      }
      
 
-    let filePath = path.join(data.destination, data.name);
-    let generatedCodeFilePath = generator.nameFile(filePath);
+    const filePath = path.join(data.destination, data.name);
+    const generatedCodeFilePath = generator.nameFile(filePath);
     generatefromCCFG(ccfg, codeFile, generator, filePath,debug)
     if (!fs.existsSync(data.destination)) {
         fs.mkdirSync(data.destination, { recursive: true });
@@ -87,8 +87,8 @@ export default function(): void {
 }
 
 function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Model,debug:boolean): CCFG {
-    var compilerFrontEnd = new SimpleLCompilerFrontEnd();
-    var ccfg = compilerFrontEnd.generateCCFG(model, debug);
+    const compilerFrontEnd = new SimpleLCompilerFrontEnd();
+    const ccfg = compilerFrontEnd.generateCCFG(model, debug);
    
     ccfg.addSyncEdge()
 

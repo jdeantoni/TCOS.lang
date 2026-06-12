@@ -39,7 +39,7 @@ export function watcherCommand(installResults: InstallResult[], batchResults: Ba
     const watcher = chokidar.watch(watcherPaths, {
         ignoreInitial: true,
         ignored: (filePath, stats) => {
-            const banFolder = ["node_modules", "out", "dist", "generated"];
+            const banFolder = ["node_modules", "out", "dist", "generated", "syntaxes"];
             for (const name of banFolder){
                 if (filePath.includes(name)) return true;
             }

@@ -91,7 +91,7 @@ export function visitVariableDeclaration(runtimeState: VariableDeclaration[] | u
  * @param runtimeState 
  * @returns 
  */
-export function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefined, file:CompositeGeneratorNode): [string, string] {
+export function visitValuedEventEmission(valuedEmission: ValuedEventEmission | undefined, _file:CompositeGeneratorNode): [string, string] {
     let res : string = ""
     if (valuedEmission != undefined) {
         const varType = inferType(valuedEmission.data, new Map())
@@ -107,14 +107,12 @@ export function visitValuedEventEmission(valuedEmission: ValuedEventEmission | u
             const lhs = (valuedEmission.data as BinaryExpression).left
             const lhsType = inferType(lhs, new Map())
             const lhsTypeName = getCPPVariableTypeName(lhsType.$type)
-            let leftRes: string = ""; // Declare the variable rightRes
-            leftRes = createVariableFromMemberCall(lhs as MemberCall, lhsTypeName);
+            const leftRes = createVariableFromMemberCall(lhs as MemberCall, lhsTypeName);
             res = res + leftRes+","
             const rhs = (valuedEmission.data as BinaryExpression).right
             const rhsType = inferType(rhs, new Map())
             const rhsTypeName = getCPPVariableTypeName(rhsType.$type)
-            let rightRes: string = ""; // Declare the variable rightRes
-            rightRes  = createVariableFromMemberCall(rhs as MemberCall, rhsTypeName);
+            const rightRes  = createVariableFromMemberCall(rhs as MemberCall, rhsTypeName);
             res = res + rightRes+","
             const applyOp = (valuedEmission.data as BinaryExpression).operator
             res = res + `new CreateVarInstruction(\`\${this.getASTNodeUID(node)}${valuedEmission.data.$cstNode?.offset}\`,\`${typeName}\`),`
@@ -151,9 +149,8 @@ export function visitStateModifications(ruleCF: RuleControlFlow, actionsstring: 
         sep = ","
     }
     for (const action of ruleCF.rule.conclusion.statemodifications) {
-        let typeName = ""; 
         const rhsType = inferType(action.rhs, new Map());
-        typeName = getCPPVariableTypeName(rhsType.$type);
+        let typeName = getCPPVariableTypeName(rhsType.$type);
         if (typeName == "unknown") {
             const lhsType = inferType(action.lhs, new Map())
             typeName = getCPPVariableTypeName(lhsType.$type);

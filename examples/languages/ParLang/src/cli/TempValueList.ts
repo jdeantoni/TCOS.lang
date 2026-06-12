@@ -10,7 +10,7 @@ export class TempValue<DataType> {
     }
 
     last():DataType{
-        let n = this.list.length;
+        const n = this.list.length;
         return this.list[n-1];
     }
 }
@@ -37,13 +37,13 @@ export class TempValueList<DataType>{
     }
 
     addTempValue(n:number):void{
-        let c:TempValue<DataType> = new TempValue<DataType>(n);
+        const c:TempValue<DataType> = new TempValue<DataType>(n);
         this.list.push(c);
         this.length ++;
     }
 
     addValueLast(n:DataType):void{
-        let l = this.last();
+        const l = this.last();
         l.list.push(n);
     }
 
@@ -53,8 +53,8 @@ export class TempValueList<DataType>{
     }
     
     isWaiting():boolean{
-        let last = this.last();
-        let n = last.list.length;
+        const last = this.last();
+        const n = last.list.length;
         if( n < last.length){
             return true;
         }else{

@@ -1,4 +1,4 @@
-import { CompositeEventEmission, EventEmission, isParallelEventEmission, isSequentialEventEmission, ValuedEventEmission } from "../../language-server/generated/ast.js";
+import { BroadcastedEventEmission, CompositeEventEmission, EventEmission, isParallelEventEmission, isSequentialEventEmission, ValuedEventEmission } from "../../language-server/generated/ast.js";
 
 /**
  * Recursively flattens a CompositeEventEmission tree into its leaf EventEmissions,
@@ -43,7 +43,7 @@ export function getValuedEmissionFromLeaf(emission: EventEmission): ValuedEventE
         return emission as ValuedEventEmission;
     }
     if (emission.$type == "BroadcastedEventEmission") {
-        const nested = (emission as any).eventEmission as EventEmission | undefined;
+        const nested = (emission as BroadcastedEventEmission).eventEmission as EventEmission | undefined;
         if (nested != undefined && nested.$type == "ValuedEventEmission") {
             return nested as ValuedEventEmission;
         }

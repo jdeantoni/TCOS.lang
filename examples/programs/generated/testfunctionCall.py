@@ -80,17 +80,17 @@ def functioninit24Variable():
 	sigma_mutex.release()
 def function26initializeVar(): 
 	
-	Variable8_0_8_101376 = 0 
+	Variable8_0_8_101432 = 0 
 	sigma_mutex.acquire()
-	sigma["Variable8_0_8_10currentValue"] = Variable8_0_8_101376
+	sigma["Variable8_0_8_10currentValue"] = Variable8_0_8_101432
 	sigma_mutex.release()
 def function31accessVarRef(): 
 	
 	sigma_mutex.acquire()
-	VarRef9_3_9_51582 = sigma["Variable8_0_8_10currentValue"]
+	VarRef9_3_9_51647 = sigma["Variable8_0_8_10currentValue"]
 	sigma_mutex.release()
 	
-	VarRef9_3_9_5terminates = VarRef9_3_9_51582 
+	VarRef9_3_9_5terminates = VarRef9_3_9_51647 
 	return VarRef9_3_9_5terminates 
 def functioninit10Variable(): 
 	sigma_mutex.acquire()
@@ -98,9 +98,9 @@ def functioninit10Variable():
 	sigma_mutex.release()
 def function12initializeVar(): 
 	
-	Variable1_4_1_141376 = 1 
+	Variable1_4_1_141432 = 1 
 	sigma_mutex.acquire()
-	sigma["Variable1_4_1_14currentValue"] = Variable1_4_1_141376
+	sigma["Variable1_4_1_14currentValue"] = Variable1_4_1_141432
 	sigma_mutex.release()
 def functioninit14Variable(): 
 	sigma_mutex.acquire()
@@ -108,23 +108,23 @@ def functioninit14Variable():
 	sigma_mutex.release()
 def function16initializeVar(): 
 	
-	Variable2_4_2_141376 = 0 
+	Variable2_4_2_141432 = 0 
 	sigma_mutex.acquire()
-	sigma["Variable2_4_2_14currentValue"] = Variable2_4_2_141376
+	sigma["Variable2_4_2_14currentValue"] = Variable2_4_2_141432
 	sigma_mutex.release()
 def function20executeAssignment2(resRight): 
 	
-	Assignment3_4_3_112523 = resRight 
+	Assignment3_4_3_112622 = resRight 
 	sigma_mutex.acquire()
-	sigma["Variable2_4_2_14currentValue"] = Assignment3_4_3_112523
+	sigma["Variable2_4_2_14currentValue"] = Assignment3_4_3_112622
 	sigma_mutex.release()
 def function21accessVarRef(): 
 	
 	sigma_mutex.acquire()
-	VarRef3_9_3_111582 = sigma["Variable1_4_1_14currentValue"]
+	VarRef3_9_3_111647 = sigma["Variable1_4_1_14currentValue"]
 	sigma_mutex.release()
 	
-	VarRef3_9_3_11terminates = VarRef3_9_3_111582 
+	VarRef3_9_3_11terminates = VarRef3_9_3_111647 
 	return VarRef3_9_3_11terminates 
 def main(): 
 	functioninit24Variable() 

@@ -76,7 +76,7 @@ export function inferType(node: AstNode | undefined, cache: Map<AstNode, TypeDes
     return type;
 }
 
-function inferTypeRef(node: TypeReference, cache: Map<AstNode, TypeDescription>): TypeDescription {
+function inferTypeRef(node: TypeReference, _cache: Map<AstNode, TypeDescription>): TypeDescription {
     if (node.primitive) {
         if (node.primitive.name === 'integer') {
             return createNumberType();

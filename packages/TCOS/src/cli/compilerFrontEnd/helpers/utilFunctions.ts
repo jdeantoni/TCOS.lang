@@ -15,7 +15,7 @@ export function addUtilFunctions(fileNode: CompositeGeneratorNode,rootTypeName: 
             let localCCFG = this.createLocalCCFG(n)
             if(debug){
                 let dotContent = localCCFG.toDot();
-                fs.writeFileSync(\`./generated/localCCFGs/localCCFG\${localCCFG.initialState?.functionsNames[0].replace(/init\d+/g,"")}.dot\`, dotContent);
+                fs.writeFileSync(\`./generated/localCCFGs/localCCFG\${localCCFG.initialState?.functionsNames[0].replace(/init\\d+/g,"")}.dot\`, dotContent);
             }
             astNodeToLocalCCFG.set(n, localCCFG)
         }

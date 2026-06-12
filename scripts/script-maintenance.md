@@ -202,7 +202,7 @@ In `src/watcher.ts`, the chokidar configuration declares which folders and file 
 ```ts
 ignoreInitial: true,
 ignored: (filePath, stats) => {
-    const banFolder = ["node_modules", "out", "dist", "generated"];
+    const banFolder = ["node_modules", "out", "dist", "generated", "syntaxes"];
     for (const name of banFolder) {
         if (filePath.includes(name)) return true;
     }

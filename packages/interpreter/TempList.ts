@@ -54,7 +54,7 @@ export class Stack<T> implements IStack<T> {
     }
   
     pop(): T {
-      let element = this.storage.pop();
+      const element = this.storage.pop();
       if(element!=undefined){
         return element;
       }else{
@@ -64,7 +64,7 @@ export class Stack<T> implements IStack<T> {
     }
   
     peek(): T {
-      let element = this.storage[this.size() - 1]
+      const element = this.storage[this.size() - 1]
       if(element!=undefined){
         return element;
       }else{

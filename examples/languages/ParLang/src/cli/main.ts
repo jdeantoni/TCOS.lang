@@ -31,8 +31,8 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
 
 
     
-    let debug: boolean = opts.debug != undefined && opts.debug;
-    let ccfg = doGenerateCCFG(dotFile, model,debug);
+    const debug: boolean = opts.debug != undefined && opts.debug;
+    const ccfg = doGenerateCCFG(dotFile, model,debug);
     const codeFile = new CompositeGeneratorNode();
     
     if (!fs.existsSync(data.destination)) {
@@ -52,8 +52,8 @@ export const generateAction = async (fileName: string, opts: GenerateOptions): P
      }
      
 
-    let filePath = path.join(data.destination, data.name);
-    let generatedCodeFilePath = generator.nameFile(filePath);
+    const filePath = path.join(data.destination, data.name);
+    const generatedCodeFilePath = generator.nameFile(filePath);
     generatefromCCFG(ccfg, codeFile, generator, filePath,debug)
     if (!fs.existsSync(data.destination)) {
         fs.mkdirSync(data.destination, { recursive: true });
@@ -87,8 +87,8 @@ export default function(): void {
 }
 
 function doGenerateCCFG(codeFile: CompositeGeneratorNode, model: Program,debug:boolean): CCFG {
-    var compilerFrontEnd = new ParLangCompilerFrontEnd(debug);
-    var ccfg = compilerFrontEnd.generateCCFG(model);
+    const compilerFrontEnd = new ParLangCompilerFrontEnd(debug);
+    const ccfg = compilerFrontEnd.generateCCFG(model);
    
     ccfg.addSyncEdge()
 

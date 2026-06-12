@@ -6,7 +6,7 @@ import { CompositeGeneratorNode, NL } from "langium/generate";
  * @param fileNode the file 
  * @param data the file path data
  */
-export function writePreambule(fileNode: CompositeGeneratorNode, data: FilePathData) {
+export function writePreambule(fileNode: CompositeGeneratorNode, _data: FilePathData) {
     fileNode.append(`
 import fs from 'fs';
 import { AstNode, Reference, isReference, AstUtils } from "langium";

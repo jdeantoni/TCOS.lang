@@ -107,7 +107,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
     }
 
     private scopeFromCrossReferenceTerminal(terminal: unknown, context: ReferenceInfo): Scope | undefined {
-        if (isCrossReference(terminal as any)) {
+        if (isCrossReference(terminal as unknown)) {
             const crossRef = terminal as CrossReference;
             if (isParserRule(crossRef.type.ref)) {
                 const parserRuleItem = crossRef.type.ref as ParserRule;
@@ -209,7 +209,7 @@ export class SoSScopeProvider extends DefaultScopeProvider {
                 if (ruleOpeningItem && context.element.ref && context.element.ref.$type.toString() == "Assignment" && ((context.element.ref as unknown as  Assignment).terminal as CrossReference).type){
                     const parserRuleItem = ((context.element.ref as unknown as  Assignment).terminal as CrossReference).type.ref as ParserRule
                     if(parserRuleItem){
-                        let allScopeElements: AstNode[] = (parserRuleItem !== undefined)?this.getAllAssignments(parserRuleItem.definition) : [];
+                        const allScopeElements: AstNode[] = (parserRuleItem !== undefined)?this.getAllAssignments(parserRuleItem.definition) : [];
                         allMembers = allMembers.concat(allScopeElements)
                     }
                 }

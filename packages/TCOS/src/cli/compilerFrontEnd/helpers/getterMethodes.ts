@@ -213,9 +213,7 @@ export function getEventSynchronisationParticipants(eventExpression: EventExpres
  * @returns a typed element list of the valued event ref participants
  */
 function getValuedEventRefParticipants(eventExpression: ValuedEventRef): TypedElement[] {
-    let res: TypedElement[] = []
-    res = getExplicitEventExpressionParticipants(eventExpression.membercall as MemberCall)
-    return res
+    return getExplicitEventExpressionParticipants(eventExpression.membercall as MemberCall)
 }
 
 /**
@@ -224,11 +222,9 @@ function getValuedEventRefParticipants(eventExpression: ValuedEventRef): TypedEl
  * @returns a typed element list of the event expression participants
  */
 function getValuedEventRefConstantComparisonParticipants(eventExpression: ValuedEventRefConstantComparison): TypedElement[] {
-    let res: TypedElement[] = []
-    res = getExplicitEventExpressionParticipants(eventExpression.membercall as MemberCall)
+    const res = getExplicitEventExpressionParticipants(eventExpression.membercall as MemberCall)
     return res
 }
-
 
 /**
  * checks if an EventExpression in the shape of a rulesync is emitting an event if it is, returns a list of the participants
@@ -237,12 +233,11 @@ function getValuedEventRefConstantComparisonParticipants(eventExpression: Valued
  */
 
 function getSingleRuleSyncEventExpressionParticipants(rule: SingleRuleSync): TypedElement[] {
-    let res: TypedElement[] = []
     if ((rule.member as MemberCall)?.element?.ref != undefined) {
-        res = getExplicitEventExpressionParticipants(rule.member as MemberCall)
+        return getExplicitEventExpressionParticipants(rule.member as MemberCall)
     }
 
-    return res
+    return [];
 }
 
 /**
@@ -266,7 +261,7 @@ function getCollectionRuleSyncEventExpressionParticipants(rule: CollectionRuleSy
  * @returns a typed element list of the event expression participants
  */
 function getExplicitEventExpressionParticipants(membercall: MemberCall, isBroadcast: boolean = false): TypedElement[] {
-    let res: TypedElement[] = []
+    const res: TypedElement[] = []
 
     if (membercall?.element?.ref != undefined) {
         if (membercall.element.ref.$type.toString() == "Assignment") {
@@ -299,7 +294,7 @@ function getExplicitEventExpressionParticipants(membercall: MemberCall, isBroadc
         }
     }
     if (membercall.previous != undefined) {
-        return res = [...getExplicitEventExpressionParticipants(membercall.previous as MemberCall, isBroadcast), ...res]
+        return [...getExplicitEventExpressionParticipants(membercall.previous as MemberCall, isBroadcast), ...res]
     }
     return res
 }
