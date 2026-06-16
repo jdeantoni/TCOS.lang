@@ -62,8 +62,8 @@ export const generateAction = async (
         opts.destination ?? '.'
     );
 
-    patchExtensionMain(projectRoot);
-    patchPackageJson(projectRoot,model[0].name.toLowerCase());
+    patchExtensionMain(projectRoot,model[0].name);
+    patchPackageJson(projectRoot,model[0].name);
 
     console.log(
         chalk.green('VSCode extension patched successfully')

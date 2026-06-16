@@ -39,8 +39,7 @@ function appendDebugConfigurationProvider(
 ): void {
 
     const languageName =
-        model.name.charAt(0).toUpperCase() +
-        model.name.slice(1);
+        model.name;
 
     file.append(`
 import * as vscode from 'vscode';

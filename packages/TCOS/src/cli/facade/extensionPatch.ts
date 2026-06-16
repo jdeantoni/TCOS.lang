@@ -1,34 +1,70 @@
 import fs from "fs";
 import path from "path";
 
-export function patchExtensionMain(projectRoot: string): void {
+export function patchExtensionMain(
+    projectRoot: string,
+    languageName: string
+): void {
 
-    const filePath =
-        path.join(projectRoot, "src", "extension", "main.ts");
+    const languageClass =
+        languageName.charAt(0).toUpperCase() +
+        languageName.slice(1);
 
-    let content =
-        fs.readFileSync(filePath, "utf8");
+    const filePath = path.join(
+        projectRoot,
+        "src",
+        "extension",
+        "main.ts"
+    );
 
-    if (!content.includes("CCFGDebugConfigProvider")) {
+    let content = fs.readFileSync(
+        filePath,
+        "utf8"
+    );
+
+    content = content.replace(
+        "import type * as vscode from 'vscode';",
+        "import * as vscode from 'vscode';"
+    );
+
+    content = content.replace(
+        'import type * as vscode from "vscode";',
+        'import * as vscode from "vscode";'
+    );
+
+    if (
+        !content.includes(
+            `${languageClass}DebugConfigurationProvider`
+        )
+    ) {
 
         content =
-            `import { CCFGDebugConfigProvider } from '../debug/CCFGDebugConfigProvider.js';\n`
+            `import { ${languageClass}DebugConfigurationProvider } from '../cli/generated/${languageName}DebugConfigurationProvider.js';\n`
             + content;
+    }
 
-        content =
-            content.replace(
-                "client = startLanguageClient(context);",
+    if (
+        !content.includes(
+            `new ${languageClass}DebugConfigurationProvider`
+        )
+    ) {
 
-                `client = startLanguageClient(context);
+        content = content.replace(
+            "client = startLanguageClient(context);",
+            `client = startLanguageClient(context);
 
     context.subscriptions.push(
         vscode.debug.registerDebugConfigurationProvider(
             'ccfg',
-            new CCFGDebugConfigProvider(context)
+            new ${languageClass}DebugConfigurationProvider()
         )
     );`
-            );
-
-        fs.writeFileSync(filePath, content);
+        );
     }
+
+    fs.writeFileSync(
+        filePath,
+        content
+    );
 }
+
