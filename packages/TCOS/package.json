@@ -10,6 +10,26 @@
         "Programming Languages"
     ],
     "contributes": {
+        "debuggers": [
+  {
+        "type": "ccfg",
+        "label": "CCFG Debug",
+        "runtime": "node",
+        "program": "./out/debug/adapter.js",
+        "configurationAttributes": {
+        "launch": {
+            "required": ["type", "request", "name"]
+        }
+        },
+        "initialConfigurations": [
+        {
+            "type": "ccfg",
+            "request": "launch",
+            "name": "Launch CCFG Debug"
+        }
+        ]
+    }
+    ],
         "languages": [
             {
                 "id": "structural-operational-semantics",
@@ -35,7 +55,8 @@
         ]
     },
     "activationEvents": [
-        "onLanguage:structural-operational-semantics"
+        "onLanguage:structural-operational-semantics",
+        "*"
     ],
     "files": [
         "bin",
