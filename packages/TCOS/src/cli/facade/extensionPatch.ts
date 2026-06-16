@@ -7,7 +7,8 @@ export function patchExtensionMain(
 ): void {
 
     const languageClass =
-        languageName.charAt(0).toUpperCase() +
+        languageName;
+    languageName =  languageName.charAt(0).toLowerCase() +
         languageName.slice(1);
 
     const filePath = path.join(
@@ -56,7 +57,7 @@ export function patchExtensionMain(
     context.subscriptions.push(
         vscode.debug.registerDebugConfigurationProvider(
             'ccfg',
-            new ${languageClass}DebugConfigurationProvider()
+            new ${languageClass}DebugConfigurationProvider(context)
         )
     );`
         );
