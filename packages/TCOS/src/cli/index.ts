@@ -2,13 +2,18 @@ import chalk from 'chalk';
 import { Command } from 'commander';
 import { StructuralOperationalSemanticsLanguageMetaData } from '../language-server/generated/module.js';
 import { createStructuralOperationalSemanticsServices } from '../language-server/structural-operational-semantics-module.js';
+
 import { extractSosAndGrammarModels } from './cli-util.js';
 import { NodeFileSystem } from 'langium/node';
+
 import * as url from 'node:url';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+
 import { generateCompilerFrontEndFromSoS } from './compilerFrontEnd/generation/generateCompilerFrontEnd.js';
 import { generateDebugFacadeFromSoS } from './facade/facadeGeneration.js';
+import { generateDebugConfigFromSoS } from './facade/debugConfigGeneration.js';
+
 import { patchExtensionMain } from './facade/extensionPatch.js';
 import { patchPackageJson } from './facade/jsonPatch.js';
 
@@ -30,40 +35,53 @@ export const generateAction = async (
         createStructuralOperationalSemanticsServices(NodeFileSystem)
             .StructuralOperationalSemantics;
 
-    const model =
+    const [model, grammars] =
         await extractSosAndGrammarModels(fileName, services);
+
+    const destination = opts.destination ?? '.';
 
     const compilerPath =
         generateCompilerFrontEndFromSoS(
-            model[0],
-            model[1],
+            model,
+            grammars,
             fileName,
-            opts.destination
+            destination
         );
 
     console.log(
         chalk.green(`Compiler front end generated: ${compilerPath}`)
     );
 
-    const debugPath =
+    const facadePath =
         generateDebugFacadeFromSoS(
-            model[0],
-            model[1],
+            model,
+            grammars,
             fileName,
-            opts.destination
+            destination
         );
 
     console.log(
-        chalk.green(`Debug facade generated: ${debugPath}`)
+        chalk.green(`DAP facade generated: ${facadePath}`)
+    );
+
+    const providerPath =
+        generateDebugConfigFromSoS(
+            model,
+            fileName,
+            destination
+        );
+
+    console.log(
+        chalk.green(`DebugConfigurationProvider generated: ${providerPath}`)
     );
 
     const projectRoot = path.resolve(
         path.dirname(fileName),
-        opts.destination ?? '.'
+        destination
     );
 
-    patchExtensionMain(projectRoot,model[0].name);
-    patchPackageJson(projectRoot,model[0].name);
+    patchExtensionMain(projectRoot, model.name);
+    patchPackageJson(projectRoot, model.name);
 
     console.log(
         chalk.green('VSCode extension patched successfully')
@@ -92,10 +110,9 @@ export default function (): void {
             'destination directory of generating'
         )
         .description(
-            'generates compiler + debug facade for CCFG runtime'
+            'generates compiler + DAP facade + debug provider for CCFG runtime'
         )
         .action(generateAction);
 
     program.parse(process.argv);
-}
-
+};

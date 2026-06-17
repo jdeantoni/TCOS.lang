@@ -6,9 +6,10 @@ export function patchExtensionMain(
     languageName: string
 ): void {
 
-    const languageClass =
-        languageName;
-    languageName =  languageName.charAt(0).toLowerCase() +
+    const languageClass = languageName;
+
+    const languageFileName =
+        languageName.charAt(0).toLowerCase() +
         languageName.slice(1);
 
     const filePath = path.join(
@@ -33,6 +34,9 @@ export function patchExtensionMain(
         'import * as vscode from "vscode";'
     );
 
+    const importLine =
+        `import { ${languageClass}DebugConfigurationProvider } from '../cli/generated/${languageFileName}DebugConfigurationProvider.js';\n`;
+
     if (
         !content.includes(
             `${languageClass}DebugConfigurationProvider`
@@ -40,9 +44,18 @@ export function patchExtensionMain(
     ) {
 
         content =
-            `import { ${languageClass}DebugConfigurationProvider } from '../cli/generated/${languageName}DebugConfigurationProvider.js';\n`
-            + content;
+            importLine + content;
     }
+
+    const registrationCode =
+`client = startLanguageClient(context);
+
+    context.subscriptions.push(
+        vscode.debug.registerDebugConfigurationProvider(
+            'ccfg',
+            new ${languageClass}DebugConfigurationProvider(context)
+        )
+    );`;
 
     if (
         !content.includes(
@@ -52,14 +65,7 @@ export function patchExtensionMain(
 
         content = content.replace(
             "client = startLanguageClient(context);",
-            `client = startLanguageClient(context);
-
-    context.subscriptions.push(
-        vscode.debug.registerDebugConfigurationProvider(
-            'ccfg',
-            new ${languageClass}DebugConfigurationProvider(context)
-        )
-    );`
+            registrationCode
         );
     }
 

@@ -16,68 +16,76 @@ export function generateDebugFacadeFromSoS(
 
     const generatedFilePath = path.join(
         data.destination,
-        `${data.name}DebugConfigurationProvider.ts`
+        `${data.name}DapFacade.ts`
     );
 
     const file = new CompositeGeneratorNode();
 
-    appendDebugConfigurationProvider(model, file, data.name);
+    appendDapFacade(
+        model,
+        file,
+        data.name
+    );
 
     if (!fs.existsSync(data.destination)) {
         fs.mkdirSync(data.destination, { recursive: true });
     }
 
-    fs.writeFileSync(generatedFilePath, toString(file));
+    fs.writeFileSync(
+        generatedFilePath,
+        toString(file)
+    );
 
     return generatedFilePath;
 }
 
-function appendDebugConfigurationProvider(
+function appendDapFacade(
     model: SoSSpec,
     file: CompositeGeneratorNode,
     compilerName: string
 ): void {
 
-    const languageName =
-        model.name;
+    const languageName = model.name;
+
+    const languageNameCapitalized =
+        languageName.charAt(0).toUpperCase()
+        + languageName.slice(1);
 
     file.append(`
-import * as vscode from 'vscode';
 
-export class ${languageName}DebugConfigurationProvider
-implements vscode.DebugConfigurationProvider {
+import path from "node:path";
+import fs from "node:fs";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { NodeFileSystem } from "langium/node";
+import type { CCFG } from "ccfg";
 
-    constructor(private context: vscode.ExtensionContext) {}
+export async function buildCCFG(sourceFile: string): Promise<CCFG> {
 
-    resolveDebugConfiguration(
-        folder: vscode.WorkspaceFolder | undefined,
-        config: vscode.DebugConfiguration
-    ): vscode.ProviderResult<vscode.DebugConfiguration> {
+    const scriptDir =path.dirname(fileURLToPath(import.meta.url));
 
-        const editor = vscode.window.activeTextEditor;
+    const packageJson = JSON.parse(fs.readFileSync(path.resolve(scriptDir,"../../package.json"),"utf8"));
 
-        if (!editor) {
-            vscode.window.showErrorMessage("No active editor.");
-            return undefined;
-        }
+    const languageId = packageJson.contributes.languages[0].id;
 
-        const language = "${model.name}";
+    const {create${languageNameCapitalized}Services} = await import(pathToFileURL(path.resolve(scriptDir,"../language/\${languageId}-module.js")).href);
 
-        config.type = "ccfg";
-        config.request = "launch";
+    const {${languageNameCapitalized}CompilerFrontEnd} = await import(pathToFileURL(path.resolve(scriptDir,"./${compilerName}CompilerFrontEnd.js")).href);
 
-        config.name = config.name ?? "Debug ${model.name}";
+    const {extractAstNode} = await import(pathToFileURL(path.resolve(scriptDir,"../cli/cli-util.js")).href);
 
-        config.language = language;
-        config.sourceFile = editor.document.fileName;
+    const services = create${languageNameCapitalized}Services(NodeFileSystem).${languageNameCapitalized};
 
-        config.compilerFrontEndPath =
-            this.context.asAbsolutePath(
-                "generated/${compilerName}/${compilerName}CompilerFrontEnd.js"
-            );
+    const ast = await extractAstNode( path.resolve(sourceFile),services);
 
-        return config;
-    }
+    const compilerFrontEnd = new ${languageNameCapitalized}CompilerFrontEnd(false);
+
+    const ccfg = compilerFrontEnd.generateCCFG(ast,false);
+
+    ccfg.addSyncEdge();
+    ccfg.detectCycles();
+    ccfg.collectCycles();
+
+    return ccfg;
 }
 `, NL);
 }
