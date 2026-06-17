@@ -10,7 +10,9 @@ export function patchPackageJson(
         projectRoot,
         "package.json"
     );
-
+    const languageName =
+        languageId.charAt(0).toLowerCase() +
+        languageId.slice(1);
     const packageJson = JSON.parse(
         fs.readFileSync(packageJsonPath, "utf8")
     );
@@ -25,7 +27,7 @@ export function patchPackageJson(
         )
     ) {
         packageJson.contributes.breakpoints.push({
-            language: languageId
+            language: languageName
         });
     }
 
@@ -58,7 +60,7 @@ export function patchPackageJson(
         )
     ) {
         debuggerContribution.languages.push(
-            languageId
+            languageId,languageName
         );
     }
 

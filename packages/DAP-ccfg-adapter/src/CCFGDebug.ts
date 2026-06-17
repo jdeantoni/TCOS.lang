@@ -10,6 +10,7 @@ import { basename } from 'path-browserify';
 import { CCFGRuntime, IRuntimeBreakpoint, FileAccessor, RuntimeVariable, timeout, IRuntimeVariableType } from './CCFGRuntime';
 import { Subject } from 'await-notify';
 import * as base64 from 'base64-js';
+import { Session } from 'inspector';
 
 /**
  * This interface describes the CCFG-debug specific launch attributes
@@ -37,7 +38,6 @@ export class CCFGDebugSession extends LoggingDebugSession {
 
 	// we don't support multiple threads, so we can use a hardcoded ID for the default thread
 	private static threadID = 1;
-
 	// a CCFG runtime (or debugger)
 	private _runtime: CCFGRuntime;
 
