@@ -10,6 +10,8 @@ export function activateCCFGDebug(context: vscode.ExtensionContext, factory?: vs
 	context.subscriptions.push(
 		vscode.commands.registerCommand('extension.CCFG-debug.runEditorContents', (resource: vscode.Uri) => {
 			let targetResource = resource;
+			console.log("target resource",targetResource);
+
 			if (!targetResource && vscode.window.activeTextEditor) {
 				targetResource = vscode.window.activeTextEditor.document.uri;
 			}

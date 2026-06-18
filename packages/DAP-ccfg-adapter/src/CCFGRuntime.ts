@@ -1,5 +1,4 @@
 import { EventEmitter } from 'events';
-import * as fs from "fs";
 export interface FileAccessor {
 	isWindows: boolean;
 	readFile(path: string): Promise<Uint8Array>;
@@ -656,6 +655,11 @@ export class CCFGRuntime extends EventEmitter {
 	}
 
 	private normalizePathAndCasing(path: string) {
+		    if (!path) {
+        console.trace("PATH IS UNDEFINED");
+        throw new Error("path is undefined");
+    }
+
 		if (this.fileAccessor.isWindows) {
 			return path.replace(/\//g, '\\').toLowerCase();
 		} else {
