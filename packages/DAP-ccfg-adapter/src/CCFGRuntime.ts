@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-
+import * as fs from "fs";
 export interface FileAccessor {
 	isWindows: boolean;
 	readFile(path: string): Promise<Uint8Array>;
@@ -141,7 +141,6 @@ export class CCFGRuntime extends EventEmitter {
 	public async start(program: string, stopOnEntry: boolean, debug: boolean): Promise<void> {
 
 		await this.loadSource(this.normalizePathAndCasing(program));
-
 		if (debug) {
 			await this.verifyBreakpoints(this._sourceFile);
 

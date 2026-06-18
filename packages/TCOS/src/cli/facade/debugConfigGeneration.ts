@@ -63,7 +63,7 @@ implements vscode.DebugConfigurationProvider {
         config.name = config.name ?? "Debug ${model.name}";
 
         config.sourceFile = editor.document.fileName;
-
+        config.debugServer = 4711;
         config.language = "${model.name}";
 
         config.facadePath =

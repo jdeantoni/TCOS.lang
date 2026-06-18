@@ -15,7 +15,7 @@ export function activateCCFGDebug(context: vscode.ExtensionContext, factory?: vs
 			}
 			if (targetResource) {
 				vscode.debug.startDebugging(undefined, {
-					type: 'CCFG',
+					type: 'ccfg',
 					name: 'Run File',
 					request: 'launch',
 					program: targetResource.fsPath
@@ -31,7 +31,7 @@ export function activateCCFGDebug(context: vscode.ExtensionContext, factory?: vs
 			}
 			if (targetResource) {
 				vscode.debug.startDebugging(undefined, {
-					type: 'CCFG',
+					type: 'ccfg',
 					name: 'Debug File',
 					request: 'launch',
 					program: targetResource.fsPath,
@@ -56,28 +56,28 @@ export function activateCCFGDebug(context: vscode.ExtensionContext, factory?: vs
 
 	// register a configuration provider for 'CCFG' debug type
 	const provider = new CCFGConfigurationProvider();
-	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('CCFG', provider));
+	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('ccfg', provider));
 
 	// register a dynamic configuration provider for 'CCFG' debug type
-	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('CCFG', {
+	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('ccfg', {
 		provideDebugConfigurations(folder: WorkspaceFolder | undefined): ProviderResult<DebugConfiguration[]> {
 			return [
 				{
 					name: "Dynamic Launch",
 					request: "launch",
-					type: "CCFG",
+					type: "ccfg",
 					program: "${file}"
 				},
 				{
 					name: "Another Dynamic Launch",
 					request: "launch",
-					type: "CCFG",
+					type: "ccfg",
 					program: "${file}"
 				},
 				{
 					name: "CCFG Launch",
 					request: "launch",
-					type: "CCFG",
+					type: "ccfg",
 					program: "${file}"
 				}
 			];
@@ -87,7 +87,7 @@ export function activateCCFGDebug(context: vscode.ExtensionContext, factory?: vs
 	if (!factory) {
 		factory = new InlineDebugAdapterFactory();
 	}
-	context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('CCFG', factory));
+	context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('ccfg', factory));
 	if ('dispose' in factory) {
 		context.subscriptions.push(factory);
 	}
@@ -157,7 +157,7 @@ class CCFGConfigurationProvider implements vscode.DebugConfigurationProvider {
 		if (!config.type && !config.request && !config.name) {
 			const editor = vscode.window.activeTextEditor;
 			if (editor && editor.document.languageId === 'markdown') {
-				config.type = 'CCFG';
+				config.type = 'ccfg';
 				config.name = 'Launch';
 				config.request = 'launch';
 				config.program = '${file}';

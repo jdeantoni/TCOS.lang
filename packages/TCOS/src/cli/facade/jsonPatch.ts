@@ -20,14 +20,14 @@ export function patchPackageJson(
     packageJson.contributes ??= {};
     packageJson.contributes.breakpoints ??= [];
     packageJson.contributes.debuggers ??= [];
-
+    const languageIdent = packageJson.contributes.languages?.[0]?.id;
     if (
         !packageJson.contributes.breakpoints.some(
             (b: any) => b.language === languageId
         )
     ) {
         packageJson.contributes.breakpoints.push({
-            language: languageName
+            language: languageIdent
         });
     }
 
@@ -41,7 +41,7 @@ export function patchPackageJson(
         debuggerContribution = {
             type: "ccfg",
             label: "CCFG Debug",
-            languages: [],
+            languages: [languageIdent],
             configurationAttributes: {
                 launch: {}
             }
@@ -56,11 +56,11 @@ export function patchPackageJson(
 
     if (
         !debuggerContribution.languages.includes(
-            languageId
+            languageId,languageIdent
         )
     ) {
         debuggerContribution.languages.push(
-            languageId,languageName
+            languageId,languageName,languageIdent
         );
     }
 
