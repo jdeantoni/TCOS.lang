@@ -68,7 +68,7 @@ implements vscode.DebugConfigurationProvider {
 
         config.facadePath =
             this.context.asAbsolutePath(
-                "generated/${compilerName}DapFacade.js"
+                "out/cli/generated/${compilerName}DapFacade.js"
             );
 
         return config;

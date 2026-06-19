@@ -11,6 +11,8 @@ import { CCFGRuntime, IRuntimeBreakpoint, FileAccessor, RuntimeVariable, timeout
 import { Subject } from 'await-notify';
 import * as base64 from 'base64-js';
 import { Session } from 'inspector';
+import { promises as fs } from 'fs'; 
+import { pathToFileURL } from 'url';
 
 /**
  * This interface describes the CCFG-debug specific launch attributes
@@ -21,6 +23,7 @@ import { Session } from 'inspector';
 interface ILaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
 	/** An absolute path to the "sourceFile" to debug. */
 	sourceFile: string;
+	facadePath: string;
 	/** Automatically stop target after launch. If not specified, target does not stop. */
 	stopOnEntry?: boolean;
 	/** enable logging the Debug Adapter Protocol */
@@ -40,7 +43,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 	private static threadID = 1;
 	// a CCFG runtime (or debugger)
 	private _runtime: CCFGRuntime;
-
+	private _facade: any;
 	private _variableHandles = new Handles<'locals' | 'globals' | RuntimeVariable>();
 
 	private _configurationDone = new Subject();
@@ -238,6 +241,14 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		// make sure to 'Stop' the buffered logging if 'trace' is not set
 		console.log("args",args);
 		logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false);
+
+
+		const dynamicImport = new Function( 'specifier', 'return import(specifier)' ); 
+		this._facade = await dynamicImport( pathToFileURL(args.facadePath).href );
+		//const source = await fs.readFile(args.sourceFile, 'utf8');
+		const ccfg = await this._facade.buildCCFG(args.sourceFile);
+
+		//console.log(ccfg);
 		
 		// wait 1 second until configuration has finished (and configurationDoneRequest has been called)
 		await this._configurationDone.wait(1000);

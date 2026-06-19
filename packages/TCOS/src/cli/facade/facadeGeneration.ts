@@ -63,15 +63,15 @@ export async function buildCCFG(sourceFile: string): Promise<CCFG> {
 
     const scriptDir =path.dirname(fileURLToPath(import.meta.url));
 
-    const packageJson = JSON.parse(fs.readFileSync(path.resolve(scriptDir,"../../package.json"),"utf8"));
+    const packageJson = JSON.parse(fs.readFileSync(path.resolve(scriptDir,"../../../package.json"),"utf8"));
 
     const languageId = packageJson.contributes.languages[0].id;
 
-    const {create${languageNameCapitalized}Services} = await import(pathToFileURL(path.resolve(scriptDir,"../language/\${languageId}-module.js")).href);
+    const {create${languageNameCapitalized}Services} = await import(pathToFileURL(path.resolve(scriptDir,"../../language/\${languageId}-module.js")).href);
 
     const {${languageNameCapitalized}CompilerFrontEnd} = await import(pathToFileURL(path.resolve(scriptDir,"./${compilerName}CompilerFrontEnd.js")).href);
 
-    const {extractAstNode} = await import(pathToFileURL(path.resolve(scriptDir,"../cli/cli-util.js")).href);
+    const {extractAstNode} = await import(pathToFileURL(path.resolve(scriptDir,"../../cli/cli-util.js")).href);
 
     const services = create${languageNameCapitalized}Services(NodeFileSystem).${languageNameCapitalized};
 
