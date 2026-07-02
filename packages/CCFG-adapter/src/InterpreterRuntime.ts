@@ -104,9 +104,9 @@ export class CCFGRuntime extends EventEmitter {
 			return;
 		}
 
-		if (!debug) {
-			this.continue(false);
-		}
+	
+		this.continue(false);
+	
 	}
 
 	public clearBreakpoints(pathValue: string): void {
@@ -308,11 +308,11 @@ export class CCFGRuntime extends EventEmitter {
 			this.sendEvent('stopOnBreakpoint');
 			return;
 		}
-		if (result?.reason === 'terminated') {
+		if (result?.status === 'terminated' || result?.reason === 'terminated') {
 			this.sendEvent('end');
 			return;
 		}
-		if (result?.reason === 'step') {
+		if (result?.status === 'paused' || result?.reason === 'step') {
 			this.sendEvent('stopOnStep');
 			return;
 		}
