@@ -146,7 +146,7 @@ export class CCFGRuntime extends EventEmitter {
 			if (stopOnEntry) {
 				this.findNextStatement(false, 'stopOnEntry');
 			} else {
-				// we just start to run until we hit a breakpoint, an exception, or the end of the program
+				// start running immediately so the debugger can stop on breakpoints
 				this.continue(false);
 			}
 		} else {

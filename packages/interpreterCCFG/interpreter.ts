@@ -103,7 +103,9 @@ export class CCFGInterpreter {
         if (this.sleepQueue.length === 0) return false;
 
         // Saute au prochain T
-        const nextT = this.sleepQueue[0].t;
+        const nextEntry = this.sleepQueue[0];
+        if (nextEntry === undefined) return false;
+        const nextT = nextEntry.t;
         this.T = nextT;
         this.clock.advanceTo(nextT);
 
@@ -262,7 +264,6 @@ export class CCFGInterpreter {
         }
 
         this.status = "running";
-        const startedAt = this.clock.now();
         const maxSteps        = options.maxSteps        ?? this.maxSteps;
         const timeoutMs       = options.timeoutMs       ?? this.timeoutMs;
         const ignoreBreakpoints = options.ignoreBreakpoints ?? false;

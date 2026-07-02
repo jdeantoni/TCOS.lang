@@ -413,23 +413,31 @@ export class CCFGRuntime extends EventEmitter {
 		}
 
 		this.interpreter.clearBreakpoints?.();
-		for (const breakpoints of this.breakpoints.values()) {
+		const nodeIds: number[] = [];
+		for (const [pathKey, breakpoints] of this.breakpoints.entries()) {
 			for (const breakpoint of breakpoints) {
 				breakpoint.verified = false;
-				const nodes = this.getNodesForPath(this.normalizePathAndCasing(this.sourceFile)).filter(node => this.toDebuggerLine(this.getNodeSource(node)?.line) === breakpoint.line).map(node => node.uid);
+				const nodes = this.getNodesForPath(pathKey)
+					.filter(node => this.toDebuggerLine(this.getNodeSource(node)?.line) === breakpoint.line)
+					.map(node => node.uid);
 				if (nodes.length > 0) {
-					this.interpreter.setBreakpoints?.(nodes);
+					nodeIds.push(...nodes);
 					breakpoint.verified = true;
 					this.sendEvent('breakpointValidated', breakpoint);
 				}
 			}
 		}
+
+		if (nodeIds.length > 0) {
+			this.interpreter.setBreakpoints?.(nodeIds);
+		}
 	}
 
 	private async loadInterpreterModule(): Promise<any> {
 		if (this.interpreterModulePromise === undefined) {
-			const modulePath = path.resolve(__dirname, '../../interpreterCCFG/dist/InterpretCCFG.js');
-			this.interpreterModulePromise = import(pathToFileURL(modulePath).href);
+			const modulePath = path.resolve(__dirname, '../../interpreterCCFG/out/InterpretCCFG.js');
+			const dynamicImport = new Function('specifier', 'return import(specifier);') as (specifier: string) => Promise<any>;
+			this.interpreterModulePromise = dynamicImport(pathToFileURL(modulePath).href);
 		}
 		return this.interpreterModulePromise;
 	}
