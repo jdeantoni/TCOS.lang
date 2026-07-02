@@ -90,8 +90,8 @@ export function activateCCFGDebug(context: vscode.ExtensionContext, factory?: vs
 		factory = new InlineDebugAdapterFactory();
 	}
 	context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('ccfg', factory));
-	if ('dispose' in factory) {
-		context.subscriptions.push(factory);
+	if (typeof (factory as { dispose?: unknown }).dispose === 'function') {
+		context.subscriptions.push(factory as unknown as vscode.Disposable);
 	}
 
 	// override VS Code's default implementation of the debug hover

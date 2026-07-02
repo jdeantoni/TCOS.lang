@@ -1,7 +1,35 @@
 import * as ccfg from "ccfg";
 import { findFirstReachableAndJoin, firstTarget, prepareCCFG, snapshotNode } from "./graph-utils.js";
-import { RealClock, RoundRobinScheduler, RuntimeThread } from "./runtime.js";
+import { RoundRobinScheduler, RuntimeThread } from "./runtime.js";
 import type * as types from "./types.js";
+
+
+
+export class DiscreteClock {
+    private T = 0;
+
+    now(): number {
+        return this.T;
+    }
+
+    advanceTo(t: number): void {
+        this.T = t;
+    }
+
+    /** Non utilisé en mode discret — ne bloque jamais */
+    async sleep(_ms: number): Promise<void> {
+        // No-op : le sleep est géré par la sleepQueue
+    }
+}
+
+
+interface SleepEntry {
+    t:      number;
+    thread: RuntimeThread;
+    node:   ccfg.Node;
+}
+
+
 
 export class CCFGInterpreter {
     readonly ccfg: ccfg.CCFG;
@@ -13,9 +41,12 @@ export class CCFGInterpreter {
     lastEvent: types.DebugEvent | undefined;
     lastError: unknown;
 
+    T = 0;
+    private sleepQueue: SleepEntry[] = [];
+
     private readonly debug: boolean;
     private readonly scheduler: NonNullable<types.CCFGInterpreterOptions["scheduler"]>;
-    private readonly clock: NonNullable<types.CCFGInterpreterOptions["clock"]>;
+    private readonly clock: DiscreteClock;
     private readonly maxSteps: number | undefined;
     private readonly timeoutMs: number | undefined;
     private readonly threads: RuntimeThread[] = [];
@@ -29,7 +60,7 @@ export class CCFGInterpreter {
         this.ccfg = ccfg;
         this.debug = options.debug ?? false;
         this.scheduler = options.scheduler ?? new RoundRobinScheduler();
-        this.clock = options.clock ?? new RealClock();
+        this.clock = new DiscreteClock();
         this.maxSteps = options.maxSteps;
         this.timeoutMs = options.timeoutMs;
 
@@ -49,6 +80,9 @@ export class CCFGInterpreter {
         this.joinStates.clear();
         this.eventChannels.clear();
         this.eventTokenToChannel.clear();
+        this.sleepQueue = [];
+        this.T = 0;
+        this.clock.advanceTo(0);
         this.stepCount = 0;
         this.lastThreadIndex = -1;
         this.nextThreadId = 1;
@@ -63,6 +97,42 @@ export class CCFGInterpreter {
         this.threads.push(this.createThread(this.ccfg.initialState, this.ccfg.initialState));
         this.status = status;
     }
+
+
+    private advanceTime(): boolean {
+        if (this.sleepQueue.length === 0) return false;
+
+        // Saute au prochain T
+        const nextT = this.sleepQueue[0].t;
+        this.T = nextT;
+        this.clock.advanceTo(nextT);
+
+        // Réveille tous les threads prévus à ce T
+        const ready = this.sleepQueue.filter(e => e.t === this.T);
+        this.sleepQueue  = this.sleepQueue.filter(e => e.t > this.T);
+
+        for (const entry of ready) {
+            entry.thread.currentNode = entry.node;
+            this.threads.push(entry.thread);
+            this.lastEvent = {
+                kind:     "sleep",
+                threadId: entry.thread.id,
+                message:  `wakeup at T=${this.T}`
+            };
+        }
+
+        return true;
+    }
+
+
+    getSleepingThreads(): Array<{ t: number; threadId: number; nodeUid: number }> {
+        return this.sleepQueue.map(e => ({
+            t:        e.t,
+            threadId: e.thread.id,
+            nodeUid:  e.node.uid,
+        }));
+    }
+
 
     setBreakpoint(nodeUid: number): void {
         this.breakpoints.add(nodeUid);
@@ -97,6 +167,7 @@ export class CCFGInterpreter {
         return result;
     }
 
+
     getThreads(): types.ThreadSnapshot[] {
         return this.threads.map(thread => thread.snapshot());
     }
@@ -113,81 +184,62 @@ export class CCFGInterpreter {
 
     getSnapshot(): types.InterpreterSnapshot {
         const snapshot: types.InterpreterSnapshot = {
-            status: this.status,
+            status:    this.status,
             stepCount: this.stepCount,
-            threads: this.getThreads(),
-            globals: Object.fromEntries(this.sigma)
+            threads:   this.getThreads(),
+            globals:   {
+                ...Object.fromEntries(this.sigma),
+                __T: this.T,
+                __sleeping: this.sleepQueue.length,
+            }
         };
         const currentThread = this.getCurrentThread();
-        const currentNode = this.getCurrentNode();
-        if (currentThread !== undefined) {
-            snapshot.currentThread = currentThread;
-        }
-        if (currentNode !== undefined) {
-            snapshot.currentNode = currentNode;
-        }
-        if (this.lastEvent !== undefined) {
-            snapshot.lastEvent = this.lastEvent;
-        }
-        if (this.lastError !== undefined) {
-            snapshot.lastError = this.lastError;
-        }
+        const currentNode   = this.getCurrentNode();
+        if (currentThread !== undefined) snapshot.currentThread = currentThread;
+        if (currentNode   !== undefined) snapshot.currentNode   = currentNode;
+        if (this.lastEvent !== undefined) snapshot.lastEvent    = this.lastEvent;
+        if (this.lastError !== undefined) snapshot.lastError    = this.lastError;
         return snapshot;
     }
 
     getStackTrace(threadId: number): types.StackFrame[] {
         const thread = this.findThread(threadId);
-        if (thread === undefined) {
-            return [];
-        }
+        if (thread === undefined) return [];
         const node = thread.currentNode === undefined ? undefined : snapshotNode(thread.currentNode);
         const frame: types.StackFrame = {
-            id: thread.id,
+            id:       thread.id,
             threadId: thread.id,
-            name: node === undefined ? `Thread ${thread.id}` : `${node.type} ${node.uid}`
+            name:     node === undefined ? `Thread ${thread.id}` : `${node.type} ${node.uid}`
         };
-        if (node !== undefined) {
-            frame.node = node;
-        }
-        if (node?.source !== undefined) {
-            frame.source = node.source;
-        }
+        if (node !== undefined)         frame.node   = node;
+        if (node?.source !== undefined) frame.source = node.source;
         return [frame];
     }
 
     getScopes(threadId: number): types.ScopeSnapshot[] {
-        if (this.findThread(threadId) === undefined) {
-            return [];
-        }
+        if (this.findThread(threadId) === undefined) return [];
         return [
-            { name: "locals", variablesReference: this.encodeVariablesReference(threadId, "locals"), expensive: false },
-            { name: "globals", variablesReference: this.encodeVariablesReference(threadId, "globals"), expensive: false },
+            { name: "locals",      variablesReference: this.encodeVariablesReference(threadId, "locals"),      expensive: false },
+            { name: "globals",     variablesReference: this.encodeVariablesReference(threadId, "globals"),     expensive: false },
             { name: "temporaries", variablesReference: this.encodeVariablesReference(threadId, "temporaries"), expensive: false }
         ];
     }
 
     getVariables(variablesReference: number): types.VariableSnapshot[] {
         const decoded = this.decodeVariablesReference(variablesReference);
-        if (decoded === undefined) {
-            return [];
-        }
+        if (decoded === undefined) return [];
         const thread = this.findThread(decoded.threadId);
-        if (decoded.scope === "globals") {
-            return mapVariables(this.sigma);
-        }
-        if (thread === undefined) {
-            return [];
-        }
-        if (decoded.scope === "locals") {
-            return mapVariables(thread.locals);
-        }
+        if (decoded.scope === "globals") return mapVariables(this.sigma);
+        if (thread === undefined) return [];
+        if (decoded.scope === "locals") return mapVariables(thread.locals);
         return thread.tempValues.map((value, index) => ({
-            name: `[${index}]`,
+            name:               `[${index}]`,
             value,
-            type: typeof value,
+            type:               typeof value,
             variablesReference: 0
         }));
     }
+
 
     async execute(options: types.RunOptions = {}): Promise<types.StepResult> {
         return this.resume(options);
@@ -211,8 +263,8 @@ export class CCFGInterpreter {
 
         this.status = "running";
         const startedAt = this.clock.now();
-        const maxSteps = options.maxSteps ?? this.maxSteps;
-        const timeoutMs = options.timeoutMs ?? this.timeoutMs;
+        const maxSteps        = options.maxSteps        ?? this.maxSteps;
+        const timeoutMs       = options.timeoutMs       ?? this.timeoutMs;
         const ignoreBreakpoints = options.ignoreBreakpoints ?? false;
 
         while (this.status === "running") {
@@ -220,7 +272,8 @@ export class CCFGInterpreter {
                 this.status = "paused";
                 return this.result("maxSteps");
             }
-            if (timeoutMs !== undefined && this.clock.now() - startedAt >= timeoutMs) {
+            // timeout basé sur le temps discret T, pas le wall clock
+            if (timeoutMs !== undefined && this.T >= timeoutMs) {
                 this.status = "paused";
                 return this.result("timeout");
             }
@@ -245,7 +298,13 @@ export class CCFGInterpreter {
         if (this.status === "idle") {
             this.reset("ready");
         }
+
+  
         if (this.threads.length === 0) {
+            if (this.sleepQueue.length > 0) {
+                this.advanceTime();
+                return this.result();
+            }
             this.status = "terminated";
             return this.result("terminated");
         }
@@ -253,6 +312,11 @@ export class CCFGInterpreter {
         try {
             const threadIndex = this.scheduler?.nextThread(this.threads, this.lastThreadIndex) ?? -1;
             if (threadIndex < 0) {
+                // Scheduler ne trouve rien → avance le temps
+                if (this.sleepQueue.length > 0) {
+                    this.advanceTime();
+                    return this.result();
+                }
                 this.status = "terminated";
                 return this.result("terminated");
             }
@@ -275,7 +339,7 @@ export class CCFGInterpreter {
             await this.visitNode(thread, node);
             this.stepCount++;
 
-            if (this.threads.length === 0) {
+            if (this.threads.length === 0 && this.sleepQueue.length === 0) {
                 this.status = "terminated";
                 return this.result("terminated");
             }
@@ -288,7 +352,7 @@ export class CCFGInterpreter {
             return this.result();
         } catch (error) {
             this.lastError = error;
-            this.status = "error";
+            this.status    = "error";
             return this.result("error", error);
         }
     }
@@ -319,8 +383,10 @@ export class CCFGInterpreter {
     stop(): types.StepResult {
         this.status = "stopped";
         this.threads.length = 0;
+        this.sleepQueue     = [];
         return this.result("stopped");
     }
+
 
     private async visitNode(thread: RuntimeThread, node: ccfg.Node): Promise<void> {
         if (node instanceof ccfg.Fork || node.getType() === "Fork") {
@@ -351,18 +417,18 @@ export class CCFGInterpreter {
         const outgoing = node.outputEdges;
         const join = this.findCorrespondingAndJoin(node);
         this.lastEvent = {
-            kind: "fork",
+            kind:     "fork",
             threadId: thread.id,
-            nodeUid: node.uid,
-            data: { children: outgoing.map(edge => edge.to.uid), joinUid: join?.uid }
+            nodeUid:  node.uid,
+            data:     { children: outgoing.map(edge => edge.to.uid), joinUid: join?.uid }
         };
 
         this.removeThread(thread);
         if (join !== undefined) {
             this.joinStates.set(join.uid, {
-                expected: outgoing.length,
-                arrived: 0,
-                parentId: thread.id,
+                expected:   outgoing.length,
+                arrived:    0,
+                parentId:   thread.id,
                 tempValues: []
             });
         }
@@ -391,29 +457,27 @@ export class CCFGInterpreter {
 
         if (joinState.arrived < joinState.expected) {
             this.lastEvent = {
-                kind: "join",
+                kind:     "join",
                 threadId: thread.id,
-                nodeUid: node.uid,
-                data: { arrived: joinState.arrived, expected: joinState.expected }
+                nodeUid:  node.uid,
+                data:     { arrived: joinState.arrived, expected: joinState.expected }
             };
             return;
         }
 
         this.joinStates.delete(node.uid);
         const next = firstTarget(node);
-        if (next === undefined) {
-            return;
-        }
+        if (next === undefined) return;
 
         const continuation = this.createThread(next, next, joinState.parentId);
         continuation.tempValues.push(...joinState.tempValues);
         await this.executeNodeInstructions(continuation, node);
         this.threads.push(continuation);
         this.lastEvent = {
-            kind: "join",
+            kind:     "join",
             threadId: continuation.id,
-            nodeUid: node.uid,
-            data: { arrived: joinState.arrived, expected: joinState.expected, resumedAt: next.uid }
+            nodeUid:  node.uid,
+            data:     { arrived: joinState.arrived, expected: joinState.expected, resumedAt: next.uid }
         };
     }
 
@@ -428,23 +492,26 @@ export class CCFGInterpreter {
         return node.outputEdges[0]?.to;
     }
 
+
+
     private async executeNodeInstructions(thread: RuntimeThread, node: ccfg.Node): Promise<void> {
         if (this.debug && node.functionsDefs.length > 0) {
             this.lastEvent = {
-                kind: "node",
+                kind:     "node",
                 threadId: thread.id,
-                nodeUid: node.uid,
-                data: { functions: node.functionsNames, instructions: node.functionsDefs.map(i => i.toString()) }
+                nodeUid:  node.uid,
+                data:     { functions: node.functionsNames, instructions: node.functionsDefs.map(i => i.toString()) }
             };
         }
 
         this.bindParameters(thread, node.params);
         for (const instruction of node.functionsDefs) {
-            const returned = await this.executeInstruction(thread, instruction);
+            const returned = await this.executeInstruction(thread, instruction, node);
             if (returned.didReturn) {
                 thread.tempValues.push(returned.value);
                 return;
             }
+            if (returned.suspended) return;
         }
     }
 
@@ -457,7 +524,12 @@ export class CCFGInterpreter {
         }
     }
 
-    private async executeInstruction(thread: RuntimeThread, instruction: ccfg.Instruction): Promise<{ didReturn: boolean; value?: unknown }> {
+    private async executeInstruction(
+        thread: RuntimeThread,
+        instruction: ccfg.Instruction,
+        node: ccfg.Node
+    ): Promise<{ didReturn: boolean; suspended?: boolean; value?: unknown }> {
+
         if (instruction instanceof ccfg.CreateVarInstruction) {
             thread.locals.set(instruction.varName, undefined);
             return { didReturn: false };
@@ -486,36 +558,128 @@ export class CCFGInterpreter {
         if (instruction instanceof ccfg.ReturnInstruction) {
             return { didReturn: true, value: this.resolveValue(instruction.varName, thread) };
         }
+
         if (instruction instanceof ccfg.AddSleepInstruction) {
             const duration = Number(this.evaluateExpression(instruction.duration, thread));
-            this.lastEvent = { kind: "sleep", threadId: thread.id, message: `${duration}` };
-            await this.clock.sleep(duration);
-            return { didReturn: false };
+            const wakeAt   = this.T + duration;
+            const nextNode = firstTarget(node);
+
+            this.lastEvent = {
+                kind:     "sleep",
+                threadId: thread.id,
+                message:  `sleep ${duration} → wakeup at T=${wakeAt}`
+            };
+
+            if (nextNode !== undefined) {
+   
+                this.sleepQueue.push({ t: wakeAt, thread, node: nextNode });
+                this.sleepQueue.sort((a, b) => a.t - b.t);
+            }
+
+            this.removeThread(thread);
+
+            return { didReturn: false, suspended: true };
         }
+
         if (instruction instanceof ccfg.CreateEventChannelInstruction) {
             this.createEventChannel(instruction);
             return { didReturn: false };
         }
         if (instruction instanceof ccfg.EmitEventInstruction) {
-            await this.emitEvent(instruction, thread);
+            this.emitEventDiscrete(instruction, thread);
             return { didReturn: false };
         }
         if (instruction instanceof ccfg.WaitEventInstruction) {
-            await this.waitEvent(instruction, thread);
-            return { didReturn: false };
+            const suspended = this.waitEventDiscrete(instruction, thread, node);
+            return { didReturn: false, suspended };
         }
         if (instruction instanceof ccfg.AckEventInstruction) {
             this.ackEvent(instruction, thread);
             return { didReturn: false };
         }
 
-        throw new Error(`Unsupported ccfg.CCFG instruction: ${instruction.$instructionType || instruction.toString()}`);
+        throw new Error(`Unsupported instruction: ${instruction.$instructionType || instruction.toString()}`);
     }
 
-    private evaluateEdgeGuard(edge: ccfg.Edge, thread: RuntimeThread, choiceValue?: unknown): boolean {
-        if (edge.guards.length === 0) {
-            return true;
+
+    /**
+     * Émet un événement de façon synchrone.
+     * Les listeners en attente seront réveillés au prochain advanceOne.
+     */
+    private emitEventDiscrete(instruction: ccfg.EmitEventInstruction, thread: RuntimeThread): void {
+        const channel = this.getEventChannel(instruction.channelName);
+        const token   = channel.nextToken++;
+        const payload = this.evaluateExpression(instruction.payload, thread);
+
+        if (instruction.awaitAcks) {
+            channel.pendingAcks.set(token, channel.listenerCount);
+            this.eventTokenToChannel.set(token, instruction.channelName);
         }
+        channel.queue.push({ payload, token });
+
+        this.lastEvent = {
+            kind:     "event",
+            threadId: thread.id,
+            message:  "emit",
+            data:     { channel: instruction.channelName, token }
+        };
+    }
+
+    /**
+     * Attend un événement de façon discrète.
+     * Si le channel est vide, suspend le thread dans la sleepQueue à T courant.
+     * Retourne true si le thread a été suspendu.
+     */
+    private waitEventDiscrete(
+        instruction: ccfg.WaitEventInstruction,
+        thread: RuntimeThread,
+        node: ccfg.Node
+    ): boolean {
+        const channel = this.getEventChannel(instruction.channelName);
+        const message = channel.queue.shift();
+
+        if (message !== undefined) {
+            thread.locals.set(instruction.outPayload, message.payload);
+            thread.locals.set(`${instruction.channelName}Token`, message.token);
+            thread.locals.set("com_last_event_token", message.token);
+            this.lastEvent = {
+                kind:     "event",
+                threadId: thread.id,
+                message:  "wait",
+                data:     { channel: instruction.channelName, token: message.token }
+            };
+            return false; 
+        }
+
+
+        const nextNode = firstTarget(node);
+        if (nextNode !== undefined) {
+            // Re-insère le même nœud pour réessayer plus tard
+            this.sleepQueue.push({ t: this.T, thread, node });
+            this.sleepQueue.sort((a, b) => a.t - b.t);
+        }
+        this.removeThread(thread);
+        return true; // suspendu
+    }
+
+    private ackEvent(instruction: ccfg.AckEventInstruction, thread: RuntimeThread): void {
+        const token       = Number(this.evaluateExpression(instruction.token, thread));
+        const channelName = this.eventTokenToChannel.get(token);
+        if (channelName === undefined) return;
+        const channel   = this.getEventChannel(channelName);
+        const remaining = (channel.pendingAcks.get(token) ?? 0) - 1;
+        if (remaining <= 0) {
+            channel.pendingAcks.delete(token);
+            this.eventTokenToChannel.delete(token);
+        } else {
+            channel.pendingAcks.set(token, remaining);
+        }
+    }
+
+
+
+    private evaluateEdgeGuard(edge: ccfg.Edge, thread: RuntimeThread, choiceValue?: unknown): boolean {
+        if (edge.guards.length === 0) return true;
         return edge.guards.every(guard => {
             if (guard instanceof ccfg.VerifyEqualInstruction) {
                 const left = choiceValue ?? this.resolveValue(guard.n1, thread);
@@ -527,31 +691,20 @@ export class CCFGInterpreter {
 
     private evaluateExpression(expression: string, thread: RuntimeThread, choiceValue?: unknown): unknown {
         const trimmed = expression.trim();
-        if (trimmed.length === 0) {
-            return undefined;
-        }
-        if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
-            return Number(trimmed);
-        }
-        if (trimmed === "true") {
-            return true;
-        }
-        if (trimmed === "false") {
-            return false;
-        }
-        if ((trimmed.startsWith("\"") && trimmed.endsWith("\"")) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+        if (trimmed.length === 0) return undefined;
+        if (/^-?\d+(\.\d+)?$/.test(trimmed)) return Number(trimmed);
+        if (trimmed === "true")  return true;
+        if (trimmed === "false") return false;
+        if ((trimmed.startsWith("\"") && trimmed.endsWith("\"")) ||
+            (trimmed.startsWith("'")  && trimmed.endsWith("'"))) {
             return trimmed.slice(1, -1);
         }
 
         const scope = this.createEvaluationScope(thread);
-        if (choiceValue !== undefined) {
-            scope.set("resRight", choiceValue);
-        }
-        if (scope.has(trimmed)) {
-            return scope.get(trimmed);
-        }
+        if (choiceValue !== undefined) scope.set("resRight", choiceValue);
+        if (scope.has(trimmed)) return scope.get(trimmed);
 
-        const names = [...scope.keys(), "sigma"];
+        const names  = [...scope.keys(), "sigma"];
         const values = [...scope.values(), this.sigma];
         return Function(...names, `"use strict"; return (${trimmed});`)(...values);
     }
@@ -562,82 +715,30 @@ export class CCFGInterpreter {
 
     private createEvaluationScope(thread: RuntimeThread): Map<string, unknown> {
         const scope = new Map<string, unknown>();
-        for (const [name, value] of this.sigma) {
-            scope.set(name, value);
-        }
-        for (const [name, value] of thread.locals) {
-            scope.set(name, value);
-        }
+        for (const [name, value] of this.sigma)        scope.set(name, value);
+        for (const [name, value] of thread.locals)     scope.set(name, value);
         return scope;
     }
 
+
+
     private createEventChannel(instruction: ccfg.CreateEventChannelInstruction): void {
-        if (this.eventChannels.has(instruction.channelName)) {
-            return;
-        }
+        if (this.eventChannels.has(instruction.channelName)) return;
         this.eventChannels.set(instruction.channelName, {
             listenerCount: instruction.listenerCount,
-            payloadKind: instruction.payloadKind,
-            queue: [],
-            nextToken: 1,
-            pendingAcks: new Map()
+            payloadKind:   instruction.payloadKind,
+            queue:         [],
+            nextToken:     1,
+            pendingAcks:   new Map()
         });
-    }
-
-    private async emitEvent(instruction: ccfg.EmitEventInstruction, thread: RuntimeThread): Promise<void> {
-        const channel = this.getEventChannel(instruction.channelName);
-        const token = channel.nextToken++;
-        const expectedAcks = instruction.awaitAcks ? channel.listenerCount : 0;
-        const payload = this.evaluateExpression(instruction.payload, thread);
-
-        if (expectedAcks > 0) {
-            channel.pendingAcks.set(token, expectedAcks);
-            this.eventTokenToChannel.set(token, instruction.channelName);
-        }
-        channel.queue.push({ payload, token });
-        this.lastEvent = { kind: "event", threadId: thread.id, message: "emit", data: { channel: instruction.channelName, token } };
-
-        while (instruction.awaitAcks && (channel.pendingAcks.get(token) ?? 0) > 0) {
-            await this.clock.sleep(10);
-        }
-    }
-
-    private async waitEvent(instruction: ccfg.WaitEventInstruction, thread: RuntimeThread): Promise<void> {
-        const channel = this.getEventChannel(instruction.channelName);
-        let message = channel.queue.shift();
-        while (message === undefined) {
-            await this.clock.sleep(10);
-            message = channel.queue.shift();
-        }
-        thread.locals.set(instruction.outPayload, message.payload);
-        thread.locals.set(`${instruction.channelName}Token`, message.token);
-        thread.locals.set("com_last_event_token", message.token);
-        this.lastEvent = { kind: "event", threadId: thread.id, message: "wait", data: { channel: instruction.channelName, token: message.token } };
-    }
-
-    private ackEvent(instruction: ccfg.AckEventInstruction, thread: RuntimeThread): void {
-        const token = Number(this.evaluateExpression(instruction.token, thread));
-        const channelName = this.eventTokenToChannel.get(token);
-        if (channelName === undefined) {
-            return;
-        }
-        const channel = this.getEventChannel(channelName);
-        const remaining = (channel.pendingAcks.get(token) ?? 0) - 1;
-        if (remaining <= 0) {
-            channel.pendingAcks.delete(token);
-            this.eventTokenToChannel.delete(token);
-        } else {
-            channel.pendingAcks.set(token, remaining);
-        }
     }
 
     private getEventChannel(name: string): types.EventChannel {
         const channel = this.eventChannels.get(name);
-        if (channel === undefined) {
-            throw new Error(`Unknown event channel: ${name}`);
-        }
+        if (channel === undefined) throw new Error(`Unknown event channel: ${name}`);
         return channel;
     }
+
 
     private findCorrespondingAndJoin(node: ccfg.Node): ccfg.AndJoin | undefined {
         for (const uid of node.syncNodeIds) {
@@ -663,36 +764,24 @@ export class CCFGInterpreter {
     }
 
     private decodeVariablesReference(variablesReference: number): { threadId: number; scope: types.ScopeSnapshot["name"] } | undefined {
-        const scopeId = variablesReference % 10;
+        const scopeId  = variablesReference % 10;
         const threadId = Math.floor(variablesReference / 10);
-        if (threadId <= 0) {
-            return undefined;
-        }
-        if (scopeId === 1) {
-            return { threadId, scope: "locals" };
-        }
-        if (scopeId === 2) {
-            return { threadId, scope: "globals" };
-        }
-        if (scopeId === 3) {
-            return { threadId, scope: "temporaries" };
-        }
+        if (threadId <= 0) return undefined;
+        if (scopeId === 1) return { threadId, scope: "locals" };
+        if (scopeId === 2) return { threadId, scope: "globals" };
+        if (scopeId === 3) return { threadId, scope: "temporaries" };
         return undefined;
     }
 
     private endThread(thread: RuntimeThread): void {
         this.removeThread(thread);
         this.lastEvent = { kind: "thread-end", threadId: thread.id };
-        if (thread.currentNode !== undefined) {
-            this.lastEvent.nodeUid = thread.currentNode.uid;
-        }
+        if (thread.currentNode !== undefined) this.lastEvent.nodeUid = thread.currentNode.uid;
     }
 
     private removeThread(thread: RuntimeThread): void {
         const index = this.threads.findIndex(candidate => candidate.id === thread.id);
-        if (index >= 0) {
-            this.removeThreadAt(index);
-        }
+        if (index >= 0) this.removeThreadAt(index);
     }
 
     private removeThreadAt(index: number): void {
@@ -704,35 +793,27 @@ export class CCFGInterpreter {
 
     private result(reason?: types.PauseReason | "thread-end", error?: unknown): types.StepResult {
         const currentThread = this.getCurrentThread();
-        const currentNode = this.getCurrentNode();
+        const currentNode   = this.getCurrentNode();
         const result: types.StepResult = {
-            status: this.status,
+            status:    this.status,
             stepCount: this.stepCount
         };
-        if (reason !== undefined && reason !== "thread-end") {
-            result.reason = reason;
-        }
-        if (currentThread !== undefined) {
-            result.currentThread = currentThread;
-        }
-        if (currentNode !== undefined) {
-            result.currentNode = currentNode;
-        }
-        if (this.lastEvent !== undefined) {
-            result.event = this.lastEvent;
-        }
-        if (error !== undefined) {
-            result.error = error;
-        }
+        if (reason !== undefined && reason !== "thread-end") result.reason = reason;
+        if (currentThread !== undefined) result.currentThread = currentThread;
+        if (currentNode   !== undefined) result.currentNode   = currentNode;
+        if (this.lastEvent !== undefined) result.event        = this.lastEvent;
+        if (error !== undefined) result.error                 = error;
         return result;
     }
 }
+
+
 
 function mapVariables(variables: Map<string, unknown>): types.VariableSnapshot[] {
     return [...variables.entries()].map(([name, value]) => ({
         name,
         value,
-        type: typeof value,
+        type:               typeof value,
         variablesReference: 0
     }));
 }

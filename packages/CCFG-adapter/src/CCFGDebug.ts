@@ -7,11 +7,9 @@ import {
 } from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
 import { basename } from 'path-browserify';
-import { CCFGRuntime, IRuntimeBreakpoint, FileAccessor, RuntimeVariable, timeout, IRuntimeVariableType } from './CCFGRuntime';
+import { CCFGRuntime, IRuntimeBreakpoint, FileAccessor, RuntimeVariable, timeout, IRuntimeVariableType } from './InterpreterRuntime';
 import { Subject } from 'await-notify';
 import * as base64 from 'base64-js';
-import { Session } from 'inspector';
-import { promises as fs } from 'fs'; 
 import { pathToFileURL } from 'url';
 
 /**
@@ -34,7 +32,6 @@ interface ILaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
 	compileError?: 'default' | 'show' | 'hide';
 }
 
-interface IAttachRequestArguments extends ILaunchRequestArguments { }
 
 
 export class CCFGDebugSession extends LoggingDebugSession {
@@ -43,7 +40,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 	private static threadID = 1;
 	// a CCFG runtime (or debugger)
 	private _runtime: CCFGRuntime;
-	private _facade: any;
+	private _facade: { buildCCFG(sourceFile: string): Promise<unknown> } | undefined;
 	private _variableHandles = new Handles<'locals' | 'globals' | RuntimeVariable>();
 
 	private _configurationDone = new Subject();
@@ -228,11 +225,11 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		this._configurationDone.notify();
 	}
 
-	protected disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): void {
-		console.log(`disconnectRequest suspend: ${args.suspendDebuggee}, terminate: ${args.terminateDebuggee}`);
+	protected disconnectRequest(_response: DebugProtocol.DisconnectResponse, _args: DebugProtocol.DisconnectArguments, _request?: DebugProtocol.Request): void {
+		console.log(`disconnectRequest suspend: ${_args.suspendDebuggee}, terminate: ${_args.terminateDebuggee}`);
 	}
 
-	protected async attachRequest(response: DebugProtocol.AttachResponse, args: IAttachRequestArguments) {
+	protected async attachRequest(response: DebugProtocol.AttachResponse, args: ILaunchRequestArguments) {
 		return this.launchRequest(response, args);
 	}
 
@@ -246,7 +243,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		const dynamicImport = new Function( 'specifier', 'return import(specifier)' ); 
 		this._facade = await dynamicImport( pathToFileURL(args.facadePath).href );
 		//const source = await fs.readFile(args.sourceFile, 'utf8');
-		const ccfg = await this._facade.buildCCFG(args.sourceFile);
+		const ccfg = await this._facade!.buildCCFG(args.sourceFile);
 
 		//console.log(ccfg);
 		
@@ -254,7 +251,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		await this._configurationDone.wait(1000);
 
 		// start the sourceFile in the runtime
-		await this._runtime.start(args.sourceFile, !!args.stopOnEntry, !args.noDebug);
+		await this._runtime.start(ccfg, args.sourceFile, !!args.stopOnEntry, !args.noDebug);
 
 		if (args.compileError) {
 			// simulate a compile/build error in "launch" request:
@@ -270,7 +267,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		}
 	}
 
-	protected setFunctionBreakPointsRequest(response: DebugProtocol.SetFunctionBreakpointsResponse, args: DebugProtocol.SetFunctionBreakpointsArguments, request?: DebugProtocol.Request): void {
+	protected setFunctionBreakPointsRequest(response: DebugProtocol.SetFunctionBreakpointsResponse, _args: DebugProtocol.SetFunctionBreakpointsArguments, _request?: DebugProtocol.Request): void {
 		this.sendResponse(response);
 	}
 
@@ -298,7 +295,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		this.sendResponse(response);
 	}
 
-	protected breakpointLocationsRequest(response: DebugProtocol.BreakpointLocationsResponse, args: DebugProtocol.BreakpointLocationsArguments, request?: DebugProtocol.Request): void {
+	protected breakpointLocationsRequest(response: DebugProtocol.BreakpointLocationsResponse, args: DebugProtocol.BreakpointLocationsArguments, _request?: DebugProtocol.Request): void {
 
 		if (args.source.path) {
 			const bps = this._runtime.getBreakpoints(args.source.path, this.convertClientLineToDebugger(args.line));
@@ -347,7 +344,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		this.sendResponse(response);
 	}
 
-	protected exceptionInfoRequest(response: DebugProtocol.ExceptionInfoResponse, args: DebugProtocol.ExceptionInfoArguments) {
+	protected exceptionInfoRequest(response: DebugProtocol.ExceptionInfoResponse, _args: DebugProtocol.ExceptionInfoArguments) {
 		response.body = {
 			exceptionId: 'Exception ID',
 			description: 'This is a descriptive description of the exception.',
@@ -363,12 +360,11 @@ export class CCFGDebugSession extends LoggingDebugSession {
 
 	protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
 
-		// runtime supports no threads so just return a default thread.
+		const threads = this._runtime.getThreads();
 		response.body = {
-			threads: [
-				new Thread(CCFGDebugSession.threadID, "thread 1"),
-				new Thread(CCFGDebugSession.threadID + 1, "thread 2"),
-			]
+			threads: threads.length > 0
+				? threads.map(thread => new Thread(thread.id, thread.name))
+				: [new Thread(CCFGDebugSession.threadID, "thread 1")]
 		};
 		this.sendResponse(response);
 	}
@@ -382,7 +378,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		const stk = this._runtime.stack(startFrame, endFrame);
 
 		response.body = {
-			stackFrames: stk.frames.map((f, ix) => {
+			stackFrames: stk.frames.map((f) => {
 				const sf: DebugProtocol.StackFrame = new StackFrame(f.index, f.name, this.createSource(f.file), this.convertDebuggerLineToClient(f.line));
 				if (typeof f.column === 'number') {
 					sf.column = this.convertDebuggerColumnToClient(f.column);
@@ -404,7 +400,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		this.sendResponse(response);
 	}
 
-	protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments): void {
+	protected scopesRequest(response: DebugProtocol.ScopesResponse, _args: DebugProtocol.ScopesArguments): void {
 
 		response.body = {
 			scopes: [
@@ -498,12 +494,12 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		this.sendResponse(response);
 	}
 
-	protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
+	protected continueRequest(response: DebugProtocol.ContinueResponse, _args: DebugProtocol.ContinueArguments): void {
 		this._runtime.continue(false);
 		this.sendResponse(response);
 	}
 
-	protected reverseContinueRequest(response: DebugProtocol.ReverseContinueResponse, args: DebugProtocol.ReverseContinueArguments): void {
+	protected reverseContinueRequest(response: DebugProtocol.ReverseContinueResponse, _args: DebugProtocol.ReverseContinueArguments): void {
 		this._runtime.continue(true);
 		this.sendResponse(response);
  	}
@@ -533,7 +529,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		this.sendResponse(response);
 	}
 
-	protected stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments): void {
+	protected stepOutRequest(response: DebugProtocol.StepOutResponse, _args: DebugProtocol.StepOutArguments): void {
 		this._runtime.stepOut();
 		this.sendResponse(response);
 	}
@@ -544,20 +540,20 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		let rv: RuntimeVariable | undefined;
 
 		switch (args.context) {
-			case 'repl':
+			case 'repl': {
 				// handle some REPL commands:
 				// 'evaluate' supports to create and delete breakpoints from the 'repl':
 				const matches = /new +([0-9]+)/.exec(args.expression);
 				if (matches && matches.length === 2) {
-					const mbp = await this._runtime.setBreakPoint(this._runtime.sourceFile, this.convertClientLineToDebugger(parseInt(matches[1])));
-					const bp = new Breakpoint(mbp.verified, this.convertDebuggerLineToClient(mbp.line), undefined, this.createSource(this._runtime.sourceFile)) as DebugProtocol.Breakpoint;
+					const mbp = await this._runtime.setBreakPoint(this._runtime.sourceFilePath, this.convertClientLineToDebugger(parseInt(matches[1])));
+					const bp = new Breakpoint(mbp.verified, this.convertDebuggerLineToClient(mbp.line), undefined, this.createSource(this._runtime.sourceFilePath)) as DebugProtocol.Breakpoint;
 					bp.id= mbp.id;
 					this.sendEvent(new BreakpointEvent('new', bp));
 					reply = `breakpoint created`;
 				} else {
 					const matches = /del +([0-9]+)/.exec(args.expression);
 					if (matches && matches.length === 2) {
-						const mbp = this._runtime.clearBreakPoint(this._runtime.sourceFile, this.convertClientLineToDebugger(parseInt(matches[1])));
+						const mbp = this._runtime.clearBreakPoint(this._runtime.sourceFilePath, this.convertClientLineToDebugger(parseInt(matches[1])));
 						if (mbp) {
 							const bp = new Breakpoint(false) as DebugProtocol.Breakpoint;
 							bp.id= mbp.id;
@@ -577,6 +573,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 					}
 				}
 				// fall through
+			}
 
 			default:
 				if (args.expression.startsWith('$')) {
@@ -708,7 +705,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		this.sendResponse(response);
 	}
 
-	protected completionsRequest(response: DebugProtocol.CompletionsResponse, args: DebugProtocol.CompletionsArguments): void {
+	protected completionsRequest(response: DebugProtocol.CompletionsResponse, _args: DebugProtocol.CompletionsArguments): void {
 
 		response.body = {
 			targets: [
@@ -760,12 +757,12 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		const isHex = memoryInt.startsWith('0x');
 		const pad = isHex ? memoryInt.length-2 : memoryInt.length;
 
-		const loc = this.createSource(this._runtime.sourceFile);
+		const loc = this.createSource(this._runtime.sourceFilePath);
 
 		let lastLine = -1;
 
 		const instructions = this._runtime.disassemble(baseAddress+offset, count).map(instruction => {
-			let address = Math.abs(instruction.address).toString(isHex ? 16 : 10).padStart(pad, '0');
+			const address = Math.abs(instruction.address).toString(isHex ? 16 : 10).padStart(pad, '0');
 			const sign = instruction.address < 0 ? '-' : '';
 			const instr : DebugProtocol.DisassembledInstruction = {
 				address: sign + (isHex ? `0x${address}` : `${address}`),
@@ -806,7 +803,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		this.sendResponse(response);
 	}
 
-	protected customRequest(command: string, response: DebugProtocol.Response, args: any) {
+	protected customRequest(command: string, response: DebugProtocol.Response, _args: unknown) {
 		if (command === 'toggleFormatting') {
 			this._valuesInHex = ! this._valuesInHex;
 			if (this._useInvalidatedEvent) {
@@ -814,7 +811,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 			}
 			this.sendResponse(response);
 		} else {
-			super.customRequest(command, response, args);
+			super.customRequest(command, response, _args);
 		}
 	}
 
@@ -842,7 +839,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 
 	private convertFromRuntime(v: RuntimeVariable): DebugProtocol.Variable {
 
-		let dapVariable: DebugProtocol.Variable = {
+		const dapVariable: DebugProtocol.Variable = {
 			name: v.name,
 			value: '???',
 			type: typeof v.value,
@@ -869,7 +866,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 					case 'number':
 						if (Math.round(v.value) === v.value) {
 							dapVariable.value = this.formatNumber(v.value);
-							(<any>dapVariable).__vscodeVariableMenuContext = 'simple';	// enable context menu contribution
+							(dapVariable as DebugProtocol.Variable & { __vscodeVariableMenuContext?: string }).__vscodeVariableMenuContext = 'simple';	// enable context menu contribution
 							dapVariable.type = 'integer';
 						} else {
 							dapVariable.value = v.value.toString();
@@ -897,7 +894,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		return dapVariable;
 	}
 
-	private formatAddress(x: number, pad = 8) {
+	private formatAddress(x: number, _pad = 8) {
 		return 'mem' + (this._addressesInHex ? '0x' + x.toString(16).padStart(8, '0') : x.toString(10));
 	}
 

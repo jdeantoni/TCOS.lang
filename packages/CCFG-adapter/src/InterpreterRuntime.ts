@@ -1,0 +1,460 @@
+import { EventEmitter } from 'events';
+import * as path from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+export interface FileAccessor {
+	isWindows: boolean;
+	readFile(path: string): Promise<Uint8Array>;
+	writeFile(path: string, contents: Uint8Array): Promise<void>;
+}
+
+export interface IRuntimeBreakpoint {
+	id: number;
+	line: number;
+	verified: boolean;
+}
+
+interface IRuntimeStepInTargets {
+	id: number;
+	label: string;
+}
+
+interface IRuntimeStackFrame {
+	index: number;
+	name: string;
+	file: string;
+	line: number;
+	column?: number;
+	instruction?: number;
+}
+
+interface IRuntimeStack {
+	count: number;
+	frames: IRuntimeStackFrame[];
+}
+
+export type IRuntimeVariableType = number | boolean | string | RuntimeVariable[];
+
+export class RuntimeVariable {
+	private _memory?: Uint8Array;
+	public reference?: number;
+
+	constructor(public readonly name: string, private _value: IRuntimeVariableType) {}
+
+	public get value() {
+		return this._value;
+	}
+
+	public set value(value: IRuntimeVariableType) {
+		this._value = value;
+		this._memory = undefined;
+	}
+
+	public get memory() {
+		if (this._memory === undefined && typeof this._value === 'string') {
+			this._memory = new TextEncoder().encode(this._value);
+		}
+		return this._memory;
+	}
+
+	public setMemory(data: Uint8Array, offset = 0) {
+		const memory = this.memory;
+		if (!memory) {
+			return;
+		}
+		memory.set(data, offset);
+		this._memory = memory;
+		this._value = new TextDecoder().decode(memory);
+	}
+}
+
+export function timeout(ms: number) {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+export class CCFGRuntime extends EventEmitter {
+	private ccfg: any;
+	private interpreter: any;
+	private interpreterModulePromise: Promise<any> | undefined;
+	private sourceFile = '';
+	private breakpointId = 1;
+	private breakpoints = new Map<string, IRuntimeBreakpoint[]>();
+	private locals = new Map<string, RuntimeVariable>();
+	private globals = new Map<string, RuntimeVariable>();
+
+	constructor(private fileAccessor: FileAccessor) {
+		super();
+		void this.fileAccessor;
+	}
+
+	public get sourceFilePath() {
+		return this.sourceFile;
+	}
+
+	public async start(ccfg: any, sourceFile: string, stopOnEntry: boolean, debug: boolean): Promise<void> {
+		this.ccfg = ccfg;
+		this.sourceFile = sourceFile;
+		const { CCFGInterpreter } = await this.loadInterpreterModule();
+		this.interpreter = new CCFGInterpreter(ccfg, { stopOnEntry, debug, prepareCCFG: false });
+		this.applyBreakpoints();
+		this.syncVariables();
+
+		if (stopOnEntry) {
+			this.sendEvent('stopOnEntry');
+			return;
+		}
+
+		if (!debug) {
+			this.continue(false);
+		}
+	}
+
+	public clearBreakpoints(pathValue: string): void {
+		this.breakpoints.delete(this.normalizePathAndCasing(pathValue));
+		this.applyBreakpoints();
+	}
+
+	public clearBreakPoint(pathValue: string, line: number): IRuntimeBreakpoint | undefined {
+		const pathKey = this.normalizePathAndCasing(pathValue);
+		const list = this.breakpoints.get(pathKey);
+		if (list === undefined) {
+			return undefined;
+		}
+		const index = list.findIndex(breakpoint => breakpoint.line === line);
+		if (index < 0) {
+			return undefined;
+		}
+		const [removed] = list.splice(index, 1);
+		if (list.length === 0) {
+			this.breakpoints.delete(pathKey);
+		}
+		this.applyBreakpoints();
+		return removed;
+	}
+
+	public async setBreakPoint(pathValue: string, line: number): Promise<IRuntimeBreakpoint> {
+		const pathKey = this.normalizePathAndCasing(pathValue);
+		const bp: IRuntimeBreakpoint = { verified: false, line, id: this.breakpointId++ };
+		const list = this.breakpoints.get(pathKey) ?? [];
+		list.push(bp);
+		this.breakpoints.set(pathKey, list);
+		this.applyBreakpoints();
+		return bp;
+	}
+
+	public getBreakpoints(pathValue: string, line: number): number[] {
+		const pathKey = this.normalizePathAndCasing(pathValue);
+		const nodes = this.getNodesForPath(pathKey).filter(node => this.toDebuggerLine(node.source?.line) === line);
+		return nodes.map(node => this.toDebuggerColumn(node.source?.column) ?? 0);
+	}
+
+	public continue(reverse: boolean): void {
+		void this.runContinue(reverse);
+	}
+
+	public step(instruction: boolean, reverse: boolean): void {
+		void this.runStep(instruction, reverse);
+	}
+
+	public stepIn(targetId: number | undefined): void {
+		void this.runStep(targetId !== undefined, false);
+	}
+
+	public stepOut(): void {
+		void this.runStep(false, false);
+	}
+
+	public getStepInTargets(frameId: number): IRuntimeStepInTargets[] {
+		const current = this.getCurrentNode();
+		if (current === undefined || frameId < 0) {
+			return [];
+		}
+		const node = this.ccfg?.getNodeByUID?.(current.uid);
+		if (node === undefined) {
+			return [];
+		}
+		return node.outputEdges.map((edge: any) => ({ id: edge.to.uid, label: `${edge.to.getType()} ${edge.to.uid}` }));
+	}
+
+	public stack(startFrame: number, endFrame: number): IRuntimeStack {
+		if (this.interpreter === undefined) {
+			return { count: 0, frames: [] };
+		}
+		const threadId = this.getCurrentThreadId();
+		if (threadId === undefined) {
+			return { count: 0, frames: [] };
+		}
+
+		const frames = (this.interpreter.getStackTrace(threadId) ?? []).map((frame: any, index: number) => {
+			const source = frame.source ?? frame.node?.source;
+			return {
+				index,
+				name: frame.name ?? `Thread ${threadId}`,
+				file: source?.path ?? this.sourceFile,
+				line: this.toDebuggerLine(source?.line) ?? 0,
+				column: this.toDebuggerColumn(source?.column),
+				instruction: frame.node?.uid
+			};
+		});
+
+		return {
+			count: frames.length,
+			frames: frames.slice(startFrame, endFrame)
+		};
+	}
+
+	public getThreads(): Array<{ id: number; name: string }> {
+		const snapshot = this.interpreter?.getSnapshot?.();
+		if (snapshot?.threads?.length) {
+			return snapshot.threads.map((thread: any) => ({ id: thread.id, name: `thread ${thread.id}` }));
+		}
+		return [{ id: 1, name: 'thread 1' }];
+	}
+
+	public getLocalVariables(): RuntimeVariable[] {
+		this.syncVariables();
+		return Array.from(this.locals.values());
+	}
+
+	public async getGlobalVariables(_cancellationToken?: () => boolean): Promise<RuntimeVariable[]> {
+		this.syncVariables();
+		return Array.from(this.globals.values());
+	}
+
+	public getLocalVariable(name: string): RuntimeVariable | undefined {
+		this.syncVariables();
+		return this.locals.get(name);
+	}
+
+	public setDataBreakpoint(_address: string, _accessType: 'read' | 'write' | 'readWrite'): boolean {
+		return true;
+	}
+
+	public clearAllDataBreakpoints(): void {
+		return;
+	}
+
+	public setExceptionsFilters(_namedException: string | undefined, _otherExceptions: boolean): void {
+		return;
+	}
+
+	public setInstructionBreakpoint(_address: number): boolean {
+		return true;
+	}
+
+	public clearInstructionBreakpoints(): void {
+		return;
+	}
+
+	public disassemble(address: number, instructionCount: number): Array<{ address: number; instruction: string; line?: number }> {
+		const nodes = this.ccfg?.nodes ?? [];
+		return nodes.slice(address, address + instructionCount).map((node: any, index: number) => ({
+			address: address + index,
+			instruction: `${node.getType()} ${node.uid}`,
+			line: this.toDebuggerLine(node.source?.line)
+		}));
+	}
+
+	public pause(): any {
+		const result = this.interpreter?.pause?.();
+		this.syncVariables();
+		return result ?? { status: 'paused', stepCount: 0 };
+	}
+
+	public stop(): any {
+		const result = this.interpreter?.stop?.();
+		this.syncVariables();
+		return result ?? { status: 'stopped', stepCount: 0 };
+	}
+
+	private async runContinue(_reverse: boolean): Promise<void> {
+		if (this.interpreter === undefined) {
+			return;
+		}
+		const result = await this.interpreter.continueExecution({ ignoreBreakpoints: false });
+		this.syncVariables();
+		this.emitStopForResult(result);
+	}
+
+	private async runStep(instruction: boolean, _reverse: boolean): Promise<void> {
+		if (this.interpreter === undefined) {
+			return;
+		}
+
+		const startKey = this.getCurrentNodeKey();
+		const maxIterations = Math.max((this.ccfg?.nodes?.length ?? 1) * 2, 8);
+
+		for (let iteration = 0; iteration < maxIterations; iteration++) {
+			const result = await this.interpreter.step({ ignoreBreakpoints: false });
+			this.syncVariables();
+
+			if (result.reason === 'breakpoint' || result.reason === 'terminated' || result.reason === 'error' || result.reason === 'timeout' || result.reason === 'maxSteps') {
+				this.emitStopForResult(result);
+				return;
+			}
+
+			const currentKey = this.getCurrentNodeKey();
+			if (instruction || startKey === undefined || currentKey === undefined || currentKey !== startKey) {
+				this.sendEvent('stopOnStep');
+				return;
+			}
+		}
+
+		this.sendEvent('stopOnStep');
+	}
+
+	private emitStopForResult(result: any): void {
+		if (result?.reason === 'breakpoint') {
+			this.sendEvent('stopOnBreakpoint');
+			return;
+		}
+		if (result?.reason === 'terminated') {
+			this.sendEvent('end');
+			return;
+		}
+		if (result?.reason === 'step') {
+			this.sendEvent('stopOnStep');
+			return;
+		}
+		this.sendEvent('stopOnStep');
+	}
+
+	private syncVariables(): void {
+		this.locals.clear();
+		this.globals.clear();
+		if (this.interpreter === undefined) {
+			return;
+		}
+
+		const threadId = this.getCurrentThreadId();
+		if (threadId === undefined) {
+			return;
+		}
+
+		for (const scope of this.interpreter.getScopes(threadId) ?? []) {
+			const values = this.interpreter.getVariables(scope.variablesReference) ?? [];
+			const target = scope.name === 'locals' ? this.locals : scope.name === 'globals' ? this.globals : undefined;
+			if (target === undefined) {
+				continue;
+			}
+			for (const value of values) {
+				target.set(value.name, new RuntimeVariable(value.name, this.toRuntimeValue(value.value)));
+			}
+		}
+	}
+
+	private toRuntimeValue(value: unknown): IRuntimeVariableType {
+		if (Array.isArray(value)) {
+			return value.map((item, index) => new RuntimeVariable(`[${index}]`, this.toRuntimeValue(item)));
+		}
+		if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'string') {
+			return value;
+		}
+		return value as unknown as IRuntimeVariableType;
+	}
+
+	private getCurrentThreadId(): number | undefined {
+		const snapshot = this.interpreter?.getSnapshot?.();
+		return snapshot?.currentThread?.id ?? snapshot?.threads?.[0]?.id;
+	}
+
+	private getCurrentNode(): any | undefined {
+		return this.interpreter?.getSnapshot?.().currentNode;
+	}
+
+	private getCurrentNodeKey(): string | undefined {
+		const node = this.getCurrentNode();
+		const source = node?.source;
+		if (node === undefined) {
+			return undefined;
+		}
+		return [
+			node.uid,
+			source?.path ?? this.sourceFile,
+			this.toDebuggerLine(source?.line) ?? '',
+			this.toDebuggerColumn(source?.column) ?? '',
+			source?.endLine ?? '',
+			source?.endColumn ?? ''
+		].join(':');
+	}
+
+	private getNodesForPath(pathKey: string): any[] {
+		return (this.ccfg?.nodes ?? []).filter((node: any) => {
+			const source = this.getNodeSource(node);
+			if (source?.path === undefined) {
+				return this.normalizePathAndCasing(this.sourceFile) === pathKey;
+			}
+			return this.normalizePathAndCasing(source.path) === pathKey;
+		});
+	}
+
+	private getNodeSource(node: any): any {
+		const source = node?.source;
+		if (source !== undefined) {
+			return source;
+		}
+		const range = node?.astNode?.$cstNode?.range;
+		const uri = node?.astNode?.$cstNode?.root?.textDocument?.uri;
+		if (range === undefined) {
+			return undefined;
+		}
+		return {
+			path: uri,
+			line: range.start.line + 1,
+			column: range.start.character + 1,
+			endLine: range.end.line + 1,
+			endColumn: range.end.character + 1
+		};
+	}
+
+	private applyBreakpoints(): void {
+		if (this.interpreter === undefined || this.ccfg === undefined) {
+			return;
+		}
+
+		this.interpreter.clearBreakpoints?.();
+		for (const breakpoints of this.breakpoints.values()) {
+			for (const breakpoint of breakpoints) {
+				breakpoint.verified = false;
+				const nodes = this.getNodesForPath(this.normalizePathAndCasing(this.sourceFile)).filter(node => this.toDebuggerLine(this.getNodeSource(node)?.line) === breakpoint.line).map(node => node.uid);
+				if (nodes.length > 0) {
+					this.interpreter.setBreakpoints?.(nodes);
+					breakpoint.verified = true;
+					this.sendEvent('breakpointValidated', breakpoint);
+				}
+			}
+		}
+	}
+
+	private async loadInterpreterModule(): Promise<any> {
+		if (this.interpreterModulePromise === undefined) {
+			const modulePath = path.resolve(__dirname, '../../interpreterCCFG/dist/InterpretCCFG.js');
+			this.interpreterModulePromise = import(pathToFileURL(modulePath).href);
+		}
+		return this.interpreterModulePromise;
+	}
+
+	private toDebuggerLine(line: number | undefined): number | undefined {
+		return line === undefined ? undefined : Math.max(0, line - 1);
+	}
+
+	private toDebuggerColumn(column: number | undefined): number | undefined {
+		return column === undefined ? undefined : Math.max(0, column - 1);
+	}
+
+	private normalizePathAndCasing(pathValue: string): string {
+		if (!pathValue) {
+			throw new Error('path is undefined');
+		}
+		if (this.fileAccessor.isWindows) {
+			return pathValue.replace(/\//g, '\\').toLowerCase();
+		}
+		return pathValue.replace(/\\/g, '/');
+	}
+
+	private sendEvent(event: string, ...args: any[]): void {
+		setTimeout(() => {
+			this.emit(event, ...args);
+		}, 0);
+	}
+}
