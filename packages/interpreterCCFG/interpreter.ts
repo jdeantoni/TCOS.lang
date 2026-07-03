@@ -4,7 +4,6 @@ import { RoundRobinScheduler, RuntimeThread } from "./runtime.js";
 import type * as types from "./types.js";
 
 
-
 export class DiscreteClock {
     private T = 0;
 
@@ -21,6 +20,7 @@ export class DiscreteClock {
         // No-op : le sleep est géré par la sleepQueue
     }
 }
+
 
 
 interface SleepEntry {
@@ -41,6 +41,7 @@ export class CCFGInterpreter {
     lastEvent: types.DebugEvent | undefined;
     lastError: unknown;
 
+    // Temps logique discret
     T = 0;
     private sleepQueue: SleepEntry[] = [];
 
@@ -55,6 +56,7 @@ export class CCFGInterpreter {
     private readonly eventTokenToChannel = new Map<number, string>();
     private nextThreadId = 1;
     private lastThreadIndex = -1;
+    private currentBreakpointUid: number | undefined = undefined;
 
     constructor(ccfg: ccfg.CCFG, options: types.CCFGInterpreterOptions = {}) {
         this.ccfg = ccfg;
@@ -88,6 +90,7 @@ export class CCFGInterpreter {
         this.nextThreadId = 1;
         this.lastEvent = undefined;
         this.lastError = undefined;
+        this.currentBreakpointUid = undefined;
 
         if (this.ccfg.initialState === undefined) {
             this.status = "terminated";
@@ -102,14 +105,13 @@ export class CCFGInterpreter {
     private advanceTime(): boolean {
         if (this.sleepQueue.length === 0) return false;
 
-        // Saute au prochain T
-        const nextEntry = this.sleepQueue[0];
-        if (nextEntry === undefined) return false;
-        const nextT = nextEntry.t;
+   
+        const nextT = this.sleepQueue[0]?.t;
+        if (nextT === undefined) return false;
         this.T = nextT;
         this.clock.advanceTo(nextT);
 
-        // Réveille tous les threads prévus à ce T
+
         const ready = this.sleepQueue.filter(e => e.t === this.T);
         this.sleepQueue  = this.sleepQueue.filter(e => e.t > this.T);
 
@@ -134,6 +136,7 @@ export class CCFGInterpreter {
             nodeUid:  e.node.uid,
         }));
     }
+
 
 
     setBreakpoint(nodeUid: number): void {
@@ -170,6 +173,7 @@ export class CCFGInterpreter {
     }
 
 
+
     getThreads(): types.ThreadSnapshot[] {
         return this.threads.map(thread => thread.snapshot());
     }
@@ -191,6 +195,7 @@ export class CCFGInterpreter {
             threads:   this.getThreads(),
             globals:   {
                 ...Object.fromEntries(this.sigma),
+                // Expose T comme variable observable dans VS Code
                 __T: this.T,
                 __sleeping: this.sleepQueue.length,
             }
@@ -243,6 +248,7 @@ export class CCFGInterpreter {
     }
 
 
+
     async execute(options: types.RunOptions = {}): Promise<types.StepResult> {
         return this.resume(options);
     }
@@ -264,6 +270,7 @@ export class CCFGInterpreter {
         }
 
         this.status = "running";
+        const startedAt = this.clock.now();
         const maxSteps        = options.maxSteps        ?? this.maxSteps;
         const timeoutMs       = options.timeoutMs       ?? this.timeoutMs;
         const ignoreBreakpoints = options.ignoreBreakpoints ?? false;
@@ -273,7 +280,7 @@ export class CCFGInterpreter {
                 this.status = "paused";
                 return this.result("maxSteps");
             }
-            // timeout basé sur le temps discret T, pas le wall clock
+  
             if (timeoutMs !== undefined && this.T >= timeoutMs) {
                 this.status = "paused";
                 return this.result("timeout");
@@ -300,12 +307,15 @@ export class CCFGInterpreter {
             this.reset("ready");
         }
 
-  
+
         if (this.threads.length === 0) {
             if (this.sleepQueue.length > 0) {
+           
                 this.advanceTime();
+           
                 return this.result();
             }
+        
             this.status = "terminated";
             return this.result("terminated");
         }
@@ -330,11 +340,17 @@ export class CCFGInterpreter {
             }
 
             const node = thread.currentNode;
-            if (!(options.ignoreBreakpoints ?? true) && this.breakpoints.has(node.uid)) {
+
+
+            if (!(options.ignoreBreakpoints ?? true)
+                && this.breakpoints.has(node.uid)
+                && node.uid !== this.currentBreakpointUid) {
+                this.currentBreakpointUid = node.uid;
                 this.status = "paused";
                 return this.result("breakpoint");
             }
 
+            this.currentBreakpointUid = undefined;
             this.status = "running";
             this.lastEvent = { kind: "node", threadId: thread.id, nodeUid: node.uid, message: node.getType() };
             await this.visitNode(thread, node);
@@ -494,7 +510,6 @@ export class CCFGInterpreter {
     }
 
 
-
     private async executeNodeInstructions(thread: RuntimeThread, node: ccfg.Node): Promise<void> {
         if (this.debug && node.functionsDefs.length > 0) {
             this.lastEvent = {
@@ -560,6 +575,7 @@ export class CCFGInterpreter {
             return { didReturn: true, value: this.resolveValue(instruction.varName, thread) };
         }
 
+ 
         if (instruction instanceof ccfg.AddSleepInstruction) {
             const duration = Number(this.evaluateExpression(instruction.duration, thread));
             const wakeAt   = this.T + duration;
@@ -572,7 +588,6 @@ export class CCFGInterpreter {
             };
 
             if (nextNode !== undefined) {
-   
                 this.sleepQueue.push({ t: wakeAt, thread, node: nextNode });
                 this.sleepQueue.sort((a, b) => a.t - b.t);
             }
@@ -602,11 +617,7 @@ export class CCFGInterpreter {
         throw new Error(`Unsupported instruction: ${instruction.$instructionType || instruction.toString()}`);
     }
 
-
-    /**
-     * Émet un événement de façon synchrone.
-     * Les listeners en attente seront réveillés au prochain advanceOne.
-     */
+   
     private emitEventDiscrete(instruction: ccfg.EmitEventInstruction, thread: RuntimeThread): void {
         const channel = this.getEventChannel(instruction.channelName);
         const token   = channel.nextToken++;
@@ -626,11 +637,7 @@ export class CCFGInterpreter {
         };
     }
 
-    /**
-     * Attend un événement de façon discrète.
-     * Si le channel est vide, suspend le thread dans la sleepQueue à T courant.
-     * Retourne true si le thread a été suspendu.
-     */
+
     private waitEventDiscrete(
         instruction: ccfg.WaitEventInstruction,
         thread: RuntimeThread,
@@ -652,7 +659,7 @@ export class CCFGInterpreter {
             return false; 
         }
 
-
+        
         const nextNode = firstTarget(node);
         if (nextNode !== undefined) {
             // Re-insère le même nœud pour réessayer plus tard
@@ -660,7 +667,7 @@ export class CCFGInterpreter {
             this.sleepQueue.sort((a, b) => a.t - b.t);
         }
         this.removeThread(thread);
-        return true; // suspendu
+        return true; 
     }
 
     private ackEvent(instruction: ccfg.AckEventInstruction, thread: RuntimeThread): void {
@@ -676,7 +683,6 @@ export class CCFGInterpreter {
             channel.pendingAcks.set(token, remaining);
         }
     }
-
 
 
     private evaluateEdgeGuard(edge: ccfg.Edge, thread: RuntimeThread, choiceValue?: unknown): boolean {
@@ -740,7 +746,7 @@ export class CCFGInterpreter {
         return channel;
     }
 
-
+ 
     private findCorrespondingAndJoin(node: ccfg.Node): ccfg.AndJoin | undefined {
         for (const uid of node.syncNodeIds) {
             const syncNode = this.ccfg.getNodeByUID(uid);
@@ -807,7 +813,6 @@ export class CCFGInterpreter {
         return result;
     }
 }
-
 
 
 function mapVariables(variables: Map<string, unknown>): types.VariableSnapshot[] {
