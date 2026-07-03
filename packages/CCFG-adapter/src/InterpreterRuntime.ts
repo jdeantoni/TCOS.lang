@@ -282,7 +282,13 @@ export class CCFGRuntime extends EventEmitter {
 	
 		const startKey = this.interpreter.getCurrentSourceKey();
 		const maxIterations = Math.max((this.ccfg?.nodes?.length ?? 1) * 2, 100);
+		const currentNode = this.interpreter.getCurrentNode();
 
+		console.log({
+			thread: this.interpreter.getCurrentThread()?.id,
+			node: currentNode?.uid,
+			line: this.interpreter.getCurrentSourceKey()
+		});
 		for (let iteration = 0; iteration < maxIterations; iteration++) {
 			const result = await this.interpreter.step({ ignoreBreakpoints: false });
 			this.syncVariables();
@@ -299,8 +305,12 @@ export class CCFGRuntime extends EventEmitter {
 
 			const currentKey = this.interpreter.getCurrentSourceKey();
 
-		
+			console.log("current key = " ,currentKey);
+			console.log("startKey = ",startKey);
 			if (currentKey !== undefined && currentKey !== startKey) {
+				console.log("stop");
+				console.log("current key = " ,currentKey);
+				console.log("startKey = ",startKey);
 				this.sendEvent('stopOnStep');
 				return;
 			}

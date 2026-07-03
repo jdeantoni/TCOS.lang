@@ -164,7 +164,7 @@ export class CCFGInterpreter {
         const uri = (node.astNode as any)?.$cstNode?.root?.textDocument?.uri
             ?? (node.astNode as any)?.$document?.uri?.toString()
             ?? '';
-        return `${uri}:${range.start.line}`;
+        return `${range.start.line}`;
     }
 
     setBreakpoint(nodeUid: number): void {
@@ -324,9 +324,34 @@ export class CCFGInterpreter {
     }
 
     async step(options: types.RunOptions = {}): Promise<types.StepResult> {
-        return this.advanceOne(options, true);
+        //return this.advanceOne(options, true);
+        return this.stepSource(options);
     }
 
+    private async stepSource(options: types.RunOptions): Promise<types.StepResult> {
+        const startLine = this.getCurrentSourceKey();
+
+        while (true) {
+            const result = await this.advanceOne(options, true);
+
+            if (result.status === "terminated" || result.status === "stopped") {
+                return result;
+            }
+
+            const line = this.getCurrentSourceKey();
+
+            if (line === undefined) {
+                if (this.threads.length === 0 && this.sleepQueue.length === 0) {
+                    return result;
+                }
+                continue;
+            }
+
+            if (line !== startLine) {
+                return result;
+            }
+        }
+    }
     private async advanceOne(options: types.RunOptions, stopAfterStep: boolean): Promise<types.StepResult> {
         if (this.status === "terminated" || this.status === "stopped") {
             return this.result(this.status === "terminated" ? "terminated" : "stopped");
