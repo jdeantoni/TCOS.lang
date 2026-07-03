@@ -57,6 +57,7 @@ export class CCFGInterpreter {
     private nextThreadId = 1;
     private lastThreadIndex = -1;
     private currentBreakpointUid: number | undefined = undefined;
+    private sigmaNameMap = new Map<string, string>();
 
     constructor(ccfg: ccfg.CCFG, options: types.CCFGInterpreterOptions = {}) {
         this.ccfg = ccfg;
@@ -96,11 +97,28 @@ export class CCFGInterpreter {
             this.status = "terminated";
             return;
         }
-
+        this.buildSigmaNameMap();
         this.threads.push(this.createThread(this.ccfg.initialState, this.ccfg.initialState));
         this.status = status;
     }
 
+    private buildSigmaNameMap(): void {
+        this.sigmaNameMap.clear();
+        for (const node of this.ccfg.nodes) {
+            // Cherche les nœuds qui créent des variables globales
+            for (const instr of node.functionsDefs) {
+                if (instr instanceof ccfg.CreateGlobalVarInstruction) {
+                    // Le nom source est dans astNode.name si disponible
+                    const sourceName = (node.astNode as any)?.name as string | undefined;
+                    if (sourceName) {
+                        // instr.varName = "Variable0_0_0_10currentValue"
+                        // sourceName    = "v1"
+                        this.sigmaNameMap.set(instr.varName, sourceName);
+                    }
+                }
+            }
+        }
+    }
 
     private advanceTime(): boolean {
         if (this.sleepQueue.length === 0) return false;
@@ -137,7 +155,17 @@ export class CCFGInterpreter {
         }));
     }
 
-
+    getCurrentSourceKey(): string | undefined {
+        const thread = this.threads[this.lastThreadIndex] ?? this.threads[0];
+        const node   = thread?.currentNode;
+        if (node === undefined) return undefined;
+        const range = (node.astNode as any)?.$cstNode?.range;
+        if (range === undefined) return undefined;
+        const uri = (node.astNode as any)?.$cstNode?.root?.textDocument?.uri
+            ?? (node.astNode as any)?.$document?.uri?.toString()
+            ?? '';
+        return `${uri}:${range.start.line}`;
+    }
 
     setBreakpoint(nodeUid: number): void {
         this.breakpoints.add(nodeUid);
@@ -172,7 +200,7 @@ export class CCFGInterpreter {
         return result;
     }
 
-
+    
 
     getThreads(): types.ThreadSnapshot[] {
         return this.threads.map(thread => thread.snapshot());
@@ -236,7 +264,7 @@ export class CCFGInterpreter {
         const decoded = this.decodeVariablesReference(variablesReference);
         if (decoded === undefined) return [];
         const thread = this.findThread(decoded.threadId);
-        if (decoded.scope === "globals") return mapVariables(this.sigma);
+        if (decoded.scope === "globals") return mapVariables(this.sigma,this.sigmaNameMap);
         if (thread === undefined) return [];
         if (decoded.scope === "locals") return mapVariables(thread.locals);
         return thread.tempValues.map((value, index) => ({
@@ -815,11 +843,14 @@ export class CCFGInterpreter {
 }
 
 
-function mapVariables(variables: Map<string, unknown>): types.VariableSnapshot[] {
+function mapVariables(
+    variables: Map<string, unknown>,
+    nameMap?: Map<string, string>
+): types.VariableSnapshot[] {
     return [...variables.entries()].map(([name, value]) => ({
-        name,
+        name: nameMap?.get(name) ?? name, 
         value,
-        type:               typeof value,
+        type: typeof value,
         variablesReference: 0
     }));
 }

@@ -277,28 +277,35 @@ export class CCFGRuntime extends EventEmitter {
 	}
 
 	private async runStep(instruction: boolean, _reverse: boolean): Promise<void> {
-		if (this.interpreter === undefined) {
-			return;
-		}
+		if (this.interpreter === undefined) return;
 
-		const startKey = this.getCurrentNodeKey();
-		const maxIterations = Math.max((this.ccfg?.nodes?.length ?? 1) * 2, 8);
+	
+		const startKey = this.interpreter.getCurrentSourceKey();
+		const maxIterations = Math.max((this.ccfg?.nodes?.length ?? 1) * 2, 100);
 
 		for (let iteration = 0; iteration < maxIterations; iteration++) {
 			const result = await this.interpreter.step({ ignoreBreakpoints: false });
 			this.syncVariables();
 
-			if (result.reason === 'breakpoint' || result.reason === 'terminated' || result.reason === 'error' || result.reason === 'timeout' || result.reason === 'maxSteps') {
+		
+			if (result.reason === 'breakpoint'
+				|| result.reason === 'terminated'
+				|| result.reason === 'error'
+				|| result.reason === 'timeout'
+				|| result.reason === 'maxSteps') {
 				this.emitStopForResult(result);
 				return;
 			}
 
-			const currentKey = this.getCurrentNodeKey();
-			if (instruction || startKey === undefined || currentKey === undefined || currentKey !== startKey) {
+			const currentKey = this.interpreter.getCurrentSourceKey();
+
+		
+			if (currentKey !== undefined && currentKey !== startKey) {
 				this.sendEvent('stopOnStep');
 				return;
 			}
 		}
+
 
 		this.sendEvent('stopOnStep');
 	}
