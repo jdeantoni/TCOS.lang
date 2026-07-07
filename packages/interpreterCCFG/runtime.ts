@@ -33,17 +33,18 @@ export class RuntimeThread {
     readonly id: number;
     readonly owner: ccfg.Node;
     readonly parentId: number | undefined;
-    readonly waitingJoin: ccfg.AndJoin | undefined;
+    readonly waitingJoin: ccfg.Join | undefined;
     currentNode: ccfg.Node | undefined;
-    readonly locals = new Map<string, unknown>();
+    readonly locals: Map<string, unknown>;
     readonly tempValues: unknown[] = [];
 
-    constructor(id: number, owner: ccfg.Node, currentNode: ccfg.Node, parentId?: number, waitingJoin?: ccfg.AndJoin) {
+    constructor(id: number, owner: ccfg.Node, currentNode: ccfg.Node, parentId?: number, waitingJoin?: ccfg.Join, locals?: Map<string, unknown>) {
         this.id = id;
         this.owner = owner;
         this.currentNode = currentNode;
         this.parentId = parentId;
         this.waitingJoin = waitingJoin;
+        this.locals = locals ?? new Map<string, unknown>();
     }
 
     snapshot(): ThreadSnapshot {

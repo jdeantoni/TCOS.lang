@@ -11,7 +11,7 @@ const inputFile = path.resolve(process.argv[2] ?? path.join(repoRoot, "examples/
 const { createSimpleLServices } = await import(pathToFileURL(path.join(simpleLRoot, "out/language/simple-l-module.js")).href);
 const { extractAstNode } = await import(pathToFileURL(path.join(simpleLRoot, "out/cli/cli-util.js")).href);
 const { SimpleLCompilerFrontEnd } = await import(pathToFileURL(path.join(simpleLRoot, "out/cli/generated/simpleLCompilerFrontEnd.js")).href);
-const { CCFGInterpreter } = await import(pathToFileURL(path.join(repoRoot, "packages/interpreterCCFG/dist/InterpretCCFG.js")).href);
+const { CCFGInterpreter } = await import(pathToFileURL(path.join(repoRoot, "packages/interpreterCCFG/out/InterpretCCFG.js")).href);
 
 const services = createSimpleLServices(NodeFileSystem).SimpleL;
 const model = await extractAstNode(inputFile, services);

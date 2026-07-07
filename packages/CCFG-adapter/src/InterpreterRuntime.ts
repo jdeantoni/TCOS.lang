@@ -81,6 +81,7 @@ export class CCFGRuntime extends EventEmitter {
 	private breakpoints = new Map<string, IRuntimeBreakpoint[]>();
 	private locals = new Map<string, RuntimeVariable>();
 	private globals = new Map<string, RuntimeVariable>();
+	private selectedThreadId: number | undefined;
 
 	constructor(private fileAccessor: FileAccessor) {
 		super();
@@ -176,20 +177,21 @@ export class CCFGRuntime extends EventEmitter {
 		return node.outputEdges.map((edge: any) => ({ id: edge.to.uid, label: `${edge.to.getType()} ${edge.to.uid}` }));
 	}
 
-	public stack(startFrame: number, endFrame: number): IRuntimeStack {
+	public stack(startFrame: number, endFrame: number, threadId?: number): IRuntimeStack {
 		if (this.interpreter === undefined) {
 			return { count: 0, frames: [] };
 		}
-		const threadId = this.getCurrentThreadId();
-		if (threadId === undefined) {
+		const resolvedThreadId = this.resolveThreadId(threadId);
+		if (resolvedThreadId === undefined) {
 			return { count: 0, frames: [] };
 		}
+		this.selectedThreadId = resolvedThreadId;
 
-		const frames = (this.interpreter.getStackTrace(threadId) ?? []).map((frame: any, index: number) => {
+		const frames = (this.interpreter.getStackTrace(resolvedThreadId) ?? []).map((frame: any) => {
 			const source = frame.source ?? frame.node?.source;
 			return {
-				index,
-				name: frame.name ?? `Thread ${threadId}`,
+				index: resolvedThreadId,
+				name: frame.name ?? `Thread ${resolvedThreadId}`,
 				file: source?.path ?? this.sourceFile,
 				line: this.toDebuggerLine(source?.line) ?? 0,
 				column: this.toDebuggerColumn(source?.column),
@@ -209,6 +211,16 @@ export class CCFGRuntime extends EventEmitter {
 			return snapshot.threads.map((thread: any) => ({ id: thread.id, name: `thread ${thread.id}` }));
 		}
 		return [{ id: 1, name: 'thread 1' }];
+	}
+
+	public getStoppedThreadId(): number {
+		return this.getCurrentThreadId() ?? 1;
+	}
+
+	public selectThread(threadId: number | undefined): void {
+		if (this.resolveThreadId(threadId) !== undefined) {
+			this.selectedThreadId = threadId;
+		}
 	}
 
 	public getLocalVariables(): RuntimeVariable[] {
@@ -262,8 +274,10 @@ export class CCFGRuntime extends EventEmitter {
 	}
 
 	public stop(): any {
+		console.log('[CCFGRuntime.stop]', this.getInterpreterDebugState('before-stop'));
 		const result = this.interpreter?.stop?.();
 		this.syncVariables();
+		console.log('[CCFGRuntime.stop]', { ...this.getInterpreterDebugState('after-stop'), result });
 		return result ?? { status: 'stopped', stepCount: 0 };
 	}
 
@@ -279,45 +293,17 @@ export class CCFGRuntime extends EventEmitter {
 	private async runStep(instruction: boolean, _reverse: boolean): Promise<void> {
 		if (this.interpreter === undefined) return;
 
-	
-		const startKey = this.interpreter.getCurrentSourceKey();
-		const maxIterations = Math.max((this.ccfg?.nodes?.length ?? 1) * 2, 100);
-		const currentNode = this.interpreter.getCurrentNode();
-
-		console.log({
-			thread: this.interpreter.getCurrentThread()?.id,
-			node: currentNode?.uid,
-			line: this.interpreter.getCurrentSourceKey()
+		console.log('[CCFGRuntime.runStep]', { instruction, ...this.getInterpreterDebugState('before-step') });
+		const result = await this.interpreter.step({ ignoreBreakpoints: true });
+		this.syncVariables();
+		console.log('[CCFGRuntime.runStep]', {
+			instruction,
+			...this.getInterpreterDebugState('after-step'),
+			result,
+			locals: Array.from(this.locals.entries()).map(([name, variable]) => ({ name, value: variable.value })),
+			globals: Array.from(this.globals.entries()).map(([name, variable]) => ({ name, value: variable.value }))
 		});
-		for (let iteration = 0; iteration < maxIterations; iteration++) {
-			const result = await this.interpreter.step({ ignoreBreakpoints: false });
-			this.syncVariables();
-
-		
-			if (result.reason === 'breakpoint'
-				|| result.reason === 'terminated'
-				|| result.reason === 'error'
-				|| result.reason === 'timeout'
-				|| result.reason === 'maxSteps') {
-				this.emitStopForResult(result);
-				return;
-			}
-
-			const currentKey = this.interpreter.getCurrentSourceKey();
-
-			console.log("current key = " ,currentKey);
-			console.log("startKey = ",startKey);
-			if (currentKey !== undefined && currentKey !== startKey) {
-				console.log("stop");
-				console.log("current key = " ,currentKey);
-				console.log("startKey = ",startKey);
-				this.sendEvent('stopOnStep');
-				return;
-			}
-		}
-
-
-		this.sendEvent('stopOnStep');
+		this.emitStopForResult(result);
 	}
 
 	private emitStopForResult(result: any): void {
@@ -343,8 +329,21 @@ export class CCFGRuntime extends EventEmitter {
 			return;
 		}
 
+		const snapshot = this.interpreter.getSnapshot?.();
 		const threadId = this.getCurrentThreadId();
+		console.log('[CCFGRuntime.syncVariables]', {
+			threadId,
+			status: snapshot?.status,
+			stepCount: snapshot?.stepCount,
+			currentThreadId: snapshot?.currentThread?.id,
+			currentNodeUid: snapshot?.currentNode?.uid,
+			threadIds: snapshot?.threads?.map((thread: any) => thread.id) ?? [],
+			globalKeys: Object.keys(snapshot?.globals ?? {})
+		});
 		if (threadId === undefined) {
+			for (const [name, value] of Object.entries(snapshot?.globals ?? {})) {
+				this.globals.set(name, new RuntimeVariable(name, this.toRuntimeValue(value)));
+			}
 			return;
 		}
 
@@ -356,6 +355,11 @@ export class CCFGRuntime extends EventEmitter {
 			}
 			for (const value of values) {
 				target.set(value.name, new RuntimeVariable(value.name, this.toRuntimeValue(value.value)));
+			}
+		}
+		for (const [name, value] of Object.entries(snapshot?.globals ?? {})) {
+			if (name.startsWith('__')) {
+				this.globals.set(name, new RuntimeVariable(name, this.toRuntimeValue(value)));
 			}
 		}
 	}
@@ -372,6 +376,17 @@ export class CCFGRuntime extends EventEmitter {
 
 	private getCurrentThreadId(): number | undefined {
 		const snapshot = this.interpreter?.getSnapshot?.();
+		if (this.selectedThreadId !== undefined && snapshot?.threads?.some((thread: any) => thread.id === this.selectedThreadId)) {
+			return this.selectedThreadId;
+		}
+		return snapshot?.currentThread?.id ?? snapshot?.threads?.[0]?.id;
+	}
+
+	private resolveThreadId(threadId: number | undefined): number | undefined {
+		const snapshot = this.interpreter?.getSnapshot?.();
+		if (threadId !== undefined && snapshot?.threads?.some((thread: any) => thread.id === threadId)) {
+			return threadId;
+		}
 		return snapshot?.currentThread?.id ?? snapshot?.threads?.[0]?.id;
 	}
 
@@ -379,20 +394,22 @@ export class CCFGRuntime extends EventEmitter {
 		return this.interpreter?.getSnapshot?.().currentNode;
 	}
 
-	private getCurrentNodeKey(): string | undefined {
-		const node = this.getCurrentNode();
-		const source = node?.source;
-		if (node === undefined) {
-			return undefined;
-		}
-		return [
-			node.uid,
-			source?.path ?? this.sourceFile,
-			this.toDebuggerLine(source?.line) ?? '',
-			this.toDebuggerColumn(source?.column) ?? '',
-			source?.endLine ?? '',
-			source?.endColumn ?? ''
-		].join(':');
+	private getInterpreterDebugState(phase: string): Record<string, unknown> {
+		const snapshot = this.interpreter?.getSnapshot?.();
+		return {
+			phase,
+			status: snapshot?.status,
+			stepCount: snapshot?.stepCount,
+			currentThreadId: snapshot?.currentThread?.id,
+			currentNodeUid: snapshot?.currentNode?.uid,
+			currentNodeType: snapshot?.currentNode?.type,
+			threads: snapshot?.threads?.map((thread: any) => ({
+				id: thread.id,
+				currentNodeUid: thread.currentNodeUid,
+				waitingJoinUid: thread.waitingJoinUid
+			})) ?? [],
+			globals: snapshot?.globals
+		};
 	}
 
 	private getNodesForPath(pathKey: string): any[] {

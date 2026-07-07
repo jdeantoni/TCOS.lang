@@ -44,6 +44,14 @@ interface CstRange {
 }
 
 export function findFirstReachableAndJoin(start: ccfg.Node): ccfg.AndJoin | undefined {
+    const join = findFirstReachableJoin(start);
+    if (join instanceof ccfg.AndJoin || join?.getType() === "AndJoin") {
+        return join as ccfg.AndJoin;
+    }
+    return undefined;
+}
+
+export function findFirstReachableJoin(start: ccfg.Node): ccfg.Join | undefined {
     const visited = new Set<number>();
     const queue = [...start.outputEdges.map(edge => edge.to)];
     while (queue.length > 0) {
@@ -52,8 +60,8 @@ export function findFirstReachableAndJoin(start: ccfg.Node): ccfg.AndJoin | unde
             continue;
         }
         visited.add(node.uid);
-        if (node instanceof ccfg.AndJoin || node.getType() === "AndJoin") {
-            return node as ccfg.AndJoin;
+        if (node instanceof ccfg.Join || node.getType() === "AndJoin" || node.getType() === "OrJoin") {
+            return node as ccfg.Join;
         }
         queue.push(...node.outputEdges.map(edge => edge.to));
     }

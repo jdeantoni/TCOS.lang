@@ -105,6 +105,7 @@ export interface JoinState {
     expected: number;
     arrived: number;
     parentId: number;
+    locals: Map<string, unknown>;
     tempValues: unknown[];
 }
 

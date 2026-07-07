@@ -72,25 +72,25 @@ export class CCFGDebugSession extends LoggingDebugSession {
 
 		// setup event handlers
 		this._runtime.on('stopOnEntry', () => {
-			this.sendEvent(new StoppedEvent('entry', CCFGDebugSession.threadID));
+			this.sendStoppedEvent('entry');
 		});
 		this._runtime.on('stopOnStep', () => {
-			this.sendEvent(new StoppedEvent('step', CCFGDebugSession.threadID));
+			this.sendStoppedEvent('step');
 		});
 		this._runtime.on('stopOnBreakpoint', () => {
-			this.sendEvent(new StoppedEvent('breakpoint', CCFGDebugSession.threadID));
+			this.sendStoppedEvent('breakpoint');
 		});
 		this._runtime.on('stopOnDataBreakpoint', () => {
-			this.sendEvent(new StoppedEvent('data breakpoint', CCFGDebugSession.threadID));
+			this.sendStoppedEvent('data breakpoint');
 		});
 		this._runtime.on('stopOnInstructionBreakpoint', () => {
-			this.sendEvent(new StoppedEvent('instruction breakpoint', CCFGDebugSession.threadID));
+			this.sendStoppedEvent('instruction breakpoint');
 		});
 		this._runtime.on('stopOnException', (exception) => {
 			if (exception) {
-				this.sendEvent(new StoppedEvent(`exception(${exception})`, CCFGDebugSession.threadID));
+				this.sendStoppedEvent(`exception(${exception})`);
 			} else {
-				this.sendEvent(new StoppedEvent('exception', CCFGDebugSession.threadID));
+				this.sendStoppedEvent('exception');
 			}
 		});
 		this._runtime.on('breakpointValidated', (bp: IRuntimeBreakpoint) => {
@@ -227,6 +227,8 @@ export class CCFGDebugSession extends LoggingDebugSession {
 
 	protected disconnectRequest(_response: DebugProtocol.DisconnectResponse, _args: DebugProtocol.DisconnectArguments, _request?: DebugProtocol.Request): void {
 		console.log(`disconnectRequest suspend: ${_args.suspendDebuggee}, terminate: ${_args.terminateDebuggee}`);
+		this._runtime.stop();
+		this.sendResponse(_response);
 	}
 
 	protected async attachRequest(response: DebugProtocol.AttachResponse, args: ILaunchRequestArguments) {
@@ -375,7 +377,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
 		const endFrame = startFrame + maxLevels;
 
-		const stk = this._runtime.stack(startFrame, endFrame);
+		const stk = this._runtime.stack(startFrame, endFrame, args.threadId);
 
 		response.body = {
 			stackFrames: stk.frames.map((f) => {
@@ -401,6 +403,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 	}
 
 	protected scopesRequest(response: DebugProtocol.ScopesResponse, _args: DebugProtocol.ScopesArguments): void {
+		this._runtime.selectThread(_args.frameId);
 
 		response.body = {
 			scopes: [
@@ -904,5 +907,11 @@ export class CCFGDebugSession extends LoggingDebugSession {
 
 	private createSource(filePath: string): Source {
 		return new Source(basename(filePath), this.convertDebuggerPathToClient(filePath), undefined, undefined, 'CCFG-adapter-data');
+	}
+
+	private sendStoppedEvent(reason: string): void {
+		const event = new StoppedEvent(reason, this._runtime.getStoppedThreadId());
+		(event.body as DebugProtocol.StoppedEvent['body']).allThreadsStopped = true;
+		this.sendEvent(event);
 	}
 }
