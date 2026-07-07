@@ -3,15 +3,18 @@ import path from "path";
 
 export function patchExtensionMain(
     projectRoot: string,
-    languageName: string
+    languageName: string,
+    fileName: string
 ): void {
 
     const languageClass = languageName;
 
+    const importFileName = fileName.split('.')[0];
+
     const languageFileName =
         languageName.charAt(0).toLowerCase() +
         languageName.slice(1);
-
+    
     const filePath = path.join(
         projectRoot,
         "src",
@@ -35,7 +38,7 @@ export function patchExtensionMain(
     );
 
     const importLine =
-        `import { ${languageClass}DebugConfigurationProvider } from '../cli/generated/${languageFileName}DebugConfigurationProvider.js';\n`;
+        `import { ${languageClass}DebugConfigurationProvider } from '../cli/generated/${importFileName}DebugConfigurationProvider.js';\n`;
 
     if (
         !content.includes(

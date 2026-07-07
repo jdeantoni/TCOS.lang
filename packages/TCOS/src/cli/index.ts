@@ -80,7 +80,7 @@ export const generateAction = async (
         destination
     );
 
-    patchExtensionMain(projectRoot, model.name);
+    patchExtensionMain(projectRoot, model.name,fileName);
     patchPackageJson(projectRoot, model.name);
 
     console.log(
