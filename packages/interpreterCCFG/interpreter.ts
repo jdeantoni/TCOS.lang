@@ -567,10 +567,39 @@ export class CCFGInterpreter {
         };
     }
 
-    private async visitOrJoin(thread: RuntimeThread, node: ccfg.OrJoin): Promise<void> {
+   /*private async visitOrJoin(thread: RuntimeThread, node: ccfg.OrJoin): Promise<void> {
         const suspended = await this.executeNodeInstructions(thread, node);
         if (suspended) return;
         const next = firstTarget(node);
+        if (next === undefined) {
+            this.endThread(thread);
+            return;
+        }
+        thread.currentNode = next;
+        this.lastEvent = {
+            kind:     "join",
+            threadId: thread.id,
+            nodeUid:  node.uid,
+            data:     { resumedAt: next.uid }
+        };
+    }*/
+
+    private async visitOrJoin(thread: RuntimeThread, node: ccfg.OrJoin): Promise<void> {
+
+
+        const next = firstTarget(node);
+        if (next !== undefined) {
+            const alreadyRunning = this.executionQueue.some(
+                entry => entry.thread.id !== thread.id
+                    && entry.thread.currentNode?.uid === next.uid
+            );
+            if (alreadyRunning) {
+                this.endThread(thread);
+                return;
+            }
+        }
+        const suspended = await this.executeNodeInstructions(thread, node);
+        if (suspended) return;
         if (next === undefined) {
             this.endThread(thread);
             return;
