@@ -11,9 +11,9 @@ export function patchExtensionMain(
 
     const importFileName = fileName.split('.')[0];
 
-    const languageFileName =
+/*    const languageFileName =
         languageName.charAt(0).toLowerCase() +
-        languageName.slice(1);
+        languageName.slice(1);*/
     
     const filePath = path.join(
         projectRoot,
