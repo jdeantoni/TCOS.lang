@@ -96,6 +96,7 @@ export class CCFGRuntime extends EventEmitter {
 		this.ccfg = ccfg;
 		this.sourceFile = sourceFile;
 		const { CCFGInterpreter } = await this.loadInterpreterModule();
+		console.log("interpreter module loaded")
 		this.interpreter = new CCFGInterpreter(ccfg, { stopOnEntry, debug, prepareCCFG: false });
 		this.applyBreakpoints();
 		this.syncVariables();

@@ -219,6 +219,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 	 * Indicates that all breakpoints etc. have been sent to the DA and that the 'launch' can start.
 	 */
 	protected configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments): void {
+		console.log("configurationDone");
 		super.configurationDoneRequest(response, args);
 
 		// notify the launchRequest that configuration has finished
@@ -235,37 +236,30 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		return this.launchRequest(response, args);
 	}
 
-	protected async launchRequest(response: DebugProtocol.LaunchResponse, args: ILaunchRequestArguments) {
+	protected async launchRequest(response: DebugProtocol.LaunchResponse,args: ILaunchRequestArguments) {
+		try {
+			console.log("args", args);
 
-		// make sure to 'Stop' the buffered logging if 'trace' is not set
-		console.log("args",args);
-		logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false);
+			logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop,false);
 
+			const dynamicImport = new Function("specifier","return import(specifier)");
 
-		const dynamicImport = new Function( 'specifier', 'return import(specifier)' ); 
-		this._facade = await dynamicImport( pathToFileURL(args.facadePath).href );
-		//const source = await fs.readFile(args.sourceFile, 'utf8');
-		const ccfg = await this._facade!.buildCCFG(args.sourceFile);
+			this._facade = await dynamicImport(pathToFileURL(args.facadePath).href);
 
-		//console.log(ccfg);
-		
-		// wait 1 second until configuration has finished (and configurationDoneRequest has been called)
-		await this._configurationDone.wait(1000);
+			const ccfg = await this._facade!.buildCCFG(args.sourceFile);
 
-		// start the sourceFile in the runtime
-		await this._runtime.start(ccfg, args.sourceFile, !!args.stopOnEntry, !args.noDebug);
-
-		if (args.compileError) {
-			// simulate a compile/build error in "launch" request:
-			// the error should not result in a modal dialog since 'showUser' is set to false.
-			// A missing 'showUser' should result in a modal dialog.
-			this.sendErrorResponse(response, {
-				id: 1001,
-				format: `compile error: some fake error.`,
-				showUser: args.compileError === 'show' ? true : (args.compileError === 'hide' ? false : undefined)
-			});
-		} else {
 			this.sendResponse(response);
+
+			await this._configurationDone.wait(1000);
+
+			console.log("starting runtime");
+			await this._runtime.start(ccfg, args.sourceFile, !!args.stopOnEntry, !args.noDebug);
+			console.log("runtime started");
+		} catch (e: any) {
+			this.sendErrorResponse(response, {
+				id: 1000,
+				format: e?.message ?? String(e)
+			});
 		}
 	}
 

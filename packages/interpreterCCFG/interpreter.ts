@@ -476,6 +476,7 @@ export class CCFGInterpreter {
 
 
     private async visitNode(thread: RuntimeThread, node: ccfg.Node): Promise<void> {
+        console.log("VISIT", node.uid, node.getType(), node.functionsDefs.map(f => f.constructor.name));
         if (node instanceof ccfg.Fork || node.getType() === "Fork") {
             this.visitFork(thread, node);
             return;
@@ -491,6 +492,13 @@ export class CCFGInterpreter {
         if (node instanceof ccfg.Choice || node.getType() === "Choice") {
             thread.currentNode = this.selectChoiceTarget(thread, node);
             return;
+        }
+        if (node instanceof ccfg.BroadcastEventEmission || node.getType() === "BroadcastEventEmission" || node instanceof ccfg.BroadcastEventReception || node.getType() === "BroadcastEventReception") {
+            const suspended = await this.executeNodeInstructions(thread, node);
+            if (suspended) return;
+            thread.currentNode = firstTarget(node);
+            if (thread.currentNode === undefined) this.endThread(thread);
+                return;
         }
 
         const suspended = await this.executeNodeInstructions(thread, node);
@@ -663,7 +671,7 @@ export class CCFGInterpreter {
         instruction: ccfg.Instruction,
         node: ccfg.Node
     ): Promise<{ didReturn: boolean; suspended?: boolean; value?: unknown }> {
-
+        console.log("EXEC", instruction.constructor.name);
         if (instruction instanceof ccfg.CreateVarInstruction) {
             thread.locals.set(instruction.varName, undefined);
             return { didReturn: false };
