@@ -1,6 +1,6 @@
 import * as ccfg from "ccfg";
 import { getCurrentNode, getCurrentSourceKey, getCurrentThread, getScopes, getSnapshot, getStackTrace, getThreads, getVariables, result } from "./debug-state.js";
-import { resume, step } from "./execution-loop.js";
+import { resume, step } from "./execution.js";
 import { prepareCCFG, snapshotNode } from "./graph-utils.js";
 import { DiscreteClock, RoundRobinScheduler } from "./runtime.js";
 import { createRuntimeState, type InterpreterRuntimeState } from "./state.js";
