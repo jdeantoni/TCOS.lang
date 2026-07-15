@@ -275,10 +275,10 @@ export class CCFGRuntime extends EventEmitter {
 	}
 
 	public stop(): any {
-		console.log('[CCFGRuntime.stop]', this.getInterpreterDebugState('before-stop'));
+		//console.log('[CCFGRuntime.stop]', this.getInterpreterDebugState('before-stop'));
 		const result = this.interpreter?.stop?.();
 		this.syncVariables();
-		console.log('[CCFGRuntime.stop]', { ...this.getInterpreterDebugState('after-stop'), result });
+		//console.log('[CCFGRuntime.stop]', { ...this.getInterpreterDebugState('after-stop'), result });
 		return result ?? { status: 'stopped', stepCount: 0 };
 	}
 
@@ -294,16 +294,16 @@ export class CCFGRuntime extends EventEmitter {
 	private async runStep(instruction: boolean, _reverse: boolean): Promise<void> {
 		if (this.interpreter === undefined) return;
 
-		console.log('[CCFGRuntime.runStep]', { instruction, ...this.getInterpreterDebugState('before-step') });
+		//console.log('[CCFGRuntime.runStep]', { instruction, ...this.getInterpreterDebugState('before-step') });
 		const result = await this.interpreter.step({ ignoreBreakpoints: true });
 		this.syncVariables();
-		console.log('[CCFGRuntime.runStep]', {
+		/*console.log('[CCFGRuntime.runStep]', {
 			instruction,
 			...this.getInterpreterDebugState('after-step'),
 			result,
 			locals: Array.from(this.locals.entries()).map(([name, variable]) => ({ name, value: variable.value })),
 			globals: Array.from(this.globals.entries()).map(([name, variable]) => ({ name, value: variable.value }))
-		});
+		});*/
 		this.emitStopForResult(result);
 	}
 
@@ -332,7 +332,7 @@ export class CCFGRuntime extends EventEmitter {
 
 		const snapshot = this.interpreter.getSnapshot?.();
 		const threadId = this.getCurrentThreadId();
-		console.log('[CCFGRuntime.syncVariables]', {
+		/*console.log('[CCFGRuntime.syncVariables]', {
 			threadId,
 			status: snapshot?.status,
 			stepCount: snapshot?.stepCount,
@@ -340,7 +340,7 @@ export class CCFGRuntime extends EventEmitter {
 			currentNodeUid: snapshot?.currentNode?.uid,
 			threadIds: snapshot?.threads?.map((thread: any) => thread.id) ?? [],
 			globalKeys: Object.keys(snapshot?.globals ?? {})
-		});
+		});*/
 		if (threadId === undefined) {
 			for (const [name, value] of Object.entries(snapshot?.globals ?? {})) {
 				this.globals.set(name, new RuntimeVariable(name, this.toRuntimeValue(value)));

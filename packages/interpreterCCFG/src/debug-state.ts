@@ -13,7 +13,7 @@ export function getCurrentSourceKey(state: InterpreterRuntimeState): string | un
     const uri = (node.astNode as any)?.$cstNode?.root?.textDocument?.uri
         ?? (node.astNode as any)?.$document?.uri?.toString()
         ?? "";
-    return `${uri}:${range.start.line}:${range.start.character}`;
+    return `${range.start.line}`;
 }
 
 export function getThreads(state: InterpreterRuntimeState): types.ThreadSnapshot[] {

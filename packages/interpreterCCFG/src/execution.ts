@@ -3,6 +3,7 @@ import { visitNode } from "./node-dispatch.js";
 import type { InterpreterRuntimeState } from "./state.js";
 import type * as types from "./types.js";
 import { advanceTime, hasRunnableThread, hasScheduledThread, nextRunnableThreadIndex, removeThreadAt } from "./thread-queue.js";
+import { start } from "repl";
 
 export async function resume(state: InterpreterRuntimeState, options: types.RunOptions = {}): Promise<types.StepResult> {
     if (state.status === "terminated" || state.status === "stopped") {
@@ -38,9 +39,9 @@ export async function resume(state: InterpreterRuntimeState, options: types.RunO
 }
 
 export async function step(state: InterpreterRuntimeState, options: types.RunOptions = {}): Promise<types.StepResult> {
-    if (state.debug) console.log("[CCFGInterpreter.step]", getDebugState(state, "before-step"));
+    //if (state.debug) console.log("[CCFGInterpreter.step]", getDebugState(state, "before-step"));
     const stepResult = await stepSource(state, options);
-    if (state.debug) console.log("[CCFGInterpreter.step]", { ...getDebugState(state, "after-step"), result: stepResult });
+    //if (state.debug) console.log("[CCFGInterpreter.step]", { ...getDebugState(state, "after-step"), result: stepResult });
     return stepResult;
 }
 
@@ -52,11 +53,9 @@ async function stepSource(state: InterpreterRuntimeState, options: types.RunOpti
 
     while (true) {
         const stepResult = await advanceOne(state, options, true);
-
         if (stepResult.status === "terminated" || stepResult.status === "stopped" || stepResult.status === "error") {
             return stepResult;
         }
-
         if (state.T !== startT) {
             return stepResult;
         }
@@ -66,7 +65,8 @@ async function stepSource(state: InterpreterRuntimeState, options: types.RunOpti
         }
 
         const line = getCurrentSourceKey(state);
-
+        console.log("current line :", line);
+        console.log("start line : ", startLine);
         if (line === undefined) {
             if (state.executionQueue.length === 0) {
                 return stepResult;
@@ -98,7 +98,7 @@ async function advanceOne(
 
     if (state.executionQueue.length === 0) {
         state.status = "terminated";
-        if (state.debug) console.log("[CCFGInterpreter.advanceOne]", getDebugState(state, "advance-terminated-empty"));
+        //if (state.debug) console.log("[CCFGInterpreter.advanceOne]", getDebugState(state, "advance-terminated-empty"));
         return result(state, "terminated");
     }
 
@@ -107,11 +107,11 @@ async function advanceOne(
         if (threadIndex < 0) {
             if (hasScheduledThread(state)) {
                 advanceTime(state);
-                if (state.debug) console.log("[CCFGInterpreter.advanceOne]", getDebugState(state, "advance-time"));
+                //if (state.debug) console.log("[CCFGInterpreter.advanceOne]", getDebugState(state, "advance-time"));
                 return result(state);
             }
             state.status = "paused";
-            if (state.debug) console.log("[CCFGInterpreter.advanceOne]", getDebugState(state, "advance-paused-no-runnable"));
+            //if (state.debug) console.log("[CCFGInterpreter.advanceOne]", getDebugState(state, "advance-paused-no-runnable"));
             return result(state, "step");
         }
 
@@ -119,7 +119,7 @@ async function advanceOne(
         const thread = state.executionQueue[threadIndex]?.thread;
         if (thread === undefined || thread.currentNode === undefined) {
             removeThreadAt(state, threadIndex);
-            if (state.debug) console.log("[CCFGInterpreter.advanceOne]", getDebugState(state, "advance-removed-empty-thread"));
+            //if (state.debug) console.log("[CCFGInterpreter.advanceOne]", getDebugState(state, "advance-removed-empty-thread"));
             return result(state, "thread-end");
         }
 
@@ -130,7 +130,7 @@ async function advanceOne(
             && !state.reportedBreakpointUids.has(node.uid)) {
             state.reportedBreakpointUids.add(node.uid);
             state.status = "paused";
-            if (state.debug) console.log("[CCFGInterpreter.advanceOne]", getDebugState(state, "advance-breakpoint"));
+            //if (state.debug) console.log("[CCFGInterpreter.advanceOne]", getDebugState(state, "advance-breakpoint"));
             return result(state, "breakpoint");
         }
 
@@ -142,7 +142,7 @@ async function advanceOne(
 
         if (state.executionQueue.length === 0) {
             state.status = "terminated";
-            if (state.debug) console.log("[CCFGInterpreter.advanceOne]", getDebugState(state, "advance-terminated-after-node"));
+            //if (state.debug) console.log("[CCFGInterpreter.advanceOne]", getDebugState(state, "advance-terminated-after-node"));
             return result(state, "terminated");
         }
 
@@ -155,7 +155,7 @@ async function advanceOne(
     } catch (error) {
         state.lastError = error;
         state.status = "error";
-        if (state.debug) console.log("[CCFGInterpreter.advanceOne]", { ...getDebugState(state, "advance-error"), error });
+        //if (state.debug) console.log("[CCFGInterpreter.advanceOne]", { ...getDebugState(state, "advance-error"), error });
         return result(state, "error", error);
     }
 }
