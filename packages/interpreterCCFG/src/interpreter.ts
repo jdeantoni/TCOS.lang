@@ -1,23 +1,11 @@
 import * as ccfg from "ccfg";
+import { evaluateEdgeGuard, evaluateExpression, resolveValue } from "./evaluation.js";
 import { findFirstReachableJoin, firstTarget, prepareCCFG, snapshotNode } from "./graph-utils.js";
-import { RoundRobinScheduler, RuntimeThread } from "./runtime.js";
+import { DiscreteClock, RoundRobinScheduler, RuntimeThread } from "./runtime.js";
 import type * as types from "./types.js";
+import { decodeVariablesReference, encodeVariablesReference, mapVariables } from "./variables.js";
 
-
-export class DiscreteClock {
-    private T = 0;
-
-    now(): number {
-        return this.T;
-    }
-
-    advanceTo(t: number): void {
-        this.T = t;
-    }
-
-    async sleep(_ms: number): Promise<void> {
-    }
-}
+export { DiscreteClock } from "./runtime.js";
 
 interface ExecutionQueueEntry {
     thread: RuntimeThread;
@@ -101,14 +89,11 @@ export class CCFGInterpreter {
     private buildSigmaNameMap(): void {
         this.sigmaNameMap.clear();
         for (const node of this.ccfg.nodes) {
-            // Cherche les nœuds qui créent des variables globales
+           
             for (const instr of node.functionsDefs) {
                 if (instr instanceof ccfg.CreateGlobalVarInstruction) {
-                    // Le nom source est dans astNode.name si disponible
                     const sourceName = (node.astNode as any)?.name as string | undefined;
                     if (sourceName) {
-                        // instr.varName = "Variable0_0_0_10currentValue"
-                        // sourceName    = "v1"
                         this.sigmaNameMap.set(instr.varName, sourceName);
                     }
                 }
@@ -808,45 +793,15 @@ export class CCFGInterpreter {
 
 
     private evaluateEdgeGuard(edge: ccfg.Edge, thread: RuntimeThread, choiceValue?: unknown): boolean {
-        if (edge.guards.length === 0) return true;
-        return edge.guards.every(guard => {
-            if (guard instanceof ccfg.VerifyEqualInstruction) {
-                const left = choiceValue ?? this.resolveValue(guard.n1, thread);
-                return looseEquals(left, this.resolveValue(guard.n2, thread));
-            }
-            return Boolean(this.evaluateExpression(guard.toString(), thread, choiceValue));
-        });
+        return evaluateEdgeGuard(edge, thread, this.sigma, choiceValue);
     }
 
     private evaluateExpression(expression: string, thread: RuntimeThread, choiceValue?: unknown): unknown {
-        const trimmed = expression.trim();
-        if (trimmed.length === 0) return undefined;
-        if (/^-?\d+(\.\d+)?$/.test(trimmed)) return Number(trimmed);
-        if (trimmed === "true")  return true;
-        if (trimmed === "false") return false;
-        if ((trimmed.startsWith("\"") && trimmed.endsWith("\"")) ||
-            (trimmed.startsWith("'")  && trimmed.endsWith("'"))) {
-            return trimmed.slice(1, -1);
-        }
-
-        const scope = this.createEvaluationScope(thread);
-        if (choiceValue !== undefined) scope.set("resRight", choiceValue);
-        if (scope.has(trimmed)) return scope.get(trimmed);
-
-        const names  = [...scope.keys(), "sigma"];
-        const values = [...scope.values(), this.sigma];
-        return Function(...names, `"use strict"; return (${trimmed});`)(...values);
+        return evaluateExpression(expression, thread, this.sigma, choiceValue);
     }
 
     private resolveValue(value: string, thread: RuntimeThread): unknown {
-        return this.evaluateExpression(value, thread);
-    }
-
-    private createEvaluationScope(thread: RuntimeThread): Map<string, unknown> {
-        const scope = new Map<string, unknown>();
-        for (const [name, value] of this.sigma)        scope.set(name, value);
-        for (const [name, value] of thread.locals)     scope.set(name, value);
-        return scope;
+        return resolveValue(value, thread, this.sigma);
     }
 
 
@@ -890,18 +845,11 @@ export class CCFGInterpreter {
     }
 
     private encodeVariablesReference(threadId: number, scope: types.ScopeSnapshot["name"]): number {
-        const scopeId = scope === "locals" ? 1 : scope === "globals" ? 2 : 3;
-        return threadId * 10 + scopeId;
+        return encodeVariablesReference(threadId, scope);
     }
 
     private decodeVariablesReference(variablesReference: number): { threadId: number; scope: types.ScopeSnapshot["name"] } | undefined {
-        const scopeId  = variablesReference % 10;
-        const threadId = Math.floor(variablesReference / 10);
-        if (threadId <= 0) return undefined;
-        if (scopeId === 1) return { threadId, scope: "locals" };
-        if (scopeId === 2) return { threadId, scope: "globals" };
-        if (scopeId === 3) return { threadId, scope: "temporaries" };
-        return undefined;
+        return decodeVariablesReference(variablesReference);
     }
 
     private endThread(thread: RuntimeThread): void {
@@ -1038,23 +986,6 @@ export class CCFGInterpreter {
             locals: Object.fromEntries(entry.thread.locals)
         }));
     }
-}
-
-
-function mapVariables(
-    variables: Map<string, unknown>,
-    nameMap?: Map<string, string>
-): types.VariableSnapshot[] {
-    return [...variables.entries()].map(([name, value]) => ({
-        name: nameMap?.get(name) ?? name, 
-        value,
-        type: typeof value,
-        variablesReference: 0
-    }));
-}
-
-function looseEquals(left: unknown, right: unknown): boolean {
-    return left == right;
 }
 
 export async function executeCCFG(ccfg: ccfg.CCFG, options: types.CCFGInterpreterOptions & types.RunOptions = {}): Promise<types.StepResult> {

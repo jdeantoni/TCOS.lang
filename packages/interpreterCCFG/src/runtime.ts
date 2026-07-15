@@ -29,6 +29,21 @@ export class RealClock implements Clock {
     }
 }
 
+export class DiscreteClock implements Clock {
+    private T = 0;
+
+    now(): number {
+        return this.T;
+    }
+
+    advanceTo(t: number): void {
+        this.T = t;
+    }
+
+    async sleep(_ms: number): Promise<void> {
+    }
+}
+
 export class RuntimeThread {
     readonly id: number;
     readonly owner: ccfg.Node;

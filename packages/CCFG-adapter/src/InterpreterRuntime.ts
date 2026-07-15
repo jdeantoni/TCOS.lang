@@ -470,7 +470,7 @@ export class CCFGRuntime extends EventEmitter {
 
 	private async loadInterpreterModule(): Promise<any> {
 		if (this.interpreterModulePromise === undefined) {
-			const modulePath = path.resolve(__dirname, '../../interpreterCCFG/out/InterpretCCFG.js');
+			const modulePath = path.resolve(__dirname, '../../interpreterCCFG/out/src/InterpretCCFG.js');
 			const dynamicImport = new Function('specifier', 'return import(specifier);') as (specifier: string) => Promise<any>;
 			this.interpreterModulePromise = dynamicImport(pathToFileURL(modulePath).href);
 		}
