@@ -40,7 +40,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 	private static threadID = 1;
 	// a CCFG runtime (or debugger)
 	private _runtime: CCFGRuntime;
-	private _facade: { buildCCFG(sourceFile: string): Promise<unknown> } | undefined;
+	private _facade: | { sourceToCCFG(sourceFile: string): Promise<unknown>; expressionToCCFG(expression: string): Promise<unknown>;}| undefined;
 	private _variableHandles = new Handles<'locals' | 'globals' | RuntimeVariable>();
 
 	private _configurationDone = new Subject();
@@ -246,7 +246,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 
 			this._facade = await dynamicImport(pathToFileURL(args.facadePath).href);
 
-			const ccfg = await this._facade!.buildCCFG(args.sourceFile);
+			const ccfg = await this._facade!.sourceToCCFG(args.sourceFile);
 
 			this.sendResponse(response);
 
