@@ -1,0 +1,20 @@
+{
+  "name": "ccfg-decorator",
+  "displayName": "CCFG Decorator",
+  "version": "0.0.1",
+  "engines": { "vscode": "^1.80.0" },
+  "activationEvents": [
+    "onDebugType:ccfg"
+  ],
+  "contributes": {},
+  "main": "./out/extension.js",
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@types/node": "^18.0.0",
+    "typescript": "^5.0.0"
+  }
+}
