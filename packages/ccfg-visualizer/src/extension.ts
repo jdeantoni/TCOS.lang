@@ -1,26 +1,51 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { ThreadDecoratorManager } from './decorators';
+import { CCFGGraphPanel } from './graphPanel';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "ccfg-visualizer" is now active!');
+    const decorator = new ThreadDecoratorManager();
+    let graphPanel: CCFGGraphPanel | undefined;
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('ccfg-visualizer.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from CCFG-visualizer!');
-	});
+    context.subscriptions.push(
+        vscode.debug.onDidReceiveDebugSessionCustomEvent(e => {
+            if (e.session.type !== 'ccfg') return;
 
-	context.subscriptions.push(disposable);
+            if (e.event === 'threadPositions') {
+                decorator.update(e.body.threads);
+            }
+
+            if (e.event === 'ccfgGraph') {
+                if (graphPanel === undefined) {
+                    graphPanel = new CCFGGraphPanel(context, e.session);
+                }
+                graphPanel.update(e.body);
+            }
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.debug.onDidTerminateDebugSession(session => {
+            if (session.type !== 'ccfg') return;
+            decorator.clear();
+            graphPanel?.dispose();
+            graphPanel = undefined;
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('ccfg-decorator.openGraph', () => {
+            const session = vscode.debug.activeDebugSession;
+            if (session?.type !== 'ccfg') {
+                vscode.window.showWarningMessage('No active CCFG debug session');
+                return;
+            }
+            if (graphPanel === undefined) {
+                graphPanel = new CCFGGraphPanel(context, session);
+            }
+            graphPanel.reveal();
+        })
+    );
 }
 
-// This method is called when your extension is deactivated
 export function deactivate() {}

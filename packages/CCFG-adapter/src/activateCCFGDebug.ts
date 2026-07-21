@@ -3,7 +3,7 @@
 import * as vscode from 'vscode';
 import { WorkspaceFolder, DebugConfiguration, ProviderResult, CancellationToken } from 'vscode';
 import { CCFGDebugSession } from './CCFGDebug';
-import { FileAccessor } from './CCFGRuntime';
+import { FileAccessor } from './InterpreterRuntime';
 
 export function activateCCFGDebug(context: vscode.ExtensionContext, factory?: vscode.DebugAdapterDescriptorFactory) {
 

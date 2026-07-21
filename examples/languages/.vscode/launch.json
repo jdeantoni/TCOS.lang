@@ -10,11 +10,14 @@
             "type": "extensionHost",
             "request": "launch",
             "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}"
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                 "--extensionDevelopmentPath=${workspaceFolder}/../../packages/ccfg-visualizer"
             ],
             "sourceMaps": true,
             "outFiles": [
-                "${workspaceFolder}/out/**/*.js"
+                "${workspaceFolder}/out/**/*.js",
+                "${workspaceFolder}/../../packages/ccfg-visualizer/out/**/*.js"
+
             ]
         },
         {

@@ -7,7 +7,28 @@ export interface FileAccessor {
 	readFile(path: string): Promise<Uint8Array>;
 	writeFile(path: string, contents: Uint8Array): Promise<void>;
 }
+export interface RuntimeVisualization {
 
+    dot: string;
+
+    activeNodes: {
+        nodeUid: number;
+        threadId: number;
+        color: string;
+    }[];
+
+    threadPositions: {
+        id: number;
+        file: string;
+        line: number;
+    }[];
+
+    threads: {
+        id: number;
+        color: string;
+        T: number;
+    }[];
+}
 export interface IRuntimeBreakpoint {
 	id: number;
 	line: number;
@@ -395,7 +416,7 @@ export class CCFGRuntime extends EventEmitter {
 		return this.interpreter?.getSnapshot?.().currentNode;
 	}
 
-	private getInterpreterDebugState(phase: string): Record<string, unknown> {
+	/*private getInterpreterDebugState(phase: string): Record<string, unknown> {
 		const snapshot = this.interpreter?.getSnapshot?.();
 		return {
 			phase,
@@ -411,7 +432,7 @@ export class CCFGRuntime extends EventEmitter {
 			})) ?? [],
 			globals: snapshot?.globals
 		};
-	}
+	}*/
 
 	private getNodesForPath(pathKey: string): any[] {
 		return (this.ccfg?.nodes ?? []).filter((node: any) => {
@@ -500,4 +521,60 @@ export class CCFGRuntime extends EventEmitter {
 			this.emit(event, ...args);
 		}, 0);
 	}
+	public getVisualization(): RuntimeVisualization {
+    const COLORS = [
+        '#FF5050', '#5050FF', '#50C850', '#FFB400', '#B400FF',
+        '#00C8FF', '#FF9600', '#C800C8', '#00C896', '#FF0096'
+    ];
+
+    const threads = this.getThreads();
+    const snapshot = this.interpreter?.getSnapshot?.();
+    const T = snapshot?.globals?.['__T'] ?? 0;
+
+    return {
+        dot: this.ccfg?.toDot?.() ?? '',
+        activeNodes: (snapshot?.threads ?? []).map((t: any, i: number) => ({
+            nodeUid:  t.currentNodeUid,
+            threadId: t.id,
+            color:    COLORS[i % COLORS.length]
+        })),
+        threadPositions: (snapshot?.threads ?? []).map((t: any, i: number) => {
+            const node = this.ccfg?.getNodeByUID?.(t.currentNodeUid);
+            const range = node?.astNode?.$cstNode?.range;
+            return {
+                id:    t.id,
+                file:  this.sourceFile,
+                line:  range ? range.start.line + 1 : 0,
+                color: COLORS[i % COLORS.length]
+            };
+        }),
+        threads: threads.map((t, i) => ({
+            id:    t.id,
+            color: COLORS[i % COLORS.length],
+            T:     Number(T)
+        }))
+    };
+}
+
+public async advanceTime(): Promise<any> {
+    if (this.interpreter === undefined) return;
+    const result = await this.interpreter.continueExecution({ 
+        ignoreBreakpoints: true, 
+        maxSteps: 1 
+    });
+    this.syncVariables();
+    return result;
+}
+
+public async stepThread(threadId: number): Promise<any> {
+    if (this.interpreter === undefined) return;
+    const result = await this.interpreter.step({ 
+        ignoreBreakpoints: false,
+        threadId 
+    });
+    this.syncVariables();
+    return result;
+}
+
+	
 }

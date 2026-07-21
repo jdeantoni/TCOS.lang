@@ -3,7 +3,7 @@ import {
 	LoggingDebugSession,
 	InitializedEvent, TerminatedEvent, StoppedEvent, BreakpointEvent, OutputEvent,
 	ProgressStartEvent, ProgressUpdateEvent, ProgressEndEvent, InvalidatedEvent,
-	Thread, StackFrame, Scope, Source, Handles, Breakpoint, MemoryEvent
+	Thread, StackFrame, Scope, Source, Handles, Breakpoint, MemoryEvent, Event as DebugEvent
 } from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
 import { basename } from 'path-browserify';
@@ -73,12 +73,15 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		// setup event handlers
 		this._runtime.on('stopOnEntry', () => {
 			this.sendStoppedEvent('entry');
+			this.emitVisualizationUpdate(); 
 		});
 		this._runtime.on('stopOnStep', () => {
 			this.sendStoppedEvent('step');
+			this.emitVisualizationUpdate(); 
 		});
 		this._runtime.on('stopOnBreakpoint', () => {
 			this.sendStoppedEvent('breakpoint');
+			this.emitVisualizationUpdate(); 
 		});
 		this._runtime.on('stopOnDataBreakpoint', () => {
 			this.sendStoppedEvent('data breakpoint');
@@ -119,6 +122,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		});
 		this._runtime.on('end', () => {
 			this.sendEvent(new TerminatedEvent());
+			this.emitVisualizationUpdate(); 
 		});
 	}
 
@@ -800,15 +804,46 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		this.sendResponse(response);
 	}
 
-	protected customRequest(command: string, response: DebugProtocol.Response, _args: unknown) {
-		if (command === 'toggleFormatting') {
-			this._valuesInHex = ! this._valuesInHex;
-			if (this._useInvalidatedEvent) {
-				this.sendEvent(new InvalidatedEvent( ['variables'] ));
-			}
-			this.sendResponse(response);
-		} else {
-			super.customRequest(command, response, _args);
+	protected customRequest(command: string, response: DebugProtocol.Response, args: any) {
+		switch (command) {
+
+			case 'toggleFormatting':
+				this._valuesInHex = !this._valuesInHex;
+				if (this._useInvalidatedEvent) {
+					this.sendEvent(new InvalidatedEvent(['variables']));
+				}
+				this.sendResponse(response);
+				break;
+
+			case 'getDot':
+				response.body = this._runtime.getVisualization();
+				this.sendResponse(response);
+				break;
+
+		
+			case 'ccfgStep':
+				void this._runtime.step(false, false);
+				this.sendResponse(response);
+				break;
+
+			case 'ccfgAdvanceTime':
+				void this._runtime.advanceTime().then(result => {
+					this.sendResponse(response);
+					this.emitVisualizationUpdate();
+					this.emitStopForResult(result);
+				});
+				break;
+
+			case 'ccfgStepThread':
+				void this._runtime.stepThread((args as any).threadId).then(result => {
+					this.sendResponse(response);
+					this.emitVisualizationUpdate();
+					this.emitStopForResult(result);
+				});
+				break;
+
+			default:
+				super.customRequest(command, response, args);
 		}
 	}
 
@@ -908,4 +943,29 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		(event.body as DebugProtocol.StoppedEvent['body']).allThreadsStopped = true;
 		this.sendEvent(event);
 	}
+	private emitVisualizationUpdate(): void {
+		const viz = this._runtime.getVisualization();
+		if (!viz.dot) return;
+
+		this.sendEvent(new DebugEvent('threadPositions', {
+			threads: viz.threadPositions
+		}));
+
+		this.sendEvent(new DebugEvent('ccfgGraph', {
+			dot:         viz.dot,
+			activeNodes: viz.activeNodes,
+			threads:     viz.threads
+		}));
+	}
+
+	private emitStopForResult(result: any): void {
+		if (result?.reason === 'breakpoint') {
+			this.sendStoppedEvent('breakpoint');
+		} else if (result?.status === 'terminated' || result?.reason === 'terminated') {
+			this.sendEvent(new TerminatedEvent());
+		} else {
+			this.sendStoppedEvent('step');
+		}
+	}
+	
 }

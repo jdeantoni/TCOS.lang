@@ -1,20 +1,47 @@
 {
   "name": "ccfg-decorator",
   "displayName": "CCFG Decorator",
+  "description": "Thread decorations and CCFG graph visualizer for CCFG debug sessions",
   "version": "0.0.1",
-  "engines": { "vscode": "^1.80.0" },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
   "activationEvents": [
     "onDebugType:ccfg"
   ],
-  "contributes": {},
+  "contributes": {
+    "commands": [
+      {
+        "command": "ccfg-decorator.openGraph",
+        "title": "CCFG: Open Graph Visualizer",
+        "icon": "$(graph)"
+      }
+    ],
+    "menus": {
+      "debug/toolbar": [
+        {
+          "command": "ccfg-decorator.openGraph",
+          "when": "debugType == ccfg",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "ccfg-decorator.openGraph",
+          "when": "debugType == ccfg"
+        }
+      ]
+    }
+  },
   "main": "./out/extension.js",
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./"
   },
   "devDependencies": {
-    "@types/vscode": "^1.80.0",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^18.0.0",
+    "@types/vscode": "^1.80.0",
     "typescript": "^5.0.0"
   }
 }

@@ -2,7 +2,7 @@ import { CCFGDebugSession } from './CCFGDebug';
 
 import { promises as fs } from 'fs';
 import * as Net from 'net';
-import { FileAccessor } from './CCFGRuntime';
+import { FileAccessor } from './InterpreterRuntime';
 
 /*
  * debugAdapter.js is the entrypoint of the debug adapter when it runs as a separate process.
