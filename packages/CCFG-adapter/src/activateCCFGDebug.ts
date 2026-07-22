@@ -20,7 +20,7 @@ export function activateCCFGDebug(context: vscode.ExtensionContext, factory?: vs
 					type: 'ccfg',
 					name: 'Run File',
 					request: 'launch',
-					program: targetResource.fsPath
+					sourceFile: targetResource.fsPath
 				},
 					{ noDebug: true }
 				);
@@ -68,19 +68,19 @@ export function activateCCFGDebug(context: vscode.ExtensionContext, factory?: vs
 					name: "Dynamic Launch",
 					request: "launch",
 					type: "ccfg",
-					program: "${file}"
+					sourceFile: "${file}"
 				},
 				{
 					name: "Another Dynamic Launch",
 					request: "launch",
 					type: "ccfg",
-					program: "${file}"
+					sourceFile: "${file}"
 				},
 				{
 					name: "CCFG Launch",
 					request: "launch",
 					type: "ccfg",
-					program: "${file}"
+					sourceFile: "${file}"
 				}
 			];
 		}
@@ -158,16 +158,16 @@ class CCFGConfigurationProvider implements vscode.DebugConfigurationProvider {
 		// if launch.json is missing or empty
 		if (!config.type && !config.request && !config.name) {
 			const editor = vscode.window.activeTextEditor;
-			if (editor && editor.document.languageId === 'markdown') {
+			if (editor) {
 				config.type = 'ccfg';
 				config.name = 'Launch';
 				config.request = 'launch';
-				config.program = '${file}';
+				config.sourceFile = '${file}';
 				config.stopOnEntry = true;
 			}
 		}
 
-		if (!config.program) {
+		if (!config.sourceFile) {
 			return vscode.window.showInformationMessage("Cannot find a program to debug").then(_ => {
 				return undefined;	// abort launch
 			});
