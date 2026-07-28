@@ -1,80 +1,30 @@
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 
 export function patchExtensionMain(
     projectRoot: string,
     languageName: string,
     fileName: string
 ): void {
-
-    const languageClass = languageName;
-
-    const importFileName = fileName.split('.')[0];
-
-/*    const languageFileName =
-        languageName.charAt(0).toLowerCase() +
-        languageName.slice(1);*/
-    
-    const filePath = path.join(
-        projectRoot,
-        "src",
-        "extension",
-        "main.ts"
-    );
-
-    let content = fs.readFileSync(
-        filePath,
-        "utf8"
-    );
+    const filePath = path.join(projectRoot, "src", "extension", "main.ts");
+    let content = fs.readFileSync(filePath, "utf8");
 
     content = content.replace(
-        "import type * as vscode from 'vscode';",
-        "import * as vscode from 'vscode';"
+        /import type \* as vscode from ['"]vscode['"]/,
+        `import * as vscode from 'vscode'`
     );
 
-    content = content.replace(
-        'import type * as vscode from "vscode";',
-        'import * as vscode from "vscode";'
-    );
-
-    const importLine =
-        `import { ${languageClass}DebugConfigurationProvider } from '../cli/generated/${importFileName}DebugConfigurationProvider.js';\n`;
-
-    if (
-        !content.includes(
-            `${languageClass}DebugConfigurationProvider`
-        )
-    ) {
-
-        content =
-            importLine + content;
+    const importLine = `import { registerCCFGDebug } from './ccfgDebugSetup.js';\n`;
+    if (!content.includes('registerCCFGDebug')) {
+        content = importLine + content;
     }
 
-    const registrationCode =
-`client = startLanguageClient(context);
-
-    context.subscriptions.push(
-        vscode.debug.registerDebugConfigurationProvider(
-            'ccfg',
-            new ${languageClass}DebugConfigurationProvider(context)
-        )
-    );`;
-
-    if (
-        !content.includes(
-            `new ${languageClass}DebugConfigurationProvider`
-        )
-    ) {
-
+    if (!content.includes('registerCCFGDebug(context)')) {
         content = content.replace(
             "client = startLanguageClient(context);",
-            registrationCode
+            `client = startLanguageClient(context);\n    registerCCFGDebug(context);`
         );
     }
 
-    fs.writeFileSync(
-        filePath,
-        content
-    );
+    fs.writeFileSync(filePath, content);
 }
-

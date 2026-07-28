@@ -15,6 +15,7 @@ import { generateDebugFacadeFromSoS } from './facade/facadeGeneration.js';
 import { generateDebugConfigFromSoS } from './facade/debugConfigGeneration.js';
 
 import { patchExtensionMain } from './facade/extensionPatch.js';
+import {generateCCFGDebugSetup} from './facade/generateCCFGDebugSetup.js'
 import { patchPackageJson } from './facade/jsonPatch.js';
 
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
@@ -80,7 +81,8 @@ export const generateAction = async (
         destination
     );
 
-    patchExtensionMain(projectRoot, model.name,fileName);
+    generateCCFGDebugSetup(projectRoot, model.name, fileName);
+    patchExtensionMain(projectRoot, model.name, fileName);
     patchPackageJson(projectRoot, model.name);
 
     console.log(
