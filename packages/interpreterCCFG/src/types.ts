@@ -44,6 +44,7 @@ export interface InterpreterSnapshot {
 export interface ThreadSnapshot {
     id: number;
     currentNodeUid?: number;
+    currentInstructionIndex?: number;
     ownerUid: number;
     parentId?: number;
     waitingJoinUid?: number;

@@ -124,6 +124,7 @@ export function getDebugState(state: InterpreterRuntimeState, phase: string): Re
             threadId: entry.thread.id,
             nodeUid: entry.thread.currentNode?.uid,
             nodeType: entry.thread.currentNode?.getType(),
+            instructionIndex: entry.thread.currentInstructionIndex,
             readyAt: entry.readyAt,
             waitingEvent: entry.waitingEvent,
             locals: Object.fromEntries(entry.thread.locals)

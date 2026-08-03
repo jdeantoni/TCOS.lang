@@ -9,6 +9,7 @@ import { endThread, setThreadReadyAt } from "./thread-queue.js";
 interface InstructionResult {
     didReturn: boolean;
     suspended?: boolean;
+    completed?: boolean;
     value?: unknown;
 }
 
@@ -16,7 +17,7 @@ export async function executeNodeInstructions(
     state: InterpreterRuntimeState,
     thread: RuntimeThread,
     node: ccfg.Node
-): Promise<boolean> {
+): Promise<InstructionResult> {
     if (state.debug && node.functionsDefs.length > 0) {
         state.lastEvent = {
             kind: "node",
@@ -26,18 +27,36 @@ export async function executeNodeInstructions(
         };
     }
 
-    if (node.functionsDefs.length === 0) return false;
+    if (node.functionsDefs.length === 0) return { didReturn: false, completed: true };
 
-    bindParameters(thread, node.params);
-    for (const instruction of node.functionsDefs) {
-        const returned = await executeInstruction(state, thread, instruction, node);
-        if (returned.didReturn) {
-            thread.tempValues.push(returned.value);
-            return false;
-        }
-        if (returned.suspended) return true;
+    if (thread.currentInstructionIndex === undefined) {
+        thread.currentInstructionIndex = 0;
+        bindParameters(thread, node.params);
     }
-    return false;
+
+    const instructionIndex = thread.currentInstructionIndex;
+    const instruction = node.functionsDefs[instructionIndex];
+    if (instruction === undefined) {
+        thread.currentInstructionIndex = undefined;
+        return { didReturn: false, completed: true };
+    }
+
+    const returned = await executeInstruction(state, thread, instruction, node, instructionIndex);
+    if (returned.didReturn) {
+        thread.currentInstructionIndex = undefined;
+        thread.tempValues.push(returned.value);
+        return { didReturn: true, completed: true };
+    }
+    if (returned.suspended) {
+        return { didReturn: false, suspended: true };
+    }
+
+    thread.currentInstructionIndex = instructionIndex + 1;
+    if (thread.currentInstructionIndex >= node.functionsDefs.length) {
+        thread.currentInstructionIndex = undefined;
+        return { didReturn: false, completed: true };
+    }
+    return { didReturn: false, completed: false };
 }
 
 function bindParameters(thread: RuntimeThread, params: ccfg.TypedElement[]): void {
@@ -53,7 +72,8 @@ async function executeInstruction(
     state: InterpreterRuntimeState,
     thread: RuntimeThread,
     instruction: ccfg.Instruction,
-    node: ccfg.Node
+    node: ccfg.Node,
+    instructionIndex: number
 ): Promise<InstructionResult> {
     if (state.debug) console.log("EXEC", instruction.constructor.name);
     if (instruction instanceof ccfg.CreateVarInstruction) {
@@ -98,6 +118,7 @@ async function executeInstruction(
 
         if (nextNode !== undefined) {
             thread.currentNode = nextNode;
+            thread.currentInstructionIndex = undefined;
             setThreadReadyAt(state, thread, wakeAt);
         } else {
             endThread(state, thread);
@@ -116,6 +137,9 @@ async function executeInstruction(
     }
     if (instruction instanceof ccfg.WaitEventInstruction) {
         const suspended = waitEventDiscrete(state, instruction, thread, node);
+        if (suspended) {
+            thread.currentInstructionIndex = instructionIndex;
+        }
         return { didReturn: false, suspended };
     }
     if (instruction instanceof ccfg.AckEventInstruction) {

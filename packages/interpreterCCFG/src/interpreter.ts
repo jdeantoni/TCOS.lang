@@ -1,8 +1,8 @@
 import * as ccfg from "ccfg";
 import { getCurrentNode, getCurrentSourceKey, getCurrentThread, getScopes, getSnapshot, getStackTrace, getThreads, getVariables, result } from "./debug-state.js";
-import { resume, step } from "./execution.js";
+import { resume, step, stepInto, stepOver } from "./execution.js";
 import { prepareCCFG, snapshotNode } from "./graph-utils.js";
-import { DiscreteClock, RoundRobinScheduler } from "./runtime.js";
+import { DiscreteClock, RandomScheduler } from "./runtime.js";
 import { createRuntimeState, type InterpreterRuntimeState } from "./state.js";
 import { createThread, enqueueThread, getSleepingThreads } from "./thread-queue.js";
 import type * as types from "./types.js";
@@ -13,7 +13,7 @@ export class CCFGInterpreter {
     private readonly state: InterpreterRuntimeState;
 
     constructor(ccfg: ccfg.CCFG, options: types.CCFGInterpreterOptions = {}) {
-        const scheduler = options.scheduler ?? new RoundRobinScheduler();
+        const scheduler = options.scheduler ?? new RandomScheduler();
         this.state = createRuntimeState(ccfg, options, scheduler);
 
         if (options.prepareCCFG ?? true) {
@@ -179,19 +179,19 @@ export class CCFGInterpreter {
     }
 
     async next(options: types.RunOptions = {}): Promise<types.StepResult> {
-        return this.step(options);
+        return this.stepOver(options);
     }
 
     async stepIn(options: types.RunOptions = {}): Promise<types.StepResult> {
-        return this.step(options);
+        return stepInto(this.state, options);
     }
 
     async stepOver(options: types.RunOptions = {}): Promise<types.StepResult> {
-        return this.step(options);
+        return stepOver(this.state, options);
     }
 
     async stepOut(options: types.RunOptions = {}): Promise<types.StepResult> {
-        return this.step(options);
+        return stepOver(this.state, options);
     }
 
     pause(): types.StepResult {

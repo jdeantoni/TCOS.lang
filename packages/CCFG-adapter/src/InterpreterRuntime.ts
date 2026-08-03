@@ -175,16 +175,20 @@ export class CCFGRuntime extends EventEmitter {
 		void this.runContinue(reverse);
 	}
 
-	public step(instruction: boolean, reverse: boolean): void {
-		void this.runStep(instruction, reverse);
+	public stepOver(reverse: boolean): void {
+		void this.runStep("over", reverse);
 	}
 
 	public stepIn(targetId: number | undefined): void {
-		void this.runStep(targetId !== undefined, false);
+		void this.runStep("into", false);
 	}
 
 	public stepOut(): void {
-		void this.runStep(false, false);
+		void this.runStep("out", false);
+	}
+
+	public step(instruction: boolean, reverse: boolean): void {
+		void this.runStep(instruction ? "into" : "over", reverse);
 	}
 
 	public getStepInTargets(frameId: number): IRuntimeStepInTargets[] {
@@ -312,14 +316,18 @@ export class CCFGRuntime extends EventEmitter {
 		this.emitStopForResult(result);
 	}
 
-	private async runStep(instruction: boolean, _reverse: boolean): Promise<void> {
+	private async runStep(mode: "over" | "into" | "out", _reverse: boolean): Promise<void> {
 		if (this.interpreter === undefined) return;
 
-		//console.log('[CCFGRuntime.runStep]', { instruction, ...this.getInterpreterDebugState('before-step') });
-		const result = await this.interpreter.step({ ignoreBreakpoints: true });
+		//console.log('[CCFGRuntime.runStep]', { mode, ...this.getInterpreterDebugState('before-step') });
+		const result = mode === "into"
+			? await this.interpreter.stepIn({ ignoreBreakpoints: true })
+			: mode === "out"
+				? await this.interpreter.stepOut({ ignoreBreakpoints: true })
+				: await this.interpreter.stepOver({ ignoreBreakpoints: true });
 		this.syncVariables();
 		/*console.log('[CCFGRuntime.runStep]', {
-			instruction,
+			mode,
 			...this.getInterpreterDebugState('after-step'),
 			result,
 			locals: Array.from(this.locals.entries()).map(([name, variable]) => ({ name, value: variable.value })),

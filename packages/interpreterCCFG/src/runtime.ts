@@ -5,6 +5,15 @@ export interface Scheduler {
     nextThread(threads: RuntimeThread[], lastThreadIndex: number): number;
 }
 
+export class RandomScheduler implements Scheduler {
+    nextThread(threads: RuntimeThread[], _lastThreadIndex: number): number {
+        if (threads.length === 0) {
+            return -1;
+        }
+        return Math.floor(Math.random() * threads.length);
+    }
+}
+
 export interface Clock {
     now(): number;
     sleep(ms: number): Promise<void>;
@@ -50,6 +59,7 @@ export class RuntimeThread {
     readonly parentId: number | undefined;
     readonly waitingJoin: ccfg.Join | undefined;
     currentNode: ccfg.Node | undefined;
+    currentInstructionIndex: number | undefined;
     readonly locals: Map<string, unknown>;
     readonly tempValues: unknown[] = [];
 
@@ -57,6 +67,7 @@ export class RuntimeThread {
         this.id = id;
         this.owner = owner;
         this.currentNode = currentNode;
+        this.currentInstructionIndex = undefined;
         this.parentId = parentId;
         this.waitingJoin = waitingJoin;
         this.locals = locals ?? new Map<string, unknown>();
@@ -70,6 +81,9 @@ export class RuntimeThread {
         };
         if (this.currentNode !== undefined) {
             snapshot.currentNodeUid = this.currentNode.uid;
+        }
+        if (this.currentInstructionIndex !== undefined) {
+            snapshot.currentInstructionIndex = this.currentInstructionIndex;
         }
         if (this.parentId !== undefined) {
             snapshot.parentId = this.parentId;

@@ -3,7 +3,6 @@ import { visitNode } from "./node-dispatch.js";
 import type { InterpreterRuntimeState } from "./state.js";
 import type * as types from "./types.js";
 import { advanceTime, hasRunnableThread, hasScheduledThread, nextRunnableThreadIndex, removeThreadAt } from "./thread-queue.js";
-import { start } from "repl";
 
 export async function resume(state: InterpreterRuntimeState, options: types.RunOptions = {}): Promise<types.StepResult> {
     if (state.status === "terminated" || state.status === "stopped") {
@@ -39,13 +38,11 @@ export async function resume(state: InterpreterRuntimeState, options: types.RunO
 }
 
 export async function step(state: InterpreterRuntimeState, options: types.RunOptions = {}): Promise<types.StepResult> {
-    //if (state.debug) console.log("[CCFGInterpreter.step]", getDebugState(state, "before-step"));
-    const stepResult = await stepSource(state, options);
-    //if (state.debug) console.log("[CCFGInterpreter.step]", { ...getDebugState(state, "after-step"), result: stepResult });
+    const stepResult = await stepOver(state, options);
     return stepResult;
 }
 
-async function stepSource(state: InterpreterRuntimeState, options: types.RunOptions): Promise<types.StepResult> {
+export async function stepOver(state: InterpreterRuntimeState, options: types.RunOptions = {}): Promise<types.StepResult> {
     const startLine = getCurrentSourceKey(state);
     const startT = state.T;
     const startStepCount = state.stepCount;
@@ -75,6 +72,43 @@ async function stepSource(state: InterpreterRuntimeState, options: types.RunOpti
         }
 
         if (line !== startLine) {
+            return stepResult;
+        }
+
+        if (!hasRunnableThread(state) && !hasScheduledThread(state)) {
+            return stepResult;
+        }
+    }
+}
+
+export async function stepInto(state: InterpreterRuntimeState, options: types.RunOptions = {}): Promise<types.StepResult> {
+    const startNodeUid = getCurrentNodeUid(state);
+    const startT = state.T;
+    const startStepCount = state.stepCount;
+    const maxNodeSteps = options.maxSteps ?? state.maxSteps ?? 1000;
+
+    while (true) {
+        const stepResult = await advanceOne(state, options, true);
+        if (stepResult.status === "terminated" || stepResult.status === "stopped" || stepResult.status === "error") {
+            return stepResult;
+        }
+        if (state.T !== startT) {
+            return stepResult;
+        }
+
+        if (state.stepCount - startStepCount >= maxNodeSteps) {
+            return stepResult;
+        }
+
+        const currentNodeUid = getCurrentNodeUid(state);
+        if (currentNodeUid === undefined) {
+            if (state.executionQueue.length === 0) {
+                return stepResult;
+            }
+            continue;
+        }
+
+        if (currentNodeUid !== startNodeUid) {
             return stepResult;
         }
 
@@ -158,4 +192,9 @@ async function advanceOne(
         //if (state.debug) console.log("[CCFGInterpreter.advanceOne]", { ...getDebugState(state, "advance-error"), error });
         return result(state, "error", error);
     }
+}
+
+function getCurrentNodeUid(state: InterpreterRuntimeState): number | undefined {
+    const thread = state.executionQueue[state.lastThreadIndex]?.thread ?? state.executionQueue[0]?.thread;
+    return thread?.currentNode?.uid;
 }

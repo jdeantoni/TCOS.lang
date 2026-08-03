@@ -26,7 +26,8 @@ export async function visitNode(state: InterpreterRuntimeState, thread: RuntimeT
     }
 
     const suspended = await executeNodeInstructions(state, thread, node);
-    if (suspended) return;
+    if (suspended.suspended) return;
+    if (!suspended.completed) return;
     thread.currentNode = firstTarget(node);
     if (thread.currentNode === undefined) {
         endThread(state, thread);
@@ -64,16 +65,17 @@ async function visitAndJoin(state: InterpreterRuntimeState, thread: RuntimeThrea
     const joinState = state.joinStates.get(node.uid);
     if (joinState === undefined) {
         const suspended = await executeNodeInstructions(state, thread, node);
-        if (suspended) return;
+        if (suspended.suspended) return;
+        if (!suspended.completed) return;
         thread.currentNode = firstTarget(node);
         return;
     }
 
     joinState.arrived++;
     joinState.tempValues.push(...thread.tempValues);
-    endThread(state, thread);
 
     if (joinState.arrived < joinState.expected) {
+        endThread(state, thread);
         state.lastEvent = {
             kind: "join",
             threadId: thread.id,
@@ -84,19 +86,15 @@ async function visitAndJoin(state: InterpreterRuntimeState, thread: RuntimeThrea
     }
 
     state.joinStates.delete(node.uid);
-    const next = firstTarget(node);
-    if (next === undefined) return;
-
-    const continuation = createThread(state, next, next, joinState.parentId, undefined, joinState.locals);
-    continuation.tempValues.push(...joinState.tempValues);
-    enqueueThread(state, continuation);
-    const suspended = await executeNodeInstructions(state, continuation, node);
-    if (!suspended) continuation.currentNode = next;
+    thread.tempValues.length = 0;
+    thread.tempValues.push(...joinState.tempValues);
+    thread.currentNode = node;
+    thread.currentInstructionIndex = undefined;
     state.lastEvent = {
         kind: "join",
-        threadId: continuation.id,
+        threadId: thread.id,
         nodeUid: node.uid,
-        data: { arrived: joinState.arrived, expected: joinState.expected, resumedAt: next.uid }
+        data: { arrived: joinState.arrived, expected: joinState.expected, resumedAt: node.uid }
     };
 }
 
@@ -113,7 +111,8 @@ async function visitOrJoin(state: InterpreterRuntimeState, thread: RuntimeThread
         }
     }
     const suspended = await executeNodeInstructions(state, thread, node);
-    if (suspended) return;
+    if (suspended.suspended) return;
+    if (!suspended.completed) return;
     if (next === undefined) {
         endThread(state, thread);
         return;

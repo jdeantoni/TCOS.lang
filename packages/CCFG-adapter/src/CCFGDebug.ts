@@ -506,12 +506,12 @@ export class CCFGDebugSession extends LoggingDebugSession {
  	}
 
 	protected nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments): void {
-		this._runtime.step(args.granularity === 'instruction', false);
+		this._runtime.stepOver(false);
 		this.sendResponse(response);
 	}
 
 	protected stepBackRequest(response: DebugProtocol.StepBackResponse, args: DebugProtocol.StepBackArguments): void {
-		this._runtime.step(args.granularity === 'instruction', true);
+		this._runtime.stepOver(true);
 		this.sendResponse(response);
 	}
 
