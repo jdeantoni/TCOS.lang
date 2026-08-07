@@ -25,9 +25,27 @@ export interface RuntimeVisualization {
 
     threads: {
         id: number;
+        label: string;
         color: string;
         T: number;
     }[];
+}
+
+export interface RuntimeCapabilities {
+    threads: boolean;
+    events: boolean;
+    time: boolean;
+    mutableVariables: boolean;
+    stateMachines: boolean;
+    currentNode?: {
+        uid: number;
+        type: string;
+    };
+    lastEvent?: {
+        kind: string;
+        message?: string;
+        data?: unknown;
+    };
 }
 export interface IRuntimeBreakpoint {
 	id: number;
@@ -262,6 +280,23 @@ export class CCFGRuntime extends EventEmitter {
 	public getLocalVariable(name: string): RuntimeVariable | undefined {
 		this.syncVariables();
 		return this.locals.get(name);
+	}
+
+	public setVariable(scopeName: 'locals' | 'globals' | 'temporaries', name: string, value: IRuntimeVariableType): boolean {
+		if (this.interpreter?.setVariable === undefined) {
+			return false;
+		}
+		const threadId = this.resolveThreadId(this.selectedThreadId);
+		if (threadId === undefined) {
+			return false;
+		}
+		const scope = (this.interpreter.getScopes(threadId) ?? []).find((candidate: any) => candidate.name === scopeName);
+		if (scope === undefined) {
+			return false;
+		}
+		const didSet = this.interpreter.setVariable(scope.variablesReference, name, value);
+		this.syncVariables();
+		return didSet;
 	}
 
 	public setDataBreakpoint(_address: string, _accessType: 'read' | 'write' | 'readWrite'): boolean {
@@ -546,22 +581,93 @@ export class CCFGRuntime extends EventEmitter {
             threadId: t.id,
             color:    COLORS[i % COLORS.length]
         })),
-        threadPositions: (snapshot?.threads ?? []).map((t: any, i: number) => {
+        threadPositions: (snapshot?.threads ?? []).flatMap((t: any, i: number) => {
             const node = this.ccfg?.getNodeByUID?.(t.currentNodeUid);
-            const range = node?.astNode?.$cstNode?.range;
+            const source = node === undefined ? undefined : this.getNodeSource(node);
+            if (source?.line === undefined || source.line <= 0) {
+                return [];
+            }
+            return [{
+                id:    t.id,
+                file:  source.path ?? this.sourceFile,
+                line:  source.line,
+                color: COLORS[i % COLORS.length]
+            }];
+        }),
+        threads: threads.map((t, i) => {
+            const threadSnapshot = snapshot?.threads?.find((thread: any) => thread.id === t.id);
+            const node = this.getNodeByUid(threadSnapshot?.currentNodeUid);
             return {
                 id:    t.id,
-                file:  this.sourceFile,
-                line:  range ? range.start.line + 1 : 0,
-                color: COLORS[i % COLORS.length]
+                label: this.getThreadLabel(t.id, node),
+                color: COLORS[i % COLORS.length],
+                T:     Number(T)
             };
-        }),
-        threads: threads.map((t, i) => ({
-            id:    t.id,
-            color: COLORS[i % COLORS.length],
-            T:     Number(T)
-        }))
+        })
     };
+}
+
+public getCapabilities(): RuntimeCapabilities {
+    const snapshot = this.interpreter?.getSnapshot?.();
+    const currentNode = this.getNodeByUid(snapshot?.currentNode?.uid);
+    const activeNodes = (snapshot?.threads ?? [])
+        .map((thread: any) => this.getNodeByUid(thread.currentNodeUid))
+        .filter((node: any | undefined): node is any => node !== undefined);
+    const relevantNodes = [
+        currentNode,
+        ...activeNodes
+    ].filter((node: any | undefined): node is any => node !== undefined);
+    const lastEvent = snapshot?.lastEvent;
+
+    const hasThreads =
+        (snapshot?.threads?.length ?? 0) > 1
+        || relevantNodes.some(node => this.isParallelNode(node))
+        || lastEvent?.kind === 'fork'
+        || lastEvent?.kind === 'join'
+        || lastEvent?.kind === 'thread-start'
+        || lastEvent?.kind === 'thread-end';
+
+    const hasEvents =
+        relevantNodes.some(node => this.nodeHasInstruction(node, 'Event'))
+        || lastEvent?.kind === 'event';
+
+    const hasTime =
+        Number(snapshot?.globals?.['__sleeping'] ?? 0) > 0
+        || relevantNodes.some(node => this.nodeHasInstruction(node, 'Sleep'))
+        || lastEvent?.kind === 'sleep';
+
+    const mutableNames = [
+        ...this.getLocalVariables().map(variable => variable.name),
+        ...Array.from(this.globals.keys()).filter(name => !name.startsWith('__'))
+    ];
+
+    const hasStateMachine =
+        relevantNodes.some(node => /state|fsm/i.test(`${node.getType?.() ?? ''} ${node.functionsNames?.join(' ') ?? ''}`))
+        || mutableNames.some(name => /state|fsm/i.test(name));
+
+    const capabilities: RuntimeCapabilities = {
+        threads: hasThreads,
+        events: hasEvents,
+        time: hasTime,
+        mutableVariables: mutableNames.length > 0,
+        stateMachines: hasStateMachine
+    };
+
+    if (currentNode !== undefined) {
+        capabilities.currentNode = {
+            uid: currentNode.uid,
+            type: currentNode.getType?.() ?? 'Node'
+        };
+    }
+    if (lastEvent !== undefined) {
+        capabilities.lastEvent = {
+            kind: lastEvent.kind,
+            message: lastEvent.message,
+            data: lastEvent.data
+        };
+    }
+
+    return capabilities;
 }
 
 public async advanceTime(): Promise<any> {
@@ -582,6 +688,30 @@ public async stepThread(threadId: number): Promise<any> {
     });
     this.syncVariables();
     return result;
+}
+
+private getNodeByUid(uid: number | undefined): any | undefined {
+    if (uid === undefined) return undefined;
+    return this.ccfg?.getNodeByUID?.(uid);
+}
+
+private isParallelNode(node: any): boolean {
+    const type = node.getType?.();
+    return type === 'Fork' || type === 'AndJoin' || type === 'OrJoin' || type === 'Join';
+}
+
+private nodeHasInstruction(node: any, pattern: string): boolean {
+    return (node.functionsDefs ?? []).some((instruction: any) =>
+        instruction?.constructor?.name?.includes(pattern)
+    );
+}
+
+private getThreadLabel(threadId: number, node: any | undefined): string {
+    if (node === undefined) {
+        return `Thread ${threadId}`;
+    }
+    const type = node.getType?.() ?? 'Node';
+    return `Thread ${threadId} · ${type} ${node.uid}`;
 }
 
 	

@@ -4,7 +4,7 @@ import { resume, step, stepInto, stepOver } from "./execution.js";
 import { prepareCCFG, snapshotNode } from "./graph-utils.js";
 import { DiscreteClock, RandomScheduler } from "./runtime.js";
 import { createRuntimeState, type InterpreterRuntimeState } from "./state.js";
-import { createThread, enqueueThread, getSleepingThreads } from "./thread-queue.js";
+import { createThread, enqueueThread, findThread, getSleepingThreads } from "./thread-queue.js";
 import type * as types from "./types.js";
 
 export { DiscreteClock } from "./runtime.js";
@@ -158,6 +158,37 @@ export class CCFGInterpreter {
         return getVariables(this.state, variablesReference);
     }
 
+    setVariable(variablesReference: number, name: string, value: unknown): boolean {
+        const scope = this.getScopesForVariableReference(variablesReference);
+        if (scope === undefined) return false;
+
+        if (scope.scope === "globals") {
+            if (name === "__T" && typeof value === "number") {
+                this.state.T = value;
+                this.state.clock.advanceTo(value);
+                return true;
+            }
+            if (name.startsWith("__")) return false;
+            this.state.sigma.set(this.toInternalGlobalName(name), value);
+            return true;
+        }
+
+        const thread = findThread(this.state, scope.threadId);
+        if (thread === undefined) return false;
+
+        if (scope.scope === "locals") {
+            thread.locals.set(name, value);
+            return true;
+        }
+
+        const temporaryIndex = /^\[(\d+)\]$/.exec(name)?.[1];
+        if (temporaryIndex === undefined) return false;
+        const index = Number(temporaryIndex);
+        if (!Number.isInteger(index) || index < 0 || index >= thread.tempValues.length) return false;
+        thread.tempValues[index] = value;
+        return true;
+    }
+
     async execute(options: types.RunOptions = {}): Promise<types.StepResult> {
         return this.resume(options);
     }
@@ -219,6 +250,22 @@ export class CCFGInterpreter {
                 }
             }
         }
+    }
+
+    private getScopesForVariableReference(variablesReference: number): { threadId: number; scope: types.ScopeSnapshot["name"] } | undefined {
+        const scopeId = variablesReference % 10;
+        const threadId = Math.floor(variablesReference / 10);
+        if (scopeId === 1) return { threadId, scope: "locals" };
+        if (scopeId === 2) return { threadId, scope: "globals" };
+        if (scopeId === 3) return { threadId, scope: "temporaries" };
+        return undefined;
+    }
+
+    private toInternalGlobalName(name: string): string {
+        for (const [internalName, sourceName] of this.state.sigmaNameMap) {
+            if (sourceName === name) return internalName;
+        }
+        return name;
     }
 }
 

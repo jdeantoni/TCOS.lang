@@ -479,12 +479,27 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		const container = this._variableHandles.get(args.variablesReference);
 		const rv = container === 'locals'
 			? this._runtime.getLocalVariable(args.name)
+			: container === 'globals'
+			? new RuntimeVariable(args.name, this.convertToRuntime(args.value))
 			: container instanceof RuntimeVariable && container.value instanceof Array
 			? container.value.find(v => v.name === args.name)
 			: undefined;
 
 		if (rv) {
-			rv.value = this.convertToRuntime(args.value);
+			const runtimeValue = this.convertToRuntime(args.value);
+			rv.value = runtimeValue;
+			const didSetRuntime = container === 'locals' || container === 'globals'
+				? this._runtime.setVariable(container, args.name, runtimeValue)
+				: true;
+			if (!didSetRuntime) {
+				this.sendErrorResponse(response, {
+					id: 1004,
+					format: `variable '{name}' cannot be modified`,
+					variables: { name: args.name },
+					showUser: true
+				});
+				return;
+			}
 			response.body = this.convertFromRuntime(rv);
 
 			if (rv.memory && rv.reference) {
@@ -820,6 +835,11 @@ export class CCFGDebugSession extends LoggingDebugSession {
 				this.sendResponse(response);
 				break;
 
+			case 'ccfgCapabilities':
+				response.body = this._runtime.getCapabilities();
+				this.sendResponse(response);
+				break;
+
 		
 			case 'ccfgStep':
 				void this._runtime.step(false, false);
@@ -946,6 +966,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 	private emitVisualizationUpdate(): void {
 		const viz = this._runtime.getVisualization();
 		if (!viz.dot) return;
+		const capabilities = this._runtime.getCapabilities();
 
 		this.sendEvent(new DebugEvent('threadPositions', {
 			threads: viz.threadPositions
@@ -954,7 +975,12 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		this.sendEvent(new DebugEvent('ccfgGraph', {
 			dot:         viz.dot,
 			activeNodes: viz.activeNodes,
-			threads:     viz.threads
+			threads:     viz.threads,
+			capabilities
+		}));
+
+		this.sendEvent(new DebugEvent('ccfgCapabilities', {
+			capabilities
 		}));
 	}
 

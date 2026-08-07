@@ -1,14 +1,26 @@
 import * as vscode from 'vscode';
 import { ThreadDecoratorManager } from './decorators';
-import { CCFGGraphPanel } from './graphPanel';
+import { CCFGGraphPanel, type CCFGCapabilities } from './graphPanel';
 
 export function activate(context: vscode.ExtensionContext) {
 
     const decorator = new ThreadDecoratorManager();
     let graphPanel: CCFGGraphPanel | undefined;
 
+    async function refreshCapabilities(session: vscode.DebugSession): Promise<CCFGCapabilities | undefined> {
+        if (session.type !== 'ccfg') return undefined;
+        try {
+            const capabilities = await session.customRequest('ccfgCapabilities') as CCFGCapabilities;
+            await setCapabilityContexts(capabilities);
+            graphPanel?.updateCapabilities(capabilities);
+            return capabilities;
+        } catch {
+            return undefined;
+        }
+    }
+
     context.subscriptions.push(
-        vscode.debug.onDidReceiveDebugSessionCustomEvent(e => {
+        vscode.debug.onDidReceiveDebugSessionCustomEvent(async e => {
             if (e.session.type !== 'ccfg') return;
 
             if (e.event === 'threadPositions') {
@@ -19,7 +31,16 @@ export function activate(context: vscode.ExtensionContext) {
                 if (graphPanel === undefined) {
                     graphPanel = new CCFGGraphPanel(context, e.session);
                 }
-                graphPanel.update(e.body);
+                const capabilities = await refreshCapabilities(e.session) ?? e.body.capabilities;
+                graphPanel.update({ ...e.body, capabilities });
+            }
+
+            if (e.event === 'ccfgCapabilities') {
+                const capabilities = await refreshCapabilities(e.session) ?? e.body.capabilities;
+                if (capabilities !== undefined) {
+                    await setCapabilityContexts(capabilities);
+                    graphPanel?.updateCapabilities(capabilities);
+                }
             }
         })
     );
@@ -30,6 +51,7 @@ export function activate(context: vscode.ExtensionContext) {
             decorator.clear();
             graphPanel?.dispose();
             graphPanel = undefined;
+            void setCapabilityContexts();
         })
     );
 
@@ -43,9 +65,18 @@ export function activate(context: vscode.ExtensionContext) {
             if (graphPanel === undefined) {
                 graphPanel = new CCFGGraphPanel(context, session);
             }
+            void refreshCapabilities(session);
             graphPanel.reveal();
         })
     );
 }
 
 export function deactivate() {}
+
+async function setCapabilityContexts(capabilities?: Partial<CCFGCapabilities>): Promise<void> {
+    await vscode.commands.executeCommand('setContext', 'ccfg.capabilities.threads', Boolean(capabilities?.threads));
+    await vscode.commands.executeCommand('setContext', 'ccfg.capabilities.events', Boolean(capabilities?.events));
+    await vscode.commands.executeCommand('setContext', 'ccfg.capabilities.time', Boolean(capabilities?.time));
+    await vscode.commands.executeCommand('setContext', 'ccfg.capabilities.mutableVariables', Boolean(capabilities?.mutableVariables));
+    await vscode.commands.executeCommand('setContext', 'ccfg.capabilities.stateMachines', Boolean(capabilities?.stateMachines));
+}

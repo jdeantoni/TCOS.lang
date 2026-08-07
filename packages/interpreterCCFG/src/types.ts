@@ -18,6 +18,7 @@ export interface RunOptions {
     maxSteps?: number;
     timeoutMs?: number;
     ignoreBreakpoints?: boolean;
+    threadId?: number;
 }
 
 export interface StepResult {

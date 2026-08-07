@@ -76,6 +76,10 @@ export function nextRunnableThreadIndex(state: InterpreterRuntimeState): number 
     return state.executionQueue.findIndex(candidate => candidate.thread.id === entry.thread.id);
 }
 
+export function runnableThreadIndex(state: InterpreterRuntimeState, threadId: number): number {
+    return state.executionQueue.findIndex(entry => entry.thread.id === threadId && isRunnable(state, entry));
+}
+
 export function hasRunnableThread(state: InterpreterRuntimeState): boolean {
     return state.executionQueue.some(entry => isRunnable(state, entry));
 }

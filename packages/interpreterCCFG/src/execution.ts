@@ -2,7 +2,7 @@ import { getCurrentSourceKey, getDebugState, result } from "./debug-state.js";
 import { visitNode } from "./node-dispatch.js";
 import type { InterpreterRuntimeState } from "./state.js";
 import type * as types from "./types.js";
-import { advanceTime, hasRunnableThread, hasScheduledThread, nextRunnableThreadIndex, removeThreadAt } from "./thread-queue.js";
+import { advanceTime, hasRunnableThread, hasScheduledThread, nextRunnableThreadIndex, removeThreadAt, runnableThreadIndex } from "./thread-queue.js";
 
 export async function resume(state: InterpreterRuntimeState, options: types.RunOptions = {}): Promise<types.StepResult> {
     if (state.status === "terminated" || state.status === "stopped") {
@@ -137,7 +137,8 @@ async function advanceOne(
     }
 
     try {
-        const threadIndex = nextRunnableThreadIndex(state);
+        const preferredThreadIndex = options.threadId === undefined ? -1 : runnableThreadIndex(state, options.threadId);
+        const threadIndex = preferredThreadIndex >= 0 ? preferredThreadIndex : nextRunnableThreadIndex(state);
         if (threadIndex < 0) {
             if (hasScheduledThread(state)) {
                 advanceTime(state);

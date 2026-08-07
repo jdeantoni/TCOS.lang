@@ -3,7 +3,25 @@ import * as vscode from 'vscode';
 interface GraphData {
     dot:         string;
     activeNodes: Array<{ nodeUid: number; threadId: number; color: string }>;
-    threads:     Array<{ id: number; color: string; T: number }>;
+    threads:     Array<{ id: number; label?: string; color: string; T: number }>;
+    capabilities?: CCFGCapabilities;
+}
+
+export interface CCFGCapabilities {
+    threads: boolean;
+    events: boolean;
+    time: boolean;
+    mutableVariables: boolean;
+    stateMachines: boolean;
+    currentNode?: {
+        uid: number;
+        type: string;
+    };
+    lastEvent?: {
+        kind: string;
+        message?: string;
+        data?: unknown;
+    };
 }
 
 export class CCFGGraphPanel {
@@ -29,6 +47,10 @@ export class CCFGGraphPanel {
 
     update(data: GraphData): void {
         this.panel.webview.postMessage({ command: 'update', data });
+    }
+
+    updateCapabilities(capabilities: CCFGCapabilities): void {
+        this.panel.webview.postMessage({ command: 'capabilities', capabilities });
     }
 
     reveal(): void {
@@ -99,6 +121,20 @@ export class CCFGGraphPanel {
     }
     button:hover { opacity: 0.8; }
     #thread-buttons { display: flex; gap: 4px; }
+    .capability-group {
+        display: none;
+        gap: 4px;
+        align-items: center;
+    }
+    .capability-group.enabled {
+        display: flex;
+    }
+    #capability-status {
+        font-size: 11px;
+        opacity: 0.75;
+        border-left: 1px solid var(--vscode-panel-border);
+        padding-left: 8px;
+    }
     #zoom-controls {
         display: flex;
         gap: 2px;
@@ -150,8 +186,13 @@ export class CCFGGraphPanel {
     <button onclick="send('continue')"> Continue</button>
     <button onclick="send('step')"> Step</button>
     <button onclick="send('ccfgStep')"> Step Source</button>
-    <button onclick="send('ccfgAdvanceTime')"> Advance T</button>
-    <div id="thread-buttons"></div>
+    <div id="time-controls" class="capability-group">
+        <button onclick="send('ccfgAdvanceTime')"> Advance T</button>
+    </div>
+    <div id="thread-controls" class="capability-group">
+        <div id="thread-buttons"></div>
+    </div>
+    <span id="capability-status"></span>
     <div id="zoom-controls">
         <button onclick="zoomIn()">+</button>
         <span id="zoom-level">100%</span>
@@ -176,6 +217,13 @@ export class CCFGGraphPanel {
     let offsetY = 20;
     let isPanning = false;
     let panStart  = { x: 0, y: 0 };
+    let capabilities = {
+        threads: false,
+        events: false,
+        time: false,
+        mutableVariables: false,
+        stateMachines: false
+    };
 
     const graphEl = document.getElementById('graph');
     const inner   = document.getElementById('graph-inner');
@@ -247,13 +295,17 @@ export class CCFGGraphPanel {
 
     function renderThreadButtons(threads) {
         document.getElementById('thread-buttons').innerHTML =
+            capabilities.threads
+            ? 
             threads.map(t =>
                 \`<button
                     style="border-left: 3px solid \${t.color}"
+                    title="Step \${t.label ?? ('Thread ' + t.id)}"
                     onclick="send('ccfgStepThread', { threadId: \${t.id} })">
-                     T\${t.id}
+                     \${t.label ?? ('Thread ' + t.id)}
                 </button>\`
-            ).join('');
+            ).join('')
+            : '';
     }
 
     function colorDot(dot, activeNodes) {
@@ -269,7 +321,33 @@ export class CCFGGraphPanel {
 
     let firstRender = true;
 
+    function renderCapabilities(nextCapabilities) {
+        capabilities = {
+            threads: Boolean(nextCapabilities?.threads),
+            events: Boolean(nextCapabilities?.events),
+            time: Boolean(nextCapabilities?.time),
+            mutableVariables: Boolean(nextCapabilities?.mutableVariables),
+            stateMachines: Boolean(nextCapabilities?.stateMachines),
+            currentNode: nextCapabilities?.currentNode,
+            lastEvent: nextCapabilities?.lastEvent
+        };
+
+        document.getElementById('thread-controls').classList.toggle('enabled', capabilities.threads);
+        document.getElementById('time-controls').classList.toggle('enabled', capabilities.time);
+
+        const enabled = [];
+        if (capabilities.threads) enabled.push('threads');
+        if (capabilities.events) enabled.push('events');
+        if (capabilities.time) enabled.push('time');
+        if (capabilities.mutableVariables) enabled.push('variables');
+        if (capabilities.stateMachines) enabled.push('states');
+        document.getElementById('capability-status').textContent = enabled.length > 0
+            ? enabled.join(' · ')
+            : '';
+    }
+
     function renderGraph(data) {
+        renderCapabilities(data.capabilities);
         const colored = colorDot(data.dot, data.activeNodes);
         viz.renderSVGElement(colored)
             .then(svg => {
@@ -293,6 +371,8 @@ export class CCFGGraphPanel {
         const msg = e.data;
         if (msg.command === 'update') {
             renderGraph(msg.data);
+        } else if (msg.command === 'capabilities') {
+            renderCapabilities(msg.capabilities);
         }
     });
 
