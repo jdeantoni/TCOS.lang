@@ -49,6 +49,7 @@ export interface ThreadSnapshot {
     ownerUid: number;
     parentId?: number;
     waitingJoinUid?: number;
+    readyAt?: { t: number; microstep: number };
     tempValues: unknown[];
 }
 

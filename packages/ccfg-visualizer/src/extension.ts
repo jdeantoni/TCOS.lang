@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ThreadDecoratorManager } from './decorators';
-import { CCFGGraphPanel, type CCFGCapabilities } from './graphPanel';
+import { CCFGGraphPanel } from './graphPanel';
+import { CCFGCapabilities, CCFG_CUSTOM_EVENT, CCFG_CUSTOM_REQUEST } from './ccfgCustomRequests';
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -10,7 +11,7 @@ export function activate(context: vscode.ExtensionContext) {
     async function refreshCapabilities(session: vscode.DebugSession): Promise<CCFGCapabilities | undefined> {
         if (session.type !== 'ccfg') return undefined;
         try {
-            const capabilities = await session.customRequest('ccfgCapabilities') as CCFGCapabilities;
+            const capabilities = await session.customRequest(CCFG_CUSTOM_REQUEST.ccfgCapabilities) as CCFGCapabilities;
             await setCapabilityContexts(capabilities);
             graphPanel?.updateCapabilities(capabilities);
             return capabilities;
@@ -23,11 +24,11 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.debug.onDidReceiveDebugSessionCustomEvent(async e => {
             if (e.session.type !== 'ccfg') return;
 
-            if (e.event === 'threadPositions') {
+            if (e.event === CCFG_CUSTOM_EVENT.threadPositions) {
                 decorator.update(e.body.threads);
             }
 
-            if (e.event === 'ccfgGraph') {
+            if (e.event === CCFG_CUSTOM_EVENT.ccfgGraph) {
                 if (graphPanel === undefined) {
                     graphPanel = new CCFGGraphPanel(context, e.session);
                 }
@@ -35,7 +36,7 @@ export function activate(context: vscode.ExtensionContext) {
                 graphPanel.update({ ...e.body, capabilities });
             }
 
-            if (e.event === 'ccfgCapabilities') {
+            if (e.event === CCFG_CUSTOM_EVENT.ccfgCapabilities) {
                 const capabilities = await refreshCapabilities(e.session) ?? e.body.capabilities;
                 if (capabilities !== undefined) {
                     await setCapabilityContexts(capabilities);

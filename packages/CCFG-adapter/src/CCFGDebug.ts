@@ -11,6 +11,19 @@ import { CCFGRuntime, IRuntimeBreakpoint, FileAccessor, RuntimeVariable, timeout
 import { Subject } from 'await-notify';
 import * as base64 from 'base64-js';
 import { pathToFileURL } from 'url';
+import {
+	CCFG_CUSTOM_EVENT,
+	CCFG_CUSTOM_REQUEST,
+	CCFGCustomRequestArgs,
+	CCFGCustomRequestHandler,
+	CCFGCustomRequestName,
+	CCFGCustomRequestResult
+} from './ccfgCustomRequests';
+
+interface CustomRequestGroup {
+	name: string;
+	handlers: Partial<Record<CCFGCustomRequestName, CCFGCustomRequestHandler>>;
+}
 
 /**
  * This interface describes the CCFG-debug specific launch attributes
@@ -56,6 +69,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 	private _useInvalidatedEvent = false;
 
 	private _addressesInHex = true;
+	private readonly _customRequestGroups: ReadonlyArray<CustomRequestGroup>;
 
 	/**
 	 * Creates a new debug adapter that is used for one debug session.
@@ -69,6 +83,7 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		this.setDebuggerColumnsStartAt1(false);
 
 		this._runtime = new CCFGRuntime(fileAccessor);
+		this._customRequestGroups = this.createCustomRequestGroups();
 
 		// setup event handlers
 		this._runtime.on('stopOnEntry', () => {
@@ -819,52 +834,113 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		this.sendResponse(response);
 	}
 
-	protected customRequest(command: string, response: DebugProtocol.Response, args: any) {
-		switch (command) {
-
-			case 'toggleFormatting':
-				this._valuesInHex = !this._valuesInHex;
-				if (this._useInvalidatedEvent) {
-					this.sendEvent(new InvalidatedEvent(['variables']));
-				}
-				this.sendResponse(response);
-				break;
-
-			case 'getDot':
-				response.body = this._runtime.getVisualization();
-				this.sendResponse(response);
-				break;
-
-			case 'ccfgCapabilities':
-				response.body = this._runtime.getCapabilities();
-				this.sendResponse(response);
-				break;
-
-		
-			case 'ccfgStep':
-				void this._runtime.step(false, false);
-				this.sendResponse(response);
-				break;
-
-			case 'ccfgAdvanceTime':
-				void this._runtime.advanceTime().then(result => {
-					this.sendResponse(response);
-					this.emitVisualizationUpdate();
-					this.emitStopForResult(result);
-				});
-				break;
-
-			case 'ccfgStepThread':
-				void this._runtime.stepThread((args as any).threadId).then(result => {
-					this.sendResponse(response);
-					this.emitVisualizationUpdate();
-					this.emitStopForResult(result);
-				});
-				break;
-
-			default:
-				super.customRequest(command, response, args);
+	protected customRequest(command: string, response: DebugProtocol.Response, args: unknown) {
+		const handler = this.resolveCustomRequestHandler(command);
+		if (handler === undefined) {
+			super.customRequest(command, response, args);
+			return;
 		}
+
+		void this.runCustomRequestHandler(command, handler, response, args);
+	}
+
+	private createCustomRequestGroups(): ReadonlyArray<CustomRequestGroup> {
+		return [
+			{
+				name: 'formatting',
+				handlers: {
+					[CCFG_CUSTOM_REQUEST.toggleFormatting]: () => {
+						this._valuesInHex = !this._valuesInHex;
+						if (this._useInvalidatedEvent) {
+							this.sendEvent(new InvalidatedEvent(['variables']));
+						}
+					}
+				}
+			},
+			{
+				name: 'visualization',
+				handlers: {
+					[CCFG_CUSTOM_REQUEST.getDot]: () => this._runtime.getVisualization()
+				}
+			},
+			{
+				name: 'capabilities',
+				handlers: {
+					[CCFG_CUSTOM_REQUEST.ccfgCapabilities]: () => this._runtime.getCapabilities()
+				}
+			},
+			{
+				name: 'execution',
+				handlers: {
+					[CCFG_CUSTOM_REQUEST.ccfgStep]: () => {
+						this._runtime.step(false, false);
+					},
+					[CCFG_CUSTOM_REQUEST.ccfgAdvanceTime]: async () => {
+						const result = await this._runtime.advanceTime();
+						this.emitVisualizationUpdate();
+						this.emitStopForResult(result);
+					},
+					[CCFG_CUSTOM_REQUEST.ccfgStepThread]: async args => {
+						const threadArgs = args as CCFGCustomRequestArgs['ccfgStepThread'];
+						const result = await this._runtime.stepThread(threadArgs.threadId);
+						this.emitVisualizationUpdate();
+						this.emitStopForResult(result);
+					}
+				}
+			}
+		];
+	}
+
+	private resolveCustomRequestHandler(command: string): CCFGCustomRequestHandler | undefined {
+		for (const group of this._customRequestGroups) {
+			const handler = group.handlers[command as CCFGCustomRequestName];
+			if (handler !== undefined) {
+				return handler;
+			}
+		}
+		return undefined;
+	}
+
+	private async runCustomRequestHandler(
+		command: string,
+		handler: CCFGCustomRequestHandler,
+		response: DebugProtocol.Response,
+		rawArgs: unknown
+	): Promise<void> {
+		try {
+			const result = await this.invokeCustomRequest(command as CCFGCustomRequestName, handler, rawArgs);
+			if (result !== undefined) {
+				response.body = result;
+			}
+			this.sendResponse(response);
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : String(error);
+			this.sendErrorResponse(response, {
+				id: 2001,
+				format: message
+			});
+		}
+	}
+
+	private invokeCustomRequest(
+		command: CCFGCustomRequestName,
+		handler: CCFGCustomRequestHandler,
+		rawArgs: unknown
+	): Promise<CCFGCustomRequestResult[CCFGCustomRequestName]> | CCFGCustomRequestResult[CCFGCustomRequestName] {
+		switch (command) {
+			case CCFG_CUSTOM_REQUEST.ccfgStepThread:
+				return handler(this.parseStepThreadArgs(rawArgs));
+			default:
+				return handler(undefined);
+		}
+	}
+
+	private parseStepThreadArgs(rawArgs: unknown): CCFGCustomRequestArgs['ccfgStepThread'] {
+		const value = (rawArgs ?? {}) as Partial<CCFGCustomRequestArgs['ccfgStepThread']>;
+		if (typeof value.threadId !== 'number' || Number.isNaN(value.threadId)) {
+			throw new Error('Invalid arguments for ccfgStepThread: threadId:number is required.');
+		}
+		return { threadId: value.threadId };
 	}
 
 	//---- helpers
@@ -968,18 +1044,18 @@ export class CCFGDebugSession extends LoggingDebugSession {
 		if (!viz.dot) return;
 		const capabilities = this._runtime.getCapabilities();
 
-		this.sendEvent(new DebugEvent('threadPositions', {
+		this.sendEvent(new DebugEvent(CCFG_CUSTOM_EVENT.threadPositions, {
 			threads: viz.threadPositions
 		}));
 
-		this.sendEvent(new DebugEvent('ccfgGraph', {
+		this.sendEvent(new DebugEvent(CCFG_CUSTOM_EVENT.ccfgGraph, {
 			dot:         viz.dot,
 			activeNodes: viz.activeNodes,
 			threads:     viz.threads,
 			capabilities
 		}));
 
-		this.sendEvent(new DebugEvent('ccfgCapabilities', {
+		this.sendEvent(new DebugEvent(CCFG_CUSTOM_EVENT.ccfgCapabilities, {
 			capabilities
 		}));
 	}

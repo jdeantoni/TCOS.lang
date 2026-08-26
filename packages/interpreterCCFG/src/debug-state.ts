@@ -17,7 +17,10 @@ export function getCurrentSourceKey(state: InterpreterRuntimeState): string | un
 }
 
 export function getThreads(state: InterpreterRuntimeState): types.ThreadSnapshot[] {
-    return state.executionQueue.map(entry => entry.thread.snapshot());
+    return state.executionQueue.map(entry => ({
+        ...entry.thread.snapshot(),
+        readyAt: entry.readyAt
+    }));
 }
 
 export function getCurrentThread(state: InterpreterRuntimeState): types.ThreadSnapshot | undefined {
@@ -38,7 +41,7 @@ export function getSnapshot(state: InterpreterRuntimeState): types.InterpreterSn
         globals: {
             ...Object.fromEntries(state.sigma),
             __T: state.T,
-            __sleeping: state.executionQueue.filter(entry => entry.readyAt > state.T).length
+            __sleeping: state.executionQueue.filter(entry => entry.readyAt.t > state.T).length
         }
     };
     const currentThread = getCurrentThread(state);
@@ -81,7 +84,7 @@ export function getVariables(state: InterpreterRuntimeState, variablesReference:
         return [
             ...mapVariables(state.sigma, state.sigmaNameMap),
             { name: "__T", value: state.T, type: "number", variablesReference: 0 },
-            { name: "__sleeping", value: state.executionQueue.filter(entry => entry.readyAt > state.T).length, type: "number", variablesReference: 0 }
+            { name: "__sleeping", value: state.executionQueue.filter(entry => entry.readyAt.t > state.T).length, type: "number", variablesReference: 0 }
         ];
     }
     if (thread === undefined) return [];

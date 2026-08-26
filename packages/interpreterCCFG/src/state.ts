@@ -4,7 +4,7 @@ import type * as types from "./types.js";
 
 export interface ExecutionQueueEntry {
     thread: RuntimeThread;
-    readyAt: number;
+    readyAt: { t: number; microstep: number };
     waitingEvent?: string;
     order: number;
 }

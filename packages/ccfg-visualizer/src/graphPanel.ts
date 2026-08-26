@@ -1,28 +1,14 @@
 import * as vscode from 'vscode';
+import { CCFGCapabilities, CCFG_CUSTOM_REQUEST } from './ccfgCustomRequests';
 
 interface GraphData {
     dot:         string;
     activeNodes: Array<{ nodeUid: number; threadId: number; color: string }>;
-    threads:     Array<{ id: number; label?: string; color: string; T: number }>;
+    threads:     Array<{ id: number; label?: string; color: string; T: number; readyAt?: { t: number; microstep: number } }>;
     capabilities?: CCFGCapabilities;
 }
 
-export interface CCFGCapabilities {
-    threads: boolean;
-    events: boolean;
-    time: boolean;
-    mutableVariables: boolean;
-    stateMachines: boolean;
-    currentNode?: {
-        uid: number;
-        type: string;
-    };
-    lastEvent?: {
-        kind: string;
-        message?: string;
-        data?: unknown;
-    };
-}
+type GraphCommand = 'continue' | 'step' | 'ccfgStep' | 'ccfgAdvanceTime' | 'ccfgStepThread';
 
 export class CCFGGraphPanel {
     private panel: vscode.WebviewPanel;
@@ -61,7 +47,7 @@ export class CCFGGraphPanel {
         this.panel.dispose();
     }
 
-    private async handleWebviewMessage(msg: any): Promise<void> {
+    private async handleWebviewMessage(msg: { command?: GraphCommand; threadId?: number }): Promise<void> {
         switch (msg.command) {
             case 'continue':
                 await this.session.customRequest('continue', { threadId: 1 });
@@ -70,13 +56,16 @@ export class CCFGGraphPanel {
                 await this.session.customRequest('next', { threadId: 1 });
                 break;
             case 'ccfgStep':
-                await this.session.customRequest('ccfgStep', {});
+                await this.session.customRequest(CCFG_CUSTOM_REQUEST.ccfgStep, {});
                 break;
             case 'ccfgAdvanceTime':
-                await this.session.customRequest('ccfgAdvanceTime', {});
+                await this.session.customRequest(CCFG_CUSTOM_REQUEST.ccfgAdvanceTime, {});
                 break;
             case 'ccfgStepThread':
-                await this.session.customRequest('ccfgStepThread', { threadId: msg.threadId });
+                if (typeof msg.threadId !== 'number' || Number.isNaN(msg.threadId)) {
+                    return;
+                }
+                await this.session.customRequest(CCFG_CUSTOM_REQUEST.ccfgStepThread, { threadId: msg.threadId });
                 break;
         }
     }
@@ -120,7 +109,17 @@ export class CCFGGraphPanel {
         font-size: 12px;
     }
     button:hover { opacity: 0.8; }
-    #thread-buttons { display: flex; gap: 4px; }
+    #thread-buttons { display: flex; gap: 4px; flex-wrap: wrap; }
+    .thread-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+    .thread-ready-at {
+        opacity: 0.72;
+        font-size: 11px;
+    }
     .capability-group {
         display: none;
         gap: 4px;
@@ -293,16 +292,23 @@ export class CCFGGraphPanel {
         vscode.postMessage({ command, ...extra });
     }
 
+    function readyAtLabel(thread) {
+        const readyAt = thread.readyAt ?? { t: thread.T ?? 0, microstep: 0 };
+        return \`T=\${readyAt.t} μ=\${readyAt.microstep}\`;
+    }
+
     function renderThreadButtons(threads) {
         document.getElementById('thread-buttons').innerHTML =
             capabilities.threads
             ? 
             threads.map(t =>
                 \`<button
+                    class="thread-button"
                     style="border-left: 3px solid \${t.color}"
-                    title="Step \${t.label ?? ('Thread ' + t.id)}"
+                    title="Step \${t.label ?? ('Thread ' + t.id)} · ready at \${readyAtLabel(t)}"
                     onclick="send('ccfgStepThread', { threadId: \${t.id} })">
-                     \${t.label ?? ('Thread ' + t.id)}
+                     <span>\${t.label ?? ('Thread ' + t.id)}</span>
+                     <span class="thread-ready-at">\${readyAtLabel(t)}</span>
                 </button>\`
             ).join('')
             : '';
