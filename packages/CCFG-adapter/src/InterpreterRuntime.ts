@@ -19,8 +19,11 @@ export interface RuntimeVisualization {
 
     threadPositions: {
         id: number;
+        nodeUid: number;
         file: string;
         line: number;
+        column?: number;
+        color?: string;
     }[];
 
     threads: {
@@ -593,8 +596,10 @@ export class CCFGRuntime extends EventEmitter {
             }
             return [{
                 id:    t.id,
+                nodeUid: t.currentNodeUid,
                 file:  source.path ?? this.sourceFile,
                 line:  source.line,
+                column: source.column,
                 color: COLORS[i % COLORS.length]
             }];
         }),

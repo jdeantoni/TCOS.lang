@@ -49,8 +49,12 @@ export async function stepOver(state: InterpreterRuntimeState, options: types.Ru
     const maxSourceSteps = options.maxSteps ?? state.maxSteps ?? 1000;
 
     while (true) {
+        const stepCountBefore = state.stepCount;
         const stepResult = await advanceOne(state, options, true);
         if (stepResult.status === "terminated" || stepResult.status === "stopped" || stepResult.status === "error") {
+            return stepResult;
+        }
+        if (options.threadId !== undefined && state.stepCount === stepCountBefore) {
             return stepResult;
         }
         if (state.T !== startT) {
@@ -62,8 +66,6 @@ export async function stepOver(state: InterpreterRuntimeState, options: types.Ru
         }
 
         const line = getCurrentSourceKey(state);
-        console.log("current line :", line);
-        console.log("start line : ", startLine);
         if (line === undefined) {
             if (state.executionQueue.length === 0) {
                 return stepResult;
@@ -88,8 +90,12 @@ export async function stepInto(state: InterpreterRuntimeState, options: types.Ru
     const maxNodeSteps = options.maxSteps ?? state.maxSteps ?? 1000;
 
     while (true) {
+        const stepCountBefore = state.stepCount;
         const stepResult = await advanceOne(state, options, true);
         if (stepResult.status === "terminated" || stepResult.status === "stopped" || stepResult.status === "error") {
+            return stepResult;
+        }
+        if (options.threadId !== undefined && state.stepCount === stepCountBefore) {
             return stepResult;
         }
         if (state.T !== startT) {
@@ -137,10 +143,11 @@ async function advanceOne(
     }
 
     try {
-        const preferredThreadIndex = options.threadId === undefined ? -1 : runnableThreadIndex(state, options.threadId);
-        const threadIndex = preferredThreadIndex >= 0 ? preferredThreadIndex : nextRunnableThreadIndex(state);
+        const threadIndex = options.threadId === undefined
+            ? nextRunnableThreadIndex(state)
+            : runnableThreadIndex(state, options.threadId);
         if (threadIndex < 0) {
-            if (hasScheduledThread(state)) {
+            if (options.threadId === undefined && hasScheduledThread(state)) {
                 advanceTime(state);
                 //if (state.debug) console.log("[CCFGInterpreter.advanceOne]", getDebugState(state, "advance-time"));
                 return result(state);

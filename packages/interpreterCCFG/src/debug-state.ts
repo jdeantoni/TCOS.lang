@@ -8,12 +8,17 @@ export function getCurrentSourceKey(state: InterpreterRuntimeState): string | un
     const thread = (state.executionQueue[state.lastThreadIndex] ?? state.executionQueue[0])?.thread;
     const node = thread?.currentNode;
     if (node === undefined) return undefined;
+    if (isStructuralStepNode(node)) return undefined;
     const range = (node.astNode as any)?.$cstNode?.range;
     if (range === undefined) return undefined;
-    const uri = (node.astNode as any)?.$cstNode?.root?.textDocument?.uri
-        ?? (node.astNode as any)?.$document?.uri?.toString()
-        ?? "";
     return `${range.start.line}`;
+}
+
+export function isStructuralStepNode(node: { type?: unknown; getType?: () => string }): boolean {
+    return node.type === "starts"
+        || node.type === "terminates"
+        || node.getType?.() === "starts"
+        || node.getType?.() === "terminates";
 }
 
 export function getThreads(state: InterpreterRuntimeState): types.ThreadSnapshot[] {
