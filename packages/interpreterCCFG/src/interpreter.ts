@@ -163,7 +163,7 @@ export class CCFGInterpreter {
         if (scope === undefined) return false;
 
         if (scope.scope === "globals") {
-            if (name === "__T" && typeof value === "number") {
+            if (name === "__atNow" && typeof value === "number") {
                 this.state.T = value;
                 this.state.clock.advanceTo(value);
                 return true;

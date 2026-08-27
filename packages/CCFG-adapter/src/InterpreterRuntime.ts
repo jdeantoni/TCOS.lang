@@ -30,7 +30,7 @@ export interface RuntimeVisualization {
         id: number;
         label: string;
         color: string;
-        T: number;
+        atNow: number;
         readyAt: {
             t: number;
             microstep: number;
@@ -579,7 +579,7 @@ export class CCFGRuntime extends EventEmitter {
 
     const threads = this.getThreads();
     const snapshot = this.interpreter?.getSnapshot?.();
-    const T = snapshot?.globals?.['__T'] ?? 0;
+    const atNow = snapshot?.globals?.['__atNow'] ?? 0;
 
     return {
         dot: this.ccfg?.toDot?.() ?? '',
@@ -606,12 +606,12 @@ export class CCFGRuntime extends EventEmitter {
         threads: threads.map((t, i) => {
             const threadSnapshot = snapshot?.threads?.find((thread: any) => thread.id === t.id);
             const node = this.getNodeByUid(threadSnapshot?.currentNodeUid);
-            const readyAt = this.getThreadReadyAt(threadSnapshot, Number(T));
+            const readyAt = this.getThreadReadyAt(threadSnapshot, Number(atNow));
             return {
                 id:    t.id,
                 label: this.getThreadLabel(t.id, node),
                 color: COLORS[i % COLORS.length],
-                T:     Number(T),
+                atNow: Number(atNow),
                 readyAt
             };
         })

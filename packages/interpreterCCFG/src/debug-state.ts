@@ -45,7 +45,7 @@ export function getSnapshot(state: InterpreterRuntimeState): types.InterpreterSn
         threads: getThreads(state),
         globals: {
             ...Object.fromEntries(state.sigma),
-            __T: state.T,
+            __atNow: state.T,
             __sleeping: state.executionQueue.filter(entry => entry.readyAt.t > state.T).length
         }
     };
@@ -88,7 +88,7 @@ export function getVariables(state: InterpreterRuntimeState, variablesReference:
     if (decoded.scope === "globals") {
         return [
             ...mapVariables(state.sigma, state.sigmaNameMap),
-            { name: "__T", value: state.T, type: "number", variablesReference: 0 },
+            { name: "__atNow", value: state.T, type: "number", variablesReference: 0 },
             { name: "__sleeping", value: state.executionQueue.filter(entry => entry.readyAt.t > state.T).length, type: "number", variablesReference: 0 }
         ];
     }
@@ -123,7 +123,7 @@ export function getDebugState(state: InterpreterRuntimeState, phase: string): Re
     return {
         phase,
         status: state.status,
-        T: state.T,
+        atNow: state.T,
         stepCount: state.stepCount,
         currentThreadId: currentThread?.id,
         currentNodeUid: currentNode?.uid,

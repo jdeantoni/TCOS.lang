@@ -4,7 +4,7 @@ import { CCFGCapabilities, CCFG_CUSTOM_REQUEST } from './ccfgCustomRequests';
 interface GraphData {
     dot:         string;
     activeNodes: Array<{ nodeUid: number; threadId: number; color: string }>;
-    threads:     Array<{ id: number; label?: string; color: string; T: number; readyAt?: { t: number; microstep: number } }>;
+    threads:     Array<{ id: number; label?: string; color: string; atNow: number; readyAt?: { t: number; microstep: number } }>;
     capabilities?: CCFGCapabilities;
 }
 
@@ -186,7 +186,7 @@ export class CCFGGraphPanel {
     <button onclick="send('step')"> Step</button>
     <button onclick="send('ccfgStep')"> Step Source</button>
     <div id="time-controls" class="capability-group">
-        <button onclick="send('ccfgAdvanceTime')"> Advance T</button>
+        <button onclick="send('ccfgAdvanceTime')"> Advance atNow</button>
     </div>
     <div id="thread-controls" class="capability-group">
         <div id="thread-buttons"></div>
@@ -199,7 +199,7 @@ export class CCFGGraphPanel {
         <button onclick="resetZoom()" title="Reset zoom">⟳</button>
         <button onclick="fitGraph()" title="Fit to window">[]</button>
     </div>
-    <span id="time-display">T = 0</span>
+    <span id="time-display">atNow = 0</span>
 </div>
 <div id="graph">
     <div id="graph-inner"></div>
@@ -293,8 +293,8 @@ export class CCFGGraphPanel {
     }
 
     function readyAtLabel(thread) {
-        const readyAt = thread.readyAt ?? { t: thread.T ?? 0, microstep: 0 };
-        return \`T=\${readyAt.t} μ=\${readyAt.microstep}\`;
+        const readyAt = thread.readyAt ?? { t: thread.atNow ?? 0, microstep: 0 };
+        return \`atNow=\${readyAt.t} μ=\${readyAt.microstep}\`;
     }
 
     function renderThreadButtons(threads) {
@@ -369,8 +369,8 @@ export class CCFGGraphPanel {
             .catch(err => console.error('viz.js error:', err));
 
         renderThreadButtons(data.threads);
-        const T = data.threads[0]?.T ?? 0;
-        document.getElementById('time-display').textContent = \`T = \${T}\`;
+        const atNow = data.threads[0]?.atNow ?? 0;
+        document.getElementById('time-display').textContent = \`atNow = \${atNow}\`;
     }
 
     window.addEventListener('message', e => {
