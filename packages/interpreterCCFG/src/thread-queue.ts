@@ -94,8 +94,7 @@ export function hasScheduledThread(state: InterpreterRuntimeState): boolean {
 export function enqueueThread(state: InterpreterRuntimeState, thread: RuntimeThread, readyAt: ReadyAtInput = nextMicrostep(state)): void {
     state.executionQueue.push({
         thread,
-        readyAt: normalizeReadyAt(readyAt),
-        order: state.nextQueueOrder++
+        readyAt: normalizeReadyAt(readyAt)
     });
     sortExecutionQueue(state);
 }
@@ -135,9 +134,7 @@ export function sortExecutionQueue(state: InterpreterRuntimeState): void {
     state.executionQueue.sort((left, right) =>
         left.readyAt.t !== right.readyAt.t
             ? left.readyAt.t - right.readyAt.t
-            : left.readyAt.microstep !== right.readyAt.microstep
-                ? left.readyAt.microstep - right.readyAt.microstep
-                : left.order - right.order
+            : left.readyAt.microstep - right.readyAt.microstep
     );
 }
 

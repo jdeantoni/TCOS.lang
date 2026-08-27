@@ -6,7 +6,6 @@ export interface ExecutionQueueEntry {
     thread: RuntimeThread;
     readyAt: { t: number; microstep: number };
     waitingEvent?: string;
-    order: number;
 }
 
 export interface InterpreterRuntimeState {
@@ -28,7 +27,6 @@ export interface InterpreterRuntimeState {
     eventChannels: Map<string, types.EventChannel>;
     eventTokenToChannel: Map<number, string>;
     nextThreadId: number;
-    nextQueueOrder: number;
     lastThreadIndex: number;
     reportedBreakpointUids: Set<number>;
     sigmaNameMap: Map<string, string>;
@@ -58,7 +56,6 @@ export function createRuntimeState(
         eventChannels: new Map<string, types.EventChannel>(),
         eventTokenToChannel: new Map<number, string>(),
         nextThreadId: 1,
-        nextQueueOrder: 1,
         lastThreadIndex: -1,
         reportedBreakpointUids: new Set<number>(),
         sigmaNameMap: new Map<string, string>()

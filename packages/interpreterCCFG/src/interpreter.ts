@@ -73,7 +73,6 @@ export class CCFGInterpreter {
         this.state.stepCount = 0;
         this.state.lastThreadIndex = -1;
         this.state.nextThreadId = 1;
-        this.state.nextQueueOrder = 1;
         this.state.lastEvent = undefined;
         this.state.lastError = undefined;
         this.state.reportedBreakpointUids.clear();
